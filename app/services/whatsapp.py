@@ -54,6 +54,51 @@ async def send_whatsapp_message(to_phone: str, text: str) -> bool:
         logger.error(f"Error sending WhatsApp message to {clean_phone}: {e}")
         return False
 
+async def send_whatsapp_document(
+    to_phone: str,
+    document_url: str,
+    filename: str = "Propuesta_Sofia_IA.pdf",
+    caption: Optional[str] = None
+) -> bool:
+    """
+    Sends a PDF or document through Whapi.Cloud.
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+    api_url = settings.WHATSAPP_API_URL
+    api_token = settings.WHATSAPP_API_TOKEN
+
+    if not api_url or not api_token:
+        logger.info(f"[WHATSAPP SIMULATION] Document {filename} to {clean_phone} via {document_url}")
+        return True
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/json",
+            "accept": "application/json"
+        }
+
+        endpoint = f"{api_url.rstrip('/')}/messages/document"
+        payload = {
+            "to": clean_phone,
+            "media": document_url,
+            "filename": filename
+        }
+        if caption:
+            payload["caption"] = caption
+
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            res = await client.post(endpoint, json=payload, headers=headers)
+            if res.status_code in [200, 201]:
+                logger.info(f"WhatsApp PDF document successfully sent to {clean_phone}")
+                return True
+            else:
+                logger.warning(f"WhatsApp Document Gateway returned status {res.status_code}: {res.text}")
+                return False
+    except Exception as e:
+        logger.error(f"Error sending WhatsApp document to {clean_phone}: {e}")
+        return False
+
 async def notify_javier_meeting_scheduled(
     prospect_name: str,
     contact_name: Optional[str],
@@ -72,6 +117,13 @@ async def notify_javier_meeting_scheduled(
     contact_str = contact_name or "Dueño / Administración"
     city_str = city or "Entre Ríos / Santa Fe"
 
+    from app.services.calendar import generate_google_calendar_link
+    cal_link = generate_google_calendar_link(
+        summary=f"🎯 Demo Sofía IA: {prospect_name}",
+        description=f"Reunión acordada por Sofía B2B SDR.\nContacto: {contact_str}\nTeléfono: +{phone}\nLocalidad: {city_str}\nHorario pactado: {meeting_details}\nÚltimo mensaje: {last_message}",
+        location=f"{city_str} • Videollamada"
+    )
+
     # 1. WhatsApp Alert
     if campaign == "ai_agency":
         wa_alert_text = (
@@ -82,7 +134,8 @@ async def notify_javier_meeting_scheduled(
             f"📍 *Localidad:* {city_str}\n"
             f"⏰ *Horario pactado:* {meeting_details}\n"
             f"💬 *Último mensaje del cliente:* \"{last_message}\"\n\n"
-            f"👉 *Acción:* Llamalo en ese horario para hacerle la demo de Sofía ($250.000 setup + $100.000/mes de abono)."
+            f"👉 *Acción:* Llamalo en ese horario para hacerle la demo de Sofía ($250.000 setup + $100.000/mes de abono).\n\n"
+            f"📅 *Agendar en 1 clic en Google Calendar:*\n{cal_link}"
         )
     else:
         wa_alert_text = (
@@ -93,7 +146,8 @@ async def notify_javier_meeting_scheduled(
             f"📍 *Localidad:* {city_str}\n"
             f"⏰ *Horario pactado:* {meeting_details}\n"
             f"💬 *Último mensaje del cliente:* \"{last_message}\"\n\n"
-            f"👉 *Acción:* Llamalo en ese horario para la reunión acordada."
+            f"👉 *Acción:* Llamalo en ese horario para la reunión acordada.\n\n"
+            f"📅 *Agendar en 1 clic en Google Calendar:*\n{cal_link}"
         )
 
     await send_whatsapp_message(to_phone=alert_phone, text=wa_alert_text)

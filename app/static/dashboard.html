@@ -66,6 +66,22 @@
             </div>
 
             <div class="flex items-center gap-2.5">
+                <!-- Anti-ban Safe Badge -->
+                <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/90 text-slate-300 text-xs font-semibold">
+                    <span class="w-2 h-2 rounded-full" :class="metrics.business_hours_open ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+                    <span x-text="metrics.business_hours_open ? 'Horario Comercial' : 'Pausa Comercial'"></span>
+                    <span class="text-slate-600">•</span>
+                    <span class="text-emerald-400" x-text="`${metrics.daily_outreach_count || 0}/${metrics.daily_outreach_max || 15} hoy`"></span>
+                </div>
+
+                <button @click="triggerFollowups()" 
+                        :disabled="runningFollowup"
+                        class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition"
+                        title="Re-contactar prospectos que no han respondido">
+                    <i data-lucide="repeat" class="w-3.5 h-3.5 text-sky-400" :class="{'animate-spin': runningFollowup}"></i>
+                    <span>Seguimientos</span>
+                </button>
+
                 <button @click="openModal('newProspect')" 
                         class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-lg shadow-emerald-950/40 transition">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
@@ -503,6 +519,7 @@
                 loading: false,
                 saving: false,
                 sendingMsg: false,
+                runningFollowup: false,
                 currentFilter: 'all',
                 searchQuery: '',
                 activeChat: null,
@@ -571,6 +588,25 @@
                 setStatusFilter(filter) {
                     this.currentFilter = filter;
                     this.fetchData(true);
+                },
+
+                async triggerFollowups() {
+                    if (!confirm("¿Deseas verificar y enviar re-contactos automáticos a los prospectos sin respuesta?")) return;
+                    this.runningFollowup = true;
+                    try {
+                        const res = await fetch('/api/v1/dashboard/run-followups', { method: 'POST' });
+                        if (res.ok) {
+                            const data = await res.json();
+                            alert(`Seguimiento completado: ${data.processed_count} prospectos procesados.`);
+                            await this.fetchData(false);
+                        } else {
+                            alert("Error al ejecutar seguimientos.");
+                        }
+                    } catch (e) {
+                        alert("Error de red: " + e);
+                    } finally {
+                        this.runningFollowup = false;
+                    }
                 },
 
                 openModal(name) {

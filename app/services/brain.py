@@ -94,6 +94,18 @@ def detect_meeting_intent(text: str) -> Tuple[bool, Optional[str]]:
         
     return False, None
 
+def detect_catalog_request(text: str) -> bool:
+    """
+    Detects if the prospect is asking for a PDF proposal, catalog, price list, or brochures.
+    """
+    if not text:
+        return False
+    text_lower = text.lower()
+    return bool(re.search(
+        r'\b(pdf|folleto|propuesta|cat[aá]logo|lista de precios|tarifario|presentaci[oó]n|mandame algo|pasame algo|enviame algo|mandame info|pasame info|mas info|más info|informaci[oó]n por escrito)\b',
+        text_lower
+    ))
+
 def rule_based_consultative_response(
     incoming_text: str,
     prospect_name: Optional[str] = None,
@@ -116,6 +128,17 @@ def rule_based_consultative_response(
             f"¡Muchas gracias y que tengas un gran día!",
             True,
             meeting_details
+        )
+
+    # PDF / Catalog request rule
+    if detect_catalog_request(incoming_text):
+        nombre = f" {contact_name}" if contact_name else ""
+        cierre = f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, nuestro asesor?" if not contact_name else f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, {contact_name}?"
+        return (
+            f"¡Por supuesto{nombre}! Ahí te acabo de adjuntar nuestra propuesta completa en PDF con el funcionamiento, casos de uso y costos detallados.\n\n"
+            f"{cierre}",
+            False,
+            None
         )
 
     # Voice note fallback if speech-to-text / Gemini failed

@@ -10,7 +10,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.3
       - key: DATABASE_URL
-        value: sqlite:///./sofia.db
+        value: postgresql://javi_admin:FhfRttqRX1ZMoz7yuhcEa6BmsKx7bi2Z@dpg-d75jlr4r85hc73cod45g-a.oregon-postgres.render.com/aircontrol_n6zf
       - key: GEMINI_API_KEY
         sync: false
       - key: WHATSAPP_AGENT_PHONE

@@ -272,6 +272,21 @@ async def receive_whatsapp_webhook(
     # Send response back to prospect via WhatsApp
     await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=ai_response)
 
+    # Check if prospect requested proposal / catalog / PDF
+    if brain.detect_catalog_request(message) or any(k in ai_response.lower() for k in ["adjuntar nuestra propuesta", "adjunto nuestra propuesta", "propuesta en pdf"]):
+        base_url = settings.APP_BASE_URL.rstrip('/')
+        if "127.0.0.1" in base_url or "localhost" in base_url:
+            base_url = "https://sofia-ai-agency.onrender.com"
+        pdf_url = f"{base_url}/assets/propuesta_sofia_ai_agency.pdf"
+        
+        logger.info(f"📄 Automatically dispatching corporate proposal PDF to {clean_phone}")
+        asyncio.create_task(whatsapp.send_whatsapp_document(
+            to_phone=clean_phone,
+            document_url=pdf_url,
+            filename="Propuesta_Comercial_Sofia_IA.pdf",
+            caption="📄 Propuesta Comercial — Sofía AI Agency"
+        ))
+
     return {
         "status": "success",
         "reply": ai_response,

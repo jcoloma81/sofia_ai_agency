@@ -79,6 +79,13 @@ def build_meeting_html_email(
         else "Agendalo en tu calendario y tené a mano el dossier interactivo."
     )
 
+    from app.services.calendar import generate_google_calendar_link
+    cal_url = generate_google_calendar_link(
+        summary=f"🎯 Demo Sofía IA: {prospect_name}",
+        description=f"Reunión acordada por Sofía B2B SDR.\nContacto: {contact_str}\nTeléfono: +{phone}\nLocalidad: {city_str}\nHorario pactado: {meeting_details}\nÚltimo mensaje: {last_message}",
+        location=f"{city_str} • Videollamada"
+    )
+
     return f"""
     <!DOCTYPE html>
     <html lang="es">
@@ -120,6 +127,11 @@ def build_meeting_html_email(
                 <div class="quote">"{last_message}"</div>
                 <div class="action-box">
                     👉 <strong>Próximo paso sugerido:</strong> {action_text}
+                </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <a href="{cal_url}" target="_blank" style="display: inline-block; background: #10b981; color: #ffffff; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                        📅 Añadir a mi Google Calendar
+                    </a>
                 </div>
             </div>
             <div class="footer">

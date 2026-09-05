@@ -41,6 +41,11 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
     human_takeover = db.query(Prospect).filter(Prospect.status == "human_takeover").count()
     contacted = db.query(Prospect).filter(Prospect.status == "contacted").count()
 
+    from app.services.pacing import is_within_business_hours, get_daily_outreaches_count, MAX_DAILY_OUTREACH, get_current_argentine_time
+    daily_count = get_daily_outreaches_count(db)
+    business_hours_open = is_within_business_hours()
+    now_arg = get_current_argentine_time()
+
     return {
         "total_prospects": total,
         "meetings_scheduled": meetings,
@@ -48,6 +53,10 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
         "human_takeover": human_takeover,
         "contacted": contacted,
         "conversion_rate": round((meetings / total * 100) if total > 0 else 0, 1),
+        "daily_outreach_count": daily_count,
+        "daily_outreach_max": MAX_DAILY_OUTREACH,
+        "business_hours_open": business_hours_open,
+        "argentine_time": now_arg.strftime("%H:%M hs"),
         "agent_name": "Sofía B2B SDR",
         "agent_phone": settings.WHATSAPP_AGENT_PHONE or "+54 9 343 572-0312",
         "alert_phone": settings.WHATSAPP_ALERT_PHONE or "+54 9 343 453-6447",
@@ -244,3 +253,11 @@ async def bulk_import_prospects(
         "updated": updated_count,
         "total": len(payload.leads)
     }
+
+@router.post("/api/v1/dashboard/run-followups")
+async def trigger_followups(dry_run: bool = False, db: Session = Depends(get_db)):
+    """
+    Executes automated follow-up sequence for leads that have not replied.
+    """
+    from app.services.followup import check_and_send_followups
+    return await check_and_send_followups(db, dry_run=dry_run)
