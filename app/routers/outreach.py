@@ -91,9 +91,9 @@ async def start_outreach(
             f"Te escribo de forma 100% autónoma. Mi trabajo es encontrar empresas para vender productos o servicios: así como te contacté a vos, puedo buscar clientes y atenderlos bajo el propio logo y marca de tu negocio, 24/7.\n\n"
             f"No soy un bot común de respuestas automáticas de WhatsApp Business. Funciono como una ejecutiva comercial digital que hace el trabajo pesado de tus ventas:\n\n"
             f"🎯 Salgo a buscar clientes: Encuentro comercios en Google Maps y les escribo en automático entre 12 y 15 por día con el logo de tu empresa para abrirte cuentas nuevas.\n"
-            f"📄 Atención 24/7: Paso listas de precios en PDF y respondo dudas de stock al instante (incluso audios de voz, de noche o feriados).\n"
+            f"📄 Atención 24/7: Paso propuestas o tarifarios en PDF y respondo consultas al instante (incluso audios de voz, de noche o feriados).\n"
             f"🔔 Alerta de cierre: Apenas detecto un interesado o un pedido grande, te aviso directo a tu celular para que cierres la venta.\n\n"
-            f"¿Te parece que coordinemos una charla breve de 10 minutos con Javier, nuestro asesor, para mostrarte cómo funcionaría con los productos de tu empresa?\n\n"
+            f"¿Te parece que coordinemos una charla breve de 10 minutos con Lucas, nuestro asesor, para mostrarte cómo funcionaría con los servicios de tu empresa?\n\n"
             f"Quedo a tu disposición.\n\n"
             f"Sofía — Asistente Comercial con IA"
         )
