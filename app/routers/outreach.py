@@ -95,7 +95,7 @@ async def start_outreach(
             f"🎯 Salgo a buscar clientes: Encuentro comercios en Google Maps y les escribo en automático entre 12 y 15 por día con el logo de tu empresa para abrirte cuentas nuevas.\n"
             f"📄 Atención 24/7: Paso propuestas o tarifarios en PDF y respondo consultas al instante (incluso audios de voz, de noche o feriados).\n"
             f"🔔 Alerta de cierre: Apenas detecto un interesado o un pedido grande, te aviso directo a tu celular para que cierres la venta.\n\n"
-            f"¿Te parece que coordinemos una charla breve de 10 minutos con Lucas, nuestro asesor, para mostrarte cómo funcionaría con los servicios de tu empresa?\n\n"
+            f"¿Te parece que coordinemos una charla breve de 10 minutos con Lucas, nuestro asesor, para mostrarte cómo funcionaría con los servicios de tu empresa? (puede ser presencial si están en la zona o virtual).\n\n"
             f"Quedo a tu disposición.\n\n"
             f"Sofía — Asistente Comercial con IA"
         )
