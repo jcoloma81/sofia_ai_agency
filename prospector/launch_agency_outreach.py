@@ -35,21 +35,18 @@ async def launch_outreach(limit: int = 5, dry_run: bool = False, delay_seconds: 
 
     for idx, lead in enumerate(pending_leads, 1):
         clean_phone = lead.phone
-        contact_str = lead.contact_name or ""
-        greeting = f"¡Hola {contact_str}! ¿Cómo estás?" if contact_str else "¡Hola! ¿Cómo estás?"
-        
+        greeting = f"¡Hola! Te escribo por {lead.name}." if lead.name else "¡Hola!"
+
         pitch = (
             f"{greeting} Te escribe Sofía.\n\n"
-            f"Te cuento algo que te va a llamar la atención: este mensaje que estás leyendo te lo envié de forma 100% autónoma como agente comercial con Inteligencia Artificial.\n\n"
-            f"No soy un bot de respuestas automáticas de WhatsApp. Funciono como una ejecutiva comercial digital: busco comercios y clientes potenciales en Google Maps y les escribo en automático entre 12 y 15 por día para abrirte cuentas nuevas que hoy no te compran.\n\n"
-            f"Además:\n"
-            f"📄 Envío tu catálogo o lista de precios en PDF al instante cuando un cliente me lo pide (24/7, incluso domingos y feriados).\n"
-            f"🎙️ Respondo dudas de precios y stock, entendiendo tanto mensajes de texto como notas de voz.\n"
-            f"🔔 Apenas detecto un cliente interesado o un pedido, te envío una alerta automática a tu celular personal o a la persona encargada de ventas con los datos listos para facturar o cerrar la venta.\n\n"
-            f"Básicamente te traigo clientes nuevos todos los días y le saco el trabajo pesado a tus ventas.\n\n"
-            f"¿Te parece que coordinemos una charla breve con un asesor para mostrarte cómo funcionaría con tus productos? La reunión puede ser presencial o virtual.\n\n"
-            f"Quedo a disposición.\n\n"
-            f"Sofía"
+            f"Te escribo de forma 100% autónoma. Mi trabajo es encontrar empresas para vender productos o servicios: así como te contacté a vos, puedo buscar clientes y atenderlos bajo el propio logo y marca de tu negocio, 24/7.\n\n"
+            f"No soy un bot común de respuestas automáticas de WhatsApp Business. Funciono como una ejecutiva comercial digital que hace el trabajo pesado de tus ventas:\n\n"
+            f"🎯 Salgo a buscar clientes: Encuentro comercios en Google Maps y les escribo en automático entre 12 y 15 por día con el logo de tu empresa para abrirte cuentas nuevas.\n"
+            f"📄 Atención 24/7: Paso listas de precios en PDF y respondo dudas de stock al instante (incluso audios de voz, de noche o feriados).\n"
+            f"🔔 Alerta de cierre: Apenas detecto un interesado o un pedido grande, te aviso directo a tu celular para que cierres la venta.\n\n"
+            f"¿Te parece que coordinemos una charla breve de 10 minutos con Javier, nuestro asesor, para mostrarte cómo funcionaría con los productos de tu empresa?\n\n"
+            f"Quedo a tu disposición.\n\n"
+            f"Sofía — Asistente Comercial con IA"
         )
 
         print(f"\n[{idx}/{len(pending_leads)}] 🏢 {lead.name} ({lead.city})")

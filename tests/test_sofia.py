@@ -175,11 +175,12 @@ def test_ai_agency_outreach_pitch_content(db, mock_whatsapp):
 
     # Verify pitch content
     sent_text = mock_send.call_args[1]["text"]
-    assert "100% autónoma como agente comercial con Inteligencia Artificial" in sent_text
-    assert "No soy un bot de respuestas automáticas" in sent_text
+    assert "100% autónoma" in sent_text
+    assert "No soy un bot común de respuestas automáticas" in sent_text
     assert "Google Maps" in sent_text
     assert "entre 12 y 15 por día" in sent_text
-    assert "alerta automática a tu celular personal" in sent_text
+    assert "alerta" in sent_text.lower()
+    assert "Javier" in sent_text
     assert "Sofía" in sent_text
 
     lead = db.query(Prospect).filter(Prospect.phone == "5493434991122").first()
