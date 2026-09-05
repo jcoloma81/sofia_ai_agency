@@ -1,84 +1,120 @@
-import math
+import os
 from PIL import Image, ImageDraw, ImageFont
 
-def create_sofia_logo(output_path="assets/sofia_agency_logo.jpg", size=1024):
-    # Create image with deep navy background
-    img = Image.new("RGB", (size, size), "#070b14")
+def create_detailed_sofia_logo(output_path="assets/sofia_agency_logo.jpg", size=1024):
+    # Base background: ultra deep dark slate
+    img = Image.new("RGB", (size, size), "#090d16")
     draw = ImageDraw.Draw(img)
 
     cx, cy = size // 2, size // 2
 
-    # Draw subtle background glow
-    for r in range(450, 200, -10):
-        alpha = int(25 * (1 - (r - 200) / 250))
-        glow_color = (16, 35, 70)
-        draw.ellipse([cx - r, cy - r - 40, cx + r, cy + r - 40], fill=glow_color)
-
-    # Outer decorative tech ring
-    ring_radius = 420
-    draw.arc([cx - ring_radius, cy - ring_radius - 40, cx + ring_radius, cy + ring_radius - 40],
-             start=0, end=360, fill="#1e293b", width=4)
-
-    # Cyan glowing tech accents along the ring
-    draw.arc([cx - ring_radius, cy - ring_radius - 40, cx + ring_radius, cy + ring_radius - 40],
-             start=30, end=110, fill="#06b6d4", width=8)
-    draw.arc([cx - ring_radius, cy - ring_radius - 40, cx + ring_radius, cy + ring_radius - 40],
-             start=210, end=290, fill="#3b82f6", width=8)
-
-    # Inner circular boundary
-    inner_r = 380
-    draw.arc([cx - inner_r, cy - inner_r - 40, cx + inner_r, cy + inner_r - 40],
-             start=0, end=360, fill="#0f172a", width=6)
-
-    # Draw stylized geometric AI "S" Monogram in the center
-    # Top arc of S
-    draw.arc([cx - 130, cy - 260, cx + 90, cy - 80], start=140, end=360, fill="#38bdf8", width=36)
-    # Bottom arc of S
-    draw.arc([cx - 90, cy - 140, cx + 130, cy + 40], start=0, end=220, fill="#06b6d4", width=36)
-    # Diagonal connecting bar
-    draw.line([cx + 60, cy - 110, cx - 60, cy - 20], fill="#38bdf8", width=36)
-
-    # Glowing connection nodes (AI neurons)
-    nodes = [
-        (cx - 120, cy - 150),
-        (cx + 80, cy - 240),
-        (cx - 50, cy - 65),
-        (cx + 50, cy - 65),
-        (cx - 80, cy + 20),
-        (cx + 120, cy - 70)
-    ]
-    for nx, ny in nodes:
-        draw.ellipse([nx - 14, ny - 14, nx + 14, ny + 14], fill="#67e8f9", outline="#0284c7", width=3)
-        draw.ellipse([nx - 6, ny - 6, nx + 6, ny + 6], fill="#ffffff")
-
-    # Load system font or default
+    # Load fonts
     try:
-        font_main = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 96)
-        font_sub = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 40)
+        font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 94)
+        font_agency = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
+        font_feature = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)
+        font_sub = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 30)
     except Exception:
-        font_main = ImageFont.load_default()
+        font_title = ImageFont.load_default()
+        font_agency = ImageFont.load_default()
+        font_feature = ImageFont.load_default()
         font_sub = ImageFont.load_default()
 
-    # Brand Title: SOFÍA
-    text_main = "SOFÍA"
-    bbox_main = draw.textbbox((0, 0), text_main, font=font_main)
-    w_main = bbox_main[2] - bbox_main[0]
-    draw.text((cx - w_main // 2, cy + 130), text_main, fill="#ffffff", font=font_main)
+    # Outer subtle ring with WhatsApp green & cyan gradient accents
+    outer_r = 485
+    draw.arc([cx - outer_r, cy - outer_r, cx + outer_r, cy + outer_r], start=0, end=360, fill="#1e293b", width=4)
+    # WhatsApp green arc on top
+    draw.arc([cx - outer_r, cy - outer_r, cx + outer_r, cy + outer_r], start=220, end=320, fill="#25d366", width=8)
+    # Electric cyan arc on bottom
+    draw.arc([cx - outer_r, cy - outer_r, cx + outer_r, cy + outer_r], start=40, end=140, fill="#06b6d4", width=8)
 
-    # Brand Subtitle: AGENCIA DE IA
-    text_sub = "AGENCIA DE IA"
-    bbox_sub = draw.textbbox((0, 0), text_sub, font=font_sub)
-    w_sub = bbox_sub[2] - bbox_sub[0]
-    draw.text((cx - w_sub // 2, cy + 245), text_sub, fill="#38bdf8", font=font_sub)
+    # 1. ICON: Modern WhatsApp Chat Bubble with AI Neural Core
+    bubble_cy = cy - 240
+    bubble_w, bubble_h = 130, 105
+    # Chat bubble pill
+    draw.rounded_rectangle(
+        [cx - bubble_w, bubble_cy - bubble_h, cx + bubble_w, bubble_cy + bubble_h - 20],
+        radius=35,
+        fill="#128c7e",
+        outline="#25d366",
+        width=5
+    )
+    # Bubble tail (pointing bottom left)
+    tail = [
+        (cx - 50, bubble_cy + bubble_h - 22),
+        (cx - 95, bubble_cy + bubble_h + 20),
+        (cx - 20, bubble_cy + bubble_h - 22)
+    ]
+    draw.polygon(tail, fill="#128c7e", outline="#25d366")
+    # Clean inner tail fill to blend
+    draw.line([(cx - 48, bubble_cy + bubble_h - 22), (cx - 22, bubble_cy + bubble_h - 22)], fill="#128c7e", width=7)
 
-    # Thin sleek badge line below
-    draw.line([cx - 160, cy + 305, cx + 160, cy + 305], fill="#1e293b", width=3)
-    draw.line([cx - 70, cy + 305, cx + 70, cy + 305], fill="#06b6d4", width=5)
+    # AI Sparkles / Neural Wave inside the bubble
+    draw.arc([cx - 55, bubble_cy - 40, cx + 55, bubble_cy + 25], start=20, end=160, fill="#ffffff", width=8)
+    # Sparkle star center
+    star_x, star_y = cx, bubble_cy - 10
+    draw.ellipse([star_x - 12, star_y - 12, star_x + 12, star_y + 12], fill="#ffffff")
+    draw.line([star_x - 22, star_y, star_x + 22, star_y], fill="#ffffff", width=4)
+    draw.line([star_x, star_y - 22, star_x, star_y + 22], fill="#ffffff", width=4)
+    # Small satellite sparks
+    draw.ellipse([star_x - 38, star_y - 25, star_x - 30, star_y - 17], fill="#67e8f9")
+    draw.ellipse([star_x + 30, star_y + 10, star_x + 38, star_y + 18], fill="#67e8f9")
 
-    # Save outputs
+    # 2. BRAND TITLE: SOFÍA
+    text_sofia = "SOFÍA"
+    bbox_s = draw.textbbox((0, 0), text_sofia, font=font_title)
+    w_s = bbox_s[2] - bbox_s[0]
+    draw.text((cx - w_s // 2, cy - 90), text_sofia, fill="#ffffff", font=font_title)
+
+    # 3. SUBTITLE: AGENCIA DE IA
+    text_agency = "AGENCIA DE IA"
+    bbox_ag = draw.textbbox((0, 0), text_agency, font=font_agency)
+    w_ag = bbox_ag[2] - bbox_ag[0]
+    draw.text((cx - w_ag // 2, cy + 30), text_agency, fill="#38bdf8", font=font_agency)
+
+    # Sleek dividing separator with a green dot
+    draw.line([cx - 180, cy + 90, cx - 25, cy + 90], fill="#334155", width=2)
+    draw.ellipse([cx - 8, cy + 82, cx + 8, cy + 98], fill="#25d366")
+    draw.line([cx + 25, cy + 90, cx + 180, cy + 90], fill="#334155", width=2)
+
+    # 4. KEY BADGE: VENTAS Y ATENCIÓN 24/7
+    # Badge background box
+    badge_w, badge_h = 320, 36
+    badge_y = cy + 145
+    draw.rounded_rectangle(
+        [cx - badge_w, badge_y - badge_h, cx + badge_w, badge_y + badge_h],
+        radius=25,
+        fill="#064e3b",
+        outline="#10b981",
+        width=3
+    )
+    # Live dot
+    draw.ellipse([cx - badge_w + 35, badge_y - 10, cx - badge_w + 55, badge_y + 10], fill="#22c55e")
+    text_va = "VENTAS Y ATENCIÓN 24/7"
+    bbox_va = draw.textbbox((0, 0), text_va, font=font_feature)
+    w_va = bbox_va[2] - bbox_va[0]
+    draw.text((cx - w_va // 2 + 15, badge_y - 20), text_va, fill="#ffffff", font=font_feature)
+
+    # 5. BENEFIT LINE: AUTOMATIZACIÓN PARA EMPRESAS
+    text_auto = "Automatización para Empresas"
+    bbox_au = draw.textbbox((0, 0), text_auto, font=font_sub)
+    w_au = bbox_au[2] - bbox_au[0]
+    draw.text((cx - w_au // 2, cy + 245), text_auto, fill="#94a3b8", font=font_sub)
+
+    # 6. LOCATION ANCHOR: Paraná, Entre Ríos • Argentina
+    text_loc = "Paraná, Entre Ríos • Argentina"
+    try:
+        font_loc = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 25)
+    except Exception:
+        font_loc = font_sub
+    bbox_loc = draw.textbbox((0, 0), text_loc, font=font_loc)
+    w_loc = bbox_loc[2] - bbox_loc[0]
+    draw.text((cx - w_loc // 2, cy + 320), text_loc, fill="#38bdf8", font=font_loc)
+
+    # Save PNG and JPG
     img.save(output_path, "JPEG", quality=95)
     img.save(output_path.replace(".jpg", ".png"), "PNG")
-    print(f"✅ Logo created successfully at {output_path}")
+    print(f"✅ Detailed logo created at {output_path}")
 
 if __name__ == "__main__":
-    create_sofia_logo()
+    create_detailed_sofia_logo()
