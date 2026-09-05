@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Control PRO — Prospectador de Alojamientos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --card-bg: rgba(22, 30, 49, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.25);
+            --green: #22c55e;
+            --green-glow: rgba(34, 197, 94, 0.25);
+            --blue: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg) 75%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .brand h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .price-badge {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .search-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .chips-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip:hover {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 13px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-search:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+        }
+
+        .btn-search:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-box {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            transition: width 0.3s;
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .table-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .table-header {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.6);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .table-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .export-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-export {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-export:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.9);
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .badge-type {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .btn-action-wa {
+            background: #16a34a;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+            transition: transform 0.1s;
+        }
+
+        .btn-action-wa:hover {
+            transform: scale(1.03);
+            background: #15803d;
+        }
+
+        .btn-action-mail {
+            background: #2563eb;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+            transition: transform 0.1s;
+        }
+
+        .btn-action-mail:hover {
+            transform: scale(1.03);
+            background: #1d4ed8;
+        }
+
+        .empty-state {
+            padding: 60px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <h1>Air Control PRO — Buscador de Alojamientos</h1>
+                <p>Herramienta local de prospectación comercial para Hoteles, Hostels, Cabañas y Temporarios</p>
+            </div>
+            <div class="price-badge">
+                💰 Hardware al Costo de Mercado Libre
+            </div>
+        </header>
+
+        <div class="search-card">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Ciudad a Prospectar</label>
+                    <input type="text" id="ciudadInput" value="Paraná" placeholder="Ej: Paraná, Santa Fe, Rosario">
+                    <div class="chips-container">
+                        <span class="chip" onclick="setCiudad('Paraná')">Paraná</span>
+                        <span class="chip" onclick="setCiudad('Santa Fe')">Santa Fe</span>
+                        <span class="chip" onclick="setCiudad('Rosario')">Rosario</span>
+                        <span class="chip" onclick="setCiudad('Concordia')">Concordia</span>
+                        <span class="chip" onclick="setCiudad('Gualeguaychú')">Gualeguaychú</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Establecimiento</label>
+                    <select id="rubroSelect">
+                        <option value="Hoteles">Hoteles y Hospedajes</option>
+                        <option value="Cabañas">Cabañas y Bungalows</option>
+                        <option value="Alquileres Temporarios">Alquileres Temporarios / Aparts</option>
+                        <option value="Hostels">Hostels</option>
+                    </select>
+                </div>
+
+                <button class="btn-search" id="btnSearch" onclick="startProspecting()">
+                    🔍 Iniciar Búsqueda
+                </button>
+            </div>
+        </div>
+
+        <div class="progress-box" id="progressBox">
+            <div class="status-text" id="statusText">Iniciando búsqueda de prospectos...</div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <h2>Prospectos Encontrados (<span id="countSpan">0</span>)</h2>
+                <div class="export-btns">
+                    <button class="btn-export" onclick="exportCSV()">📥 Exportar a Excel (CSV)</button>
+                    <button class="btn-export" onclick="exportJSON()">📄 Exportar a JSON</button>
+                </div>
+            </div>
+
+            <table id="leadsTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Establecimiento</th>
+                        <th>Tipo</th>
+                        <th>WhatsApp / Teléfono</th>
+                        <th>Acción WhatsApp</th>
+                        <th>Email(s)</th>
+                        <th>Acción Email</th>
+                        <th>Sitio Web</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            Ingresá la ciudad y presioná <strong>"Iniciar Búsqueda"</strong> para encontrar prospectos con teléfono y mail.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentLeads = [];
+        let templates = [];
+
+        async function loadTemplates() {
+            try {
+                let res = await fetch('/api/templates');
+                templates = await res.json();
+            } catch(e) { console.error("Error cargando templates", e); }
+        }
+        loadTemplates();
+
+        function setCiudad(nombre) {
+            document.getElementById('ciudadInput').value = nombre;
+        }
+
+        function getPitchWhatsApp(lead) {
+            let tpl = templates.find(t => t.canal === 'WhatsApp');
+            let text = tpl ? tpl.cuerpo : `Hola ${lead.nombre}, te escribo por Air Control PRO...`;
+            return text.replace(/{{nombre}}/g, lead.nombre).replace(/{{ciudad}}/g, lead.ciudad).replace(/{{tipo}}/g, lead.tipo);
+        }
+
+        function getPitchMailSubject(lead) {
+            let tpl = templates.find(t => t.canal === 'Email');
+            let text = tpl ? tpl.asunto : `Air Control PRO para ${lead.nombre}`;
+            return text.replace(/{{nombre}}/g, lead.nombre).replace(/{{ciudad}}/g, lead.ciudad).replace(/{{tipo}}/g, lead.tipo);
+        }
+
+        function getPitchMailBody(lead) {
+            let tpl = templates.find(t => t.canal === 'Email');
+            let text = tpl ? tpl.cuerpo : `Estimados de ${lead.nombre}...`;
+            return text.replace(/{{nombre}}/g, lead.nombre).replace(/{{ciudad}}/g, lead.ciudad).replace(/{{tipo}}/g, lead.tipo);
+        }
+
+        function startProspecting() {
+            let ciudad = document.getElementById('ciudadInput').value.trim();
+            let rubro = document.getElementById('rubroSelect').value;
+
+            if(!ciudad) return alert("Por favor ingresá una ciudad.");
+
+            currentLeads = [];
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('countSpan').innerText = '0';
+
+            let btn = document.getElementById('btnSearch');
+            btn.disabled = true;
+
+            let progressBox = document.getElementById('progressBox');
+            progressBox.style.display = 'block';
+            
+            let statusText = document.getElementById('statusText');
+            let progressBar = document.getElementById('progressBar');
+            progressBar.style.width = '5%';
+
+            let evtSource = new EventSource(`/api/prospect/stream?rubro=${encodeURIComponent(rubro)}&ciudad=${encodeURIComponent(ciudad)}`);
+
+            evtSource.onmessage = function(e) {
+                let data = JSON.parse(e.data);
+
+                if(data.type === 'status') {
+                    statusText.innerText = data.message;
+                } else if(data.type === 'progress') {
+                    statusText.innerText = `[${data.current}/${data.total}] Procesando: ${data.name}...`;
+                    let pct = Math.round((data.current / data.total) * 100);
+                    progressBar.style.width = pct + '%';
+                } else if(data.type === 'lead') {
+                    currentLeads.push(data.lead);
+                    appendLeadRow(data.lead, currentLeads.length);
+                    document.getElementById('countSpan').innerText = currentLeads.length;
+                } else if(data.type === 'complete') {
+                    statusText.innerText = `✅ Búsqueda finalizada! Total prospectos: ${data.total}`;
+                    progressBar.style.width = '100%';
+                    btn.disabled = false;
+                    evtSource.close();
+                }
+            };
+
+            evtSource.onerror = function(err) {
+                console.error("SSE Error:", err);
+                statusText.innerText = "⚠️ Finalizado o interrumpido.";
+                btn.disabled = false;
+                evtSource.close();
+            };
+        }
+
+        function appendLeadRow(lead, idx) {
+            let tbody = document.getElementById('tableBody');
+            let tr = document.createElement('tr');
+
+            let phonesStr = lead.telefonos.length ? lead.telefonos.join(' / ') : (lead.whatsapp_numero || 'Sin teléfono');
+            let emailsStr = lead.emails.length ? lead.emails.join('<br>') : '-';
+            let webLink = lead.website ? `<a href="${lead.website}" target="_blank" style="color:#38bdf8;">Visitar Web</a>` : '-';
+
+            let waBtn = '-';
+            if(lead.whatsapp_numero) {
+                let pitchText = encodeURIComponent(getPitchWhatsApp(lead));
+                let waUrl = `https://wa.me/${lead.whatsapp_numero}?text=${pitchText}`;
+                waBtn = `<a href="${waUrl}" target="_blank" class="btn-action-wa">💬 WhatsApp</a>`;
+            }
+
+            let mailBtn = '-';
+            if(lead.emails.length) {
+                let primaryEmail = lead.emails[0];
+                let subject = encodeURIComponent(getPitchMailSubject(lead));
+                let body = encodeURIComponent(getPitchMailBody(lead));
+                let mailUrl = `mailto:${primaryEmail}?subject=${subject}&body=${body}`;
+                mailBtn = `<a href="${mailUrl}" target="_blank" class="btn-action-mail">✉️ Enviar Mail</a>`;
+            }
+
+            tr.innerHTML = `
+                <td>${idx}</td>
+                <td><strong>${lead.nombre}</strong><br><small style="color:#64748b;">${lead.direccion}</small></td>
+                <td><span class="badge-type">${lead.tipo}</span></td>
+                <td>${phonesStr}</td>
+                <td>${waBtn}</td>
+                <td>${emailsStr}</td>
+                <td>${mailBtn}</td>
+                <td>${webLink}</td>
+            `;
+
+            tbody.appendChild(tr);
+        }
+
+        function exportCSV() {
+            if(!currentLeads.length) return alert("No hay prospectos para exportar.");
+            let csvContent = "data:text/csv;charset=utf-8,Nombre,Tipo,Ciudad,Teléfonos,WhatsApp,Emails,Dirección,Web\n";
+            currentLeads.forEach(l => {
+                let row = `"${l.nombre}","${l.tipo}","${l.ciudad}","${l.telefonos.join('|')}","${l.whatsapp_numero}","${l.emails.join('|')}","${l.direccion}","${l.website}"`;
+                csvContent += row + "\n";
+            });
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `prospectos_${document.getElementById('ciudadInput').value}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportJSON() {
+            if(!currentLeads.length) return alert("No hay prospectos para exportar.");
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentLeads, null, 2));
+            let link = document.createElement("a");
+            link.setAttribute("href", dataStr);
+            link.setAttribute("download", `prospectos_${document.getElementById('ciudadInput').value}.json`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
