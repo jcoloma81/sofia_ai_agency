@@ -2,6 +2,7 @@ import re
 import json
 import base64
 import logging
+import asyncio
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import httpx
@@ -253,7 +254,7 @@ async def receive_whatsapp_webhook(
 
         logger.info(f"🎯 MEETING CONFIRMED with {prospect.name}! Details: {prospect.meeting_details} [campaign={prospect.campaign}]")
         last_msg_display = f"🎙️ Nota de voz ({meeting_details})" if audio_b64 and meeting_details else message.strip()
-        await whatsapp.notify_javier_meeting_scheduled(
+        asyncio.create_task(whatsapp.notify_javier_meeting_scheduled(
             prospect_name=prospect.name,
             contact_name=prospect.contact_name,
             phone=prospect.phone,
@@ -261,7 +262,7 @@ async def receive_whatsapp_webhook(
             meeting_details=prospect.meeting_details,
             last_message=last_msg_display,
             campaign=prospect.campaign or "ai_agency"
-        )
+        ))
     else:
         if prospect.status == "pending":
             prospect.status = "in_conversation"
