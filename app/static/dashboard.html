@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofía AI Agency — Panel de Control SDR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            500: '#10b981',
+                            600: '#059669',
+                        },
+                        sofia: {
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 1); }
+    </style>
+</head>
+<body class="bg-[#090D16] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white"
+      x-data="dashboardApp()" x-init="initDashboard()">
+
+    <!-- TOP HEADER -->
+    <header class="border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="relative">
+                    <img src="/assets/sofia_agency_logo.png" alt="Sofía Logo" class="w-11 h-11 rounded-xl shadow-lg border border-slate-700 object-cover bg-slate-800">
+                    <span class="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-[#090D16]"></span>
+                    </span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg font-extrabold tracking-tight text-white">Sofía AI Agency</h1>
+                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">B2B SDR</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Automatización de Prospección & Ventas 24/7 • <span class="text-emerald-400 font-medium">WhatsApp Conectado</span></p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+                <button @click="openModal('newProspect')" 
+                        class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-lg shadow-emerald-950/40 transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Nuevo Prospecto</span>
+                </button>
+
+                <button @click="openModal('bulkImport')" 
+                        class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3.5 py-2 rounded-lg border border-slate-700 transition">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    <span>Carga Masiva</span>
+                </button>
+
+                <button @click="fetchData(true)" 
+                        :disabled="loading"
+                        class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition disabled:opacity-50"
+                        title="Actualizar datos">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" :class="{'animate-spin': loading}"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 space-y-6">
+
+        <!-- KPI METRIC CARDS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Meetings Card -->
+            <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/30 relative overflow-hidden shadow-lg">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Citas Confirmadas</span>
+                    <span class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                        <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-white" x-text="metrics.meetings_scheduled || 0">0</span>
+                    <span class="text-xs font-medium text-emerald-400" x-text="`${metrics.conversion_rate || 0}% conv.`">0%</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Leads listos para cierre o demo</p>
+            </div>
+
+            <!-- In Conversation Card -->
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-sky-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-sky-400 uppercase tracking-wider">En Conversación</span>
+                    <span class="p-2 rounded-lg bg-sky-500/10 text-sky-400">
+                        <i data-lucide="message-square-dot" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-white" x-text="metrics.in_conversation || 0">0</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Sofía interactuando en vivo</p>
+            </div>
+
+            <!-- Total Contacted -->
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Prospectos</span>
+                    <span class="p-2 rounded-lg bg-slate-800 text-slate-300">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-white" x-text="metrics.total_prospects || 0">0</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Empresas en la base de datos</p>
+            </div>
+
+            <!-- Human Takeover -->
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Control Manual</span>
+                    <span class="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+                        <i data-lucide="user-check" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-3xl font-extrabold text-white" x-text="metrics.human_takeover || 0">0</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Sofía pausada por intervención humana</p>
+            </div>
+        </div>
+
+        <!-- FILTER & SEARCH BAR -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+            <!-- Filter Pills -->
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar text-xs font-medium">
+                <button @click="setStatusFilter('all')" 
+                        :class="currentFilter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'"
+                        class="px-3 py-1.5 rounded-lg transition whitespace-nowrap">
+                    Todos (<span x-text="prospects.length">0</span>)
+                </button>
+                <button @click="setStatusFilter('meeting_scheduled')" 
+                        :class="currentFilter === 'meeting_scheduled' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'"
+                        class="px-3 py-1.5 rounded-lg transition whitespace-nowrap flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    Citas (<span x-text="metrics.meetings_scheduled || 0">0</span>)
+                </button>
+                <button @click="setStatusFilter('in_conversation')" 
+                        :class="currentFilter === 'in_conversation' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'"
+                        class="px-3 py-1.5 rounded-lg transition whitespace-nowrap flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                    En Chat (<span x-text="metrics.in_conversation || 0">0</span>)
+                </button>
+                <button @click="setStatusFilter('human_takeover')" 
+                        :class="currentFilter === 'human_takeover' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'"
+                        class="px-3 py-1.5 rounded-lg transition whitespace-nowrap flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    Manual (<span x-text="metrics.human_takeover || 0">0</span>)
+                </button>
+            </div>
+
+            <!-- Search Input -->
+            <div class="relative w-full sm:w-64">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" 
+                       x-model="searchQuery" 
+                       @input.debounce.300ms="fetchData()"
+                       placeholder="Buscar por empresa, tel o ciudad..." 
+                       class="w-full bg-slate-950/80 border border-slate-700/80 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
+            </div>
+        </div>
+
+        <!-- PROSPECTS LIST TABLE -->
+        <div class="bg-slate-900/90 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-[#0D1322] uppercase tracking-wider text-[11px] font-bold text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="px-4 py-3.5">Empresa / Lead</th>
+                            <th class="px-4 py-3.5">WhatsApp / Contacto</th>
+                            <th class="px-4 py-3.5">Estado</th>
+                            <th class="px-4 py-3.5">Último Mensaje</th>
+                            <th class="px-4 py-3.5">Cita / Horario</th>
+                            <th class="px-4 py-3.5 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/70 font-medium">
+                        <template x-if="prospects.length === 0">
+                            <tr>
+                                <td colspan="6" class="px-4 py-12 text-center text-slate-500">
+                                    <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                                    <p class="text-sm">No se encontraron prospectos con los filtros actuales.</p>
+                                    <button @click="openModal('newProspect')" class="mt-3 text-xs text-emerald-400 hover:underline">
+                                        + Agregar el primer prospecto
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+
+                        <template x-for="p in prospects" :key="p.id">
+                            <tr class="hover:bg-slate-800/50 transition duration-150">
+                                <!-- Empresa -->
+                                <td class="px-4 py-3.5">
+                                    <div class="font-bold text-white text-sm" x-text="p.name">Empresa</div>
+                                    <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                        <i data-lucide="map-pin" class="w-3 h-3 text-slate-500"></i>
+                                        <span x-text="p.city">Paraná</span>
+                                        <span class="text-slate-600">•</span>
+                                        <span class="text-slate-400" x-text="p.business_type">General</span>
+                                    </div>
+                                </td>
+
+                                <!-- Telefono / Contacto -->
+                                <td class="px-4 py-3.5">
+                                    <a :href="`https://wa.me/${p.phone}`" target="_blank" 
+                                       class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-mono font-semibold"
+                                       title="Abrir en WhatsApp">
+                                        <span x-text="`+${p.phone}`">+549...</span>
+                                        <i data-lucide="external-link" class="w-3 h-3"></i>
+                                    </a>
+                                    <div class="text-[11px] text-slate-400 mt-0.5" x-text="p.contact_name ? `Contacto: ${p.contact_name}` : 'Sin contacto especificado'"></div>
+                                </td>
+
+                                <!-- Estado Badge -->
+                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                    <span :class="getStatusBadgeClass(p.status)" 
+                                          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border">
+                                        <span class="w-1.5 h-1.5 rounded-full" :class="getStatusDotClass(p.status)"></span>
+                                        <span x-text="getStatusLabel(p.status)">Estado</span>
+                                    </span>
+                                </td>
+
+                                <!-- Ultimo Mensaje -->
+                                <td class="px-4 py-3.5 max-w-xs">
+                                    <div class="truncate text-slate-200" :title="p.last_message?.text">
+                                        <span class="text-slate-500 text-[11px] font-semibold" x-text="getSenderLabel(p.last_message?.sender)"></span>
+                                        <span x-text="p.last_message?.text ? `&ldquo;${p.last_message.text}&rdquo;` : 'Sin mensajes'"></span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                                        <span x-text="formatDate(p.updated_at)">hace un momento</span>
+                                        <span class="text-slate-600">•</span>
+                                        <span x-text="`${p.messages_count} msgs`">0 msgs</span>
+                                    </div>
+                                </td>
+
+                                <!-- Cita / Horario -->
+                                <td class="px-4 py-3.5">
+                                    <template x-if="p.meeting_details">
+                                        <div class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-semibold text-xs">
+                                            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                                            <span x-text="p.meeting_details">Mañana 11hs</span>
+                                        </div>
+                                    </template>
+                                    <template x-if="!p.meeting_details">
+                                        <span class="text-slate-600 text-[11px]">—</span>
+                                    </template>
+                                </td>
+
+                                <!-- Acciones -->
+                                <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <!-- Ver Chat -->
+                                        <button @click="openChat(p)" 
+                                                class="px-2.5 py-1.5 rounded-lg bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30 font-semibold text-xs inline-flex items-center gap-1 transition"
+                                                title="Ver historial y chatear">
+                                            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                                            <span>Chat</span>
+                                        </button>
+
+                                        <!-- Toggle Takeover -->
+                                        <button @click="toggleTakeover(p)"
+                                                :class="p.status === 'human_takeover' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30' : 'bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700'"
+                                                class="p-1.5 rounded-lg border transition"
+                                                :title="p.status === 'human_takeover' ? 'Reactivar a Sofía' : 'Pausar a Sofía (Modo Manual)'">
+                                            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                                        </button>
+
+                                        <!-- Borrar -->
+                                        <button @click="deleteProspect(p)" 
+                                                class="p-1.5 rounded-lg bg-slate-800/60 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-700/60 transition"
+                                                title="Eliminar de la lista">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- LIVE CHAT DRAWER / MODAL -->
+    <div x-cloak x-show="activeChat" class="fixed inset-0 z-50 overflow-hidden flex justify-end bg-black/60 backdrop-blur-sm transition">
+        <div @click.away="activeChat = null" 
+             class="w-full max-w-lg bg-[#0F1422] border-l border-slate-800 h-full flex flex-col shadow-2xl">
+            
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-slate-800 bg-[#0B0F19] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-sm"
+                         x-text="activeChat?.name ? activeChat.name.substring(0, 2).toUpperCase() : 'PR'">
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-white text-sm truncate max-w-[200px]" x-text="activeChat?.name">Empresa</h3>
+                            <span :class="getStatusBadgeClass(activeChat?.status)" class="text-[9px] px-2 py-0.5 rounded-full uppercase font-bold border" x-text="getStatusLabel(activeChat?.status)"></span>
+                        </div>
+                        <a :href="`https://wa.me/${activeChat?.phone}`" target="_blank" class="text-xs text-emerald-400 hover:underline font-mono" x-text="`+${activeChat?.phone}`"></a>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button @click="toggleTakeover(activeChat)" 
+                            :class="activeChat?.status === 'human_takeover' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                            class="text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-700 transition"
+                            x-text="activeChat?.status === 'human_takeover' ? 'Manual (Sofía OFF)' : 'Activar Manual'">
+                    </button>
+                    <button @click="activeChat = null" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages Body -->
+            <div id="chatMessagesBox" class="flex-1 p-4 overflow-y-auto space-y-3 custom-scrollbar bg-[#090D16]">
+                <template x-if="!activeChat?.conversation_history || activeChat.conversation_history.length === 0">
+                    <div class="text-center py-16 text-slate-500 text-xs">
+                        <i data-lucide="message-circle" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
+                        No hay mensajes registrados aún en este chat.
+                    </div>
+                </template>
+
+                <template x-for="(msg, idx) in activeChat?.conversation_history" :key="idx">
+                    <div class="flex flex-col" :class="msg.sender === 'prospect' ? 'items-start' : 'items-end'">
+                        <div class="max-w-[85%] rounded-2xl p-3 shadow-md text-xs"
+                             :class="{
+                                'bg-[#1E2538] text-slate-100 rounded-bl-none border border-slate-700/60': msg.sender === 'prospect',
+                                'bg-violet-950/80 text-violet-100 rounded-br-none border border-violet-700/50': msg.sender === 'ai',
+                                'bg-sky-950/80 text-sky-100 rounded-br-none border border-sky-700/50': msg.sender === 'javier_human'
+                             }">
+                            <div class="flex items-center justify-between gap-3 text-[10px] font-bold mb-1 opacity-75">
+                                <span x-text="msg.sender === 'prospect' ? (activeChat.contact_name || activeChat.name) : (msg.sender === 'ai' ? '🤖 Sofía (IA)' : '👤 Javier (Tú)')"></span>
+                                <span x-text="formatTime(msg.timestamp)"></span>
+                            </div>
+                            <div class="whitespace-pre-wrap leading-relaxed" x-text="msg.text"></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Chat Input (Javier sends manual message) -->
+            <div class="p-3 border-t border-slate-800 bg-[#0B0F19]">
+                <div class="text-[10px] text-slate-400 mb-1.5 flex items-center justify-between">
+                    <span>Escribí como <strong>Javier</strong> (pondrá a Sofía en pausa automáticamente):</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" 
+                           x-model="manualMsgText" 
+                           @keydown.enter.prevent="sendManualMessage()"
+                           placeholder="Escribí una respuesta a este WhatsApp..." 
+                           class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                    <button @click="sendManualMessage()" 
+                            :disabled="!manualMsgText.trim() || sendingMsg"
+                            class="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+                        <span x-show="!sendingMsg">Enviar</span>
+                        <i data-lucide="send" class="w-3.5 h-3.5" x-show="!sendingMsg"></i>
+                        <span x-show="sendingMsg" class="animate-spin">⌛</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- NEW PROSPECT MODAL -->
+    <div x-cloak x-show="modals.newProspect" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div @click.away="modals.newProspect = false" class="w-full max-w-md bg-[#0F1422] rounded-xl border border-slate-800 p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i>
+                    <span>Nuevo Prospecto B2B</span>
+                </h3>
+                <button @click="modals.newProspect = false" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form @submit.prevent="submitNewProspect" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Nombre de la Empresa *</label>
+                    <input type="text" x-model="newLead.name" required placeholder="Ej: Distribuidora Central" 
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">WhatsApp (con código de país) *</label>
+                    <input type="text" x-model="newLead.phone" required placeholder="Ej: 5493435123456" 
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono">
+                    <p class="text-[10px] text-slate-500 mt-0.5">Formato argentino recomendado: 549 + característica + número sin 15.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Contacto (Opcional)</label>
+                        <input type="text" x-model="newLead.contact_name" placeholder="Ej: Martín" 
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Ciudad</label>
+                        <input type="text" x-model="newLead.city" placeholder="Ej: Paraná" 
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Rubro / Tipo de Negocio</label>
+                    <input type="text" x-model="newLead.business_type" placeholder="Ej: Distribuidora mayorista, fábrica, ferretería" 
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+                    <button type="button" @click="modals.newProspect = false" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">
+                        Cancelar
+                    </button>
+                    <button type="submit" :disabled="saving" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition">
+                        <span x-show="!saving">Guardar y Disparar Pitch</span>
+                        <span x-show="saving" class="animate-spin">⌛</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- BULK IMPORT MODAL -->
+    <div x-cloak x-show="modals.bulkImport" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div @click.away="modals.bulkImport = false" class="w-full max-w-lg bg-[#0F1422] rounded-xl border border-slate-800 p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-emerald-400"></i>
+                    <span>Carga Masiva de Leads</span>
+                </h3>
+                <button @click="modals.bulkImport = false" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3.5 text-xs">
+                <p class="text-slate-300">Pegá una lista de prospectos separada por comas (una fila por lead):</p>
+                <div class="text-[11px] text-slate-500 font-mono bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    Formato: Teléfono, Empresa, Contacto, Ciudad, Rubro<br>
+                    Ejemplo:<br>
+                    5493434112233, Distribuidora Entre Ríos, Carlos, Paraná, Alimentos<br>
+                    5493435889900, Ferretería San Martín, Juan, Crespo, Ferretería
+                </div>
+
+                <textarea x-model="bulkText" rows="6" placeholder="Pegá acá tus filas..."
+                          class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white font-mono focus:outline-none focus:border-emerald-500"></textarea>
+
+                <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+                    <button type="button" @click="modals.bulkImport = false" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">
+                        Cancelar
+                    </button>
+                    <button @click="submitBulkImport" :disabled="!bulkText.trim() || saving" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition">
+                        <span x-show="!saving">Procesar e Importar</span>
+                        <span x-show="saving" class="animate-spin">⌛</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION -->
+    <script>
+        function dashboardApp() {
+            return {
+                prospects: [],
+                metrics: {},
+                loading: false,
+                saving: false,
+                sendingMsg: false,
+                currentFilter: 'all',
+                searchQuery: '',
+                activeChat: null,
+                manualMsgText: '',
+                modals: {
+                    newProspect: false,
+                    bulkImport: false
+                },
+                newLead: {
+                    name: '',
+                    phone: '',
+                    contact_name: '',
+                    city: 'Paraná',
+                    business_type: ''
+                },
+                bulkText: '',
+
+                initDashboard() {
+                    this.fetchData();
+                    // Auto-refresh every 8 seconds
+                    setInterval(() => {
+                        this.fetchData(false);
+                    }, 8000);
+
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+                },
+
+                async fetchData(showSpinner = true) {
+                    if (showSpinner) this.loading = true;
+                    try {
+                        let filterParam = this.currentFilter !== 'all' ? `?status_filter=${this.currentFilter}` : '';
+                        if (this.searchQuery) {
+                            filterParam += (filterParam ? '&' : '?') + `search=${encodeURIComponent(this.searchQuery)}`;
+                        }
+
+                        const [prospectsRes, metricsRes] = await Promise.all([
+                            fetch(`/api/v1/dashboard/prospects${filterParam}`),
+                            fetch('/api/v1/dashboard/metrics')
+                        ]);
+
+                        if (prospectsRes.ok) {
+                            this.prospects = await prospectsRes.json();
+                            // If activeChat is open, sync its messages
+                            if (this.activeChat) {
+                                const updated = this.prospects.find(p => p.id === this.activeChat.id);
+                                if (updated) {
+                                    this.activeChat = updated;
+                                }
+                            }
+                        }
+                        if (metricsRes.ok) {
+                            this.metrics = await metricsRes.json();
+                        }
+                    } catch (err) {
+                        console.error("Error fetching dashboard data:", err);
+                    } finally {
+                        if (showSpinner) this.loading = false;
+                        this.$nextTick(() => {
+                            lucide.createIcons();
+                        });
+                    }
+                },
+
+                setStatusFilter(filter) {
+                    this.currentFilter = filter;
+                    this.fetchData(true);
+                },
+
+                openModal(name) {
+                    this.modals[name] = true;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                openChat(prospect) {
+                    this.activeChat = prospect;
+                    this.manualMsgText = '';
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                        const box = document.getElementById('chatMessagesBox');
+                        if (box) box.scrollTop = box.scrollHeight;
+                    });
+                },
+
+                async toggleTakeover(prospect) {
+                    if (!prospect) return;
+                    try {
+                        const res = await fetch(`/api/v1/dashboard/prospects/${prospect.id}/toggle-takeover`, {
+                            method: 'POST'
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            prospect.status = data.new_status;
+                            await this.fetchData(false);
+                        }
+                    } catch (e) {
+                        alert("Error al alternar modo manual: " + e);
+                    }
+                },
+
+                async sendManualMessage() {
+                    if (!this.activeChat || !this.manualMsgText.trim()) return;
+                    this.sendingMsg = true;
+                    try {
+                        const res = await fetch(`/api/v1/dashboard/prospects/${this.activeChat.id}/send-message`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: this.manualMsgText.trim() })
+                        });
+                        if (res.ok) {
+                            this.manualMsgText = '';
+                            await this.fetchData(false);
+                            this.$nextTick(() => {
+                                const box = document.getElementById('chatMessagesBox');
+                                if (box) box.scrollTop = box.scrollHeight;
+                            });
+                        } else {
+                            alert("Error al enviar mensaje por WhatsApp.");
+                        }
+                    } catch (err) {
+                        alert("Error de conexión: " + err);
+                    } finally {
+                        this.sendingMsg = false;
+                    }
+                },
+
+                async submitNewProspect() {
+                    this.saving = true;
+                    try {
+                        const res = await fetch('/api/v1/outreach/start-outreach', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.newLead)
+                        });
+                        if (res.ok) {
+                            this.modals.newProspect = false;
+                            this.newLead = { name: '', phone: '', contact_name: '', city: 'Paraná', business_type: '' };
+                            await this.fetchData(true);
+                            alert("¡Prospecto cargado y pitch de Sofía enviado!");
+                        } else {
+                            const err = await res.json();
+                            alert("Error: " + (err.detail || "No se pudo iniciar prospección"));
+                        }
+                    } catch (e) {
+                        alert("Error de red: " + e);
+                    } finally {
+                        this.saving = false;
+                    }
+                },
+
+                async submitBulkImport() {
+                    const lines = this.bulkText.trim().split('\n');
+                    const leads = [];
+                    for (const line of lines) {
+                        const parts = line.split(',').map(s => s.trim());
+                        if (parts[0]) {
+                            leads.push({
+                                phone: parts[0],
+                                name: parts[1] || `Lead ${parts[0]}`,
+                                contact_name: parts[2] || null,
+                                city: parts[3] || 'Paraná',
+                                business_type: parts[4] || 'General'
+                            });
+                        }
+                    }
+
+                    if (leads.length === 0) {
+                        alert("No se detectaron filas válidas.");
+                        return;
+                    }
+
+                    this.saving = true;
+                    try {
+                        const res = await fetch('/api/v1/dashboard/prospects/bulk-import', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ leads: leads, start_immediately: false })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.modals.bulkImport = false;
+                            this.bulkText = '';
+                            await this.fetchData(true);
+                            alert(`¡Se importaron ${data.created} nuevos prospectos (${data.updated} actualizados)!`);
+                        }
+                    } catch (e) {
+                        alert("Error: " + e);
+                    } finally {
+                        this.saving = false;
+                    }
+                },
+
+                async deleteProspect(prospect) {
+                    if (!confirm(`¿Eliminar a ${prospect.name} (${prospect.phone})?`)) return;
+                    try {
+                        const res = await fetch(`/api/v1/dashboard/prospects/${prospect.id}`, {
+                            method: 'DELETE'
+                        });
+                        if (res.ok) {
+                            await this.fetchData(false);
+                        }
+                    } catch (e) {
+                        alert("Error al eliminar: " + e);
+                    }
+                },
+
+                getStatusLabel(status) {
+                    const map = {
+                        'meeting_scheduled': 'Cita Confirmada 🎯',
+                        'in_conversation': 'En Conversación 💬',
+                        'contacted': 'Contactado 📨',
+                        'human_takeover': 'Atención Manual 👤',
+                        'pending': 'Pendiente ⏳',
+                        'not_interested': 'No Interesado'
+                    };
+                    return map[status] || status || 'Pendiente';
+                },
+
+                getStatusBadgeClass(status) {
+                    const map = {
+                        'meeting_scheduled': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+                        'in_conversation': 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+                        'contacted': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+                        'human_takeover': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                        'pending': 'bg-slate-800 text-slate-400 border-slate-700'
+                    };
+                    return map[status] || 'bg-slate-800 text-slate-400 border-slate-700';
+                },
+
+                getStatusDotClass(status) {
+                    const map = {
+                        'meeting_scheduled': 'bg-emerald-400 animate-pulse',
+                        'in_conversation': 'bg-sky-400 animate-pulse',
+                        'contacted': 'bg-indigo-400',
+                        'human_takeover': 'bg-amber-400',
+                        'pending': 'bg-slate-500'
+                    };
+                    return map[status] || 'bg-slate-500';
+                },
+
+                getSenderLabel(sender) {
+                    if (!sender) return '';
+                    if (sender === 'ai') return '🤖 Sofía: ';
+                    if (sender === 'javier_human') return '👤 Javier: ';
+                    return '💬 Cliente: ';
+                },
+
+                formatDate(isoStr) {
+                    if (!isoStr) return '';
+                    try {
+                        const d = new Date(isoStr);
+                        return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    } catch {
+                        return isoStr;
+                    }
+                },
+
+                formatTime(isoStr) {
+                    if (!isoStr) return '';
+                    try {
+                        const d = new Date(isoStr);
+                        return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                    } catch {
+                        return '';
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
