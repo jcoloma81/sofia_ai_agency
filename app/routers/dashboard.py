@@ -61,6 +61,7 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
         "agent_phone": settings.WHATSAPP_AGENT_PHONE or "+54 9 343 572-0312",
         "alert_phone": settings.WHATSAPP_ALERT_PHONE or "+54 9 343 453-6447",
         "ai_engine": "Gemini Flash Lite Multimodal",
+        "database_backend": "postgresql" if "postgresql" in str(settings.DATABASE_URL) else "sqlite",
         "server_time": datetime.now(timezone.utc).isoformat()
     }
 

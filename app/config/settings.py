@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -39,8 +40,8 @@ class Settings(BaseSettings):
         1. Replaces 'postgres://' with 'postgresql://'.
         2. Removes 'pgbouncer' query parameter if present.
         """
-        if not v:
-            return "sqlite:///./sofia.db"
+        if not v or (("RENDER" in os.environ or "RENDER_SERVICE_ID" in os.environ) and "sqlite" in v):
+            return "postgresql://javi_admin:FhfRttqRX1ZMoz7yuhcEa6BmsKx7bi2Z@dpg-d75jlr4r85hc73cod45g-a.oregon-postgres.render.com/aircontrol_n6zf"
 
         if v.startswith("postgres://"):
             v = v.replace("postgres://", "postgresql://", 1)
