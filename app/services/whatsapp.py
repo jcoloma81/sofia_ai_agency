@@ -134,7 +134,7 @@ async def notify_javier_meeting_scheduled(
             f"📍 *Localidad:* {city_str}\n"
             f"⏰ *Horario pactado:* {meeting_details}\n"
             f"💬 *Último mensaje del cliente:* \"{last_message}\"\n\n"
-            f"👉 *Acción:* Llamalo en ese horario para hacerle la demo de Sofía ($250.000 setup + $100.000/mes de abono).\n\n"
+            f"👉 *Acción:* Llamalo en ese horario para hacerle la demo de Sofía (Cupo especial: Setup $0 bonificado + $70.000-$100.000/mes de abono).\n\n"
             f"📅 *Agendar en 1 clic en Google Calendar:*\n{cal_link}"
         )
     else:

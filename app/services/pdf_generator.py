@@ -170,7 +170,7 @@ def generate_agency_proposal_pdf(output_path: str = "assets/propuesta_sofia_ai_a
     elements.append(Spacer(1, 12))
 
     # 4. PLAN DE INVERSIÓN Y COSTOS
-    elements.append(Paragraph("<b>Inversión del Servicio & Retorno:</b>", section_heading))
+    elements.append(Paragraph("<b>Inversión del Servicio — Programa Lanzamiento (Cupo Limitado: 5 Empresas):</b>", section_heading))
 
     pricing_data = [
         [
@@ -179,18 +179,18 @@ def generate_agency_proposal_pdf(output_path: str = "assets/propuesta_sofia_ai_a
             Paragraph("<b>Inversión</b>", ParagraphStyle('H3', parent=bullet_style, fontName='Helvetica-Bold', textColor=colors.HexColor('#0F172A'), alignment=TA_RIGHT))
         ],
         [
-            Paragraph("<b>Setup & Puesta en Marcha</b>", bullet_style),
-            Paragraph("Personalización de identidad de Sofía, carga de catálogo/tarifario, integración con la línea de WhatsApp y despliegue del servidor.", body_style),
-            Paragraph("<b>$250.000 ARS</b><br/><font size=7 color='#64748B'>Pago único inicial</font>", ParagraphStyle('P1', parent=bullet_style, alignment=TA_RIGHT))
+            Paragraph("<b>Setup & Puesta en Marcha</b><br/><font size=7.5 color='#059669'><b>✨ 100% BONIFICADO</b></font>", bullet_style),
+            Paragraph("Personalización completa de Sofía, carga de catálogo/servicios, integración con la línea de WhatsApp y conexión de alertas.<br/><font size=7 color='#059669'><i>*Beneficio exclusivo para los primeros 5 clientes seleccionados.</i></font>", body_style),
+            Paragraph("<strike><font color='#94A3B8'>$250.000 ARS</font></strike><br/><b>$0 ARS</b><br/><font size=7 color='#059669'>Sin costo inicial</font>", ParagraphStyle('P1', parent=bullet_style, alignment=TA_RIGHT))
         ],
         [
             Paragraph("<b>Abono Mensual Operativo</b>", bullet_style),
-            Paragraph("Operación continua 24/7, procesamiento de audios con IA, servidor en la nube, alertas automáticas y soporte técnico permanente.", body_style),
-            Paragraph("<b>$100.000 ARS/mes</b><br/><font size=7 color='#64748B'>Facturación mensual</font>", ParagraphStyle('P2', parent=bullet_style, alignment=TA_RIGHT))
+            Paragraph("Operación continua 24/7, procesamiento de notas de voz con IA, servidor en la nube, alertas automáticas de ventas y soporte técnico.", body_style),
+            Paragraph("<b>$70.000 a $100.000 ARS/mes</b><br/><font size=7 color='#64748B'>Según volumen de la empresa</font>", ParagraphStyle('P2', parent=bullet_style, alignment=TA_RIGHT))
         ]
     ]
 
-    pricing_table = Table(pricing_data, colWidths=[140, 260, 140])
+    pricing_table = Table(pricing_data, colWidths=[140, 250, 150])
     pricing_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#EEF2F6')),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),

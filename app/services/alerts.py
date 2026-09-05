@@ -74,7 +74,7 @@ def build_meeting_html_email(
     city_str = city or "Entre Ríos / Santa Fe"
     campaign_title = "Sofía AI Agency (Agente B2B Comercial)" if campaign == "ai_agency" else "Air Control"
     action_text = (
-        "Llamalo puntual para presentarle la demo en vivo del Agente Comercial con IA ($250.000 setup + $100.000/mes abono)."
+        "Llamalo puntual para presentarle la demo en vivo del Agente Comercial con IA (Cupo especial: Setup $0 bonificado + $70.000-$100.000/mes abono)."
         if campaign == "ai_agency"
         else "Agendalo en tu calendario y tené a mano el dossier interactivo."
     )
