@@ -81,6 +81,8 @@ async def start_outreach(
         if business_type:
             prospect.business_type = business_type
         prospect.status = "contacted"
+        prospect.meeting_details = None
+        prospect.meeting_scheduled_at = None
 
     # Natural Argentine initial pitch based on campaign
     greeting = f"¡Hola! Te escribo por {payload.name}." if payload.name else "¡Hola!"

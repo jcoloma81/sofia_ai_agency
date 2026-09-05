@@ -79,11 +79,16 @@ def detect_meeting_intent(text: str) -> Tuple[bool, Optional[str]]:
 
     text_lower = text.lower()
     
-    has_agreement = bool(re.search(r'\b(dale|bueno|perfecto|ok|s[ií]|coordinemos|llamame|que me llame|charlemos|dale dale|agendalo|agendá|puede ser)\b', text_lower))
+    has_agreement = bool(re.search(r'\b(dale|bueno|perfecto|ok|s[ií]|coordinemos|llamame|que me llame|charlemos|dale dale|agendalo|agendá|puede ser|podria ser|podría ser|me parece bien|me queda bien|me viene bien|de acuerdo|listo)\b', text_lower))
     has_day = bool(re.search(r'\b(hoy|mañana|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|semana que viene|esta semana)\b', text_lower))
-    has_hour = bool(re.search(r'(\d{1,2}\s*(?::|\.)\s*\d{2}|\d{1,2}\s*hs|\d{1,2}\s*horas?|a las \d{1,2}|de la tarde|de la mañana|a la tarde|a la mañana|al mediod[ií]a|por la tarde|por la mañana)', text_lower))
+    has_hour = bool(re.search(r'(\d{1,2}\s*(?::|\.)\s*\d{2}|\d{1,2}\s*hs|\d{1,2}\s*horas?|a las \d{1,2}|como a las \d{1,2}|tipo \d{1,2}|alrededor de las \d{1,2}|a eso de las \d{1,2}|de la tarde|de la mañana|a la tarde|a la mañana|al mediod[ií]a|por la tarde|por la mañana)', text_lower))
     
     if (has_day and has_hour) or (has_agreement and (has_day or has_hour)) or ("llamame" in text_lower) or ("que me llame" in text_lower):
+        clean_detail = text.strip()
+        return True, clean_detail
+
+    # Direct short response proposing or confirming day/hour (e.g. "Mañana", "El martes", "A las 11 hs")
+    if (has_day or has_hour) and len(text_lower.split()) <= 6 and not any(q in text_lower for q in ["cuanto", "cuánto", "precio", "que es", "qué es", "como es", "cómo es"]):
         clean_detail = text.strip()
         return True, clean_detail
         
@@ -111,6 +116,15 @@ def rule_based_consultative_response(
             f"¡Muchas gracias y que tengas un gran día!",
             True,
             meeting_details
+        )
+
+    # Voice note fallback if speech-to-text / Gemini failed
+    if "(nota de voz" in text_lower or "(audio" in text_lower:
+        nombre = f" {contact_name}" if contact_name else ""
+        return (
+            f"¡Hola{nombre}! Justo estoy en la computadora y no pude escuchar con claridad el audio. ¿Me podrás escribir en un mensajito breve o confirmarme qué día y horario te queda cómodo conversar 10 minutos con Lucas, nuestro asesor?",
+            False,
+            None
         )
 
     # Rejection / No interest
@@ -209,7 +223,7 @@ async def generate_ai_response(
             clean_mime = audio_mime_type.split(";")[0].strip() if audio_mime_type else "audio/ogg"
             current_parts = [
                 {"inline_data": {"mime_type": clean_mime, "data": audio_data_b64}},
-                {"text": incoming_text or "El cliente envió esta nota de voz por WhatsApp. Escuchala atentamente y respondé en texto siguiendo estrictamente tus directivas de Sofía."}
+                {"text": "El cliente envió esta nota de voz por WhatsApp. Escuchala con atención y respondé en texto con calidez, voseo argentino y siguiendo estrictamente tus directivas de Sofía."}
             ]
         else:
             current_parts = [{"text": incoming_text}]
@@ -225,31 +239,35 @@ async def generate_ai_response(
             },
             "contents": contents,
             "generationConfig": {
-                "temperature": 0.3,
+                "temperature": 0.2,
                 "maxOutputTokens": 300
             }
         }
 
         candidate_models = [
-            "gemini-2.5-flash-lite",
-            "gemini-2.0-flash-lite",
-            "gemini-2.5-flash",
-            "gemini-2.0-flash"
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-latest",
+            "gemini-3.6-flash"
         ]
         for model_name in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                async with httpx.AsyncClient(timeout=15.0) as client:
                     res = await client.post(url, json=payload)
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates", [])
                         if candidates and "content" in candidates[0]:
                             ai_text = candidates[0]["content"]["parts"][0]["text"].strip()
-                            if audio_data_b64 and not is_meeting:
-                                if any(k in ai_text.lower() for k in ["agendada la reunión", "te dejo agendad", "agendada para"]):
+                            if not is_meeting:
+                                if any(k in ai_text.lower() for k in ["agendada la reunión", "te dejo agendad", "agendada para", "reunión agendada", "agendado"]):
                                     is_meeting = True
-                                    meeting_details = "Acordado por nota de voz"
+                                    match = re.search(r'(?:agendada la reunión para|reunión para|agendada para|te dejo agendad[ao] para)\s+([^.!\n]+)', ai_text, re.IGNORECASE)
+                                    if match:
+                                        meeting_details = match.group(1).strip()
+                                    else:
+                                        meeting_details = "Acordado por nota de voz" if audio_data_b64 else incoming_text
                             return ai_text, is_meeting, meeting_details
                     else:
                         logger.warning(f"Model {model_name} returned status {res.status_code}. Trying next candidate.")

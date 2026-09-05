@@ -252,13 +252,14 @@ async def receive_whatsapp_webhook(
         db.refresh(prospect)
 
         logger.info(f"🎯 MEETING CONFIRMED with {prospect.name}! Details: {prospect.meeting_details} [campaign={prospect.campaign}]")
+        last_msg_display = f"🎙️ Nota de voz ({meeting_details})" if audio_b64 and meeting_details else message.strip()
         await whatsapp.notify_javier_meeting_scheduled(
             prospect_name=prospect.name,
             contact_name=prospect.contact_name,
             phone=prospect.phone,
             city=prospect.city,
             meeting_details=prospect.meeting_details,
-            last_message=message.strip(),
+            last_message=last_msg_display,
             campaign=prospect.campaign or "ai_agency"
         )
     else:
