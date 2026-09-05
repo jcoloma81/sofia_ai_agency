@@ -7,10 +7,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # Database
-    DATABASE_URL: str = "sqlite:///./sofia.db"
+    DATABASE_URL: str = "postgresql://javi_admin:FhfRttqRX1ZMoz7yuhcEa6BmsKx7bi2Z@dpg-d75jlr4r85hc73cod45g-a.oregon-postgres.render.com/aircontrol_n6zf"
 
     # Server / App URL
-    APP_BASE_URL: str = "http://127.0.0.1:8000"
+    APP_BASE_URL: str = "https://sofia-ai-agency.onrender.com"
     SECRET_KEY: str = "sofia_ai_agency_default_secret_key"
 
     # AI Brain (Gemini Flash Lite Multimodal)
