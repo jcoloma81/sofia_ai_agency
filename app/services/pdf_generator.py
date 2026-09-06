@@ -139,7 +139,7 @@ def generate_agency_proposal_pdf(output_path: str = "assets/propuesta_sofia_ai_a
     features = [
         [
             Paragraph("<b>🎯 Prospección Autónoma en Google Maps</b>", bullet_style),
-            Paragraph("Encuentra comercios, talleres o empresas afines en tu zona y les escribe de forma automática entre 12 y 15 por día para abrir cuentas nuevas.", body_style)
+            Paragraph("Encuentra comercios y empresas de tu interés en la zona y les escribe de forma automática a entre 12 y 15 por día, con el logo de tu empresa, para contactar nuevos clientes.", body_style)
         ],
         [
             Paragraph("<b>📄 Envío Instantáneo de Catálogo / Tarifario en PDF</b>", bullet_style),

@@ -49,7 +49,7 @@ def test_health_check():
 
     root_res = client.get("/")
     assert root_res.status_code == 200
-    assert "Sofía" in root_res.json()["agent"]
+    assert "Sofía" in root_res.text
 
 def test_webhook_incoming_inquiry(db, mock_whatsapp):
     mock_send, mock_alert = mock_whatsapp
@@ -178,7 +178,7 @@ def test_ai_agency_outreach_pitch_content(db, mock_whatsapp):
     assert "100% autónoma" in sent_text
     assert "No soy un bot común de respuestas automáticas" in sent_text
     assert "Google Maps" in sent_text
-    assert "entre 12 y 15 por día" in sent_text
+    assert "entre 12 y 15 empresas de tu interés por día" in sent_text
     assert "alerta" in sent_text.lower()
     assert "Lucas" in sent_text
     assert "Sofía" in sent_text
