@@ -279,12 +279,20 @@ async def generate_ai_response(
         contents = []
         selected_prompt = SYSTEM_PROMPT_AGENCY if campaign == "ai_agency" else SYSTEM_PROMPT_AIR_CONTROL
         entity_label = "Empresa / Distribuidora" if campaign == "ai_agency" else "Complejo"
+        
+        from app.services.directives import directives_service
+        from app.services.catalog import catalog_service
+        directives_ctx = directives_service.get_prompt_context() if campaign == "ai_agency" else ""
+        catalog_ctx = catalog_service.get_summary_prompt() if (campaign == "ai_agency" and catalog_service.products) else ""
+
         system_context = (
-            f"{selected_prompt}\n"
+            f"{selected_prompt}\n\n"
             f"Datos actuales:\n"
             f"- {entity_label}: {prospect_name or 'No especificado'}\n"
             f"- Contacto: {contact_name or 'Estimado'}\n"
-            f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n"
+            f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n\n"
+            f"{directives_ctx}\n\n"
+            f"{catalog_ctx}\n"
         )
 
         for msg in conversation_history[-6:]:

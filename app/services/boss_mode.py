@@ -93,14 +93,9 @@ async def process_boss_message(
         "cobertura", "cupo", "politica", "política", "condicion", "condición", "condiciones"
     ]
     if any(k in lower_text for k in directive_keywords):
-        return True, (
-            "✅ *¡Directiva comercial configurada con éxito!*\n\n"
-            "Entendido Javier. A partir de ahora aplico las siguientes reglas para todos los clientes:\n"
-            "• *Monto mínimo para flete gratis:* $50.000 (si un cliente no llega, le sugiero productos de alta rotación para completar el ticket).\n"
-            "• *Corte de pedidos para el reparto de mañana:* Hasta las 21:00 hs.\n"
-            "• *Zona de cobertura:* Centro y zonas asignadas.\n\n"
-            "💡 Ya tengo estas directivas activas para todas las cotizaciones y pedidos."
-        ), "boss_directive_set"
+        from app.services.directives import directives_service
+        reply = await directives_service.update_from_boss_message(clean_text)
+        return True, reply, "boss_directive_set"
 
     # 3. Status & Metrics Summary
     if any(k in lower_text for k in ["resumen", "estado", "ventas", "pedidos", "como venimos", "cómo venimos", "metricas", "métricas"]):
