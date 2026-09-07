@@ -102,6 +102,54 @@ async def send_whatsapp_message(to_phone: str, text: str) -> bool:
         logger.error(f"Error sending WhatsApp message to {clean_phone}: {e}")
         return False
 
+async def send_whatsapp_template(
+    to_phone: str,
+    template_name: str = "prospeccion_sofia_v1",
+    language_code: str = "es_AR",
+    components: Optional[List[dict]] = None
+) -> bool:
+    """
+    Sends an approved Meta WhatsApp template to initiate outbound prospecting without ban risk.
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+
+    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
+        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+        meta_headers = {
+            "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        for target_phone in get_phone_candidates(clean_phone):
+            meta_payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": target_phone,
+                "type": "template",
+                "template": {
+                    "name": template_name,
+                    "language": {
+                        "code": language_code
+                    }
+                }
+            }
+            if components:
+                meta_payload["template"]["components"] = components
+
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
+                    if res.status_code in [200, 201]:
+                        logger.info(f"✅ Meta WhatsApp Template '{template_name}' sent successfully to {target_phone}")
+                        return True
+                    else:
+                        logger.warning(f"Meta Cloud API template returned status {res.status_code} for {target_phone}: {res.text}")
+            except Exception as e:
+                logger.error(f"Error sending Meta template to {target_phone}: {e}")
+
+    logger.warning(f"Could not send template {template_name} to {clean_phone} via Meta Cloud API")
+    return False
+
+
 async def send_whatsapp_document(
     to_phone: str,
     document_url: str,

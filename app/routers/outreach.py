@@ -118,7 +118,12 @@ async def start_outreach(
     db.commit()
     db.refresh(prospect)
 
-    sent = await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=initial_pitch)
+    if campaign == "ai_agency" and settings.META_ACCESS_TOKEN:
+        sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v1")
+        if not sent:
+            sent = await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=initial_pitch)
+    else:
+        sent = await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=initial_pitch)
 
     return {
         "status": "outreach_started",

@@ -3,9 +3,9 @@
   "cutoff_time": "21:00 hs",
   "coverage_zones": "Centro y zonas asignadas",
   "custom_rules": [
-    "Monto mínimo para flete gratis: $50.000 (si un cliente no llega, le sugiero productos de alta rotación para completar el ticket).",
+    "Monto mínimo para flete gratis: $50.000 (si un cliente no llega, le sugiero productos de alta rotación para completar el ticket)",
     "Corte de pedidos para el reparto de mañana: Hasta las 21:00 hs.",
     "Zona de cobertura: Centro y zonas asignadas."
   ],
-  "raw_summary": "• *Monto mínimo para flete gratis:* $50.000 (si un cliente no llega, le sugiero productos de alta rotación para completar el ticket).\n• *Corte de pedidos para el reparto de mañana:* Hasta las 21:00 hs.\n• *Zona de cobertura:* Centro y zonas asignadas."
+  "raw_summary": "• *Monto mínimo para flete gratis:* $50.000 (si un cliente no llega, le sugiero productos de alta rotación para completar el ticket)\n• *Corte de pedidos para el reparto de mañana:* Hasta las 21:00 hs.\n• *Zona de cobertura:* Centro y zonas asignadas."
 }
