@@ -1,0 +1,16 @@
+Codigo,Producto,Presentacion,Precio,Stock,Categoria
+ART001,Aceite Cañuelas 1.5L,Caja x 6 u.,14400,SI,Almacén
+ART002,Harina Pureza 000 1kg,Fardo x 10 u.,12500,SI,Almacén
+ART003,Arroz Lucchetti Largo Fino 1kg,Fardo x 10 u.,16000,SI,Almacén
+ART004,Fideos Matarazzo Guiseros 500g,Caja x 15 u.,18000,SI,Almacén
+ART005,Azúcar Ledesma Clásica 1kg,Fardo x 10 u.,11000,SI,Almacén
+ART006,Puré de Tomate De Cecco 520g,Caja x 12 u.,9800,SI,Almacén
+ART007,Queso Cremoso La Paulina,Horma x 4kg,28000,SI,Lácteos y Fríos
+ART008,Leche Entera La Serenísima 1L,Caja x 12 u.,15600,SI,Lácteos y Fríos
+ART009,Yogur Firme Ilolay 120g,Pack x 8 u.,6400,SI,Lácteos y Fríos
+ART010,Gaseosa Coca Cola 2.25L,Pack x 6 u.,19200,SI,Bebidas
+ART011,Cerveza Quilmes Clásica 1L,Cajón x 12 u.,24000,SI,Bebidas
+ART012,Agua Mineral Villavicencio 2L,Pack x 6 u.,8400,SI,Bebidas
+ART013,Yerba Playadito 1kg,Fardo x 10 u.,38000,SI,Almacén
+ART014,Galletitas Oreo 118g,Caja x 24 u.,26400,NO,Golosinas
+ART015,Mayonesa Hellmanns Doypack 475g,Caja x 12 u.,17500,SI,Almacén

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Optional
+from typing import Optional, Any, List
 import httpx
 from datetime import datetime
 from app.config.settings import settings
@@ -174,3 +174,60 @@ async def notify_javier_meeting_scheduled(
         )
     except Exception as email_err:
         logger.error(f"Error dispatching email alert: {email_err}")
+
+async def notify_owner_order_confirmed(
+    client_name: str,
+    contact_name: Optional[str],
+    phone: str,
+    city: Optional[str],
+    order_draft: Any,
+    delivery_notes: Optional[str] = None
+) -> None:
+    """
+    Dispatches instant notification to the business owner/depot about a confirmed customer order.
+    """
+    alert_phone = settings.WHATSAPP_ALERT_PHONE or "5493434536447"
+    contact_str = contact_name or "Comercio"
+    city_str = city or "No especificada"
+
+    item_lines = []
+    for it in order_draft.items:
+        if it.in_stock:
+            item_lines.append(f"• {it.quantity}x {it.product.name} ({it.product.presentation}): *{it.formatted_subtotal()}*")
+
+    items_block = "\n".join(item_lines) if item_lines else "Sin items especificados"
+
+    wa_text = (
+        f"📦 *¡NUEVO PEDIDO CONFIRMADO!* 📦\n\n"
+        f"👤 *Cliente:* {client_name}\n"
+        f"📱 *Contacto:* {contact_str} (+{phone})\n"
+        f"📍 *Zona/Localidad:* {city_str}\n\n"
+        f"📝 *MERCADERÍA SOLICITADA:*\n"
+        f"{items_block}\n\n"
+        f"💰 *TOTAL ESTIMADO: {order_draft.formatted_total()}*\n"
+        f"🚚 *Estado:* Ingresado para armado y reparto.\n\n"
+        f"👉 *Contactar cliente:* https://wa.me/{phone}"
+    )
+
+    await send_whatsapp_message(to_phone=alert_phone, text=wa_text)
+    logger.info(f"Order alert dispatched to owner ({alert_phone}) for {client_name}")
+
+    try:
+        from app.services.alerts import build_order_html_email
+        email_html = build_order_html_email(
+            client_name=client_name,
+            contact_name=contact_name,
+            phone=phone,
+            city=city,
+            order_items=order_draft.items,
+            total_formatted=order_draft.formatted_total(),
+            delivery_notes=delivery_notes
+        )
+        recipient_email = settings.MAIL_USERNAME or settings.MAIL_FROM or "colomajavier@gmail.com"
+        await send_email_alert(
+            subject=f"📦 [Nuevo Pedido] {client_name} - {order_draft.formatted_total()}",
+            recipient=recipient_email,
+            html_content=email_html
+        )
+    except Exception as e:
+        logger.error(f"Error dispatching order email alert: {e}")
