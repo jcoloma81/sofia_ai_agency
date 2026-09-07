@@ -203,7 +203,8 @@ def rule_based_consultative_response(
 
 async def transcribe_audio_gemini(audio_b64: str, audio_mime_type: Optional[str] = None) -> Optional[str]:
     """
-    Transcribes voice note audio into text using Gemini Multimodal.
+    Transcribes voice note audio into text using Gemini Speech/Audio Multimodal.
+    Supports dedicated Google transcription models (gemini-3.5-transcribe) and fallback models.
     """
     gemini_key = settings.GEMINI_API_KEY
     if not gemini_key or not audio_b64:
@@ -215,34 +216,38 @@ async def transcribe_audio_gemini(audio_b64: str, audio_mime_type: Optional[str]
             {
                 "parts": [
                     {"inline_data": {"mime_type": clean_mime, "data": audio_b64}},
-                    {"text": "Transcribí de forma exacta lo que dice esta nota de voz en español de Argentina. Respondé ÚNICAMENTE con el texto transcrito, sin comillas, saludos ni explicaciones adicionales."}
+                    {"text": "Transcribí de forma exacta las palabras dichas en esta nota de voz en español. Respondé únicamente con la transcripción exacta sin comentarios."}
                 ]
             }
-        ],
-        "generationConfig": {
-            "temperature": 0.1,
-            "maxOutputTokens": 200
-        }
+        ]
     }
 
     candidate_models = [
+        "gemini-3.5-transcribe",
         "gemini-flash-lite-latest",
         "gemini-3.5-flash-lite",
-        "gemini-flash-latest",
         "gemini-3.6-flash"
     ]
     for model_name in candidate_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
         try:
-            async with httpx.AsyncClient(timeout=12.0) as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 res = await client.post(url, json=payload)
                 if res.status_code == 200:
                     data = res.json()
                     candidates = data.get("candidates", [])
                     if candidates and "content" in candidates[0]:
-                        transcribed = candidates[0]["content"]["parts"][0]["text"].strip()
-                        if transcribed:
-                            return transcribed
+                        parts = candidates[0]["content"].get("parts", [])
+                        for part in parts:
+                            text_val = (
+                                part.get("audioTranscription", {}).get("text")
+                                or part.get("text", "")
+                            )
+                            if text_val and text_val.strip():
+                                logger.info(f"🎙️ Audio transcribed successfully via {model_name}: '{text_val.strip()}'")
+                                return text_val.strip()
+                else:
+                    logger.warning(f"Audio transcription {model_name} returned status {res.status_code}: {res.text[:120]}")
         except Exception as e:
             logger.warning(f"Error transcribing audio with {model_name}: {e}")
 
@@ -317,13 +322,12 @@ async def generate_ai_response(
         candidate_models = [
             "gemini-flash-lite-latest",
             "gemini-3.5-flash-lite",
-            "gemini-flash-latest",
             "gemini-3.6-flash"
         ]
         for model_name in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             try:
-                async with httpx.AsyncClient(timeout=15.0) as client:
+                async with httpx.AsyncClient(timeout=4.0) as client:
                     res = await client.post(url, json=payload)
                     if res.status_code == 200:
                         data = res.json()
@@ -344,7 +348,7 @@ async def generate_ai_response(
             except Exception as model_err:
                 logger.warning(f"Error calling {model_name}: {model_err}")
 
-        logger.warning("All Gemini candidate models failed or returned non-200. Falling back to rule engine.")
+        logger.warning("All Gemini candidate models failed or timed out. Falling back to rule engine.")
         return rule_based_consultative_response(incoming_text, prospect_name, contact_name, campaign=campaign)
 
     except Exception as e:

@@ -50,9 +50,20 @@ async def process_boss_message(
                 csv_str = doc_bytes.decode("latin-1", errors="ignore")
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
     # 2. Live Demo / Order Test by the Boss (for video demos from personal phone)
-    from app.services.order_engine import parse_order_text, format_order_summary_message, detect_order_intent, is_order_confirmation
-    order_triggers = ["caja", "fardo", "pack", "bolsa", "aceite", "harina", "arroz", "fideo", "yerba", "leche", "queso", "coca", "quilmes", "cajon", "cajón"]
-    if detect_order_intent(clean_text) or (len(re.findall(r'\d+', clean_text)) > 0 and any(k in lower_text for k in order_triggers)):
+    from app.services.order_engine import (
+        parse_order_text,
+        format_order_summary_message,
+        detect_order_intent,
+        is_order_confirmation,
+        SPANISH_NUMBER_WORDS
+    )
+    order_triggers = [
+        "caja", "cajas", "fardo", "fardos", "pack", "packs", "bolsa", "bolsas",
+        "aceite", "harina", "arroz", "fideo", "fideos", "yerba", "leche", "queso",
+        "coca", "quilmes", "cajon", "cajones", "cajón"
+    ]
+    has_number = len(re.findall(r'\d+', clean_text)) > 0 or any(w in lower_text.split() for w in SPANISH_NUMBER_WORDS.keys())
+    if detect_order_intent(clean_text) or (has_number and any(k in lower_text for k in order_triggers)):
         draft = parse_order_text(clean_text)
         if draft.items:
             summary = format_order_summary_message(draft, contact_name="Javier")
@@ -76,14 +87,19 @@ async def process_boss_message(
             ), "boss_price_test"
 
     # Commercial Directives set by the boss
-    if any(k in lower_text for k in ["minimo", "mínimo", "directiva", "regla", "flete", "reparto", "envio", "envío", "corte"]):
+    directive_keywords = [
+        "minimo", "mínimo", "directiva", "directivas", "regla", "reglas",
+        "flete", "reparto", "envio", "envío", "corte", "zona", "zonas",
+        "cobertura", "cupo", "politica", "política", "condicion", "condición", "condiciones"
+    ]
+    if any(k in lower_text for k in directive_keywords):
         return True, (
             "✅ *¡Directiva comercial configurada con éxito!*\n\n"
-            "Entendido Javier. A partir de ahora aplico las siguientes reglas:\n"
+            "Entendido Javier. A partir de ahora aplico las siguientes reglas para todos los clientes:\n"
             "• *Monto mínimo para flete gratis:* $50.000 (si un cliente no llega, le sugiero productos de alta rotación para completar el ticket).\n"
             "• *Corte de pedidos para el reparto de mañana:* Hasta las 21:00 hs.\n"
             "• *Zona de cobertura:* Centro y zonas asignadas.\n\n"
-            "💡 Ya tengo estas directivas activas para todas las conversaciones con clientes."
+            "💡 Ya tengo estas directivas activas para todas las cotizaciones y pedidos."
         ), "boss_directive_set"
 
     # 3. Status & Metrics Summary
@@ -148,6 +164,14 @@ async def process_boss_message(
             f"💡 *Para actualizar precios:* Podés mandarme un archivo `.xlsx` o `.csv` adjunto por este chat o editar tu Google Sheet."
         )
         return True, reply, "catalog_view"
+
+    # 5.5 If boss sent a voice note that couldn't be transcribed
+    if clean_text.startswith("(Nota de voz") or clean_text.startswith("(Audio"):
+        return True, (
+            "🎙️ *¡Hola Javier!*\n\n"
+            "Recibí tu nota de voz pero no pude procesar el audio con claridad. "
+            "Por favor mandame la indicación en un mensajito de texto (ej: directiva comercial o pedido de prueba) o volvé a grabarlo."
+        ), "boss_voice_untranscribed"
 
     # 6. Default helpful response to boss
     return True, (

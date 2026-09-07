@@ -70,3 +70,30 @@ async def test_boss_catalog_check(db):
     assert handled is True
     assert action == "catalog_view"
     assert "CATÁLOGO" in reply
+
+@pytest.mark.asyncio
+async def test_boss_directive_set(db):
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofía, el mínimo para flete gratis es 50.000 pesos y repartimos en zona centro"
+    )
+    assert handled is True
+    assert action == "boss_directive_set"
+    assert "Directiva comercial configurada con éxito" in reply
+    assert "50.000" in reply
+
+@pytest.mark.asyncio
+async def test_boss_order_demo_with_words(db):
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofía, anótame tres cajas de aceite y dos fardos de harina."
+    )
+    assert handled is True
+    assert action == "boss_order_test"
+    assert "DEMO EN VIVO" in reply
+    assert "Aceite Cañuelas" in reply
+    assert "Harina Pureza" in reply
+    assert "$68.200" in reply
+

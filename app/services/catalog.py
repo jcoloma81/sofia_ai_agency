@@ -296,7 +296,12 @@ class CatalogService:
         if not query or not query.strip():
             return self.products[:limit]
 
-        tokens = [t.strip().lower() for t in query.split() if len(t.strip()) > 1]
+        # Strip punctuation from query words
+        tokens = [re.sub(r'[^\w\s]', '', t).strip().lower() for t in query.split()]
+        tokens = [t for t in tokens if len(t) > 1]
+        if not tokens:
+            return []
+
         matches = []
         for p in self.products:
             name_lower = p.name.lower()
@@ -313,14 +318,14 @@ class CatalogService:
         """Finds closest product match by code or name."""
         if not name_or_code:
             return None
-        clean_target = name_or_code.strip().lower()
+        clean_target = re.sub(r'[^\w\s]', '', name_or_code).strip().lower()
 
         for p in self.products:
-            if p.code and p.code.strip().lower() == clean_target:
+            if p.code and re.sub(r'[^\w\s]', '', p.code).strip().lower() == clean_target:
                 return p
 
         for p in self.products:
-            if p.name.strip().lower() == clean_target:
+            if re.sub(r'[^\w\s]', '', p.name).strip().lower() == clean_target:
                 return p
 
         candidates = self.search_products(name_or_code, limit=1)

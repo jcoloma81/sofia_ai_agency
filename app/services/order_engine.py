@@ -49,9 +49,13 @@ def parse_order_text(text: str) -> OrderDraft:
     if not text:
         return OrderDraft()
 
-    # Split text into candidate lines or phrases
-    # Remove greeting noise
-    cleaned = re.sub(r'\b(hola|buenas|por favor|che|anotame|mandame|traeme|pasame|quiero|necesito|pedir|pedido|agregame|para mañana)\b', '', text, flags=re.IGNORECASE)
+    # Remove agent name and conversational prefixes / verbs (with or without accents)
+    cleaned = re.sub(
+        r'\b(sofia|sofía|che|hola|buenas|buen d[ií]a|por favor|anotame|anótame|mandame|mándame|traeme|tráeme|pasame|pásame|cargame|cárgame|sumame|súmame|quiero|necesito|pedir|pedido|agregame|agrégame|para mañana|para hoy)\b',
+        '',
+        text,
+        flags=re.IGNORECASE
+    )
     
     # Split by commas, 'y', 'e', or newlines
     raw_clauses = re.split(r'[,;\n]|\s+y\s+|\s+e\s+', cleaned)
@@ -61,8 +65,9 @@ def parse_order_text(text: str) -> OrderDraft:
     has_out_of_stock = False
 
     for clause in raw_clauses:
-        clause = clause.strip()
-        if not clause or len(clause) < 3:
+        # Strip punctuation from clause
+        clause = re.sub(r'[^\w\s]', ' ', clause).strip()
+        if not clause or len(clause) < 2:
             continue
 
         # Extract quantity: look for digits or Spanish number words
@@ -70,7 +75,6 @@ def parse_order_text(text: str) -> OrderDraft:
         num_match = re.search(r'\b(\d+)\b', clause)
         if num_match:
             qty = int(num_match.group(1))
-            # Remove the number from clause to search for product name
             product_query = re.sub(r'\b\d+\b', '', clause).strip()
         else:
             word_found = False
@@ -86,6 +90,8 @@ def parse_order_text(text: str) -> OrderDraft:
 
         # Clean packaging words from product query
         product_query = re.sub(r'\b(cajas?|fardos?|packs?|unidades?|bolsas?|cajones?|hormas?|kilos?|kg|de)\b', '', product_query, flags=re.IGNORECASE).strip()
+        # Clean extra spaces
+        product_query = re.sub(r'\s+', ' ', product_query).strip()
 
         if not product_query or len(product_query) < 2:
             continue
@@ -154,7 +160,8 @@ def detect_order_intent(text: str) -> bool:
         return False
     text_lower = text.lower()
     triggers = [
-        "anotame", "mandame", "traeme", "pasame", "quiero pedir", "te pido",
+        "anotame", "anótame", "mandame", "mándame", "traeme", "tráeme", "pasame", "pásame",
+        "cargame", "cárgame", "sumame", "súmame", "quiero pedir", "te pido",
         "hacer un pedido", "encargar", "hacerte un pedido", "necesito que me mandes",
         "cajas de", "fardos de", "packs de", "bolsas de", "cajones de"
     ]
