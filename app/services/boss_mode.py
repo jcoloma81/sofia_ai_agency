@@ -49,9 +49,33 @@ async def process_boss_message(
             except UnicodeDecodeError:
                 csv_str = doc_bytes.decode("latin-1", errors="ignore")
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
-            return True, f"✅ *¡Lista de precios cargada con éxito!*\n\nSe procesaron *{count} productos* desde el archivo `{doc_name}`.", "catalog_updated"
+    # 2. Live Demo / Order Test by the Boss (for video demos from personal phone)
+    from app.services.order_engine import parse_order_text, format_order_summary_message, detect_order_intent, is_order_confirmation
+    order_triggers = ["caja", "fardo", "pack", "bolsa", "aceite", "harina", "arroz", "fideo", "yerba", "leche", "queso", "coca", "quilmes", "cajon", "cajón"]
+    if detect_order_intent(clean_text) or (len(re.findall(r'\d+', clean_text)) > 0 and any(k in lower_text for k in order_triggers)):
+        draft = parse_order_text(clean_text)
+        if draft.items:
+            summary = format_order_summary_message(draft, contact_name="Javier")
+            return True, f"🧪 *[DEMO EN VIVO]*\n\n{summary}", "boss_order_test"
 
-    # 2. Status & Metrics Summary
+    if is_order_confirmation(clean_text):
+        return True, (
+            "🧪 *[DEMO EN VIVO — PEDIDO CONFIRMADO]*\n\n"
+            "¡Excelente Javier! Tu pedido de prueba ya fue ingresado a depósito para preparar el despacho.\n\n"
+            "📦 *ALERTA ENVIADA A DEPÓSITO:* Listo para armar bultos y cargar en camión de reparto."
+        ), "boss_confirm_test"
+
+    if any(k in lower_text for k in ["cuanto", "cuánto", "precio", "sale", "a cuanto", "a cuánto"]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
+        p = catalog_service.find_product_exact_or_best(clean_text)
+        if p:
+            stock_info = "tenemos stock disponible" if p.in_stock else "actualmente figura sin stock"
+            return True, (
+                f"🧪 *[DEMO EN VIVO — PRECIO]*\n\n"
+                f"¡Hola Javier! El *{p.name}* ({p.presentation}) está a *{p.formatted_price()}* y {stock_info}. "
+                f"¿Cuántas unidades te anoto para el próximo reparto?"
+            ), "boss_price_test"
+
+    # 3. Status & Metrics Summary
     if any(k in lower_text for k in ["resumen", "estado", "ventas", "pedidos", "como venimos", "cómo venimos", "metricas", "métricas"]):
         total_prospects = db.query(Prospect).count()
         in_conversation = db.query(Prospect).filter(Prospect.status == "in_conversation").count()
