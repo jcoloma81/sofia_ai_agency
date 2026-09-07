@@ -49,3 +49,7 @@ htmlcov/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Media & Scratch
+*.mp4
+scratch/

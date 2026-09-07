@@ -6,7 +6,8 @@ import asyncio
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import httpx
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -37,7 +38,25 @@ class WebhookMessagePayload(BaseModel):
     city: Optional[str] = None
 
 @router.get("/webhook")
-def verify_webhook_ping():
+def verify_webhook_ping(
+    hub_mode: Optional[str] = Query(None, alias="hub.mode"),
+    hub_challenge: Optional[str] = Query(None, alias="hub.challenge"),
+    hub_verify_token: Optional[str] = Query(None, alias="hub.verify_token")
+):
+    """
+    Handles both:
+    1. Official Meta WhatsApp Cloud API verification handshake (GET with hub.mode, hub.challenge, hub.verify_token).
+    2. General healthcheck pings from browsers or uptime monitors.
+    """
+    if hub_mode == "subscribe":
+        expected_token = settings.META_VERIFY_TOKEN
+        if hub_verify_token == expected_token:
+            logger.info(f"✅ Meta Webhook verification successful! Returning challenge: {hub_challenge}")
+            return PlainTextResponse(content=str(hub_challenge or ""), status_code=200)
+        else:
+            logger.warning(f"❌ Meta Webhook verification failed: verify_token mismatch ({hub_verify_token})")
+            return PlainTextResponse(content="Verification token mismatch", status_code=403)
+
     return {"status": "ok", "service": "Sofía AI Agency Webhook"}
 
 @router.post("/webhook")
@@ -48,6 +67,7 @@ async def receive_whatsapp_webhook(
     """
     Receives incoming WhatsApp messages from prospects or human agents.
     Features:
+    - Official Meta WhatsApp Cloud API payload parsing
     - Whapi.cloud payload parsing
     - Webhook deduplication
     - Human takeover detection (silencing Sofia for that prospect)
@@ -67,8 +87,95 @@ async def receive_whatsapp_webhook(
     doc_bytes = None
     doc_name = None
 
+    # 0. Handle Official Meta WhatsApp Cloud API format
+    if body.get("object") == "whatsapp_business_account":
+        entries = body.get("entry", [])
+        incoming_meta_msg = None
+        meta_contacts = []
+        for entry in entries:
+            changes = entry.get("changes", [])
+            for change in changes:
+                value = change.get("value", {})
+                if "messages" in value and isinstance(value["messages"], list) and len(value["messages"]) > 0:
+                    incoming_meta_msg = value["messages"][0]
+                    meta_contacts = value.get("contacts", [])
+                    break
+            if incoming_meta_msg:
+                break
+
+        if not incoming_meta_msg:
+            # It was a status update (sent, delivered, read) or non-message event from Meta
+            logger.info("Meta webhook event received (status update or non-message event)")
+            return {"status": "success", "reason": "Meta status or non-message event received"}
+
+        # Prevent duplicate handling from webhook retries
+        msg_id = incoming_meta_msg.get("id")
+        if msg_id:
+            if msg_id in PROCESSED_MESSAGE_IDS:
+                return {"status": "ignored", "reason": "Duplicate message ID"}
+            PROCESSED_MESSAGE_IDS.add(msg_id)
+            if len(PROCESSED_MESSAGE_IDS) > 2000:
+                PROCESSED_MESSAGE_IDS.pop()
+
+        phone = incoming_meta_msg.get("from", "")
+        if meta_contacts and isinstance(meta_contacts, list) and len(meta_contacts) > 0:
+            contact_name = meta_contacts[0].get("profile", {}).get("name")
+
+        msg_type = incoming_meta_msg.get("type")
+        if msg_type == "text":
+            message = incoming_meta_msg.get("text", {}).get("body", "")
+        elif msg_type == "interactive":
+            interactive = incoming_meta_msg.get("interactive", {})
+            if interactive.get("type") == "button_reply":
+                message = interactive.get("button_reply", {}).get("title", "")
+            elif interactive.get("type") == "list_reply":
+                message = interactive.get("list_reply", {}).get("title", "")
+        elif msg_type in ["voice", "audio"]:
+            audio_info = incoming_meta_msg.get("audio") or incoming_meta_msg.get("voice") or {}
+            media_id = audio_info.get("id")
+            audio_mime = audio_info.get("mime_type", "audio/ogg")
+            if media_id and settings.META_ACCESS_TOKEN:
+                try:
+                    meta_headers = {"Authorization": f"Bearer {settings.META_ACCESS_TOKEN}"}
+                    async with httpx.AsyncClient(timeout=15.0) as client:
+                        info_res = await client.get(f"https://graph.facebook.com/v20.0/{media_id}", headers=meta_headers)
+                        if info_res.status_code == 200:
+                            download_url = info_res.json().get("url")
+                            if download_url:
+                                audio_res = await client.get(download_url, headers=meta_headers)
+                                if audio_res.status_code == 200:
+                                    audio_b64 = base64.b64encode(audio_res.content).decode("utf-8")
+                                    transcription = await brain.transcribe_audio_gemini(audio_b64, audio_mime)
+                                    if transcription:
+                                        message = transcription
+                                        logger.info(f"🎙️ Meta voice note transcribed: '{message}'")
+                                    else:
+                                        message = "(Nota de voz recibida)"
+                                    logger.info(f"🎙️ Meta voice note downloaded ({len(audio_res.content)} bytes) for {phone}")
+                except Exception as audio_err:
+                    logger.error(f"Error processing Meta voice note: {audio_err}")
+        elif msg_type == "document":
+            doc_info = incoming_meta_msg.get("document", {})
+            media_id = doc_info.get("id")
+            doc_name = doc_info.get("filename") or "documento.pdf"
+            if media_id and settings.META_ACCESS_TOKEN:
+                try:
+                    meta_headers = {"Authorization": f"Bearer {settings.META_ACCESS_TOKEN}"}
+                    async with httpx.AsyncClient(timeout=20.0) as client:
+                        info_res = await client.get(f"https://graph.facebook.com/v20.0/{media_id}", headers=meta_headers)
+                        if info_res.status_code == 200:
+                            download_url = info_res.json().get("url")
+                            if download_url:
+                                doc_res = await client.get(download_url, headers=meta_headers)
+                                if doc_res.status_code == 200:
+                                    doc_bytes = doc_res.content
+                                    message = f"(Documento adjunto recibido: {doc_name})"
+                                    logger.info(f"📁 Meta document downloaded ({len(doc_bytes)} bytes): {doc_name}")
+                except Exception as doc_err:
+                    logger.error(f"Error processing Meta document: {doc_err}")
+
     # 1. Handle Whapi.Cloud format
-    if "messages" in body and isinstance(body["messages"], list) and len(body["messages"]) > 0:
+    elif "messages" in body and isinstance(body["messages"], list) and len(body["messages"]) > 0:
         first_msg = body["messages"][0]
 
         # Check if message is sent by ourselves

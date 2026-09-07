@@ -63,7 +63,8 @@ def serve_dashboard():
 # Mount Webhook, Outreach & Dashboard Routers
 app.include_router(dashboard_router, tags=["Executive Dashboard"])
 app.include_router(webhook_router, tags=["WhatsApp Webhook"])
-app.include_router(webhook_router, prefix="/api/v1/webhook", tags=["WhatsApp Webhook v1"])
+app.include_router(webhook_router, prefix="/api/v1", tags=["WhatsApp Webhook v1"])
+app.include_router(webhook_router, prefix="/api/v1/webhook", tags=["WhatsApp Webhook v1 Extra"])
 app.include_router(outreach_router, prefix="/api/v1/outreach", tags=["Outreach v1"])
 
 # Backward compatibility routes

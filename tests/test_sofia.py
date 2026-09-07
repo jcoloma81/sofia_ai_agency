@@ -200,6 +200,133 @@ def test_sdr_status_and_listing(db):
     assert list_res.status_code == 200
     assert isinstance(list_res.json(), list)
 
+def test_meta_webhook_verification():
+    """Verify Meta handshake GET /webhook."""
+    # 1. Successful handshake
+    res = client.get(
+        "/webhook",
+        params={
+            "hub.mode": "subscribe",
+            "hub.challenge": "1158201444",
+            "hub.verify_token": "sofia_meta_secret_token_2026"
+        }
+    )
+    assert res.status_code == 200
+    assert res.text == "1158201444"
+
+    # Also test at /api/v1/webhook
+    res_v1 = client.get(
+        "/api/v1/webhook",
+        params={
+            "hub.mode": "subscribe",
+            "hub.challenge": "998877",
+            "hub.verify_token": "sofia_meta_secret_token_2026"
+        }
+    )
+    assert res_v1.status_code == 200
+    assert res_v1.text == "998877"
+
+    # 2. Token mismatch
+    res_fail = client.get(
+        "/webhook",
+        params={
+            "hub.mode": "subscribe",
+            "hub.challenge": "1158201444",
+            "hub.verify_token": "wrong_token"
+        }
+    )
+    assert res_fail.status_code == 403
+
+def test_meta_webhook_incoming_message(db, mock_whatsapp):
+    mock_send, mock_alert = mock_whatsapp
+
+    meta_payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "2238368880345692",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "metadata": {
+                                "display_phone_number": "15551969785",
+                                "phone_number_id": "1221681157704738"
+                            },
+                            "contacts": [
+                                {
+                                    "profile": {
+                                        "name": "Carlos Gomez"
+                                    },
+                                    "wa_id": "5491166778899"
+                                }
+                            ],
+                            "messages": [
+                                {
+                                    "from": "5491166778899",
+                                    "id": "wamid.HBgLNTQ5MzQzNDUzNjQ0NxUCABEYEjA...",
+                                    "timestamp": "1725740000",
+                                    "text": {
+                                        "body": "Hola Sofía, contame cómo funciona el servicio"
+                                    },
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "field": "messages"
+                    }
+                ]
+            }
+        ]
+    }
+
+    res = client.post("/webhook", json=meta_payload)
+    assert res.status_code == 200
+    assert res.json()["status"] == "success"
+
+    # Verify prospect in DB
+    prospect = db.query(Prospect).filter(Prospect.phone == "5491166778899").first()
+    assert prospect is not None
+    assert prospect.contact_name == "Carlos Gomez"
+    mock_send.assert_awaited()
+
+def test_meta_webhook_status_update(db, mock_whatsapp):
+    mock_send, _ = mock_whatsapp
+
+    meta_status_payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "2238368880345692",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "metadata": {
+                                "display_phone_number": "15551969785",
+                                "phone_number_id": "1221681157704738"
+                            },
+                            "statuses": [
+                                {
+                                    "id": "wamid.HBgL...",
+                                    "status": "delivered",
+                                    "timestamp": "1725740000",
+                                    "recipient_id": "5493434536447"
+                                }
+                            ]
+                        },
+                        "field": "messages"
+                    }
+                ]
+            }
+        ]
+    }
+
+    res = client.post("/webhook", json=meta_status_payload)
+    assert res.status_code == 200
+    assert res.json()["status"] == "success"
+    mock_send.assert_not_awaited()
+
 def test_whapi_webhook_format_and_self_filter(db, mock_whatsapp):
     mock_send, mock_alert = mock_whatsapp
 

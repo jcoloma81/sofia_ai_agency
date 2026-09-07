@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     WHATSAPP_API_URL: Optional[str] = "https://gate.whapi.cloud"
     WHATSAPP_API_TOKEN: Optional[str] = None
 
+    # Official Meta WhatsApp Cloud API
+    META_ACCESS_TOKEN: Optional[str] = None
+    META_PHONE_NUMBER_ID: Optional[str] = None
+    META_WABA_ID: Optional[str] = None
+    META_VERIFY_TOKEN: str = "sofia_meta_secret_token_2026"
+
     # Mail / SMTP alerts
     MAIL_USERNAME: Optional[str] = None
     MAIL_PASSWORD: Optional[str] = None
