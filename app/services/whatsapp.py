@@ -9,6 +9,25 @@ from app.services.alerts import send_email_alert, build_meeting_html_email
 
 logger = logging.getLogger(__name__)
 
+def get_phone_candidates(phone: str) -> List[str]:
+    """
+    Generates candidate phone numbers to maximize delivery compatibility.
+    Specifically handles Argentina variations (+54 9 vs +54 15).
+    """
+    clean = "".join(filter(str.isdigit, phone))
+    candidates = [clean]
+    # Argentina mobile with 9: 549 343 4536447 (13 digits) -> 54 343 15 4536447
+    if clean.startswith("549") and len(clean) == 13:
+        candidates.append(f"54{clean[3:6]}15{clean[6:]}")
+    # Argentina mobile with 9: 549 11 12345678 (12 digits) -> 54 11 15 12345678
+    elif clean.startswith("549") and len(clean) == 12:
+        candidates.append(f"54{clean[3:5]}15{clean[5:]}")
+    # Argentina mobile with 15: 54 343 15 4536447 -> 549 343 4536447
+    elif clean.startswith("54") and "15" in clean:
+        stripped = clean.replace("15", "", 1)
+        candidates.append(stripped[:2] + "9" + stripped[2:])
+    return candidates
+
 async def send_whatsapp_message(to_phone: str, text: str) -> bool:
     """
     Sends a WhatsApp message via Official Meta WhatsApp Cloud API (Primary Enterprise Gateway),
@@ -23,23 +42,24 @@ async def send_whatsapp_message(to_phone: str, text: str) -> bool:
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
-        meta_payload = {
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": clean_phone,
-            "type": "text",
-            "text": {"preview_url": False, "body": text}
-        }
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
-                if res.status_code in [200, 201]:
-                    logger.info(f"✅ Meta WhatsApp Cloud API message sent successfully to {clean_phone}")
-                    return True
-                else:
-                    logger.warning(f"Meta Cloud API returned status {res.status_code}: {res.text}")
-        except Exception as e:
-            logger.error(f"Error calling Meta WhatsApp Cloud API: {e}")
+        for target_phone in get_phone_candidates(clean_phone):
+            meta_payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": target_phone,
+                "type": "text",
+                "text": {"preview_url": False, "body": text}
+            }
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
+                    if res.status_code in [200, 201]:
+                        logger.info(f"✅ Meta WhatsApp Cloud API message sent successfully to {target_phone}")
+                        return True
+                    else:
+                        logger.warning(f"Meta Cloud API returned status {res.status_code} for {target_phone}: {res.text}")
+            except Exception as e:
+                logger.error(f"Error calling Meta WhatsApp Cloud API for {target_phone}: {e}")
 
     # 2. Whapi.Cloud Gateway Fallback
     api_url = settings.WHATSAPP_API_URL
@@ -100,29 +120,30 @@ async def send_whatsapp_document(
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
-        meta_payload = {
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": clean_phone,
-            "type": "document",
-            "document": {
-                "link": document_url,
-                "filename": filename
+        for target_phone in get_phone_candidates(clean_phone):
+            meta_payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": target_phone,
+                "type": "document",
+                "document": {
+                    "link": document_url,
+                    "filename": filename
+                }
             }
-        }
-        if caption:
-            meta_payload["document"]["caption"] = caption
+            if caption:
+                meta_payload["document"]["caption"] = caption
 
-        try:
-            async with httpx.AsyncClient(timeout=25.0) as client:
-                res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
-                if res.status_code in [200, 201]:
-                    logger.info(f"✅ Meta WhatsApp Cloud API document sent successfully to {clean_phone}")
-                    return True
-                else:
-                    logger.warning(f"Meta Cloud API document returned status {res.status_code}: {res.text}")
-        except Exception as e:
-            logger.error(f"Error sending document via Meta WhatsApp Cloud API: {e}")
+            try:
+                async with httpx.AsyncClient(timeout=25.0) as client:
+                    res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
+                    if res.status_code in [200, 201]:
+                        logger.info(f"✅ Meta WhatsApp Cloud API document sent successfully to {target_phone}")
+                        return True
+                    else:
+                        logger.warning(f"Meta Cloud API document returned status {res.status_code} for {target_phone}: {res.text}")
+            except Exception as e:
+                logger.error(f"Error sending document via Meta WhatsApp Cloud API for {target_phone}: {e}")
 
     # 2. Whapi.Cloud Fallback
     api_url = settings.WHATSAPP_API_URL

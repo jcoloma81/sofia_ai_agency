@@ -19,7 +19,12 @@ def is_boss_number(phone: str) -> bool:
     clean_boss = "".join(filter(str.isdigit, str(settings.WHATSAPP_ALERT_PHONE or "")))
     if not clean_sender or not clean_boss:
         return False
-    return clean_sender == clean_boss or clean_boss.endswith(clean_sender) or clean_sender.endswith(clean_boss)
+    if clean_sender == clean_boss or clean_boss.endswith(clean_sender) or clean_sender.endswith(clean_boss):
+        return True
+    # Argentina variation (15 vs 9): match on area + subscriber digits
+    if len(clean_sender) >= 7 and len(clean_boss) >= 7 and clean_sender[-7:] == clean_boss[-7:]:
+        return True
+    return False
 
 async def process_boss_message(
     db: Session,
