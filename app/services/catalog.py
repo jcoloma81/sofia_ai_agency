@@ -2,7 +2,7 @@ import io
 import re
 import csv
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import httpx
@@ -29,7 +29,7 @@ class ProductItem:
 def clean_price(val: Any) -> float:
     """
     Parses various currency formats into a float:
-    e.g. '$ 14.400,50', '14,400', '14400', '14.400', '$2.500,00'
+    e.g. '$ 14.400,50', '14,400', '14400', '14.400', '$2.500,00', '$ 58.000.-'
     """
     if val is None:
         return 0.0
@@ -37,7 +37,9 @@ def clean_price(val: Any) -> float:
         return float(val)
 
     s = str(val).strip()
+    s = re.sub(r'[.-]+$', '', s)
     s = re.sub(r'[^\d.,]', '', s)
+    s = s.strip(".,")
     if not s:
         return 0.0
 
@@ -57,9 +59,11 @@ def clean_price(val: Any) -> float:
         else:
             s = s.replace(",", "")
     elif "." in s:
-        # If dot is thousands separator (e.g. 14.400)
+        # If dot is thousands separator (e.g. 14.400 or 1.250.000)
         parts = s.split(".")
         if len(parts) == 2 and len(parts[1]) == 3:
+            s = s.replace(".", "")
+        elif len(parts) > 2:
             s = s.replace(".", "")
 
     try:
@@ -96,17 +100,32 @@ def identify_columns(headers: List[str]) -> Dict[str, Optional[int]]:
         if not h:
             continue
 
-        if mapping["name"] is None and any(k in h for k in ["producto", "articulo", "artículo", "descripcion", "descripción", "detalle", "nombre", "item"]):
+        if mapping["name"] is None and any(k in h for k in [
+            "producto", "articulo", "artículo", "descripcion", "descripción", 
+            "detalle", "nombre", "item", "denominacion", "denominación"
+        ]):
             mapping["name"] = idx
-        elif mapping["price"] is None and any(k in h for k in ["precio", "valor", "importe", "costo", "p.unit", "p.vta"]):
+        elif mapping["price"] is None and any(k in h for k in [
+            "precio", "valor", "importe", "costo", "p.unit", "p.vta", "p.lista", 
+            "mayorista", "final", "total", "contado", "pvp", "pesos", "$"
+        ]):
             mapping["price"] = idx
-        elif mapping["presentation"] is None and any(k in h for k in ["presentacion", "presentación", "bulto", "envase", "medida", "unidad", "pack"]):
+        elif mapping["presentation"] is None and any(k in h for k in [
+            "presentacion", "presentación", "bulto", "envase", "medida", 
+            "unidad", "pack", "formato", "caja", "fardo"
+        ]):
             mapping["presentation"] = idx
-        elif mapping["stock"] is None and any(k in h for k in ["stock", "disponible", "hay", "estado"]):
+        elif mapping["stock"] is None and any(k in h for k in [
+            "stock", "disponible", "hay", "estado", "disp"
+        ]):
             mapping["stock"] = idx
-        elif mapping["category"] is None and any(k in h for k in ["categoria", "categoría", "rubro", "familia"]):
+        elif mapping["category"] is None and any(k in h for k in [
+            "categoria", "categoría", "rubro", "familia", "seccion", "sección", "grupo", "linea", "línea"
+        ]):
             mapping["category"] = idx
-        elif mapping["code"] is None and any(k in h for k in ["codigo", "código", "cod", "sku", "id"]):
+        elif mapping["code"] is None and any(k in h for k in [
+            "codigo", "código", "cod", "sku", "id", "ref", "referencia", "art"
+        ]):
             mapping["code"] = idx
 
     if mapping["name"] is None and len(headers) > 0:
@@ -117,6 +136,105 @@ def identify_columns(headers: List[str]) -> Dict[str, Optional[int]]:
     return mapping
 
 
+def find_header_and_mapping(rows: List[Any]) -> Tuple[int, Dict[str, Optional[int]]]:
+    """
+    Scans candidate rows (e.g. up to 25 rows) to automatically locate the real
+    table header, bypassing company logos, titles, dates, instructions, and blank lines.
+    """
+    best_idx = 0
+    best_score = -1
+    best_mapping: Dict[str, Optional[int]] = {
+        "name": None, "price": None, "presentation": None,
+        "stock": None, "category": None, "code": None
+    }
+
+    max_rows = min(25, len(rows))
+    for idx in range(max_rows):
+        row = rows[idx]
+        if not row or not any(row):
+            continue
+        headers = [str(cell or "").strip() for cell in row]
+        m = identify_columns(headers)
+
+        score = 0
+        if m["name"] is not None and m["price"] is not None:
+            score += 100
+        elif m["name"] is not None or m["price"] is not None:
+            score += 30
+
+        for k in ["presentation", "stock", "category", "code"]:
+            if m[k] is not None:
+                score += 15
+
+        if score > best_score:
+            best_score = score
+            best_idx = idx
+            best_mapping = m
+            if score >= 130:
+                break
+
+    # If no header was recognized by keywords, fallback to first non-empty row
+    if best_score < 30:
+        for idx in range(max_rows):
+            if rows[idx] and any(rows[idx]):
+                best_idx = idx
+                best_mapping = identify_columns([str(c or "").strip() for c in rows[idx]])
+                if best_mapping["name"] is None:
+                    best_mapping["name"] = 0
+                if best_mapping["price"] is None and len(rows[idx]) > 1:
+                    best_mapping["price"] = 1
+                break
+
+    if best_mapping["name"] is None:
+        best_mapping["name"] = 0
+    if best_mapping["price"] is None and rows and len(rows[best_idx]) > 1:
+        best_mapping["price"] = 1
+
+    return best_idx, best_mapping
+
+
+def extract_section_category(row: List[Any], name_idx: Optional[int]) -> Tuple[bool, Optional[str]]:
+    """
+    Detects if a row is an organizational section divider (e.g. '--- LÁCTEOS ---', 'RUBRO: BEBIDAS')
+    or a repeated table header from printed page breaks.
+    Returns (is_divider_or_header, category_name_if_any).
+    """
+    if not row:
+        return False, None
+
+    str_cells = [str(c or "").strip() for c in row if c is not None and str(c).strip()]
+    if not str_cells:
+        return False, None
+
+    joined_lower = " ".join(str_cells).lower()
+    # Repeated table header across pages
+    if any(k in joined_lower for k in ["precio", "p.unit", "p.vta", "mayorista", "precio venta"]) and \
+       any(k in joined_lower for k in ["producto", "articulo", "artículo", "descripcion", "descripción", "detalle", "cod"]):
+        return True, None
+
+    candidate_texts = []
+    if name_idx is not None and name_idx < len(row) and row[name_idx]:
+        candidate_texts.append(str(row[name_idx]).strip())
+    if len(row) > 0 and row[0] and str(row[0]).strip() not in candidate_texts:
+        candidate_texts.append(str(row[0]).strip())
+
+    for s in candidate_texts:
+        s_lower = s.lower()
+        if s.startswith(("---", "***", "===", "###")):
+            cat = s.strip("-*= #").strip()
+            return True, cat if cat else None
+
+        if s_lower.startswith(("rubro:", "rubro ", "categoria:", "categoría:", "familia:", "seccion:", "sección:")) or "rubro:" in s_lower:
+            cat = re.sub(r'.*?(rubro|categoría|categoria|familia|sección|seccion)\s*:\s*', '', s, flags=re.IGNORECASE).strip()
+            return True, cat if cat else None
+
+        # Row with very few cells and no numeric digits (e.g. single title banner)
+        if len(str_cells) <= 2 and len(s) > 2 and not any(char.isdigit() for char in s):
+            return True, s.strip()
+
+    return False, None
+
+
 class CatalogService:
     def __init__(self):
         self.products: List[ProductItem] = []
@@ -124,7 +242,7 @@ class CatalogService:
         self.source_info: str = "Empty"
 
     def load_from_csv(self, csv_content: str, source_name: str = "CSV") -> int:
-        """Parses CSV text into product catalog."""
+        """Parses CSV text into product catalog, ignoring banners and headers."""
         if not csv_content or not csv_content.strip():
             return 0
 
@@ -136,15 +254,23 @@ class CatalogService:
         if not rows:
             return 0
 
-        headers = [h.strip() for h in rows[0]]
-        col_map = identify_columns(headers)
+        header_idx, col_map = find_header_and_mapping(rows)
+        current_category = "General"
 
         items: List[ProductItem] = []
-        for row in rows[1:]:
+        for row in rows[header_idx + 1:]:
             if not row or not any(row):
                 continue
+
             name_idx = col_map["name"]
             price_idx = col_map["price"]
+
+            is_divider, section_cat = extract_section_category(list(row), name_idx)
+            if is_divider:
+                if section_cat:
+                    current_category = section_cat
+                continue
+
             if name_idx is None or name_idx >= len(row):
                 continue
 
@@ -155,13 +281,16 @@ class CatalogService:
             raw_price = row[price_idx] if (price_idx is not None and price_idx < len(row)) else 0.0
             price = clean_price(raw_price)
 
+            if price <= 0 and not any(str(c or "").strip() for i, c in enumerate(row) if i != name_idx):
+                continue
+
             presentation = "Unidad"
             if col_map["presentation"] is not None and col_map["presentation"] < len(row):
                 p_val = str(row[col_map["presentation"]]).strip()
                 if p_val:
                     presentation = p_val
 
-            category = "General"
+            category = current_category
             if col_map["category"] is not None and col_map["category"] < len(row):
                 c_val = str(row[col_map["category"]]).strip()
                 if c_val:
@@ -193,63 +322,79 @@ class CatalogService:
         return len(items)
 
     def load_from_excel_bytes(self, content: bytes, filename: str = "Excel") -> int:
-        """Parses Excel workbook bytes into product catalog."""
+        """Parses Excel workbook bytes into product catalog, scanning all visible sheets."""
         try:
             wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
-            sheet = wb.active
-            rows = list(sheet.iter_rows(values_only=True))
-            if not rows:
-                return 0
-
-            headers = [str(h or "").strip() for h in rows[0]]
-            col_map = identify_columns(headers)
-
             items: List[ProductItem] = []
-            for row in rows[1:]:
-                if not row or not any(row):
-                    continue
-                name_idx = col_map["name"]
-                price_idx = col_map["price"]
-                if name_idx is None or name_idx >= len(row):
+
+            for sheet in wb.worksheets:
+                if getattr(sheet, "sheet_state", "visible") != "visible":
                     continue
 
-                raw_name = str(row[name_idx] or "").strip()
-                if not raw_name:
+                rows = list(sheet.iter_rows(values_only=True))
+                if not rows or len(rows) < 2:
                     continue
 
-                raw_price = row[price_idx] if (price_idx is not None and price_idx < len(row)) else 0.0
-                price = clean_price(raw_price)
+                header_idx, col_map = find_header_and_mapping(rows)
+                sheet_default_cat = sheet.title if sheet.title.lower() not in ["sheet1", "hoja1", "hoja 1", "datos", "productos"] else "General"
+                current_category = sheet_default_cat
 
-                presentation = "Unidad"
-                if col_map["presentation"] is not None and col_map["presentation"] < len(row):
-                    p_val = str(row[col_map["presentation"]] or "").strip()
-                    if p_val:
-                        presentation = p_val
+                for row in rows[header_idx + 1:]:
+                    if not row or not any(row):
+                        continue
 
-                category = "General"
-                if col_map["category"] is not None and col_map["category"] < len(row):
-                    c_val = str(row[col_map["category"]] or "").strip()
-                    if c_val:
-                        category = c_val
+                    name_idx = col_map["name"]
+                    price_idx = col_map["price"]
 
-                in_stock = True
-                if col_map["stock"] is not None and col_map["stock"] < len(row):
-                    in_stock = clean_stock(row[col_map["stock"]])
+                    is_divider, section_cat = extract_section_category(list(row), name_idx)
+                    if is_divider:
+                        if section_cat:
+                            current_category = section_cat
+                        continue
 
-                code = None
-                if col_map["code"] is not None and col_map["code"] < len(row):
-                    cd = str(row[col_map["code"]] or "").strip()
-                    if cd:
-                        code = cd
+                    if name_idx is None or name_idx >= len(row):
+                        continue
 
-                items.append(ProductItem(
-                    name=raw_name,
-                    price=price,
-                    presentation=presentation,
-                    category=category,
-                    in_stock=in_stock,
-                    code=code
-                ))
+                    raw_name = str(row[name_idx] or "").strip()
+                    if not raw_name:
+                        continue
+
+                    raw_price = row[price_idx] if (price_idx is not None and price_idx < len(row)) else 0.0
+                    price = clean_price(raw_price)
+
+                    if price <= 0 and not any(str(c or "").strip() for i, c in enumerate(row) if i != name_idx):
+                        continue
+
+                    presentation = "Unidad"
+                    if col_map["presentation"] is not None and col_map["presentation"] < len(row):
+                        p_val = str(row[col_map["presentation"]] or "").strip()
+                        if p_val:
+                            presentation = p_val
+
+                    category = current_category
+                    if col_map["category"] is not None and col_map["category"] < len(row):
+                        c_val = str(row[col_map["category"]] or "").strip()
+                        if c_val:
+                            category = c_val
+
+                    in_stock = True
+                    if col_map["stock"] is not None and col_map["stock"] < len(row):
+                        in_stock = clean_stock(row[col_map["stock"]])
+
+                    code = None
+                    if col_map["code"] is not None and col_map["code"] < len(row):
+                        cd = str(row[col_map["code"]] or "").strip()
+                        if cd:
+                            code = cd
+
+                    items.append(ProductItem(
+                        name=raw_name,
+                        price=price,
+                        presentation=presentation,
+                        category=category,
+                        in_stock=in_stock,
+                        code=code
+                    ))
 
             self.products = items
             self.last_updated = datetime.now(timezone.utc)
