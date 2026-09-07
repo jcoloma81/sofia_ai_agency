@@ -52,7 +52,19 @@ async def process_boss_message(
                 csv_str = doc_bytes.decode("latin-1", errors="ignore")
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
 
-    # 2. Live Demo / Order Test by the Boss (for video demos from personal phone)
+    # 2. Commercial Directives set by the boss (e.g. horarios, montos mínimos, zonas, requisitos)
+    directive_keywords = [
+        "minimo", "mínimo", "directiva", "directivas", "regla", "reglas",
+        "flete", "reparto", "repartimos", "envio", "envío", "corte", "zona", "zonas",
+        "cobertura", "cupo", "politica", "política", "condicion", "condición", "condiciones",
+        "requisito", "requisitos", "horario", "horarios", "tengan en cuenta", "tener en cuenta"
+    ]
+    if any(k in lower_text for k in directive_keywords):
+        from app.services.directives import directives_service
+        reply = await directives_service.update_from_boss_message(clean_text)
+        return True, reply, "boss_directive_set"
+
+    # 3. Live Demo / Order Test by the Boss (for video demos from personal phone)
     from app.services.order_engine import (
         parse_order_text,
         format_order_summary_message,
@@ -108,17 +120,6 @@ async def process_boss_message(
                 f"¡Hola Javier! El *{p.name}* ({p.presentation}) está a *{p.formatted_price()}* y {stock_info}. "
                 f"¿Cuántas unidades te anoto para el próximo reparto?"
             ), "boss_price_test"
-
-    # Commercial Directives set by the boss
-    directive_keywords = [
-        "minimo", "mínimo", "directiva", "directivas", "regla", "reglas",
-        "flete", "reparto", "envio", "envío", "corte", "zona", "zonas",
-        "cobertura", "cupo", "politica", "política", "condicion", "condición", "condiciones"
-    ]
-    if any(k in lower_text for k in directive_keywords):
-        from app.services.directives import directives_service
-        reply = await directives_service.update_from_boss_message(clean_text)
-        return True, reply, "boss_directive_set"
 
     # 3. Status & Metrics Summary
     if any(k in lower_text for k in ["resumen", "estado", "ventas", "pedidos", "como venimos", "cómo venimos", "metricas", "métricas"]):

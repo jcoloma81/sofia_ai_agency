@@ -172,14 +172,30 @@ def is_order_confirmation(text: str) -> bool:
     """Detects if customer says YES / confirm the order."""
     if not text:
         return False
-    text_lower = text.lower().strip()
-    confirmations = [
-        "si", "sí", "dale", "confirmalo", "confirmá", "mandalo", "mandalo nomas",
-        "anotalo", "de acuerdo", "listo", "perfecto", "dale mandalo", "dale dale",
-        "si por favor", "si confirmalo", "si dale", "ok", "bueno dale"
-    ]
-    # Check exact match or startswith
-    words = re.findall(r'\b\w+\b', text_lower)
-    if any(w in ["si", "sí", "dale", "confirmalo", "mandalo"] for w in words[:3]):
+    text_clean = text.lower().strip()
+    words = re.findall(r'\b[a-záéíóúñ0-9]+\b', text_clean)
+    if not words or len(words) > 7:
+        return False
+
+    # Never treat a commercial directive or inquiry as an order confirmation
+    directive_words = {
+        "minimo", "mínimo", "zona", "zonas", "flete", "precio", "cuanto", "cuánto",
+        "horario", "horarios", "requisito", "requisitos", "directiva", "directivas", "regla", "reglas"
+    }
+    if any(w in directive_words for w in words):
+        return False
+
+    exact_confirmations = {
+        "si", "sí", "dale", "confirmalo", "confirmá", "confirmar", "confirmado",
+        "mandalo", "anotalo", "listo", "perfecto", "ok", "bueno", "metele", "avanza"
+    }
+
+    if any(w in exact_confirmations for w in words):
         return True
-    return any(c in text_lower for c in confirmations)
+
+    joined = " ".join(words)
+    phrases = [
+        "si lo confirmo", "si confirmo", "si por favor", "si dale", "dale mandalo",
+        "de acuerdo", "bueno dale", "dale perfecto", "dale dale", "mandalo nomas"
+    ]
+    return any(p in joined for p in phrases)
