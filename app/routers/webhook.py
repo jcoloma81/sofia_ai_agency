@@ -87,21 +87,28 @@ async def receive_whatsapp_webhook(
     doc_bytes = None
     doc_name = None
 
-    # 0. Handle Official Meta WhatsApp Cloud API format
-    if body.get("object") == "whatsapp_business_account":
-        entries = body.get("entry", [])
+    # 0. Handle Official Meta WhatsApp Cloud API format (Production & Dashboard Test Tool)
+    if body.get("object") == "whatsapp_business_account" or ("value" in body and isinstance(body.get("value"), dict) and "messages" in body["value"]):
         incoming_meta_msg = None
         meta_contacts = []
-        for entry in entries:
-            changes = entry.get("changes", [])
-            for change in changes:
-                value = change.get("value", {})
-                if "messages" in value and isinstance(value["messages"], list) and len(value["messages"]) > 0:
-                    incoming_meta_msg = value["messages"][0]
-                    meta_contacts = value.get("contacts", [])
+
+        if body.get("object") == "whatsapp_business_account":
+            entries = body.get("entry", [])
+            for entry in entries:
+                changes = entry.get("changes", [])
+                for change in changes:
+                    value = change.get("value", {})
+                    if "messages" in value and isinstance(value["messages"], list) and len(value["messages"]) > 0:
+                        incoming_meta_msg = value["messages"][0]
+                        meta_contacts = value.get("contacts", [])
+                        break
+                if incoming_meta_msg:
                     break
-            if incoming_meta_msg:
-                break
+        elif "value" in body:
+            value = body["value"]
+            if "messages" in value and isinstance(value["messages"], list) and len(value["messages"]) > 0:
+                incoming_meta_msg = value["messages"][0]
+                meta_contacts = value.get("contacts", [])
 
         if not incoming_meta_msg:
             # It was a status update (sent, delivered, read) or non-message event from Meta
