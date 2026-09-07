@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 from typing import Optional, Any, List
@@ -209,6 +210,8 @@ async def notify_owner_order_confirmed(
         f"👉 *Contactar cliente:* https://wa.me/{phone}"
     )
 
+    # Slight delay so confirmation reply arrives first in chat
+    await asyncio.sleep(1.5)
     await send_whatsapp_message(to_phone=alert_phone, text=wa_text)
     logger.info(f"Order alert dispatched to owner ({alert_phone}) for {client_name}")
 

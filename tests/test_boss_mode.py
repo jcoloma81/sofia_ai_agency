@@ -97,3 +97,18 @@ async def test_boss_order_demo_with_words(db):
     assert "Harina Pureza" in reply
     assert "$68.200" in reply
 
+@pytest.mark.asyncio
+async def test_boss_order_confirmation_triggers_depot_alert(db):
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.whatsapp.notify_owner_order_confirmed", new_callable=AsyncMock) as mock_depot:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Si lo confirmo"
+        )
+        assert handled is True
+        assert action == "boss_confirm_test"
+        assert "PEDIDO CONFIRMADO" in reply
+        mock_depot.assert_called_once()
+
+

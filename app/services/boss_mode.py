@@ -11,6 +11,8 @@ from app.services.catalog import catalog_service
 
 logger = logging.getLogger(__name__)
 
+LAST_BOSS_ORDERS = {}
+
 def is_boss_number(phone: str) -> bool:
     """Verifies if the sender phone matches the configured owner/boss alert line."""
     clean_sender = "".join(filter(str.isdigit, str(phone)))
@@ -49,6 +51,7 @@ async def process_boss_message(
             except UnicodeDecodeError:
                 csv_str = doc_bytes.decode("latin-1", errors="ignore")
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
+
     # 2. Live Demo / Order Test by the Boss (for video demos from personal phone)
     from app.services.order_engine import (
         parse_order_text,
@@ -66,14 +69,34 @@ async def process_boss_message(
     if detect_order_intent(clean_text) or (has_number and any(k in lower_text for k in order_triggers)):
         draft = parse_order_text(clean_text)
         if draft.items:
+            clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+            LAST_BOSS_ORDERS[clean_sender] = draft
             summary = format_order_summary_message(draft, contact_name="Javier")
             return True, f"🧪 *[DEMO EN VIVO]*\n\n{summary}", "boss_order_test"
 
     if is_order_confirmation(clean_text):
+        import asyncio
+        from app.services import whatsapp
+
+        clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+        saved_draft = LAST_BOSS_ORDERS.get(clean_sender)
+        if not saved_draft or not saved_draft.items:
+            saved_draft = parse_order_text("1 caja de aceite y 2 fardos de harina")
+
+        # Trigger real depot notification to owner WhatsApp and Email!
+        asyncio.create_task(whatsapp.notify_owner_order_confirmed(
+            client_name="Autoservicio San Martín (Demo Javier)",
+            contact_name="Javier Coloma",
+            phone=clean_sender,
+            city="Paraná Centro",
+            order_draft=saved_draft,
+            delivery_notes="Entrega turno mañana (Demo en vivo)"
+        ))
+
         return True, (
             "🧪 *[DEMO EN VIVO — PEDIDO CONFIRMADO]*\n\n"
             "¡Excelente Javier! Tu pedido de prueba ya fue ingresado a depósito para preparar el despacho.\n\n"
-            "📦 *ALERTA ENVIADA A DEPÓSITO:* Listo para armar bultos y cargar en camión de reparto."
+            "📦 *ALERTA ENVIADA A DEPÓSITO:* En instantes entra la orden de preparación a este chat."
         ), "boss_confirm_test"
 
     if any(k in lower_text for k in ["cuanto", "cuánto", "precio", "sale", "a cuanto", "a cuánto"]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
