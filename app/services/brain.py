@@ -201,6 +201,53 @@ def rule_based_consultative_response(
         None
     )
 
+async def transcribe_audio_gemini(audio_b64: str, audio_mime_type: Optional[str] = None) -> Optional[str]:
+    """
+    Transcribes voice note audio into text using Gemini Multimodal.
+    """
+    gemini_key = settings.GEMINI_API_KEY
+    if not gemini_key or not audio_b64:
+        return None
+
+    clean_mime = audio_mime_type.split(";")[0].strip() if audio_mime_type else "audio/ogg"
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"inline_data": {"mime_type": clean_mime, "data": audio_b64}},
+                    {"text": "Transcribí de forma exacta lo que dice esta nota de voz en español de Argentina. Respondé ÚNICAMENTE con el texto transcrito, sin comillas, saludos ni explicaciones adicionales."}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.1,
+            "maxOutputTokens": 200
+        }
+    }
+
+    candidate_models = [
+        "gemini-flash-lite-latest",
+        "gemini-3.5-flash-lite",
+        "gemini-flash-latest",
+        "gemini-3.6-flash"
+    ]
+    for model_name in candidate_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                res = await client.post(url, json=payload)
+                if res.status_code == 200:
+                    data = res.json()
+                    candidates = data.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        transcribed = candidates[0]["content"]["parts"][0]["text"].strip()
+                        if transcribed:
+                            return transcribed
+        except Exception as e:
+            logger.warning(f"Error transcribing audio with {model_name}: {e}")
+
+    return None
+
 async def generate_ai_response(
     incoming_text: str,
     conversation_history: list,

@@ -136,7 +136,13 @@ async def receive_whatsapp_webhook(
                         audio_res = await client.get(audio_link, headers=headers)
                         if audio_res.status_code == 200:
                             audio_b64 = base64.b64encode(audio_res.content).decode("utf-8")
-                            message = "(Nota de voz enviada por el cliente)"
+                            # Transcribe voice note so Boss mode and Order engine can process spoken words
+                            transcription = await brain.transcribe_audio_gemini(audio_b64, audio_mime)
+                            if transcription:
+                                message = transcription
+                                logger.info(f"🎙️ WhatsApp voice note transcribed: '{message}'")
+                            else:
+                                message = "(Nota de voz enviada por el cliente)"
                             logger.info(f"🎙️ WhatsApp voice note downloaded ({len(audio_res.content)} bytes) for {phone}")
                 except Exception as audio_err:
                     logger.error(f"Error downloading WhatsApp voice note from {audio_link}: {audio_err}")
