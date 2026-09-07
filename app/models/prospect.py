@@ -27,3 +27,10 @@ class Prospect(Base):
     meeting_scheduled_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+class WebhookEvent(Base):
+    __tablename__ = "webhook_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    payload = Column(Text)
+    created_at = Column(DateTime, default=utc_now)

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.database import get_db
-from app.models.prospect import Prospect
+from app.models.prospect import Prospect, WebhookEvent
 from app.services import brain, whatsapp
 from app.config.settings import settings
 from app.services.boss_mode import is_boss_number, process_boss_message
@@ -36,6 +36,11 @@ class WebhookMessagePayload(BaseModel):
     contact_name: Optional[str] = None
     complex_name: Optional[str] = None
     city: Optional[str] = None
+
+@router.get("/events")
+def get_recent_webhook_events(db: Session = Depends(get_db)):
+    events = db.query(WebhookEvent).order_by(WebhookEvent.id.desc()).limit(15).all()
+    return [{"id": e.id, "created_at": str(e.created_at), "payload": json.loads(e.payload) if e.payload else {}} for e in events]
 
 @router.get("/webhook")
 def verify_webhook_ping(
@@ -66,18 +71,17 @@ async def receive_whatsapp_webhook(
 ):
     """
     Receives incoming WhatsApp messages from prospects or human agents.
-    Features:
-    - Official Meta WhatsApp Cloud API payload parsing
-    - Whapi.cloud payload parsing
-    - Webhook deduplication
-    - Human takeover detection (silencing Sofia for that prospect)
-    - Remote reactivation by Javier from his private line
-    - Voice note audio downloading & multimodal processing
-    - AI Brain generation
-    - Dual alert triggering upon meeting scheduling
     """
     body = await request.json()
     logger.info(f"Incoming WhatsApp webhook payload: {body}")
+
+    # Persist raw webhook payload for debugging & traceability
+    try:
+        raw_event = WebhookEvent(payload=json.dumps(body))
+        db.add(raw_event)
+        db.commit()
+    except Exception as log_err:
+        logger.error(f"Error persisting webhook event: {log_err}")
 
     phone = ""
     message = ""
