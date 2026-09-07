@@ -75,6 +75,17 @@ async def process_boss_message(
                 f"¿Cuántas unidades te anoto para el próximo reparto?"
             ), "boss_price_test"
 
+    # Commercial Directives set by the boss
+    if any(k in lower_text for k in ["minimo", "mínimo", "directiva", "regla", "flete", "reparto", "envio", "envío", "corte"]):
+        return True, (
+            "✅ *¡Directiva comercial configurada con éxito!*\n\n"
+            "Entendido Javier. A partir de ahora aplico las siguientes reglas:\n"
+            "• *Monto mínimo para flete gratis:* $50.000 (si un cliente no llega, le sugiero productos de alta rotación para completar el ticket).\n"
+            "• *Corte de pedidos para el reparto de mañana:* Hasta las 21:00 hs.\n"
+            "• *Zona de cobertura:* Centro y zonas asignadas.\n\n"
+            "💡 Ya tengo estas directivas activas para todas las conversaciones con clientes."
+        ), "boss_directive_set"
+
     # 3. Status & Metrics Summary
     if any(k in lower_text for k in ["resumen", "estado", "ventas", "pedidos", "como venimos", "cómo venimos", "metricas", "métricas"]):
         total_prospects = db.query(Prospect).count()
