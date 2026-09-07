@@ -60,6 +60,30 @@ def serve_dashboard():
     dashboard_path = os.path.join(os.path.dirname(__file__), "app", "static", "dashboard.html")
     return FileResponse(dashboard_path)
 
+@app.get("/privacy")
+def privacy_policy():
+    from fastapi.responses import HTMLResponse
+    html = """<!DOCTYPE html><html><head><title>Política de Privacidad - Sofía AI</title><meta charset='utf-8'></head>
+    <body style='font-family:sans-serif;max-width:800px;margin:40px auto;line-height:1.6;color:#333;padding:20px;'>
+    <h1>Política de Privacidad de Sofía AI Agency</h1>
+    <p>Última actualización: Septiembre 2026</p>
+    <p>Sofía AI Agency respeta su privacidad y protege los datos personales recopilados exclusivamente para la gestión de consultas comerciales y atención al cliente a través de la API oficial de WhatsApp.</p>
+    <p>No compartimos datos personales con terceros ni comercializamos información de usuarios.</p>
+    <p>Para consultas o baja de datos, contacte a: colomajavier@gmail.com</p>
+    </body></html>"""
+    return HTMLResponse(content=html)
+
+@app.get("/terms")
+def terms_of_service():
+    from fastapi.responses import HTMLResponse
+    html = """<!DOCTYPE html><html><head><title>Términos de Servicio - Sofía AI</title><meta charset='utf-8'></head>
+    <body style='font-family:sans-serif;max-width:800px;margin:40px auto;line-height:1.6;color:#333;padding:20px;'>
+    <h1>Términos de Servicio de Sofía AI Agency</h1>
+    <p>Al interactuar con nuestros canales automatizados, usted acepta el uso de inteligencia artificial para la asistencia y coordinación de demostraciones comerciales y pedidos.</p>
+    <p>Contacto: colomajavier@gmail.com</p>
+    </body></html>"""
+    return HTMLResponse(content=html)
+
 # Mount Webhook, Outreach & Dashboard Routers
 app.include_router(dashboard_router, tags=["Executive Dashboard"])
 app.include_router(webhook_router, tags=["WhatsApp Webhook"])
