@@ -25,8 +25,8 @@ class Settings(BaseSettings):
 
     # Official Meta WhatsApp Cloud API
     META_ACCESS_TOKEN: Optional[str] = None
-    META_PHONE_NUMBER_ID: Optional[str] = "1221681157704738"
-    META_WABA_ID: Optional[str] = "2238368880345692"
+    META_PHONE_NUMBER_ID: Optional[str] = "1306573512540922"
+    META_WABA_ID: Optional[str] = "1592707075880588"
     META_VERIFY_TOKEN: str = "sofia_meta_secret_token_2026"
 
     # Mail / SMTP alerts
