@@ -75,7 +75,7 @@ def test_webhook_incoming_inquiry(db, mock_whatsapp):
     assert prospect.name == "Distribuidora El Remanso"
     assert prospect.contact_name == "Carlos"
     assert prospect.city == "Colón"
-    assert prospect.status == "in_conversation"
+    assert prospect.status in ["in_conversation", "demo_requested"]
 
     # History contains both messages
     history = json.loads(prospect.conversation_history)
@@ -577,3 +577,46 @@ async def test_dual_alert_dispatch():
         mock_email.assert_awaited_once()
         assert "5493434536447" in mock_wa.call_args[1]["to_phone"]
         assert "Distribuidora Paraná" in mock_email.call_args[1]["subject"]
+
+def test_demo_request_via_meta_webhook(db, mock_whatsapp):
+    """Verify that when someone texts DEMO, Sofia sends the friendly reply and marks demo_requested."""
+    meta_payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "2238368880345692",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "metadata": {"display_phone_number": "5493435720312", "phone_number_id": "1306573512540922"},
+                            "contacts": [{"profile": {"name": "Martín Distribuciones"}, "wa_id": "5493439998877"}],
+                            "messages": [
+                                {
+                                    "from": "5493439998877",
+                                    "id": "wamid.DEMO_TEST_MSG_01",
+                                    "timestamp": "1725540000",
+                                    "type": "text",
+                                    "text": {"body": "DEMO"}
+                                }
+                            ]
+                        },
+                        "field": "messages"
+                    }
+                ]
+            }
+        ]
+    }
+
+    response = client.post("/webhook", json=meta_payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["demo_requested"] is True
+    assert "video demo" in data["reply"]
+    assert "gracias por escribirme" in data["reply"].lower()
+
+    # Verify prospect status in db
+    prospect = db.query(Prospect).filter(Prospect.phone == "5493439998877").first()
+    assert prospect is not None
+    assert prospect.status == "demo_requested"

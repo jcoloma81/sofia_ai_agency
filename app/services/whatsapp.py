@@ -363,3 +363,28 @@ async def notify_owner_order_confirmed(
         )
     except Exception as e:
         logger.error(f"Error dispatching order email alert: {e}")
+
+async def notify_owner_demo_requested(
+    client_name: str,
+    contact_name: Optional[str],
+    phone: str,
+    incoming_text: str
+) -> None:
+    """
+    Dispatches instant notification to Javier when someone requests a demo or asks how the service works via WhatsApp.
+    """
+    alert_phone = settings.WHATSAPP_ALERT_PHONE or "5493434536447"
+    contact_str = contact_name or "Contacto"
+
+    wa_text = (
+        f"🔔 *¡NUEVA SOLICITUD DE DEMO POR WHATSAPP!* 🎥\n\n"
+        f"👤 *Contacto:* {contact_str}\n"
+        f"📱 *Teléfono:* +{phone}\n"
+        f"💬 *Mensaje:* «{incoming_text.strip()}»\n\n"
+        f"👉 *Acción sugerida:* Enviarle el video demo de 86s o llamarlo:\n"
+        f"https://wa.me/{phone}"
+    )
+
+    await asyncio.sleep(1.0)
+    await send_whatsapp_message(to_phone=alert_phone, text=wa_text)
+    logger.info(f"Demo request alert dispatched to owner ({alert_phone}) for {phone}")

@@ -519,6 +519,49 @@ async def receive_whatsapp_webhook(
                     "meeting_confirmed": False
                 }
 
+    # 4. Check if lead is requesting a demo or asking how the service works
+    clean_lower = message.strip().lower()
+    is_demo_intent = False
+    if clean_lower in ["demo", "la demo", "ver demo", "quiero demo", "quiero la demo", "video", "video demo", "el video", "como funciona", "cómo funciona", "como es", "cómo es", "info", "informacion", "información", "mas info", "más info"]:
+        is_demo_intent = True
+    elif "demo" in clean_lower or "video demo" in clean_lower:
+        is_demo_intent = True
+    elif any(phrase in clean_lower for phrase in [
+        "como funciona", "cómo funciona", "quiero ver", "me interesa",
+        "mandame el video", "mandá el video", "pasame el video", "pasanos el video",
+        "de que se trata", "de qué se trata", "como es el servicio", "cómo es el servicio",
+        "como trabaja sofia", "cómo trabaja sofia", "como trabaja sofía", "cómo trabaja sofía"
+    ]):
+        is_demo_intent = True
+
+    if is_demo_intent:
+        prospect.status = "demo_requested"
+        contact_str = f" {prospect.contact_name}" if prospect.contact_name else ""
+        demo_reply = (
+            f"¡Hola{contact_str}! Qué bueno que te interese ver cómo funciona Sofía. "
+            f"En breve nuestro asesor te va a enviar el video demo para que veas el sistema en acción. "
+            f"¡Muchas gracias por escribirme!"
+        )
+        history.append({"sender": "ai", "text": demo_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        asyncio.create_task(whatsapp.notify_owner_demo_requested(
+            client_name=prospect.name,
+            contact_name=prospect.contact_name,
+            phone=clean_phone,
+            incoming_text=message
+        ))
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=demo_reply)
+        return {
+            "status": "success",
+            "demo_requested": True,
+            "reply": demo_reply,
+            "meeting_confirmed": False
+        }
+
     # Generate response via AI Brain
     ai_response, is_meeting_confirmed, meeting_details = await brain.generate_ai_response(
         incoming_text=message.strip(),
