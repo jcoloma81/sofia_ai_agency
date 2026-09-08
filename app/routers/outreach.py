@@ -95,17 +95,16 @@ async def start_outreach(
     greeting = f"¡Hola! Te escribo por {payload.name}." if payload.name else "¡Hola!"
 
     if campaign == "ai_agency":
-        initial_pitch = (
-            f"{greeting} Te escribe Sofía.\n\n"
-            f"Te escribo de forma 100% autónoma. Mi trabajo es encontrar empresas para vender productos o servicios: así como te contacté a vos, puedo buscar clientes y atenderlos bajo el propio logo y marca de tu negocio, 24/7.\n\n"
-            f"No soy un bot común de respuestas automáticas de WhatsApp Business. Funciono como una ejecutiva comercial digital que hace el trabajo pesado de tus ventas:\n\n"
-            f"🎯 Salgo a buscar clientes: Encuentro comercios en Google Maps y les escribo en automático a entre 12 y 15 empresas de tu interés por día, con el logo de tu empresa, para contactar nuevos clientes.\n"
-            f"📄 Atención 24/7: Paso propuestas o tarifarios en PDF y respondo consultas al instante (incluso audios de voz, de noche o feriados).\n"
-            f"🔔 Alerta de cierre: Apenas detecto un interesado o un pedido grande, te aviso directo a tu celular para que cierres la venta.\n\n"
-            f"¿Te parece que coordinemos una charla breve de 10 minutos con Lucas, nuestro asesor, para mostrarte cómo funcionaría con los servicios de tu empresa? (puede ser presencial si están en la zona o virtual).\n\n"
-            f"Quedo a tu disposición.\n\n"
-            f"Sofía — Asistente Comercial con IA"
-        )
+        clean_company = payload.name.strip() if payload.name else "la empresa"
+        initial_pitch = f"Hola buenas! ¿Este es el WhatsApp de {clean_company}? Disculpá la molestia."
+        components = [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": clean_company}
+                ]
+            }
+        ]
     else:
         initial_pitch = (
             f"{greeting} Te escribe Sofía de Air Control.{referencia}\n\n"
@@ -115,6 +114,7 @@ async def start_outreach(
             f"¿Les parece que coordinemos unos minutos? Quedo a disposición.\n\n"
             f"Sofía — Air Control"
         )
+        components = None
 
     history = [{
         "sender": "ai",
@@ -126,7 +126,14 @@ async def start_outreach(
     db.refresh(prospect)
 
     if campaign == "ai_agency" and settings.META_ACCESS_TOKEN:
-        sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v2")
+        sent = await whatsapp.send_whatsapp_template(
+            to_phone=clean_phone,
+            template_name="contacto_comercial_v1",
+            language_code="es_AR",
+            components=components
+        )
+        if not sent:
+            sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v2")
         if not sent:
             sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v1")
         if not sent:
