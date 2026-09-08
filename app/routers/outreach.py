@@ -57,6 +57,13 @@ async def start_outreach(
     clean_phone = "".join(filter(str.isdigit, payload.phone))
     prospect = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
 
+    if prospect and prospect.status == "unsubscribed":
+        return {
+            "status": "skipped",
+            "reason": "Prospect requested opt-out (unsubscribed)",
+            "phone": clean_phone
+        }
+
     campaign = payload.campaign or "ai_agency"
     business_type = payload.business_type
 
@@ -119,7 +126,9 @@ async def start_outreach(
     db.refresh(prospect)
 
     if campaign == "ai_agency" and settings.META_ACCESS_TOKEN:
-        sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v1")
+        sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v2")
+        if not sent:
+            sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v1")
         if not sent:
             sent = await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=initial_pitch)
     else:

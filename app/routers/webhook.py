@@ -362,6 +362,32 @@ async def receive_whatsapp_webhook(
     except Exception:
         history = []
 
+    # 0. Opt-out / BAJA handling (compliant with footer "Respondé BAJA...")
+    clean_msg_lower = message.strip().lower().strip('"').strip("'")
+    if clean_msg_lower in ["baja", "cancelar", "stop", "desuscribir", "no me interesa", "dar de baja"]:
+        prospect.status = "unsubscribed"
+        history.append({
+            "sender": "prospect",
+            "text": message.strip(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        baja_reply = "Entendido. Ya te dimos de baja para no enviarte más mensajes. ¡Muchas gracias y que tengas un excelente día!"
+        history.append({
+            "sender": "ai",
+            "text": baja_reply,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=baja_reply)
+        logger.info(f"🚫 Prospect {clean_phone} requested opt-out (BAJA). Unsubscribed successfully.")
+        return {"status": "success", "action": "opt_out", "reply": baja_reply}
+
+    if prospect.status == "unsubscribed":
+        logger.info(f"🚫 Prospect {clean_phone} is unsubscribed. Ignoring message.")
+        return {"status": "ignored", "reason": "Prospect is unsubscribed"}
+
     history_text = "🎙️ [Nota de voz recibida]" if audio_b64 else message.strip()
     history.append({
         "sender": "prospect",
