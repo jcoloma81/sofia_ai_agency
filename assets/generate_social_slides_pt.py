@@ -315,8 +315,8 @@ def build_slide_6():
     
     perks = [
         ("VÍDEO", "Enviamos o vídeo demonstrativo de 3 minutos"),
-        ("CHAT", "Você ganha acesso para testar o WhatsApp da Sofia"),
-        ("TABELA", "Mostramos como adaptar ao seu catálogo de produtos")
+        ("CHAT", "Liberamos o WhatsApp da Sofia para você testar"),
+        ("TABELA", "Mostramos como adaptar ao seu catálogo")
     ]
     y = 1000
     for tag, desc in perks:
