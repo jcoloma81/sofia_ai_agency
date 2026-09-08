@@ -64,6 +64,23 @@ async def test_boss_pause_and_activate(db):
     db.refresh(lead)
     assert lead.status == "in_conversation"
 
+    # 3. Natural Language Pause without number ("lo tomo yo")
+    handled, reply, action = await process_boss_message(db, settings.WHATSAPP_ALERT_PHONE, "lo tomo yo")
+    assert handled is True
+    assert action == "human_takeover_set"
+    assert "silenciada" in reply
+    db.refresh(lead)
+    assert lead.status == "human_takeover"
+
+    # 4. Reactivate without number ("activar")
+    handled, reply, action = await process_boss_message(db, settings.WHATSAPP_ALERT_PHONE, "activar")
+    assert handled is True
+    assert action == "lead_reactivated"
+    assert "Reactivé" in reply
+    db.refresh(lead)
+    assert lead.status == "in_conversation"
+
+
 @pytest.mark.asyncio
 async def test_boss_catalog_check(db):
     handled, reply, action = await process_boss_message(db, settings.WHATSAPP_ALERT_PHONE, "mostrar catálogo")

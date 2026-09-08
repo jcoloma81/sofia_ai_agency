@@ -1,5 +1,6 @@
 import pytest
 import json
+from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 
@@ -149,3 +150,18 @@ def test_boss_mode_full_controls(db, mock_whatsapp):
 
     db.refresh(lead)
     assert lead.status == "in_conversation"
+
+    # 4. Test 6-hour auto-reactivation
+    lead.status = "human_takeover"
+    lead.updated_at = datetime.now(timezone.utc) - timedelta(hours=6.5)
+    db.commit()
+
+    res_after_6h = client.post("/webhook", json={
+        "phone": "5493434887766",
+        "message": "¿Sigue disponible el arroz?",
+        "complex_name": "Kiosco El Paso"
+    })
+    assert res_after_6h.status_code == 200
+    db.refresh(lead)
+    assert lead.status == "in_conversation"
+

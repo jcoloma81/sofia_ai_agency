@@ -253,31 +253,51 @@ async def process_boss_message(
         )
         return True, reply, "boss_metrics"
 
-    # 3. Human Takeover (Pause Sofia for a number)
-    if any(lower_text.startswith(w) for w in ["pausar", "silenciar", "frenar", "parar"]):
+    # 3. Human Takeover (Pause Sofia for a number or the most recent active lead)
+    pause_triggers = ["pausar", "silenciar", "frenar", "parar", "lo tomo yo", "lo atiendo yo", "me encargo yo", "lo sigo yo", "listo"]
+    if any(lower_text.startswith(w) or lower_text == w for w in pause_triggers):
         num_matches = re.findall(r'\d+', lower_text)
         if num_matches:
             target_number = num_matches[-1]
             target_lead = db.query(Prospect).filter(Prospect.phone.like(f"%{target_number}%")).first()
-            if target_lead:
-                target_lead.status = "human_takeover"
-                db.commit()
-                return True, f"👤 *Listo Javier:* Sofía fue silenciada para *{target_lead.name}* (+{target_lead.phone}). Ahora podés chatear vos directamente sin que la IA intervenga.", "human_takeover_set"
-            return True, f"⚠️ No encontré ningún contacto con el número `{target_number}`.", "lead_not_found"
-        return True, "💡 Para pausar a Sofía en un chat, escribí: `pausar <número>` (ej: `pausar 400964`).", "invalid_syntax"
+        else:
+            target_lead = (
+                db.query(Prospect)
+                .filter(Prospect.status.in_(["in_conversation", "meeting_scheduled", "follow_up_needed", "new", "contacted"]))
+                .order_by(Prospect.updated_at.desc())
+                .first()
+            )
+        if target_lead:
+            target_lead.status = "human_takeover"
+            target_lead.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            return True, f"👤 *Listo Javier:* Sofía fue silenciada por 6 horas para *{target_lead.name}* (+{target_lead.phone}). Ahora podés chatear vos directamente sin que la IA intervenga. Luego de 6 hs sin actividad o si escribís `activar`, Sofía vuelve a activarse.", "human_takeover_set"
+        if num_matches:
+            return True, f"⚠️ No encontré ningún contacto con el número `{num_matches[-1]}`.", "lead_not_found"
+        return True, "💡 No encontré conversaciones activas recientes para pausar. Si querés pausar un número específico, escribí: `pausar <número>`.", "lead_not_found"
 
-    # 4. Reactivate Sofia for a number
-    if any(lower_text.startswith(w) for w in ["activar", "reactivar"]):
+    # 4. Reactivate Sofia for a number or the most recent paused lead
+    reactivate_triggers = ["activar", "reactivar", "reanudar", "despausar"]
+    if any(lower_text.startswith(w) or lower_text == w for w in reactivate_triggers):
         num_matches = re.findall(r'\d+', lower_text)
         if num_matches:
             target_number = num_matches[-1]
             target_lead = db.query(Prospect).filter(Prospect.phone.like(f"%{target_number}%")).first()
-            if target_lead:
-                target_lead.status = "in_conversation"
-                db.commit()
-                return True, f"✅ *Listo Javier:* Reactivé la atención de Sofía para *{target_lead.name}* (+{target_lead.phone}). Sofía retomará la conversación normalmente.", "lead_reactivated"
-            return True, f"⚠️ No encontré ningún contacto con el número `{target_number}`.", "lead_not_found"
-        return True, "💡 Para reactivar a Sofía en un chat, escribí: `activar <número>` (ej: `activar 400964`).", "invalid_syntax"
+        else:
+            target_lead = (
+                db.query(Prospect)
+                .filter(Prospect.status == "human_takeover")
+                .order_by(Prospect.updated_at.desc())
+                .first()
+            )
+        if target_lead:
+            target_lead.status = "in_conversation"
+            target_lead.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            return True, f"✅ *Listo Javier:* Reactivé la atención de Sofía para *{target_lead.name}* (+{target_lead.phone}). Sofía retomará la conversación normalmente.", "lead_reactivated"
+        if num_matches:
+            return True, f"⚠️ No encontré ningún contacto con el número `{num_matches[-1]}`.", "lead_not_found"
+        return True, "💡 No hay ninguna conversación pausada actualmente para reactivar.", "lead_not_found"
 
     # 5. Catalog Check / Refresh
     if any(k in lower_text for k in ["catalogo", "catálogo", "lista de precios", "productos"]):

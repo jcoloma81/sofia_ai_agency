@@ -376,22 +376,35 @@ async def receive_whatsapp_webhook(
         db.commit()
         db.refresh(prospect)
 
-    # If this specific prospect is in human_takeover, Sofia remains completely silent!
+    # If this specific prospect is in human_takeover, check if 6 hours have passed
     if prospect.status == "human_takeover":
-        try:
-            history = json.loads(prospect.conversation_history or "[]")
-        except Exception:
-            history = []
-        history.append({
-            "sender": "prospect",
-            "text": message.strip(),
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
-        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
-        prospect.updated_at = datetime.now(timezone.utc)
-        db.commit()
-        logger.info(f"Prospect {clean_phone} is in human_takeover. Sofia remains silent.")
-        return {"status": "ignored", "reason": "Prospect in human_takeover mode (Sofia silenced for this chat)"}
+        last_update = prospect.updated_at
+        if last_update:
+            if last_update.tzinfo is None:
+                last_update = last_update.replace(tzinfo=timezone.utc)
+            elapsed_seconds = (datetime.now(timezone.utc) - last_update).total_seconds()
+            if elapsed_seconds > 6 * 3600:
+                logger.info(f"⏰ Auto-reactivating Sofia for {clean_phone}: 6 hours of human takeover have elapsed.")
+                prospect.status = "in_conversation"
+                prospect.updated_at = datetime.now(timezone.utc)
+                db.commit()
+
+        # If STILL in human_takeover (within 6 hours), log message and remain silent
+        if prospect.status == "human_takeover":
+            try:
+                history = json.loads(prospect.conversation_history or "[]")
+            except Exception:
+                history = []
+            history.append({
+                "sender": "prospect",
+                "text": message.strip(),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+            prospect.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            logger.info(f"Prospect {clean_phone} is in human_takeover (within 6h window). Sofia remains silent.")
+            return {"status": "ignored", "reason": "Prospect in human_takeover mode (Sofia silenced for this chat)"}
 
     # Parse and update conversation history
     try:
