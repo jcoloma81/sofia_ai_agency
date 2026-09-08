@@ -38,7 +38,7 @@ def create_base_canvas():
     img = Image.alpha_composite(img, glow)
     return img
 
-def draw_story_bars(draw, active_index, total=6):
+def draw_story_bars(draw, active_index, total=7):
     bar_w = int((1080 - 120 - (total - 1) * 14) / total)
     bar_h = 8
     start_x = 60
@@ -195,13 +195,44 @@ def build_slide_3():
     draw.text((540, 1385), "100% en la palma de tu mano", fill=(255, 255, 255), font=fonts["title"], anchor="mm")
     draw.text((540, 1485), "El dueño maneja la distribuidora chateando con Sofía\ncomo si fuera su asistente de máxima confianza.", fill=(148, 163, 184), font=fonts["subtitle"], anchor="mm", align="center")
 
+    draw.text((540, 1750), "Mirá cómo actualiza precios con Excel »", fill=(37, 211, 102), font=fonts["body_bold"], anchor="mm")
+    return img
+
+def build_slide_precios():
+    img = create_base_canvas()
+    draw = ImageDraw.Draw(img)
+    draw_story_bars(draw, 3)
+    draw_header_badge(draw, "CHAU HORAS DE EXCEL MANUAL", color=(52, 211, 153))
+    fonts = get_fonts()
+    
+    draw.text((540, 210), "¿Aumentó el proveedor?\nSofía cruza las listas por vos", fill=(255, 255, 255), font=fonts["title_xl"], anchor="mm", align="center")
+    draw.text((540, 335), "Actualizá precios y catálogo en 1 segundo sin trabajo manual:", fill=(148, 163, 184), font=fonts["subtitle"], anchor="mm")
+    
+    cards = [
+        ("PASO 1", "Le mandás las 2 planillas por WhatsApp", "Tu lista actual desactualizada + el Excel nuevo que te\nmandó tu proveedor o fábrica con los aumentos."),
+        ("PASO 2", "Cruce semántico inteligente con IA", "Sofía empareja los artículos aunque no se llamen igual\n(ej: «Coca 1.5L» con «Gaseosa Coca-Cola 1500cc»)."),
+        ("PASO 3", "Precios en vivo y Excel recalculado", "Sofía empieza a cotizar con precios nuevos al segundo\ny te devuelve la planilla final lista para usar o imprimir.")
+    ]
+    
+    y = 405
+    for tag, title, desc in cards:
+        draw.rounded_rectangle([80, y, 1000, y + 260], radius=26, fill=(17, 24, 39, 230), outline=(52, 211, 153, 160), width=2)
+        pw = draw_pill(draw, tag, 120, y + 26, bg=(52, 211, 153, 35), border=(52, 211, 153, 200), text_color=(52, 211, 153))
+        draw.text((120, y + 78), title, fill=(255, 255, 255), font=fonts["card_title"])
+        draw.text((120, y + 138), desc, fill=(226, 232, 240), font=fonts["body"])
+        y += 285
+
+    draw.rounded_rectangle([80, 1315, 1000, 1615], radius=26, fill=(15, 34, 25, 240), outline=(37, 211, 102, 220), width=2)
+    draw.text((540, 1385), "Chau fórmulas y planillas rotas", fill=(37, 211, 102), font=fonts["title"], anchor="mm")
+    draw.text((540, 1485), "Sin BUSCARV, sin errores de tipeo y sin cambiar\nprecios a mano. Tu fuerza de ventas siempre al día.", fill=(255, 255, 255), font=fonts["subtitle"], anchor="mm", align="center")
+
     draw.text((540, 1750), "Mirá cómo toma un pedido en vivo »", fill=(37, 211, 102), font=fonts["body_bold"], anchor="mm")
     return img
 
 def build_slide_4():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 3)
+    draw_story_bars(draw, 4)
     draw_header_badge(draw, "OPERATORIA EN VIVO")
     fonts = get_fonts()
     
@@ -234,7 +265,7 @@ def build_slide_4():
 def build_slide_5():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 4)
+    draw_story_bars(draw, 5)
     draw_header_badge(draw, "PROSPECCIÓN AUTÓNOMA", color=(250, 204, 21))
     fonts = get_fonts()
     
@@ -265,7 +296,7 @@ def build_slide_5():
 def build_slide_6():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 5)
+    draw_story_bars(draw, 6)
     draw_header_badge(draw, "PROBALA EN VIVO AHORA")
     fonts = get_fonts()
     
@@ -307,9 +338,10 @@ def main():
         ("assets/slides/slide_1_portada.png", build_slide_1),
         ("assets/slides/slide_2_problema.png", build_slide_2),
         ("assets/slides/slide_3_modo_dueno.png", build_slide_3),
-        ("assets/slides/slide_4_pedidos_deposito.png", build_slide_4),
-        ("assets/slides/slide_5_prospeccion_maps.png", build_slide_5),
-        ("assets/slides/slide_6_cta_demo.png", build_slide_6),
+        ("assets/slides/slide_4_actualizacion_precios.png", build_slide_precios),
+        ("assets/slides/slide_5_pedidos_deposito.png", build_slide_4),
+        ("assets/slides/slide_6_prospeccion_maps.png", build_slide_5),
+        ("assets/slides/slide_7_cta_demo.png", build_slide_6),
     ]
     for path, builder in builders:
         slide = builder()
@@ -318,3 +350,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
