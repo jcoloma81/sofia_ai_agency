@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dossiê Operacional & Parceria Comercial — Sofia Agência de IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0B0F19;
+      --bg-card: #111827;
+      --bg-card-alt: #162032;
+      --border-color: #1F2937;
+      --border-accent: #25D366;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --accent-green: #25D366;
+      --accent-green-dark: #0D3320;
+      --accent-blue: #38BDF8;
+      --accent-purple: #A855F7;
+      --accent-yellow: #FACC15;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 40px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 28px;
+      margin-bottom: 36px;
+    }
+
+    .top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .badge-tag {
+      background: rgba(37, 211, 102, 0.12);
+      border: 1px solid rgba(37, 211, 102, 0.4);
+      color: var(--accent-green);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .badge-confidential {
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .title {
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+      color: #FFFFFF;
+      margin-bottom: 10px;
+    }
+
+    .title span {
+      background: linear-gradient(135deg, #25D366 0%, #38BDF8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 17px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 26px;
+      page-break-inside: avoid;
+    }
+
+    .card-highlight {
+      border-color: rgba(37, 211, 102, 0.35);
+      background: linear-gradient(180deg, rgba(13, 51, 32, 0.35) 0%, rgba(17, 24, 39, 0.95) 100%);
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title .icon {
+      font-size: 22px;
+    }
+
+    p {
+      color: #CBD5E1;
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+
+    /* PILLARS GRID */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .pillar-box {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pillar-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .pillar-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .pillar-badge {
+      align-self: flex-start;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .badge-green {
+      background: rgba(37, 211, 102, 0.15);
+      color: var(--accent-green);
+    }
+
+    .badge-blue {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .badge-purple {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--accent-purple);
+    }
+
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13.5px;
+    }
+
+    th {
+      background: var(--bg-card-alt);
+      color: #FFFFFF;
+      font-weight: 700;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+      color: #CBD5E1;
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* CHECKLIST */
+    .checklist {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 13.5px;
+      color: #CBD5E1;
+    }
+
+    .checklist li:last-child {
+      border-bottom: none;
+    }
+
+    .check-icon {
+      color: var(--accent-green);
+      font-weight: 800;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    /* FINANCIAL CALLOUT */
+    .financial-box {
+      background: rgba(13, 51, 32, 0.5);
+      border: 1px solid rgba(37, 211, 102, 0.4);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .fin-item .value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent-green);
+    }
+
+    .fin-item .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* FOOTER */
+    .footer {
+      border-top: 1px solid var(--border-color);
+      padding-top: 18px;
+      margin-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      body {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 100%;
+      }
+
+      .card {
+        background: #F8FAFC !important;
+        border: 1px solid #CBD5E1 !important;
+        color: #0F172A !important;
+        padding: 20px !important;
+        margin-bottom: 18px !important;
+        page-break-inside: avoid;
+      }
+
+      .card-title, .title {
+        color: #0F172A !important;
+      }
+
+      .title span {
+        color: #059669 !important;
+        -webkit-text-fill-color: initial !important;
+      }
+
+      p, td, .pillar-desc, .checklist li {
+        color: #334155 !important;
+      }
+
+      th, .pillar-box {
+        background: #F1F5F9 !important;
+        border: 1px solid #CBD5E1 !important;
+        color: #0F172A !important;
+      }
+
+      .pillar-header {
+        color: #0F172A !important;
+      }
+
+      .financial-box {
+        background: #ECFDF5 !important;
+        border: 1px solid #059669 !important;
+      }
+
+      .fin-item .value {
+        color: #059669 !important;
+      }
+
+      .badge-tag, .pillar-badge {
+        border: 1px solid #059669 !important;
+        color: #059669 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="top-meta">
+        <span class="badge-tag">Plano de Expansão Comercial</span>
+        <span class="badge-confidential">Material Confidencial • 2026</span>
+      </div>
+      <h1 class="title">Sofia — <span>Infraestrutura de Vendas Autônoma</span></h1>
+      <p class="subtitle">Dossiê Estratégico e Operacional para Implantação e Parceria no Mercado Brasileiro</p>
+    </div>
+
+    <!-- SEÇÃO 1: VISÃO GERAL -->
+    <div class="card card-highlight">
+      <div class="card-title">
+        <span class="icon">💡</span> 1. Visão Geral e Oportunidade
+      </div>
+      <p>
+        A <strong>Sofia</strong> é uma inteligência artificial comercial que atua diretamente no WhatsApp corporativo de distribuidoras, atacadistas, fabricantes e prestadores de serviços. Ela resolve os 3 maiores gargalos das empresas brasileiras:
+      </p>
+
+      <div class="grid-3">
+        <div class="pillar-box">
+          <span class="pillar-badge badge-green">Prospecção</span>
+          <div class="pillar-header">📍 Google Maps Ativo</div>
+          <div class="pillar-desc">
+            A Sofia localiza comércios por segmento e cidade, envia um contato consultivo e, <strong>assim que o cliente responde interessado, notifica o dono imediatamente</strong> para fechar o negócio.
+          </div>
+        </div>
+
+        <div class="pillar-box">
+          <span class="pillar-badge badge-blue">Inteligência</span>
+          <div class="pillar-header">📊 Tabelas no Excel</div>
+          <div class="pillar-desc">
+            Atualiza listas de preços desatualizadas na hora. A empresa envia a lista antiga e a nova do fornecedor; <strong>a Sofia cruza os dados com IA e devolve o Excel 100% pronto</strong> sem erro manual.
+          </div>
+        </div>
+
+        <div class="pillar-box">
+          <span class="pillar-badge badge-purple">Operação</span>
+          <div class="pillar-header">⚡ Atendimento 24/7</div>
+          <div class="pillar-desc">
+            Responde dúvidas de catálogo, tira pedidos detalhados e avisa o depósito em segundos. Se o cliente pedir atendimento humano, ela se pausa com discrição.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 2: DIVISÃO DE FUNÇÕES -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🤝</span> 2. Divisão de Funções (Parceria Estratégica)
+      </div>
+      <p>O modelo une a infraestrutura tecnológica na Argentina com a representação local de confiança no Brasil:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Área Técnica (Argentina)</th>
+            <th>Representação Comercial (Brasil)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Desenvolvimento & Servidores:</strong> Manutenção na nuvem, servidores de IA e estabilidade 24 horas.</td>
+            <td><strong>Presença e Confiança Local:</strong> Fornecer o vínculo de proximidade que os clientes do Brasil exigem.</td>
+          </tr>
+          <tr>
+            <td><strong>Prospecção Automatizada:</strong> Filtros e buscas no Google Maps por cidades (ex: Curitiba, Campinas, etc.).</td>
+            <td><strong>Cobrança Direta via PIX:</strong> Recebimento das mensalidades de forma instantânea e sem burocracia bancária.</td>
+          </tr>
+          <tr>
+            <td><strong>Configuração & Treinamento:</strong> Adaptação da linguagem da Sofia para o vocabulário comercial brasileiro.</td>
+            <td><strong>Contato Humano de Cierre:</strong> Áudios ou mensagens breves de WhatsApp para clientes que queiram demonstração guiada.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SEÇÃO 3: O QUE É NECESSÁRIO -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">📋</span> 3. Requisitos para Iniciar (Representação Local)
+      </div>
+      <p>Para ativar a operação e validar os primeiros clientes, são necessários apenas 3 itens básicos:</p>
+      
+      <ul class="checklist">
+        <li>
+          <span class="check-icon">✓</span>
+          <div>
+            <strong>1 Chip telefônico do Brasil (+55):</strong> Pré-pago comum (Claro, Vivo ou TIM) cadastrado com CPF. É utilizado apenas uma vez para receber o código SMS de ativação da Meta Cloud API para o WhatsApp da Sofia.
+          </div>
+        </li>
+        <li>
+          <span class="check-icon">✓</span>
+          <div>
+            <strong>Conta bancária no Brasil com chave PIX:</strong> Qualquer banco digital ou tradicional (Nubank, Inter, Itaú, etc.) para receber os pagamentos dos clientes diretamente em Reais (BRL).
+          </div>
+        </li>
+        <li>
+          <span class="check-icon">✓</span>
+          <div>
+            <strong>Celular ou Computador com WhatsApp:</strong> Apenas para dar suporte e responder eventuais dúvidas de clientes qualificados. <em>(Não requer conhecimento técnico ou de programação).</em>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- SEÇÃO 4: ONBOARDING DO CLIENTE -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">🚀</span> 4. O que o Cliente Entrega para Começar
+      </div>
+      <p>Quando uma empresa contrata a Sofia, o processo de ativação é rápido e demanda apenas 10 minutos do cliente:</p>
+
+      <ul class="checklist">
+        <li>
+          <span class="check-icon">1.</span>
+          <div><strong>Tabela de Preços ou Catálogo:</strong> Em planilha Excel, CSV ou PDF atual.</div>
+        </li>
+        <li>
+          <span class="check-icon">2.</span>
+          <div><strong>Diretrizes Comerciais Básicas:</strong> Valor de pedido mínimo, zonas de entrega e horários de corte de pedidos.</div>
+        </li>
+        <li>
+          <span class="check-icon">3.</span>
+          <div><strong>Um Chip para a Empresa:</strong> O cliente destina um número de WhatsApp exclusivo para que a Sofia atenda em nome da marca dele.</div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- SEÇÃO 5: MODELO FINANCEIRO -->
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">💰</span> 5. Modelo Financeiro & Ganhos Recorrentes
+      </div>
+      <p>
+        O formato comercial adotado é o de <strong>Assinatura Mensal Recorrente (SaaS)</strong>. A cada cliente conquistado, a receita se repete mensalmente de forma acumulativa:
+      </p>
+
+      <div class="financial-box">
+        <div class="fin-item">
+          <div class="value">R$ 490 - 790</div>
+          <div class="label">Mensalidade por Empresa</div>
+        </div>
+        <div class="fin-item">
+          <div class="value">100% PIX</div>
+          <div class="label">Adiantado sem Inadimplência</div>
+        </div>
+        <div class="fin-item">
+          <div class="value">Recorrente</div>
+          <div class="label">Receita Acumulada Mês a Mês</div>
+        </div>
+      </div>
+
+      <p style="margin-top: 18px; font-size: 13.5px; color: var(--text-muted);">
+        * <strong>Liquidação de lucros:</strong> O valor líquido de cada assinatura é dividido entre a infraestrutura técnica e a representação comercial. A transferência da fatia da Argentina é realizada com total praticidade e sem taxas por arbitrária P2P (Binance / USDT) ou carteiras digitais (Wise / DolarApp).
+      </p>
+    </div>
+
+    <!-- SEÇÃO 6: PRÓXIMOS PASSOS -->
+    <div class="card card-highlight">
+      <div class="card-title">
+        <span class="icon">🎯</span> 6. Próximos Passos (Sem Pressa e Sem Riscos)
+      </div>
+      <p>
+        Este projeto é uma <strong>alternativa concreta para os próximos meses</strong>, para ser analisada com total tranquilidade no seu tempo livre:
+      </p>
+      <ul class="checklist">
+        <li>
+          <span class="check-icon">→</span>
+          <div><strong>Avaliação da Proposta:</strong> Ler o dossiê e analisar os slides de apresentação da Sofia em anexo.</div>
+        </li>
+        <li>
+          <span class="check-icon">→</span>
+          <div><strong>Teste Prático com a Sofia:</strong> Enviar uma mensagem para a Sofia no WhatsApp em português para testar a agilidade e naturalidade das respostas em tempo real.</div>
+        </li>
+        <li>
+          <span class="check-icon">→</span>
+          <div><strong>Alinhamento:</strong> Havendo interesse, avançamos no planejamento com calma e sem qualquer investimento financeiro de sua parte.</div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div>Sofia — Agência de Inteligência Artificial © 2026</div>
+      <div>WhatsApp Oficial: +54 9 343 572-0312</div>
+    </div>
+
+  </div>
+
+</body>
+</html>
