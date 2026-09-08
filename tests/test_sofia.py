@@ -74,7 +74,7 @@ def test_dashboard_security():
     # 5. Public proposal endpoint must be accessible without auth
     res_propuesta = client.get("/propuesta")
     assert res_propuesta.status_code == 200
-    assert "Sofia AI Agency" in res_propuesta.text or "Sofía" in res_propuesta.text
+    assert "Sofía" in res_propuesta.text and "Agencia de IA" in res_propuesta.text
 
 
 def test_webhook_incoming_inquiry(db, mock_whatsapp):
