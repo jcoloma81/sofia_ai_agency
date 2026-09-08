@@ -111,4 +111,18 @@ async def test_boss_order_confirmation_triggers_depot_alert(db):
         assert "PEDIDO CONFIRMADO" in reply
         mock_depot.assert_called_once()
 
+@pytest.mark.asyncio
+async def test_boss_conversational_chat(db):
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Hola Sofía, ¿estás lista para trabajar hoy?"
+    )
+    assert handled is True
+    assert action in ["boss_chat", "boss_chat_fallback"]
+    assert len(reply) > 5
+    # Must NEVER contain the robotic menu!
+    assert "Estoy activa y monitoreando todos los canales. Podés pedirme:" not in reply
+
+
 

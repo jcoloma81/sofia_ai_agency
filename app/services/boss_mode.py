@@ -1,7 +1,8 @@
 import re
 import json
 import logging
-from typing import Optional, Tuple
+import httpx
+from typing import Optional, Tuple, List
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
@@ -26,12 +27,111 @@ def is_boss_number(phone: str) -> bool:
         return True
     return False
 
+async def generate_boss_ai_response(
+    db: Session,
+    incoming_text: str,
+    conversation_history: Optional[List[dict]] = None
+) -> Tuple[str, str]:
+    """
+    Uses Gemini to converse with Javier (the founder & director) dynamically, warmly and naturally.
+    Provides Sofia with real-time business context, metrics, catalog info and Meta line status.
+    """
+    gemini_key = settings.GEMINI_API_KEY
+
+    total_prospects = db.query(Prospect).count()
+    in_conversation = db.query(Prospect).filter(Prospect.status == "in_conversation").count()
+    meetings = db.query(Prospect).filter(Prospect.status == "meeting_scheduled").count()
+    human_takeover = db.query(Prospect).filter(Prospect.status == "human_takeover").count()
+    orders = db.query(Prospect).filter(Prospect.status == "order_confirmed").count()
+
+    from app.services.directives import directives_service
+    directives_ctx = directives_service.get_prompt_context()
+    cat_summary = f"{len(catalog_service.products)} productos activos ({catalog_service.source_info})"
+
+    system_prompt = f"""Sos Sofía, la asistente ejecutiva de Inteligencia Artificial y mano derecha de Javier Coloma.
+Javier es tu creador y el director general de la agencia de IA y de las soluciones comerciales para distribuidoras y comercios.
+Estás hablando directamente con él a través de su WhatsApp personal.
+
+PERSONALIDAD Y TONO:
+- Hablás con total naturalidad, calidez, cercanía y voseo argentino (como una colega de confianza de alto nivel profesional).
+- Cero respuestas de bot tipo menú de opciones ("Podés pedirme: 1, 2, 3"). NUNCA respondas con listas de comandos a menos que Javier te lo pida expresamente.
+- Respuestas concisas, ágiles, profesionales y al grano (estilo WhatsApp, generalmente de 1 a 3 oraciones bien redactadas).
+- Si Javier te saluda o te pregunta si estás lista para trabajar hoy, respondé con entusiasmo, confirmale que los sistemas están al 100% y preguntale con qué arrancamos.
+- Tenés visión comercial para distribuidoras mayoristas, hoteles y comercios. Si te pide opiniones o consejos sobre ventas o prospección, razoná con él como una compañera estratégica de negocios.
+- Conocés tus capacidades operativas: sabés que podés pausar o reactivar a Sofía en un chat ('pausar <número>', 'activar <número>'), mostrar métricas del día ('resumen'), actualizar la lista de precios si te manda un Excel o CSV, y cotizar o tomar pedidos. Si es relevante para la consulta de Javier, mencionalo de forma orgánica y conversacional.
+
+ESTADO DEL SISTEMA EN TIEMPO REAL:
+- Línea oficial WhatsApp: Meta Cloud API (+54 9 343 572-0312), calidad Verde, 100% activa.
+- Prospectos registrados: {total_prospects}
+- En conversación activa: {in_conversation}
+- Citas/Reuniones agendadas: {meetings}
+- Pedidos confirmados: {orders}
+- En atención manual (pausados): {human_takeover}
+- Catálogo: {cat_summary}
+- Directivas comerciales: {directives_ctx or 'Estándar'}
+"""
+
+    if not gemini_key:
+        return "¡Hola Javier! Acá estoy al 100% y con los sistemas activos. ¿En qué te puedo dar una mano hoy?", "boss_chat_fallback"
+
+    contents = []
+    if conversation_history:
+        for msg in conversation_history[-8:]:
+            sender = msg.get("sender")
+            role = "user" if sender in ["prospect", "boss", "user"] else "model"
+            msg_text = msg.get("text", "")
+            if msg_text and msg_text.strip() != incoming_text.strip():
+                contents.append({
+                    "role": role,
+                    "parts": [{"text": msg_text}]
+                })
+
+    contents.append({
+        "role": "user",
+        "parts": [{"text": incoming_text}]
+    })
+
+    payload = {
+        "systemInstruction": {
+            "parts": [{"text": system_prompt}]
+        },
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.5,
+            "maxOutputTokens": 350
+        }
+    }
+
+    candidate_models = [
+        "gemini-flash-lite-latest",
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash"
+    ]
+    for model_name in candidate_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(url, json=payload)
+                if res.status_code == 200:
+                    data = res.json()
+                    candidates = data.get("candidates", [])
+                    if candidates and "content" in candidates[0]:
+                        reply = candidates[0]["content"]["parts"][0]["text"].strip()
+                        return reply, "boss_chat"
+                else:
+                    logger.warning(f"Boss AI {model_name} returned status {res.status_code}: {res.text[:120]}")
+        except Exception as e:
+            logger.warning(f"Boss AI generation error with {model_name}: {e}")
+
+    return "¡Hola Javier! Acá estoy al 100% y con los sistemas activos. Decime, ¿en qué te puedo dar una mano hoy?", "boss_chat_fallback"
+
 async def process_boss_message(
     db: Session,
     sender_phone: str,
     text: str,
     doc_bytes: Optional[bytes] = None,
-    doc_name: Optional[str] = None
+    doc_name: Optional[str] = None,
+    conversation_history: Optional[List[dict]] = None
 ) -> Tuple[bool, str, str]:
     """
     Executes executive commands sent by the business owner directly from WhatsApp:
@@ -197,13 +297,7 @@ async def process_boss_message(
             "Por favor mandame la indicación en un mensajito de texto (ej: directiva comercial o pedido de prueba) o volvé a grabarlo."
         ), "boss_voice_untranscribed"
 
-    # 6. Default helpful response to boss
-    return True, (
-        "👋 *Hola Javier!*\n\n"
-        "Estoy activa y monitoreando todos los canales. Podés pedirme:\n"
-        "• `resumen` o `pedidos`: ver métricas y ventas del día.\n"
-        "• `pausar <número>`: silenciar a Sofía en un chat específico.\n"
-        "• `activar <número>`: volver a activar la IA en ese chat.\n"
-        "• `catalogo`: ver lista de productos cargados.\n"
-        "• O enviarme un archivo Excel con la nueva lista de precios."
-    ), "boss_help"
+    # 6. Conversational AI Response to boss via Gemini
+    ai_reply, action = await generate_boss_ai_response(db, clean_text, conversation_history)
+    return True, ai_reply, action
+

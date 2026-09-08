@@ -312,14 +312,51 @@ async def receive_whatsapp_webhook(
 
     # Executive command check from Javier's personal alert line (Modo Jefe)
     if is_boss_number(clean_phone):
+        boss_record = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
+        if not boss_record:
+            boss_record = Prospect(
+                phone=clean_phone,
+                name="Javier Coloma (Director)",
+                contact_name="Javier",
+                city="Paraná / Central",
+                campaign="boss_mode",
+                status="director",
+                conversation_history="[]"
+            )
+            db.add(boss_record)
+            db.commit()
+            db.refresh(boss_record)
+
+        try:
+            boss_history = json.loads(boss_record.conversation_history or "[]")
+        except Exception:
+            boss_history = []
+
+        history_item_text = "🎙️ [Nota de voz recibida]" if audio_b64 else message.strip()
+        boss_history.append({
+            "sender": "boss",
+            "text": history_item_text,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
         handled, boss_reply, boss_action = await process_boss_message(
             db=db,
             sender_phone=clean_phone,
             text=message,
             doc_bytes=doc_bytes,
-            doc_name=doc_name
+            doc_name=doc_name,
+            conversation_history=boss_history
         )
         if handled:
+            boss_history.append({
+                "sender": "ai",
+                "text": boss_reply.strip(),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+            boss_record.conversation_history = json.dumps(boss_history, ensure_ascii=False)
+            boss_record.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
             await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=boss_reply)
             return {"status": "success", "action": boss_action, "reply": boss_reply}
 
@@ -521,18 +558,18 @@ async def receive_whatsapp_webhook(
                     "meeting_confirmed": False
                 }
 
-    # 4. Check if lead is requesting a demo or asking how the service works
+    # 4. Check if lead is explicitly requesting the demo video (from template CTA)
     clean_lower = message.strip().lower()
     is_demo_intent = False
-    if clean_lower in ["demo", "la demo", "ver demo", "quiero demo", "quiero la demo", "video", "video demo", "el video", "como funciona", "cómo funciona", "como es", "cómo es", "info", "informacion", "información", "mas info", "más info"]:
-        is_demo_intent = True
-    elif "demo" in clean_lower or "video demo" in clean_lower:
+    if clean_lower in [
+        "demo", "la demo", "ver demo", "quiero demo", "quiero la demo",
+        "video", "video demo", "el video", "mandame el video", "mandá el video",
+        "pasame el video", "pasanos el video", "pasame la demo", "mandame la demo"
+    ] or "video demo" in clean_lower:
         is_demo_intent = True
     elif any(phrase in clean_lower for phrase in [
-        "como funciona", "cómo funciona", "quiero ver", "me interesa",
         "mandame el video", "mandá el video", "pasame el video", "pasanos el video",
-        "de que se trata", "de qué se trata", "como es el servicio", "cómo es el servicio",
-        "como trabaja sofia", "cómo trabaja sofia", "como trabaja sofía", "cómo trabaja sofía"
+        "mandame la demo", "pasame la demo"
     ]):
         is_demo_intent = True
 
