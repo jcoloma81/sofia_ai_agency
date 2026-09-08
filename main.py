@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 import os
@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import Base, engine
 from app.routers.webhook import router as webhook_router
 from app.routers.outreach import router as outreach_router
-from app.routers.dashboard import router as dashboard_router
+from app.routers.dashboard import router as dashboard_router, verify_admin_credentials
 from app.config.settings import settings
 
 # Initialize logging
@@ -56,18 +56,20 @@ def health_check():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
-# Executive Web Dashboard
+# Public Landing & Commercial Proposal
 @app.get("/", response_class=FileResponse)
-@app.get("/dashboard", response_class=FileResponse)
-def serve_dashboard():
-    dashboard_path = os.path.join(os.path.dirname(__file__), "app", "static", "dashboard.html")
-    return FileResponse(dashboard_path)
-
 @app.get("/propuesta", response_class=FileResponse)
 @app.get("/precios", response_class=FileResponse)
 def serve_propuesta():
     propuesta_path = os.path.join(os.path.dirname(__file__), "app", "static", "propuesta_comercial.html")
     return FileResponse(propuesta_path)
+
+# Executive Web Dashboard (Restricted Admin Access)
+@app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
+@app.get("/admin", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
+def serve_dashboard():
+    dashboard_path = os.path.join(os.path.dirname(__file__), "app", "static", "dashboard.html")
+    return FileResponse(dashboard_path)
 
 @app.get("/privacy")
 def privacy_policy():

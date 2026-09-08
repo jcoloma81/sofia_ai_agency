@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     # Server / App URL
     APP_BASE_URL: str = "https://sofia-ai-agency.onrender.com"
     SECRET_KEY: str = "sofia_ai_agency_default_secret_key"
+    DASHBOARD_USERNAME: str = "admin"
+    DASHBOARD_PASSWORD: str = "IaSofia321#"
 
     # AI Brain (Gemini Flash Lite Multimodal)
     GEMINI_API_KEY: Optional[str] = None

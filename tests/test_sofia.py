@@ -51,6 +51,32 @@ def test_health_check():
     assert root_res.status_code == 200
     assert "Sofía" in root_res.text
 
+def test_dashboard_security():
+    """Verify that /dashboard and /admin are strictly protected by HTTP Basic Auth."""
+    # 1. Unauthenticated request to /dashboard must be rejected with 401
+    res = client.get("/dashboard")
+    assert res.status_code == 401
+    assert "WWW-Authenticate" in res.headers
+
+    # 2. Unauthenticated request to /admin must be rejected with 401
+    res_admin = client.get("/admin")
+    assert res_admin.status_code == 401
+
+    # 3. Invalid credentials must be rejected
+    res_bad = client.get("/dashboard", auth=("admin", "wrong_pass"))
+    assert res_bad.status_code == 401
+
+    # 4. Valid credentials must grant access
+    res_good = client.get("/dashboard", auth=("admin", "IaSofia321#"))
+    assert res_good.status_code == 200
+    assert "Panel de Control" in res_good.text
+
+    # 5. Public proposal endpoint must be accessible without auth
+    res_propuesta = client.get("/propuesta")
+    assert res_propuesta.status_code == 200
+    assert "Sofía AI Agency" in res_propuesta.text
+
+
 def test_webhook_incoming_inquiry(db, mock_whatsapp):
     mock_send, mock_alert = mock_whatsapp
 

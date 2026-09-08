@@ -4,7 +4,9 @@ import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -16,7 +18,25 @@ from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+security = HTTPBasic()
+
+def verify_admin_credentials(credentials: HTTPBasicCredentials = Depends(security)) -> str:
+    """Validates HTTP Basic Auth credentials against DASHBOARD_USERNAME and DASHBOARD_PASSWORD."""
+    expected_user = settings.DASHBOARD_USERNAME or "admin"
+    expected_pass = settings.DASHBOARD_PASSWORD or "IaSofia321#"
+
+    correct_user = secrets.compare_digest(credentials.username, expected_user)
+    correct_pass = secrets.compare_digest(credentials.password, expected_pass)
+
+    if not (correct_user and correct_pass):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acceso denegado. Credenciales de administrador incorrectas.",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
+router = APIRouter(dependencies=[Depends(verify_admin_credentials)])
 
 class ManualMessagePayload(BaseModel):
     text: str
