@@ -52,6 +52,7 @@ def health_check():
         "version": "1.0.0",
         "meta_configured": bool(settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID),
         "meta_phone_id": settings.META_PHONE_NUMBER_ID,
+        "meta_token_suffix": settings.META_ACCESS_TOKEN[-6:] if settings.META_ACCESS_TOKEN else None,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
