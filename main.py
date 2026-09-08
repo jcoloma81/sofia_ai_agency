@@ -63,6 +63,12 @@ def serve_dashboard():
     dashboard_path = os.path.join(os.path.dirname(__file__), "app", "static", "dashboard.html")
     return FileResponse(dashboard_path)
 
+@app.get("/propuesta", response_class=FileResponse)
+@app.get("/precios", response_class=FileResponse)
+def serve_propuesta():
+    propuesta_path = os.path.join(os.path.dirname(__file__), "app", "static", "propuesta_comercial.html")
+    return FileResponse(propuesta_path)
+
 @app.get("/privacy")
 def privacy_policy():
     from fastapi.responses import HTMLResponse
