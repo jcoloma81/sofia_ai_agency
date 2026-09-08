@@ -476,42 +476,76 @@
       text-decoration: none;
     }
 
+    @page {
+      background: #0B0F19;
+      margin: 10mm;
+    }
+
     @media print {
-      body {
-        background: #fff;
-        color: #000;
+      html, body {
+        background: #0B0F19 !important;
+        color: #F9FAFB !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
-      .btn-print, .badge-promo, .ribbon {
+      .btn-print {
         display: none !important;
       }
       .container {
-        padding: 0;
-        max-width: 100%;
+        padding: 0 !important;
+        max-width: 100% !important;
       }
       .plan-card, .table-section, .roi-box, .faq-card {
-        background: #fff !important;
-        border: 1px solid #ccc !important;
-        color: #000 !important;
+        background: #111827 !important;
+        border: 1px solid #1F2937 !important;
+        color: #F9FAFB !important;
         break-inside: avoid;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .plan-card.highlight {
+        border-color: #10B981 !important;
+        background: #0D281E !important;
       }
       .plan-name, .price-amount, .table-title, .hero-title, .brand-name {
-        color: #000 !important;
+        color: #FFFFFF !important;
       }
       .hero-title span {
-        color: #000 !important;
-        -webkit-text-fill-color: initial !important;
+        color: #10B981 !important;
+        -webkit-text-fill-color: #10B981 !important;
       }
       .plan-desc, .hero-sub, .table-sub, .faq-a, .plan-features li {
-        color: #444 !important;
+        color: #9CA3AF !important;
       }
       .plan-price-box {
-        background: #f4f4f4 !important;
-        border: 1px solid #ddd !important;
+        background: rgba(0, 0, 0, 0.4) !important;
+        border: 1px solid #1F2937 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .btn-cta {
-        border: 1px solid #000 !important;
-        color: #000 !important;
-        background: #eee !important;
+        border: 1px solid #10B981 !important;
+        color: #10B981 !important;
+        background: rgba(16, 185, 129, 0.1) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      th {
+        background: #162032 !important;
+        color: #FFFFFF !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      td {
+        border-bottom: 1px solid #1F2937 !important;
+        color: #E5E7EB !important;
+      }
+      .badge-promo {
+        background: rgba(16, 185, 129, 0.15) !important;
+        color: #10B981 !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
     }
   </style>

@@ -289,62 +289,102 @@
       gap: 12px;
     }
 
-    /* PRINT STYLES */
+    /* PRINT STYLES - SLEEK DARK THEME */
+    @page {
+      background: #0B0F19;
+      margin: 12mm;
+    }
+
     @media print {
-      body {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        padding: 0;
+      html, body {
+        background-color: #0B0F19 !important;
+        color: #F8FAFC !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       .container {
-        max-width: 100%;
+        max-width: 100% !important;
+        padding: 0 !important;
       }
 
       .card {
-        background: #F8FAFC !important;
-        border: 1px solid #CBD5E1 !important;
-        color: #0F172A !important;
-        padding: 20px !important;
+        background: #111827 !important;
+        border: 1px solid #1F2937 !important;
+        color: #F8FAFC !important;
+        padding: 22px !important;
         margin-bottom: 18px !important;
         page-break-inside: avoid;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .card-highlight {
+        border-color: rgba(37, 211, 102, 0.45) !important;
+        background: #0F251D !important;
       }
 
       .card-title, .title {
-        color: #0F172A !important;
+        color: #FFFFFF !important;
       }
 
       .title span {
-        color: #059669 !important;
-        -webkit-text-fill-color: initial !important;
+        color: #25D366 !important;
+        -webkit-text-fill-color: #25D366 !important;
       }
 
       p, td, .pillar-desc, .checklist li {
-        color: #334155 !important;
+        color: #CBD5E1 !important;
       }
 
       th, .pillar-box {
-        background: #F1F5F9 !important;
-        border: 1px solid #CBD5E1 !important;
-        color: #0F172A !important;
+        background: #162032 !important;
+        border: 1px solid #1F2937 !important;
+        color: #F8FAFC !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       .pillar-header {
-        color: #0F172A !important;
+        color: #FFFFFF !important;
       }
 
       .financial-box {
-        background: #ECFDF5 !important;
-        border: 1px solid #059669 !important;
+        background: #092617 !important;
+        border: 1px solid #25D366 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       .fin-item .value {
-        color: #059669 !important;
+        color: #25D366 !important;
       }
 
-      .badge-tag, .pillar-badge {
-        border: 1px solid #059669 !important;
-        color: #059669 !important;
+      .badge-tag {
+        background: rgba(37, 211, 102, 0.15) !important;
+        border: 1px solid #25D366 !important;
+        color: #25D366 !important;
+      }
+
+      .pillar-badge {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .badge-green {
+        background: rgba(37, 211, 102, 0.2) !important;
+        color: #25D366 !important;
+      }
+
+      .badge-blue {
+        background: rgba(56, 189, 248, 0.2) !important;
+        color: #38BDF8 !important;
+      }
+
+      .badge-purple {
+        background: rgba(168, 85, 247, 0.2) !important;
+        color: #A855F7 !important;
       }
     }
   </style>
