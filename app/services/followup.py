@@ -64,8 +64,10 @@ async def check_and_send_followups(db: Session, dry_run: bool = False) -> Dict[s
         has_sent_fu1 = any(m.get("sender") == "ai_followup_1" for m in history)
         has_sent_fu2 = any(m.get("sender") == "ai_followup_2" for m in history)
 
-        contact_label = f" {prospect.contact_name}" if prospect.contact_name else ""
-        empresa_label = f" en {prospect.name}" if prospect.name and not prospect.contact_name else ""
+        from app.services.brain import sanitize_contact_first_name
+        safe_name = sanitize_contact_first_name(prospect.contact_name)
+        contact_label = f" {safe_name}" if safe_name else ""
+        empresa_label = f" en {prospect.name}" if prospect.name and not safe_name else ""
 
         if not has_sent_fu1 and hours_elapsed >= FOLLOWUP_1_MIN_HOURS:
             followup_type = "ai_followup_1"

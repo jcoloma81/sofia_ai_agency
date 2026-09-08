@@ -131,7 +131,9 @@ def format_order_summary_message(draft: OrderDraft, contact_name: Optional[str] 
     if not draft.items:
         return ""
 
-    saludo = f"¡Perfecto {contact_name}!" if contact_name else "¡Perfecto!"
+    from app.services.brain import sanitize_contact_first_name
+    safe_name = sanitize_contact_first_name(contact_name)
+    saludo = f"¡Perfecto {safe_name}!" if safe_name else "¡Perfecto!"
     lines = [f"{saludo} Te paso el detalle de tu pedido:\n"]
 
     available_items = [it for it in draft.items if it.in_stock]

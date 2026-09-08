@@ -439,7 +439,8 @@ async def receive_whatsapp_webhook(
             "total_str": pending_order.get("total_str", "")
         })
 
-        contact_str = f" {prospect.contact_name}" if prospect.contact_name else ""
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+        contact_str = f" {safe_name}" if safe_name else ""
         order_confirmed_reply = (
             f"¡Excelente{contact_str}! Tu pedido ya fue ingresado a depósito para preparar el despacho. "
             f"En breve te avisamos cuando salga el camión de reparto. ¡Muchas gracias!"
@@ -500,7 +501,8 @@ async def receive_whatsapp_webhook(
             found_prod = catalog_service.find_product_exact_or_best(message)
             if found_prod:
                 stock_info = "tenemos stock disponible" if found_prod.in_stock else "actualmente figura sin stock"
-                contact_str = f" {prospect.contact_name}" if prospect.contact_name else ""
+                safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+                contact_str = f" {safe_name}" if safe_name else ""
                 price_reply = (
                     f"¡Hola{contact_str}! El *{found_prod.name}* ({found_prod.presentation}) "
                     f"está a *{found_prod.formatted_price()}* y {stock_info}. "
@@ -536,7 +538,8 @@ async def receive_whatsapp_webhook(
 
     if is_demo_intent:
         prospect.status = "demo_requested"
-        contact_str = f" {prospect.contact_name}" if prospect.contact_name else ""
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+        contact_str = f" {safe_name}" if safe_name else ""
         demo_reply = (
             f"¡Hola{contact_str}! Qué bueno que te interese ver cómo funciona Sofía. "
             f"En breve nuestro asesor te va a enviar el video demo para que veas el sistema en acción. "

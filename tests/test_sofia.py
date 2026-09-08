@@ -620,3 +620,26 @@ def test_demo_request_via_meta_webhook(db, mock_whatsapp):
     prospect = db.query(Prospect).filter(Prospect.phone == "5493439998877").first()
     assert prospect is not None
     assert prospect.status == "demo_requested"
+
+def test_sanitize_contact_first_name():
+    from app.services.brain import sanitize_contact_first_name
+
+    # Phrases, statuses, slogans -> must return None
+    assert sanitize_contact_first_name("que lindas que son las mañanas") is None
+    assert sanitize_contact_first_name("Dios es fiel") is None
+    assert sanitize_contact_first_name("Solo por hoy") is None
+    assert sanitize_contact_first_name("Distribuidora El Trébol S.R.L.") is None
+    assert sanitize_contact_first_name("Lucas - Ventas") is None
+    assert sanitize_contact_first_name("12345") is None
+    assert sanitize_contact_first_name("...") is None
+    assert sanitize_contact_first_name(None) is None
+    assert sanitize_contact_first_name("") is None
+
+    # Real human names -> must return clean first name or compound name
+    assert sanitize_contact_first_name("Carlos") == "Carlos"
+    assert sanitize_contact_first_name("Carlos Gomez") == "Carlos"
+    assert sanitize_contact_first_name("👑 Flor 🌺") == "Flor"
+    assert sanitize_contact_first_name("Juan Pablo") == "Juan Pablo"
+    assert sanitize_contact_first_name("María Luz") == "María Luz"
+    assert sanitize_contact_first_name("Javier Coloma") == "Javier"
+

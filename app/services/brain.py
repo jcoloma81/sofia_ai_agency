@@ -94,6 +94,65 @@ def detect_meeting_intent(text: str) -> Tuple[bool, Optional[str]]:
         
     return False, None
 
+STOPWORDS = {
+    "de", "del", "la", "el", "las", "los", "un", "una", "unos", "unas",
+    "en", "por", "para", "con", "sin", "sobre", "y", "o", "u", "e",
+    "que", "qué", "es", "son", "somos", "fue", "era", "se", "te", "me",
+    "nos", "mi", "tu", "su", "sus", "mis", "tus", "al", "ha", "hay",
+    "muy", "tan", "mas", "más", "no", "si", "sí", "ya", "hoy", "ayer",
+    "dios", "vida", "paz", "amor", "todo", "toda", "todos", "todas"
+}
+
+BUSINESS_WORDS = {
+    "distribuidora", "distribuidor", "distribuciones", "almacen", "almacén",
+    "kiosco", "quiosco", "fiambreria", "fiambrería", "rotiseria", "rotisería",
+    "ventas", "comercial", "negocio", "local", "tienda", "mayorista", "minorista",
+    "taller", "servicio", "servicios", "srl", "sa", "sas", "admin", "soporte",
+    "oficial", "envios", "envíos", "delivery", "polleria", "pollería",
+    "panaderia", "panadería", "farmacia", "repuestos", "libreria", "librería",
+    "carniceria", "carnicería", "verduleria", "verdulería", "autoservicio",
+    "super", "supermercado", "contacto", "info", "general", "oficina"
+}
+
+def sanitize_contact_first_name(raw_name: Optional[str]) -> Optional[str]:
+    """
+    Extracts and sanitizes a valid human first name for warm, natural conversational greetings.
+    Filters out WhatsApp profile statuses, poetic phrases (e.g. 'que lindas que son las mañanas'),
+    business names ('Distribuidora SRL'), punctuation, and emoji garbage.
+    """
+    if not raw_name or not isinstance(raw_name, str):
+        return None
+
+    # Strip emojis and punctuation, keep only letters and spaces
+    clean = re.sub(r"[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]", " ", raw_name)
+    words = [w for w in clean.split() if w]
+
+    if not words:
+        return None
+
+    # Check words against stopwords and business keywords
+    lower_words = [w.lower() for w in words]
+    for w in lower_words:
+        if w in STOPWORDS or w in BUSINESS_WORDS:
+            return None
+
+    # If more than 2 words, likely a slogan/sentence or full business name
+    if len(words) > 2:
+        return None
+
+    first_word = words[0].capitalize()
+
+    # Check length sanity
+    if len(first_word) < 2 or len(first_word) > 16:
+        return None
+
+    # Compound names like Juan Pablo, Maria Luz
+    COMPOUND_PREFIXES = {"Juan", "Maria", "María", "Jose", "José"}
+    if len(words) == 2 and first_word in COMPOUND_PREFIXES and len(words[1]) <= 12:
+        return f"{first_word} {words[1].capitalize()}"
+
+    return first_word
+
 def detect_catalog_request(text: str) -> bool:
     """
     Detects if the prospect is asking for a PDF proposal, catalog, price list, or brochures.
@@ -117,11 +176,12 @@ def rule_based_consultative_response(
     Returns (response_text, is_meeting_confirmed, meeting_details)
     """
     text_lower = incoming_text.lower()
+    safe_name = sanitize_contact_first_name(contact_name)
     
     # Check meeting intent first
     is_meeting, meeting_details = detect_meeting_intent(incoming_text)
     if is_meeting:
-        nombre = f" {contact_name}" if contact_name else ""
+        nombre = f" {safe_name}" if safe_name else ""
         return (
             f"¡Perfecto{nombre}! Ya te dejo agendada la reunión para {meeting_details}. "
             f"Nuestro asesor se va a comunicar puntual con vos por este mismo medio. "
@@ -132,8 +192,8 @@ def rule_based_consultative_response(
 
     # PDF / Catalog request rule
     if detect_catalog_request(incoming_text):
-        nombre = f" {contact_name}" if contact_name else ""
-        cierre = f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, nuestro asesor?" if not contact_name else f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, {contact_name}?"
+        nombre = f" {safe_name}" if safe_name else ""
+        cierre = f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, nuestro asesor?" if not safe_name else f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, {safe_name}?"
         return (
             f"¡Por supuesto{nombre}! Ahí te acabo de adjuntar nuestra propuesta completa en PDF con el funcionamiento, casos de uso y costos detallados.\n\n"
             f"{cierre}",
@@ -143,7 +203,7 @@ def rule_based_consultative_response(
 
     # Voice note fallback if speech-to-text / Gemini failed
     if "(nota de voz" in text_lower or "(audio" in text_lower:
-        nombre = f" {contact_name}" if contact_name else ""
+        nombre = f" {safe_name}" if safe_name else ""
         return (
             f"¡Hola{nombre}! Justo estoy en la computadora y no pude escuchar con claridad el audio. ¿Me podrás escribir en un mensajito breve o confirmarme qué día y horario te queda cómodo conversar 10 minutos con Lucas, nuestro asesor?",
             False,
@@ -169,7 +229,7 @@ def rule_based_consultative_response(
     ])
 
     if (is_presence or is_greeting) and not has_specific_question and len(clean_words) <= 6:
-        nombre = f" {contact_name}" if contact_name else ""
+        nombre = f" {safe_name}" if safe_name else ""
         return (
             f"¡Hola{nombre}! Sí, acá estoy. Decime, ¿en qué te puedo dar una mano?",
             False,
@@ -185,7 +245,7 @@ def rule_based_consultative_response(
         )
 
     # Bridge all inquiries soberly to meeting setting without fake cheerfulness
-    pregunta_cierre = f"¿Qué día y horario te quedaría más cómodo, {contact_name}?" if contact_name else "¿Con quién tengo el gusto y qué día y horario te quedaría más cómodo?"
+    pregunta_cierre = f"¿Qué día y horario te quedaría más cómodo, {safe_name}?" if safe_name else "¿Con quién tengo el gusto y qué día y horario te quedaría más cómodo?"
     if campaign == "ai_agency":
         return (
             f"Para mostrarte en detalle el funcionamiento según el rubro de tu empresa, ver una demo en vivo y los costos adaptados, nuestro asesor se pone en contacto con ustedes en una charla breve de 10 minutos (presencial si están en la zona o por videollamada corta).\n\n"
@@ -269,11 +329,12 @@ async def generate_ai_response(
     Returns (response_text, is_meeting_confirmed, meeting_details)
     """
     is_meeting, meeting_details = detect_meeting_intent(incoming_text)
+    safe_name = sanitize_contact_first_name(contact_name)
     
     gemini_key = settings.GEMINI_API_KEY
     if not gemini_key:
         logger.info("GEMINI_API_KEY not configured. Using rule-based consultative engine.")
-        return rule_based_consultative_response(incoming_text, prospect_name, contact_name, campaign=campaign)
+        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign)
 
     try:
         contents = []
@@ -289,7 +350,7 @@ async def generate_ai_response(
             f"{selected_prompt}\n\n"
             f"Datos actuales:\n"
             f"- {entity_label}: {prospect_name or 'No especificado'}\n"
-            f"- Contacto: {contact_name or 'Estimado'}\n"
+            f"- Contacto: {safe_name or 'Estimado'}\n"
             f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n\n"
             f"{directives_ctx}\n\n"
             f"{catalog_ctx}\n"
@@ -357,8 +418,8 @@ async def generate_ai_response(
                 logger.warning(f"Error calling {model_name}: {model_err}")
 
         logger.warning("All Gemini candidate models failed or timed out. Falling back to rule engine.")
-        return rule_based_consultative_response(incoming_text, prospect_name, contact_name, campaign=campaign)
+        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign)
 
     except Exception as e:
         logger.error(f"Error in Gemini generation: {e}. Falling back.")
-        return rule_based_consultative_response(incoming_text, prospect_name, contact_name, campaign=campaign)
+        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign)
