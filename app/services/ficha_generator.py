@@ -325,11 +325,11 @@ def generate_ficha_alta_pdf(output_path: str = "assets/ficha_alta_cliente.pdf") 
         [
             Paragraph("<b>Selección de Plan:</b>", label_style),
             Paragraph(
-                "[  ] <b>Plan 1: Sofía Cazadora</b> — $69.000/mes (+ $35.000 Setup única vez)<br/>"
+                "[  ] <b>Plan 1: Sofía Cazadora</b> — <b>PROMO LANZAMIENTO: $39.000/mes</b> (Precio Lista: $69.000/mes)<br/>"
                 "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size=6.5 color='#64748B'>Prospección a demanda en Google Maps (12-15 comercios/día) y apertura de cuentas nuevas.</font><br/>"
-                "[  ] <b>Plan 2: Sofía Asistente 24/7</b> — $95.000/mes (+ $45.000 Setup única vez)<br/>"
+                "[  ] <b>Plan 2: Sofía Asistente 24/7</b> — <b>PROMO LANZAMIENTO: $55.000/mes</b> (Precio Lista: $95.000/mes)<br/>"
                 "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size=6.5 color='#64748B'>Atención continua 24/7/365, lista de precios en Excel, transcripción de audios y pedidos a depósito.</font><br/>"
-                "[  ] <b>Plan 3: Sofía Integral 360°</b> ⭐ — $155.000/mes (+ $75.000 Setup única vez)<br/>"
+                "[  ] <b>Plan 3: Sofía Integral 360°</b> ⭐ — <b>PROMO LANZAMIENTO: $85.000/mes</b> (Precio Lista: $155.000/mes)<br/>"
                 "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size=6.5 color='#047857'><b>Suite Completa:</b> Prospección por cupos en Google Maps + Atención y pedidos 24/7 con marca y línea propia.</font>",
                 val_style
             )
