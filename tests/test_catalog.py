@@ -161,3 +161,50 @@ def test_multi_sheet_excel():
     assert alfajor is not None
     assert alfajor.category == "Golosinas"
 
+
+def test_supplier_excel_cross_update():
+    """Tests intelligent cross-referencing and price updating from supplier Excel sheets."""
+    service = CatalogService()
+
+    # 1. Base catalog
+    base_csv = """Codigo;Producto;Presentacion;Precio;Stock;Categoria
+ART01;Aceite Cañuelas 1.5L;Caja x 6;14400;SI;Almacén
+ART02;Harina Pureza 000 1kg;Fardo x 10;12500;SI;Almacén
+ART03;Coca Cola 2.25L;Pack x 6;19200;SI;Bebidas"""
+    service.load_from_csv(base_csv)
+    assert len(service.products) == 3
+
+    # 2. Supplier Excel with price hikes and natural naming differences
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["PROVEEDOR MOLINOS S.A. - LISTA DE PRECIOS", "", "", ""])
+    ws.append(["", "", "", ""])
+    ws.append(["Cód Prov", "Descripción de Fábrica", "Precio Nuevo", "Estado"])
+    ws.append(["P-101", "Aceite Girasol Cañuelas 1500cc Botella", 16200, "Aumento"])
+    ws.append(["P-102", "Harina Trigo Pureza 000 x 1000g", 13900, "Aumento"])
+    ws.append(["P-103", "Gaseosa Coca-Cola Sabor Original 2250cc", 21500, "Aumento"])
+    ws.append(["P-999", "Galletitas Chocolinas 250g", 9800, "Nuevo"])
+
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    res = service.update_from_supplier_excel(stream.read(), filename="aumentos_molinos.xlsx")
+    assert res["status"] == "success"
+    assert res["matched_count"] == 3
+    assert res["new_count"] == 1
+
+    # Verify updated prices in memory
+    p_aceite = service.find_product_exact_or_best("aceite")
+    assert p_aceite is not None
+    assert p_aceite.price == 16200.0
+
+    p_harina = service.find_product_exact_or_best("harina")
+    assert p_harina is not None
+    assert p_harina.price == 13900.0
+
+    p_coca = service.find_product_exact_or_best("coca")
+    assert p_coca is not None
+    assert p_coca.price == 21500.0
+
+

@@ -148,14 +148,23 @@ async def process_boss_message(
     if doc_bytes and doc_name:
         fname = doc_name.lower()
         if fname.endswith(".xlsx") or fname.endswith(".xls"):
-            count = catalog_service.load_from_excel_bytes(doc_bytes, filename=doc_name)
-            return True, f"✅ *¡Lista de precios cargada con éxito!*\n\nSe procesaron *{count} productos* desde el archivo `{doc_name}`. Sofía ya está lista para cotizar y tomar pedidos con estos nuevos precios.", "catalog_updated"
+            # Check if this is a supplier price update vs a base catalog load
+            is_supplier_update = any(k in fname for k in ["proveedor", "aumento", "costo", "fabrica", "suba", "lista_proveedor"]) or \
+                                 any(k in lower_text for k in ["proveedor", "aumento", "costo", "fabrica", "suba", "actualizar", "actualiza"])
+
+            if is_supplier_update and len(catalog_service.products) > 0:
+                result = catalog_service.update_from_supplier_excel(doc_bytes, filename=doc_name)
+                return True, result.get("whatsapp_message", "✅ Lista de proveedor procesada."), "supplier_update"
+            else:
+                count = catalog_service.load_from_excel_bytes(doc_bytes, filename=doc_name)
+                return True, f"✅ *¡Lista de precios cargada con éxito!*\n\nSe procesaron *{count} productos* desde el archivo `{doc_name}`. Sofía ya está lista para cotizar y tomar pedidos con estos nuevos precios.", "catalog_updated"
         elif fname.endswith(".csv"):
             try:
                 csv_str = doc_bytes.decode("utf-8")
             except UnicodeDecodeError:
                 csv_str = doc_bytes.decode("latin-1", errors="ignore")
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
+            return True, f"✅ *¡Lista CSV cargada con éxito!*\n\nSe procesaron *{count} productos* desde `{doc_name}`.", "catalog_updated"
 
     # 2. Commercial Directives set by the boss (e.g. horarios, montos mínimos, zonas, requisitos)
     directive_keywords = [

@@ -6,7 +6,9 @@ from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import httpx
+from difflib import SequenceMatcher
 import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 logger = logging.getLogger(__name__)
 
@@ -235,6 +237,33 @@ def extract_section_category(row: List[Any], name_idx: Optional[int]) -> Tuple[b
     return False, None
 
 
+def normalize_product_text(text: str) -> str:
+    """Normalizes product descriptions for fuzzy/semantic catalog matching."""
+    s = str(text or "").lower()
+    # Replace Spanish accents
+    s = s.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
+    # Standardize liquid and volume measures
+    s = re.sub(r'1[\.,]5\s*(l|lt|lts|litro|litros)\b', '1500cc', s)
+    s = re.sub(r'2[\.,]25\s*(l|lt|lts|litro|litros)\b', '2250cc', s)
+    s = re.sub(r'2[\.,]5\s*(l|lt|lts|litro|litros)\b', '2500cc', s)
+    s = re.sub(r'1\s*(l|lt|lts|litro|litros)\b', '1000cc', s)
+    s = re.sub(r'(\d+)\s*(l|lt|lts|litro|litros)\b', r'\g<1>000cc', s)
+    # Standardize weight measures
+    s = re.sub(r'1\s*(kg|kilo|kilos)\b', '1000g', s)
+    s = re.sub(r'(\d+)\s*gr(s)?\b', r'\1g', s)
+    s = re.sub(r'(\d+)\s*cc\b', r'\1cc', s)
+    # Strip punctuation
+    s = re.sub(r'[^\w\s]', ' ', s)
+    # Remove packaging and noise stopwords
+    noise_words = {
+        'de', 'del', 'la', 'el', 'los', 'las', 'x', 'para', 'con', 'en', 'u', 'un',
+        'botella', 'tetra', 'vidrio', 'lata', 'fardo', 'caja', 'pack', 'sabor',
+        'original', 'tradicional', 'trigo', 'girasol', 'clasica', 'clasico', 'retornable'
+    }
+    tokens = [w for w in s.split() if w not in noise_words and len(w) > 1]
+    return ' '.join(tokens)
+
+
 class CatalogService:
     def __init__(self):
         self.products: List[ProductItem] = []
@@ -404,6 +433,232 @@ class CatalogService:
         except Exception as e:
             logger.error(f"Error reading Excel bytes: {e}")
             return 0
+
+    def export_to_excel(self, file_path: str):
+        """Exports the active catalog to a beautifully formatted Excel workbook."""
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Catálogo Actualizado"
+
+        headers = ["Código", "Producto", "Presentación", "Precio Unitario ($)", "Stock", "Categoría"]
+        ws.append(headers)
+
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        thin_border = Border(
+            left=Side(style="thin", color="CBD5E1"),
+            right=Side(style="thin", color="CBD5E1"),
+            top=Side(style="thin", color="CBD5E1"),
+            bottom=Side(style="thin", color="CBD5E1")
+        )
+
+        for col in range(1, len(headers) + 1):
+            cell = ws.cell(row=1, column=col)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        for r_idx, p in enumerate(self.products, start=2):
+            row_data = [
+                p.code or f"ART-{r_idx-1:03d}",
+                p.name,
+                p.presentation,
+                p.price,
+                "SI" if p.in_stock else "NO",
+                p.category
+            ]
+            ws.append(row_data)
+            for c_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=r_idx, column=c_idx)
+                cell.border = thin_border
+                if c_idx == 4:
+                    cell.number_format = "$#,##0"
+                    cell.alignment = Alignment(horizontal="right")
+                elif c_idx in [1, 5]:
+                    cell.alignment = Alignment(horizontal="center")
+
+        ws.column_dimensions["A"].width = 14
+        ws.column_dimensions["B"].width = 34
+        ws.column_dimensions["C"].width = 18
+        ws.column_dimensions["D"].width = 20
+        ws.column_dimensions["E"].width = 12
+        ws.column_dimensions["F"].width = 18
+
+        wb.save(file_path)
+
+    def update_from_supplier_excel(self, content: bytes, filename: str = "proveedor.xlsx") -> Dict[str, Any]:
+        """
+        Cross-references an incoming supplier Excel sheet with the active product catalog.
+        Matches by SKU code or fuzzy semantic description, updates catalog prices in-place,
+        detects new supplier products, generates an updated catalog .xlsx, and returns an executive report.
+        """
+        import os
+        try:
+            wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
+            supplier_items: List[ProductItem] = []
+
+            for sheet in wb.worksheets:
+                if getattr(sheet, "sheet_state", "visible") != "visible":
+                    continue
+                rows = list(sheet.iter_rows(values_only=True))
+                if not rows or len(rows) < 2:
+                    continue
+
+                header_idx, col_map = find_header_and_mapping(rows)
+                for row in rows[header_idx + 1:]:
+                    if not row or not any(row):
+                        continue
+                    name_idx = col_map["name"]
+                    price_idx = col_map["price"]
+                    if name_idx is None or name_idx >= len(row):
+                        continue
+
+                    is_divider, _ = extract_section_category(list(row), name_idx)
+                    if is_divider:
+                        continue
+
+                    raw_name = str(row[name_idx] or "").strip()
+                    if not raw_name:
+                        continue
+
+                    raw_price = row[price_idx] if (price_idx is not None and price_idx < len(row)) else 0.0
+                    price = clean_price(raw_price)
+                    if price <= 0:
+                        continue
+
+                    code = None
+                    if col_map["code"] is not None and col_map["code"] < len(row):
+                        cd = str(row[col_map["code"]] or "").strip()
+                        if cd:
+                            code = cd
+
+                    supplier_items.append(ProductItem(name=raw_name, price=price, code=code))
+
+            if not supplier_items:
+                return {
+                    "status": "error",
+                    "matched_count": 0,
+                    "new_count": 0,
+                    "whatsapp_message": f"⚠️ No se encontraron productos válidos con precio en el archivo `{filename}`."
+                }
+
+            matched_items: List[Dict[str, Any]] = []
+            new_items: List[ProductItem] = []
+
+            for sup in supplier_items:
+                norm_sup = normalize_product_text(sup.name)
+                sup_tokens = set(norm_sup.split())
+
+                best_match: Optional[ProductItem] = None
+                best_score = 0.0
+
+                # 1. Exact code match
+                if sup.code:
+                    clean_sup_code = re.sub(r'[^\w]', '', sup.code).lower()
+                    for p in self.products:
+                        if p.code and re.sub(r'[^\w]', '', p.code).lower() == clean_sup_code:
+                            best_match = p
+                            best_score = 1.0
+                            break
+
+                # 2. Semantic fuzzy match
+                if not best_match:
+                    for p in self.products:
+                        norm_p = normalize_product_text(p.name)
+                        p_tokens = set(norm_p.split())
+                        if not sup_tokens or not p_tokens:
+                            continue
+
+                        intersection = len(sup_tokens & p_tokens)
+                        union = len(sup_tokens | p_tokens)
+                        jaccard = intersection / union if union > 0 else 0
+                        seq = SequenceMatcher(None, norm_sup, norm_p).ratio()
+                        score = 0.6 * jaccard + 0.4 * seq
+
+                        # If brand & volume match perfectly, boost score
+                        if intersection >= 2 and score >= 0.55:
+                            score = max(score, 0.80)
+
+                        if score > best_score:
+                            best_score = score
+                            best_match = p
+
+                if best_match and best_score >= 0.60:
+                    old_price = best_match.price
+                    new_price = sup.price
+                    diff = new_price - old_price
+                    pct = ((diff / old_price) * 100) if old_price > 0 else 0.0
+
+                    best_match.price = new_price
+                    matched_items.append({
+                        "product": best_match.name,
+                        "presentation": best_match.presentation,
+                        "old_price": old_price,
+                        "new_price": new_price,
+                        "diff": diff,
+                        "pct": pct
+                    })
+                else:
+                    new_items.append(sup)
+
+            self.last_updated = datetime.now(timezone.utc)
+
+            # Export updated catalog Excel
+            export_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx")
+            export_path = os.path.abspath(export_path)
+            os.makedirs(os.path.dirname(export_path), exist_ok=True)
+            self.export_to_excel(export_path)
+
+            # Build WhatsApp message
+            lines = [
+                f"📊 *¡Actualización de Proveedor Procesada!*",
+                f"📁 *Archivo:* `{filename}`\n",
+                f"✅ *{len(matched_items)} productos actualizados* con nuevo precio.",
+            ]
+            if new_items:
+                lines.append(f"📦 *{len(new_items)} productos nuevos* detectados en la lista del proveedor.")
+            lines.append("⚡ *Sofía ya está cotizando con estos nuevos precios.*\n")
+
+            if matched_items:
+                lines.append("📈 *Detalle de Aumentos:*")
+                for item in matched_items:
+                    old_f = f"${int(item['old_price']):,}".replace(",", ".")
+                    new_f = f"${int(item['new_price']):,}".replace(",", ".")
+                    sign = "+" if item['pct'] >= 0 else ""
+                    lines.append(f"• *{item['product']}*: {old_f} ➔ *{new_f}* ({sign}{item['pct']:.1f}%)")
+                lines.append("")
+
+            if new_items:
+                lines.append("✨ *Nuevos ítems detectados:*")
+                for ni in new_items[:5]:
+                    price_f = f"${int(ni.price):,}".replace(",", ".")
+                    lines.append(f"• *{ni.name}*: {price_f}")
+                if len(new_items) > 5:
+                    lines.append(f"• ... y {len(new_items) - 5} más.")
+                lines.append("")
+
+            lines.append("📥 *Descargá tu catálogo actualizado:*")
+            lines.append("https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx")
+
+            msg = "\n".join(lines)
+            return {
+                "status": "success",
+                "matched_count": len(matched_items),
+                "new_count": len(new_items),
+                "matched_items": matched_items,
+                "new_items": new_items,
+                "excel_path": export_path,
+                "excel_url": "https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx",
+                "whatsapp_message": msg
+            }
+        except Exception as e:
+            logger.error(f"Error updating from supplier Excel: {e}")
+            return {
+                "status": "error",
+                "matched_count": 0,
+                "new_count": 0,
+                "whatsapp_message": f"❌ Ocurrió un error al procesar la lista del proveedor `{filename}`: {str(e)}"
+            }
 
     @staticmethod
     def normalize_google_sheet_url(url: str) -> str:
