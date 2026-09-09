@@ -336,7 +336,7 @@ def generate_ficha_alta_pdf(output_path: str = "assets/ficha_alta_cliente.pdf") 
         ],
         [
             Paragraph("<b>Puesta en Marcha:</b>", label_style),
-            Paragraph("<b>24 a 48 hs hábiles</b> contadas a partir de la entrega del catálogo inicial y validación de la línea en Meta Cloud API.", val_style)
+            Paragraph("<b>Despliegue ágil coordinado</b> tras la entrega del catálogo y validación en Meta Cloud API, acordando fecha de salida en vivo para resguardar la operatoria diaria.", val_style)
         ],
         [
             Paragraph("<b>Garantía Operativa:</b>", label_style),
