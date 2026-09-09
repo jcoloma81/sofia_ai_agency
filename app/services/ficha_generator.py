@@ -210,15 +210,16 @@ def generate_ficha_alta_pdf(output_path: str = "assets/ficha_alta_cliente.pdf") 
     elements.append(Spacer(1, 5))
 
     # SECCIÓN 3: CONFIGURACIÓN DE SOFÍA (WHATSAPP)
-    elements.append(make_section_banner("3. CONFIGURACIÓN DEL NÚMERO DE SOFÍA"))
+    elements.append(make_section_banner("3. CONFIGURACIÓN DEL NÚMERO DE SOFÍA (META CLOUD API)"))
     sec3_data = [
         [
-            Paragraph("<b>Línea Telefónica Asignada:</b>", label_style),
-            Paragraph("[  ] Chip nuevo provisto por el cliente   [  ] Línea existente a migrar   [  ] Provisto por Agencia", val_style)
+            Paragraph("<b>Línea Exclusiva Dedicada:</b><br/><font size=6 color='#DC2626'>Requisito oficial Meta</font>", label_style),
+            Paragraph("[  ] Chip nuevo provisto por el cliente   [  ] Chip nuevo provisto por la Agencia<br/>"
+                      "<font size=6.5 color='#991B1B'><b>Política Oficial Meta:</b> Prohibido el uso de números personales o activos en celulares. La línea opera 100% en la nube bajo Meta Cloud API sin riesgo de bloqueo.</font>", val_style)
         ],
         [
-            Paragraph("<b>Número de WhatsApp:</b>", label_style),
-            Paragraph("+54 9 _________________________________ (Línea donde operará Sofía)", val_style)
+            Paragraph("<b>Número de WhatsApp para Sofía:</b>", label_style),
+            Paragraph("+54 9 _________________________________ (Línea exclusiva donde operará Sofía)", val_style)
         ],
         [
             Paragraph("<b>Nombre visible en WhatsApp:</b>", label_style),
@@ -318,38 +319,38 @@ def generate_ficha_alta_pdf(output_path: str = "assets/ficha_alta_cliente.pdf") 
     elements.append(t_sec6)
     elements.append(Spacer(1, 5))
 
-    # SECCIÓN 7: CONDICIONES COMERCIALES & FIRMA
-    elements.append(make_section_banner("7. CONDICIONES DEL SERVICIO & PUESTA EN MARCHA"))
+    # SECCIÓN 7: PLANES COMERCIALES & CONDICIONES
+    elements.append(make_section_banner("7. PLANES COMERCIALES & CONDICIONES DE ACTIVACIÓN"))
     sec7_data = [
         [
-            Paragraph("<b>Plan Contratado:</b>", label_style),
-            Paragraph("<b>[  ] Plan B2B Distribución & Despacho</b>   [  ] Plan Enterprise Multi-Línea", val_style),
-            Paragraph("<b>Puesta en Marcha:</b>", label_style),
-            Paragraph("24 a 48 hs hábiles", val_style)
-        ],
-        [
-            Paragraph("<b>Setup Inicial (Única vez):</b>", label_style),
-            Paragraph("$ _________________________ (Configuración y carga)", val_style),
-            Paragraph("<b>Abono Mensual:</b>", label_style),
-            Paragraph("$ _________________ / mes", val_style)
-        ],
-        [
-            Paragraph("<b>Alcance del Servicio:</b>", label_style),
+            Paragraph("<b>Selección de Plan:</b>", label_style),
             Paragraph(
-                "Incluye operación de Sofía 24/7 sobre WhatsApp, transcripción de notas de voz con IA, "
-                "envío de listas de precios actualizadas en Excel, toma de pedidos con cálculo exacto, alerta instantánea a depósito, "
-                "radar de prospección automática en Google Maps, hosting de infraestructura y soporte técnico continuo.",
+                "[  ] <b>Plan 1: Sofía Cazadora</b> — $69.000/mes (+ $35.000 Setup única vez)<br/>"
+                "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size=6.5 color='#64748B'>Prospección a demanda en Google Maps (12-15 comercios/día) y apertura de cuentas nuevas.</font><br/>"
+                "[  ] <b>Plan 2: Sofía Asistente 24/7</b> — $95.000/mes (+ $45.000 Setup única vez)<br/>"
+                "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size=6.5 color='#64748B'>Atención continua 24/7/365, lista de precios en Excel, transcripción de audios y pedidos a depósito.</font><br/>"
+                "[  ] <b>Plan 3: Sofía Integral 360°</b> ⭐ — $155.000/mes (+ $75.000 Setup única vez)<br/>"
+                "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size=6.5 color='#047857'><b>Suite Completa:</b> Prospección por cupos en Google Maps + Atención y pedidos 24/7 con marca y línea propia.</font>",
+                val_style
+            )
+        ],
+        [
+            Paragraph("<b>Puesta en Marcha:</b>", label_style),
+            Paragraph("<b>24 a 48 hs hábiles</b> contadas a partir de la entrega del catálogo inicial y validación de la línea en Meta Cloud API.", val_style)
+        ],
+        [
+            Paragraph("<b>Garantía Operativa:</b>", label_style),
+            Paragraph(
+                "Operación 100% en la nube sobre la infraestructura oficial de Meta Cloud API. "
+                "Incluye soporte técnico continuo, hosting de servidores, actualizaciones de precios sin costo y mantenimiento de algoritmos de inteligencia artificial.",
                 legal_style
-            ),
-            Paragraph("", label_style),
-            Paragraph("", label_style)
+            )
         ]
     ]
-    t_sec7 = Table(sec7_data, colWidths=[130, 240, 90, 80])
+    t_sec7 = Table(sec7_data, colWidths=[130, 410])
     t_sec7.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('PADDING', (0, 0), (-1, -1), 2.5),
-        ('SPAN', (1, 2), (3, 2)),
         ('BACKGROUND', (0, 0), (-1, -1), c_light_bg),
         ('BOX', (0, 0), (-1, -1), 0.5, c_border),
         ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0'))
