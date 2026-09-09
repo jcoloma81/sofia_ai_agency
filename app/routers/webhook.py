@@ -545,6 +545,33 @@ async def receive_whatsapp_webhook(
                 "meeting_confirmed": False
             }
 
+    # 2.5 Check if customer asks for the full price list / catalog
+    price_list_triggers = [
+        "lista de precio", "lista de precios", "lista actualizada", "pasame la lista", 
+        "mandame la lista", "pasanos la lista", "ver la lista", "catalogo", "catálogo", 
+        "tienen lista", "tenes lista", "tenés lista", "mandame los precios", "pasame los precios",
+        "precios actualizados", "que precios tenes", "qué precios tenés"
+    ]
+    if any(trigger in message.lower() for trigger in price_list_triggers) and catalog_service.products:
+        if not any(k in message.lower() for k in ["servicio", "software", "agencia", "abono", "ia"]):
+            price_list_reply = catalog_service.format_price_list()
+            excel_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx")
+            if os.path.exists(excel_path):
+                price_list_reply += "\n\n📥 *Descargá la planilla completa en Excel:*\nhttps://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx"
+            
+            history.append({"sender": "ai", "text": price_list_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+            prospect.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=price_list_reply)
+            return {
+                "status": "success",
+                "price_list_sent": True,
+                "reply": price_list_reply,
+                "meeting_confirmed": False
+            }
+
     # 3. Check if customer asks about a specific product's price
     if any(k in message.lower() for k in ["cuanto", "cuánto", "precio", "sale", "tenes", "tenés", "a cuanto", "a cuánto"]) and catalog_service.products:
         if not any(k in message.lower() for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
