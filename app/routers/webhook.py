@@ -363,11 +363,12 @@ async def receive_whatsapp_webhook(
     # Find or create prospect
     prospect = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
     if not prospect:
+        default_city = "Feira de Santana / Bahia (Brasil)" if clean_phone.startswith("55") else "Entre Ríos / Santa Fe"
         prospect = Prospect(
             phone=clean_phone,
             name=body.get("complex_name") or body.get("name") or f"Prospecto ({clean_phone})",
             contact_name=body.get("contact_name") or contact_name,
-            city=body.get("city") or "Entre Ríos / Santa Fe",
+            city=body.get("city") or default_city,
             campaign="ai_agency",
             status="in_conversation",
             conversation_history="[]"
@@ -571,29 +572,43 @@ async def receive_whatsapp_webhook(
         "mandame la lista", "pasanos la lista", "ver la lista", "catalogo", "catálogo", 
         "tienen lista", "tenes lista", "tenés lista", "mandame los precios", "pasame los precios",
         "precios actualizados", "que precios tenes", "qué precios tenés", "el excel", "mandame el excel",
-        "pasame el excel", "tu excel", "la planilla"
+        "pasame el excel", "tu excel", "la planilla",
+        # Brazilian Portuguese triggers
+        "tabela de preço", "tabela de preços", "tabela de precos", "manda a tabela",
+        "manda a lista", "passa a tabela", "tem tabela", "ver tabela"
     ]
     if any(trigger in message.lower() for trigger in price_list_triggers) and catalog_service.products:
         if not any(k in message.lower() for k in ["servicio", "software", "agencia", "abono", "ia"]):
-            # Extract name if prospect introduced themselves (e.g. "soy Martin del kiosco...")
-            soy_match = re.search(r'\b(?:soy|me llamo|te habla|habla)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ]{3,15})\b', message, re.IGNORECASE)
+            # Extract name if prospect introduced themselves (e.g. "soy Martin del kiosco..." or "sou a Mariana...")
+            soy_match = re.search(r'\b(?:soy|me llamo|te habla|habla|sou|me chamo)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑãõÃÕ]{3,15})\b', message, re.IGNORECASE)
             if soy_match:
                 extracted_name = soy_match.group(1).capitalize()
                 prospect.contact_name = extracted_name
 
             safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
-            contact_greeting = f"¡Hola {safe_name}! ¿Cómo estás?" if safe_name else "¡Hola! ¿Cómo estás?"
-
-            # Professional, clean WhatsApp message without text spam
-            price_list_reply = (
-                f"{contact_greeting} Te adjunto acá mismo el archivo de Excel con nuestra lista de precios "
-                f"completa y actualizada al día de hoy para que la mires tranquilo en el celu o la compu.\n\n"
-                f"📦 *Condiciones vigentes:*\n"
-                f"• Reparto con flete sin cargo a partir de $50.000.\n"
-                f"• Tomamos pedidos hasta las 21:00 hs para salir en el reparto de mañana.\n\n"
-                f"💡 Si preferís consultarme el precio de algún artículo puntual o armar tu pedido, "
-                f"escribime o mandame un audio directo por acá y te lo anoto en el acto."
-            )
+            
+            if brain.is_portuguese_interaction(message, clean_phone):
+                contact_greeting = f"Oi {safe_name}! Tudo bem?" if safe_name else "Oi! Tudo bem?"
+                price_list_reply = (
+                    f"{contact_greeting} Segue aqui em anexo a nossa tabela de preços completa "
+                    f"e atualizada em Excel para você conferir no celular ou no computador.\n\n"
+                    f"📦 *Condições gerais:*\n"
+                    f"• Pedidos anotados e despachados direto pro estoque.\n"
+                    f"• Atendimento 24/7 com pronta-entrega.\n\n"
+                    f"💡 Se preferir consultar o valor de algum item específico ou já fechar um pedido, "
+                    f"é só me mandar mensagem ou áudio direto por aqui!"
+                )
+            else:
+                contact_greeting = f"¡Hola {safe_name}! ¿Cómo estás?" if safe_name else "¡Hola! ¿Cómo estás?"
+                price_list_reply = (
+                    f"{contact_greeting} Te adjunto acá mismo el archivo de Excel con nuestra lista de precios "
+                    f"completa y actualizada al día de hoy para que la mires tranquilo en el celu o la compu.\n\n"
+                    f"📦 *Condiciones vigentes:*\n"
+                    f"• Reparto con flete sin cargo a partir de $50.000.\n"
+                    f"• Tomamos pedidos hasta las 21:00 hs para salir en el reparto de mañana.\n\n"
+                    f"💡 Si preferís consultarme el precio de algún artículo puntual o armar tu pedido, "
+                    f"escribime o mandame un audio directo por acá y te lo anoto en el acto."
+                )
 
             history.append({"sender": "ai", "text": price_list_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -699,7 +714,8 @@ async def receive_whatsapp_webhook(
         city=prospect.city,
         audio_data_b64=audio_b64,
         audio_mime_type=audio_mime,
-        campaign=prospect.campaign or "ai_agency"
+        campaign=prospect.campaign or "ai_agency",
+        phone=clean_phone
     )
 
     # Append AI response to history

@@ -10,6 +10,7 @@ from app.database import get_db
 from app.models.prospect import Prospect
 from app.services import whatsapp
 from app.config.settings import settings
+from prospector.scraper import clean_phone_number
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ async def start_outreach(
     """
     Initiates B2B outbound conversation with a new prospect by sending an introductory consultative pitch.
     """
-    clean_phone = "".join(filter(str.isdigit, payload.phone))
+    clean_phone = clean_phone_number(payload.phone) or "".join(filter(str.isdigit, payload.phone))
     prospect = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
 
     if prospect and prospect.status == "unsubscribed":

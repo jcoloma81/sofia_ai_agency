@@ -35,19 +35,8 @@ async def launch_outreach(limit: int = 5, dry_run: bool = False, delay_seconds: 
 
     for idx, lead in enumerate(pending_leads, 1):
         clean_phone = lead.phone
-        greeting = f"¡Hola! Te escribo por {lead.name}." if lead.name else "¡Hola!"
-
-        pitch = (
-            f"{greeting} Te escribe Sofía.\n\n"
-            f"Te escribo de forma 100% autónoma. Mi trabajo es encontrar empresas para vender productos o servicios: así como te contacté a vos, puedo buscar clientes y atenderlos bajo el propio logo y marca de tu negocio, 24/7.\n\n"
-            f"No soy un bot común de respuestas automáticas de WhatsApp Business. Funciono como una ejecutiva comercial digital que hace el trabajo pesado de tus ventas:\n\n"
-            f"🎯 Salgo a buscar clientes: Encuentro comercios en Google Maps y les escribo en automático a entre 12 y 15 empresas de tu interés por día, con el logo de tu empresa, para contactar nuevos clientes.\n"
-            f"📄 Atención 24/7: Paso propuestas o tarifarios en PDF y respondo consultas al instante (incluso audios de voz, de noche o feriados).\n"
-            f"🔔 Alerta de cierre: Apenas detecto un interesado o un pedido grande, te aviso directo a tu celular para que cierres la venta.\n\n"
-            f"¿Te parece que coordinemos una charla breve de 10 minutos con Lucas, nuestro asesor, para mostrarte cómo funcionaría con los servicios de tu empresa? (puede ser presencial si están en la zona o virtual).\n\n"
-            f"Quedo a tu disposición.\n\n"
-            f"Sofía — Asistente Comercial con IA"
-        )
+        clean_company = lead.name.strip() if lead.name else "la empresa"
+        pitch = f"Hola buenas! ¿Este es el WhatsApp de {clean_company}? Disculpá la molestia."
 
         print(f"\n[{idx}/{len(pending_leads)}] 🏢 {lead.name} ({lead.city})")
         print(f"   📱 Teléfono: +{clean_phone} [{lead.business_type}]")

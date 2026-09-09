@@ -15,6 +15,7 @@ from app.database import get_db
 from app.models.prospect import Prospect
 from app.services import whatsapp
 from app.config.settings import settings
+from prospector.scraper import clean_phone_number
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +242,7 @@ async def bulk_import_prospects(
     updated_count = 0
 
     for lead in payload.leads:
-        clean_phone = "".join(filter(str.isdigit, lead.phone))
+        clean_phone = clean_phone_number(lead.phone) or "".join(filter(str.isdigit, lead.phone))
         if not clean_phone:
             continue
 

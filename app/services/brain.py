@@ -49,6 +49,32 @@ REGLA DE ORO:
 - NO pidas el número de teléfono (ya estamos conversando directamente por su WhatsApp).
 """
 
+SYSTEM_PROMPT_BRAZIL = """Você é a Sofia, assistente comercial de Inteligência Artificial para empresas, atacadistas e distribuidoras no Brasil.
+Seu papel é conversar pelo WhatsApp de forma 100% natural, calorosa, simpática, humana e profissional em Português do Brasil (pt-BR).
+
+IDIOMA E TOM (BR):
+- Português brasileiro 100% autêntico, leve, acolhedor e humano (use 'você', 'tudo bem?', 'com certeza', 'legal', 'vamos nessa', risadas com 'kkk', emojis amigáveis).
+- PROIBIDO terminantemente usar espanhol, termos em espanhol ('vos', 'che', 'dale', 'ustedes') ou português arcaico de Portugal ('tu estás', 'gajo', 'fiche').
+- Responda como uma pessoa real no WhatsApp: respostas curtas, diretas, calorosas e inteligentes (1 a 3 frases bem redigidas).
+- Cero repetição de saudações robóticas. Se a conversa já começou, vá direto ao assunto com simpatia.
+
+CÓDIGO SECRETO / JAVIER:
+- Se a pessoa mandar "ADORO O JAVIER", "ADORO A JAVIER" ou brincar sobre o Javier: dê risada gostosa, entre na brincadeira com muito carinho ("Kkkkk o Javier é demais mesmo! Uma figuraça!"), dê as boas-vindas com atendimento VIP e conte com simpatia e orgulho como você ajuda as empresas e distribuidoras no dia a dia.
+
+CONVERSAS E ASSUNTOS ABERTOS:
+- Se a pessoa quiser bater papo sobre outros assuntos, dia a dia ou curiosidades: converse com total espontaneidade, simpatia e bom humor! Mostre que você é super inteligente e agradável de bater papo, mas com leveza comente que sua grande paixão é turbinar vendas e tirar o trabalho pesado das empresas.
+
+O QUE VOCÊ FAZ (PILHARES COMERCIAIS):
+1. 📊 Tabelas no Excel: A empresa envia a lista com aumentos dos fornecedores e você atualiza toda a planilha no Excel de forma automática em segundos, sem erros.
+2. 📦 Pedidos 24/7: Você recebe pedidos de clientes por áudio de voz ou texto, calcula os totais e já despacha a ordem pronta para o estoque/depósito.
+3. 🔎 Prospecção no Google Maps: Você busca comércios e lojas todos os dias no Google Maps para atrair novos clientes para a empresa.
+
+PERGUNTAS FREQUENTES NO BRASIL:
+- "Quanto custa?" / Valores: Os planos começam a partir de R$ 490 a R$ 790 por mês via PIX, sem contrato de fidelidade e com cancelamento livre a qualquer momento.
+- "Como funciona para começar?": É super simples, a empresa só precisa destinar um chip de WhatsApp exclusivo e enviar a tabela de preços em Excel ou PDF; em 24h a 48h o sistema já está operando 100% na nuvem.
+- Se demonstrar interesse ou quiser ver na prática: Proponha bater um papo rápido de 10 minutos (pelo WhatsApp ou chamada) para ver uma demonstração ao vivo com os produtos deles.
+"""
+
 SYSTEM_PROMPT_AIR_CONTROL = """Sos Sofía, asistente comercial de Air Control en Entre Ríos, Argentina.
 Tu único rol es conversar por WhatsApp con dueños y administradores de hoteles, cabañas y alojamientos turísticos de forma natural, cálida, profesional y empática (voseo argentino, sin formalismos robots).
 
@@ -173,14 +199,34 @@ def detect_catalog_request(text: str) -> bool:
         text_lower
     ))
 
+def is_portuguese_interaction(text: str, phone: Optional[str] = None) -> bool:
+    """
+    Detects if the interaction is with a Brazilian prospect (+55) or written in Portuguese.
+    """
+    if phone and str(phone).startswith("55"):
+        return True
+    if not text:
+        return False
+    text_lower = text.lower()
+    if any(k in text_lower for k in ["adoro o javier", "adoro a javier", "kkk"]):
+        return True
+    pt_keywords = [
+        r'\b(oi|ol[aá]|tudo bem|voc[eê]|voces|vocês|obrigad[oa]|legal|beleza|valeu)\b',
+        r'\b(com certeza|fazer|pra|pro|ent[aã]o|bom dia|boa tarde|boa noite|como est[aá])\b',
+        r'\b(queria|gostaria|tabela|pre[cç]os?|distribuidora|pedidos?|atendimento)\b',
+        r'\b(trabalho|neg[oó]cio|empresa|vendas?|ajudar|conversa|bater papo)\b'
+    ]
+    return any(re.search(pat, text_lower) for pat in pt_keywords)
+
 def rule_based_consultative_response(
     incoming_text: str,
     prospect_name: Optional[str] = None,
     contact_name: Optional[str] = None,
-    campaign: str = "ai_agency"
+    campaign: str = "ai_agency",
+    is_pt: bool = False
 ) -> Tuple[str, bool, Optional[str]]:
     """
-    Reliable Argentine consultative fallback response engine in case external LLM API is unreachable.
+    Reliable consultative fallback response engine in case external LLM API is unreachable.
     Returns (response_text, is_meeting_confirmed, meeting_details)
     """
     text_lower = incoming_text.lower()
@@ -189,6 +235,13 @@ def rule_based_consultative_response(
     # Check meeting intent first
     is_meeting, meeting_details = detect_meeting_intent(incoming_text)
     if is_meeting:
+        if is_pt:
+            return (
+                f"Perfeito! Já deixei combinado o nosso bate-papo para {meeting_details}. "
+                f"Nosso consultor vai entrar em contato pontualmente com você por aqui. Muito obrigada e um ótimo dia!",
+                True,
+                meeting_details
+            )
         nombre = f" {safe_name}" if safe_name else ""
         return (
             f"¡Perfecto{nombre}! Ya te dejo agendada la reunión para {meeting_details}. "
@@ -196,6 +249,35 @@ def rule_based_consultative_response(
             f"¡Muchas gracias y que tengas un gran día!",
             True,
             meeting_details
+        )
+
+    if is_pt:
+        if "adoro" in text_lower or "javier" in text_lower:
+            return (
+                "Kkkkk o Javier é demais mesmo! Uma figuraça! 😂 Seja super bem-vinda ao meu WhatsApp! "
+                "Eu sou a Sofia, assistente comercial de inteligência artificial. Como posso te ajudar hoje?",
+                False,
+                None
+            )
+        if detect_catalog_request(incoming_text):
+            return (
+                "Com certeza! Segue nossa apresentação completa em PDF com o funcionamento, casos práticos e valores.\n\n"
+                "Que dia e horário fica melhor para você bater um papo rápido de 10 minutinhos?",
+                False,
+                None
+            )
+        if any(w in text_lower for w in ["oi", "olá", "ola", "tudo bem", "bom dia", "boa tarde"]):
+            return (
+                "Oi! Tudo bem? Aqui é a Sofia. Em que posso te ajudar hoje? 😊",
+                False,
+                None
+            )
+        return (
+            "Oi! Eu sou a Sofia, assistente comercial com IA. Ajudo empresas e distribuidoras a organizarem pedidos no WhatsApp, "
+            "atualizarem tabelas de preços no Excel e atraírem novos clientes pelo Google Maps 24/7. "
+            "Que dia e horário fica melhor para você bater um papo rápido de 10 minutinhos para ver na prática?",
+            False,
+            None
         )
 
     # PDF / Catalog request rule
@@ -329,40 +411,55 @@ async def generate_ai_response(
     city: Optional[str] = None,
     audio_data_b64: Optional[str] = None,
     audio_mime_type: Optional[str] = None,
-    campaign: str = "ai_agency"
+    campaign: str = "ai_agency",
+    phone: Optional[str] = None
 ) -> Tuple[str, bool, Optional[str]]:
     """
     Generates response using Gemini Flash Lite Multimodal API (with text and audio note support) if key is available,
-    or falls back cleanly to the rule-based Argentine conversational engine.
+    or falls back cleanly to the rule-based consultative engine.
+    Supports both Argentine Spanish and Brazilian Portuguese seamlessly.
     Returns (response_text, is_meeting_confirmed, meeting_details)
     """
+    is_pt = is_portuguese_interaction(incoming_text, phone)
     is_meeting, meeting_details = detect_meeting_intent(incoming_text)
     safe_name = sanitize_contact_first_name(contact_name)
     
     gemini_key = settings.GEMINI_API_KEY
     if not gemini_key:
         logger.info("GEMINI_API_KEY not configured. Using rule-based consultative engine.")
-        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign)
+        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign, is_pt=is_pt)
 
     try:
         contents = []
-        selected_prompt = SYSTEM_PROMPT_AGENCY if campaign == "ai_agency" else SYSTEM_PROMPT_AIR_CONTROL
-        entity_label = "Empresa / Distribuidora" if campaign == "ai_agency" else "Complejo"
-        
-        from app.services.directives import directives_service
-        from app.services.catalog import catalog_service
-        directives_ctx = directives_service.get_prompt_context() if campaign == "ai_agency" else ""
-        catalog_ctx = catalog_service.get_summary_prompt() if (campaign == "ai_agency" and catalog_service.products) else ""
+        if is_pt and campaign == "ai_agency":
+            selected_prompt = SYSTEM_PROMPT_BRAZIL
+            entity_label = "Empresa / Distribuidora"
+            city_val = city if (city and "Entre Ríos" not in city) else "Feira de Santana / Bahia (Brasil)"
+            system_context = (
+                f"{selected_prompt}\n\n"
+                f"Dados atuais:\n"
+                f"- {entity_label}: {prospect_name or 'Parceiro(a)'}\n"
+                f"- Contato: {safe_name or 'Amigo(a)'}\n"
+                f"- Localidade: {city_val}\n"
+            )
+        else:
+            selected_prompt = SYSTEM_PROMPT_AGENCY if campaign == "ai_agency" else SYSTEM_PROMPT_AIR_CONTROL
+            entity_label = "Empresa / Distribuidora" if campaign == "ai_agency" else "Complejo"
+            
+            from app.services.directives import directives_service
+            from app.services.catalog import catalog_service
+            directives_ctx = directives_service.get_prompt_context() if campaign == "ai_agency" else ""
+            catalog_ctx = catalog_service.get_summary_prompt() if (campaign == "ai_agency" and catalog_service.products) else ""
 
-        system_context = (
-            f"{selected_prompt}\n\n"
-            f"Datos actuales:\n"
-            f"- {entity_label}: {prospect_name or 'No especificado'}\n"
-            f"- Contacto: {safe_name or 'Estimado'}\n"
-            f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n\n"
-            f"{directives_ctx}\n\n"
-            f"{catalog_ctx}\n"
-        )
+            system_context = (
+                f"{selected_prompt}\n\n"
+                f"Datos actuales:\n"
+                f"- {entity_label}: {prospect_name or 'No especificado'}\n"
+                f"- Contacto: {safe_name or 'Estimado'}\n"
+                f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n\n"
+                f"{directives_ctx}\n\n"
+                f"{catalog_ctx}\n"
+            )
 
         for msg in conversation_history[-6:]:
             role = "user" if msg.get("sender") == "prospect" else "model"
@@ -373,9 +470,14 @@ async def generate_ai_response(
 
         if audio_data_b64:
             clean_mime = audio_mime_type.split(";")[0].strip() if audio_mime_type else "audio/ogg"
+            instruction_text = (
+                "O cliente enviou esta mensagem de voz no WhatsApp. Ouça com atenção e responda com carinho, leveza e profissionalismo em português do Brasil (pt-BR)."
+                if is_pt else
+                "El cliente envió esta nota de voz por WhatsApp. Escuchala con atención y respondé en texto con calidez, voseo argentino y siguiendo estrictamente tus directivas de Sofía."
+            )
             current_parts = [
                 {"inline_data": {"mime_type": clean_mime, "data": audio_data_b64}},
-                {"text": "El cliente envió esta nota de voz por WhatsApp. Escuchala con atención y respondé en texto con calidez, voseo argentino y siguiendo estrictamente tus directivas de Sofía."}
+                {"text": instruction_text}
             ]
         else:
             current_parts = [{"text": incoming_text}]
@@ -398,13 +500,14 @@ async def generate_ai_response(
 
         candidate_models = [
             "gemini-flash-lite-latest",
-            "gemini-3.5-flash-lite",
-            "gemini-3.6-flash"
+            "gemini-2.5-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-2.5-flash-lite"
         ]
         for model_name in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             try:
-                async with httpx.AsyncClient(timeout=18.0) as client:
+                async with httpx.AsyncClient(timeout=20.0) as client:
                     res = await client.post(url, json=payload)
                     if res.status_code == 200:
                         data = res.json()
@@ -412,9 +515,9 @@ async def generate_ai_response(
                         if candidates and "content" in candidates[0]:
                             ai_text = candidates[0]["content"]["parts"][0]["text"].strip()
                             if not is_meeting:
-                                if any(k in ai_text.lower() for k in ["agendada la reunión", "te dejo agendad", "agendada para", "reunión agendada", "agendado", "te quedó agendad", "quedó agendad", "agendamos para"]):
+                                if any(k in ai_text.lower() for k in ["agendada la reunión", "te dejo agendad", "agendada para", "reunión agendada", "agendado", "te quedó agendad", "quedó agendad", "agendamos para", "agendado para", "reunião agendada"]):
                                     is_meeting = True
-                                    match = re.search(r'(?:agendada la reunión para|reunión para|agendada para|te dejo agendad[ao] para|te quedó agendad[ao] para|quedó agendad[ao] para)\s+([^.!\n]+)', ai_text, re.IGNORECASE)
+                                    match = re.search(r'(?:agendada la reunión para|reunión para|agendada para|te dejo agendad[ao] para|te quedó agendad[ao] para|quedó agendad[ao] para|agendado para)\s+([^.!\n]+)', ai_text, re.IGNORECASE)
                                     if match:
                                         meeting_details = match.group(1).strip()
                                     else:
@@ -426,8 +529,8 @@ async def generate_ai_response(
                 logger.warning(f"Error calling {model_name}: {model_err}")
 
         logger.warning("All Gemini candidate models failed or timed out. Falling back to rule engine.")
-        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign)
+        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign, is_pt=is_pt)
 
     except Exception as e:
         logger.error(f"Error in Gemini generation: {e}. Falling back.")
-        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign)
+        return rule_based_consultative_response(incoming_text, prospect_name, safe_name, campaign=campaign, is_pt=is_pt)

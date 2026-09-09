@@ -39,24 +39,31 @@ def clean_phone_number(phone_raw):
     # Strip leading zeros
     digits = re.sub(r'^0+', '', digits)
     
-    # Check if already starts with 54
+    # Check if Brazil (+55)
+    if digits.startswith('55') and len(digits) in (12, 13):
+        return digits
+
+    # Check if already starts with 54 (Argentina)
     if digits.startswith('54'):
         if not digits.startswith('549'):
             if len(digits) == 12: # e.g. 54 343 4567890
                 digits = '549' + digits[2:]
         return digits if len(digits) >= 11 else None
 
-    # Handle removal of '15' mobile prefix after area code:
+    # Handle removal of '15' mobile prefix after area code (Argentina):
     for ac in ['343', '342', '341', '11', '3442', '3447', '345']:
         if digits.startswith(ac + '15') and len(digits) >= len(ac) + 2 + 6:
             digits = ac + digits[len(ac)+2:]
             break
             
-    if len(digits) == 10: # e.g. 3434567890
+    if len(digits) == 10: # e.g. 3434567890 (Argentina local mobile/landline)
         digits = '549' + digits
     elif len(digits) == 8 and digits.startswith(('4', '5', '6', '7')):
         digits = '549343' + digits
-    elif not digits.startswith('549') and len(digits) >= 10:
+    elif len(digits) == 11 and digits[2] == '9' and digits[:2] in ['75', '71', '11', '21', '31', '41', '51', '61', '81', '85']:
+        # Brazil mobile without country code (DDD + 9 digits, e.g. 75988887777 for Feira de Santana/Bahia)
+        digits = '55' + digits
+    elif not digits.startswith('549') and not digits.startswith('55') and len(digits) >= 10:
         digits = '549' + digits
         
     return digits
