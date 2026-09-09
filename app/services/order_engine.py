@@ -51,7 +51,7 @@ def parse_order_text(text: str) -> OrderDraft:
 
     # Remove agent name and conversational prefixes / verbs (with or without accents)
     cleaned = re.sub(
-        r'\b(sofia|sofía|che|hola|buenas|buen d[ií]a|por favor|me\s+mandas|me\s+mandás|mandame|mándame|mandas|mandás|traeme|tráeme|traes|traés|pasame|pásame|pasas|pasás|cargame|cárgame|cargas|cargás|sumame|súmame|quiero|necesito|pedir|pedido|agregame|agrégame|para mañana|para hoy|tenes|tenés)\b',
+        r'\b(sofia|sofía|che|hola|buenas|buen d[ií]a|por favor|me\s+mandas|me\s+mandás|mandame|mándame|mandas|mandás|traeme|tráeme|traes|traés|pasame|pásame|pasas|pasás|cargame|cárgame|cargas|cargás|sumame|súmame|anotame|anótame|anota|anotá|quiero|necesito|pedir|pedido|agregame|agrégame|para mañana|para hoy|tenes|tenés)\b',
         '',
         text,
         flags=re.IGNORECASE
@@ -161,6 +161,9 @@ def detect_order_intent(text: str) -> bool:
     if not text:
         return False
     text_lower = text.lower()
+    # Exclude price list / catalog requests from being parsed as product orders
+    if any(k in text_lower for k in ["lista", "catalogo", "catálogo", "excel", "planilla", "precios"]):
+        return False
     triggers = [
         "anotame", "anótame", "mandame", "mándame", "traeme", "tráeme", "pasame", "pásame",
         "cargame", "cárgame", "sumame", "súmame", "quiero pedir", "te pido",

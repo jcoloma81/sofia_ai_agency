@@ -1,5 +1,14 @@
 import pytest
+import os
 from app.services.order_engine import parse_order_text, format_order_summary_message, is_order_confirmation, detect_order_intent
+from app.services.catalog import catalog_service
+
+@pytest.fixture(autouse=True)
+def setup_catalog():
+    csv_path = os.path.join(os.path.dirname(__file__), "..", "app", "data", "sample_catalog.csv")
+    with open(csv_path, "r", encoding="utf-8") as f:
+        catalog_service.load_from_csv(f.read(), source_name="Catálogo Base")
+    yield
 
 def test_detect_order_intent():
     assert detect_order_intent("Mandame 3 cajas de aceite") is True

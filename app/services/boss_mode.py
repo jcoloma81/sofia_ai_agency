@@ -178,6 +178,41 @@ async def process_boss_message(
         reply = await directives_service.update_from_boss_message(clean_text)
         return True, reply, "boss_directive_set"
 
+    # 2.8 Live Price List & Excel Attachment (Demo en vivo)
+    price_list_triggers = [
+        "lista de precio", "lista de precios", "lista actualizada", "pasame la lista", 
+        "mandame la lista", "pasanos la lista", "ver la lista", "mandame los precios", "pasame los precios",
+        "precios actualizados", "que precios tenes", "qué precios tenés", "el excel", "mandame el excel",
+        "pasame el excel", "la planilla", "tu excel", "archivo de excel", "planilla de precios"
+    ]
+    is_admin_internal_view = any(k in lower_text for k in ["mostrar catálogo", "mostrar catalogo", "estado del catálogo", "estado del catalogo", "resumen catalogo", "resumen catálogo", "inventario", "ver productos"])
+
+    if any(k in lower_text for k in price_list_triggers) and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
+        import asyncio
+        from app.services import whatsapp
+
+        clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+        demo_reply = (
+            f"🧪 *[DEMO EN VIVO — ENVÍO DE LISTA]*\n\n"
+            f"¡Hola Javier! ¿Cómo estás? Te adjunto acá mismo el archivo de Excel con nuestra lista de precios "
+            f"completa y actualizada al día de hoy para que la mires tranquilo en el celu o la compu.\n\n"
+            f"📦 *Condiciones vigentes:*\n"
+            f"• Reparto con flete sin cargo a partir de $50.000.\n"
+            f"• Tomamos pedidos hasta las 21:00 hs para salir en el reparto de mañana.\n\n"
+            f"💡 Si preferís consultarme el precio de algún artículo puntual o armar tu pedido, "
+            f"escribime o mandame un audio directo por acá y te lo anoto en el acto."
+        )
+
+        excel_url = "https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx"
+        asyncio.create_task(whatsapp.send_whatsapp_document(
+            to_phone=clean_sender,
+            document_url=excel_url,
+            filename="Lista_Precios_Distribuidora.xlsx",
+            caption="📊 Lista de Precios Oficial Actualizada"
+        ))
+
+        return True, demo_reply, "boss_price_list_demo"
+
     # 3. Live Demo / Order Test by the Boss (for video demos from personal phone)
     from app.services.order_engine import (
         parse_order_text,
@@ -373,8 +408,9 @@ async def process_boss_message(
             return True, f"⚠️ No encontré ningún contacto con el número `{num_matches[-1]}`.", "lead_not_found"
         return True, "💡 No hay ninguna conversación pausada actualmente para reactivar.", "lead_not_found"
 
-    # 5. Catalog Check / Refresh
-    if any(k in lower_text for k in ["catalogo", "catálogo", "lista de precios", "productos"]):
+    # 5. Catalog Check / Refresh (Admin internal inventory view)
+    admin_cat_triggers = ["mostrar catalogo", "mostrar catálogo", "estado del catalogo", "estado del catálogo", "resumen catalogo", "resumen catálogo", "inventario", "productos en sistema", "ver productos"]
+    if any(k in lower_text for k in admin_cat_triggers) or lower_text.strip() in ["catalogo", "catálogo", "productos"]:
         summary = catalog_service.get_summary_prompt(max_items=15)
         reply = (
             f"📦 *ESTADO DEL CATÁLOGO ACTUAL*\n\n"

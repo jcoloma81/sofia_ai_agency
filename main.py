@@ -64,6 +64,14 @@ def serve_propuesta():
     propuesta_path = os.path.join(os.path.dirname(__file__), "app", "static", "propuesta_comercial.html")
     return FileResponse(propuesta_path)
 
+# Ficha de Alta de Cliente & Relevamiento Operativo
+@app.get("/alta-cliente", response_class=FileResponse)
+@app.get("/onboarding", response_class=FileResponse)
+@app.get("/ficha", response_class=FileResponse)
+def serve_alta_cliente():
+    alta_path = os.path.join(os.path.dirname(__file__), "app", "static", "ficha_alta_cliente.html")
+    return FileResponse(alta_path)
+
 # Executive Web Dashboard (Restricted Admin Access)
 @app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
 @app.get("/admin", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])

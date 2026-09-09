@@ -780,10 +780,25 @@ class CatalogService:
 
 catalog_service = CatalogService()
 
-# Auto-initialize with sample catalog if available
+# Auto-initialize with updated catalog if available, fallback to distribuidora or base
 import os
+_updated_excel = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx")
+_distribuidora_excel = os.path.join(os.path.dirname(__file__), "..", "..", "catalogo_cliente_distribuidora.xlsx")
 _default_csv = os.path.join(os.path.dirname(__file__), "..", "data", "sample_catalog.csv")
-if os.path.exists(_default_csv):
+
+if os.path.exists(_updated_excel):
+    try:
+        with open(_updated_excel, "rb") as _f:
+            catalog_service.load_from_excel_bytes(_f.read(), filename="Catálogo Actualizado")
+    except Exception as _e:
+        logger.warning(f"Could not load updated catalog: {_e}")
+elif os.path.exists(_distribuidora_excel):
+    try:
+        with open(_distribuidora_excel, "rb") as _f:
+            catalog_service.load_from_excel_bytes(_f.read(), filename="Catálogo Distribuidora")
+    except Exception as _e:
+        logger.warning(f"Could not load distribuidora catalog: {_e}")
+elif os.path.exists(_default_csv):
     try:
         with open(_default_csv, "r", encoding="utf-8") as _f:
             catalog_service.load_from_csv(_f.read(), source_name="Catálogo Base")

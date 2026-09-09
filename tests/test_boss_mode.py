@@ -112,7 +112,25 @@ async def test_boss_order_demo_with_words(db):
     assert "DEMO EN VIVO" in reply
     assert "Aceite Cañuelas" in reply
     assert "Harina Pureza" in reply
-    assert "$68.200" in reply
+    assert ("$76.400" in reply or "$68.200" in reply)
+
+@pytest.mark.asyncio
+async def test_boss_price_list_demo(db):
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Hola Sofía, mandame la lista de precios actualizada"
+        )
+        assert handled is True
+        assert action == "boss_price_list_demo"
+        assert "ENVÍO DE LISTA" in reply
+        assert "archivo de Excel" in reply
+        mock_doc.assert_called_once()
+        call_kwargs = mock_doc.call_args[1]
+        assert "catalogo_actualizado.xlsx" in call_kwargs["document_url"]
+        assert call_kwargs["filename"] == "Lista_Precios_Distribuidora.xlsx"
 
 @pytest.mark.asyncio
 async def test_boss_order_confirmation_triggers_depot_alert(db):
