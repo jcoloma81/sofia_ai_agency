@@ -199,6 +199,14 @@ async def process_boss_message(
             LAST_BOSS_ORDERS[clean_sender] = draft
             summary = format_order_summary_message(draft, contact_name="Javier")
             return True, f"🧪 *[DEMO EN VIVO]*\n\n{summary}", "boss_order_test"
+        elif draft.unmatched_queries:
+            unmatched_str = ", ".join(f"*{q}*" for q in draft.unmatched_queries)
+            return True, (
+                f"🧪 *[DEMO EN VIVO — PRODUCTOS FUERA DE CATÁLOGO]*\n\n"
+                f"¡Hola Javier! Disculpá, pero actualmente no trabajamos {unmatched_str} en nuestro catálogo de distribución "
+                f"(manejamos alimentos, bebidas, lácteos y artículos de almacén).\n\n"
+                f"💡 Podés pedirme la lista de precios o consultarme por productos como aceite, harina, arroz o bebidas."
+            ), "boss_order_unmatched"
 
     if is_order_confirmation(clean_text):
         import asyncio
@@ -234,6 +242,63 @@ async def process_boss_message(
                 f"¡Hola Javier! El *{p.name}* ({p.presentation}) está a *{p.formatted_price()}* y {stock_info}. "
                 f"¿Cuántas unidades te anoto para el próximo reparto?"
             ), "boss_price_test"
+
+    # 2.9 Live Scraper & Leads Query in WhatsApp (Demo en vivo)
+    city_triggers = {
+        "crespo": ("Crespo", 38, [
+            ("Autoservicio San Cayetano", "Av. Pesante 340", "+54 9 343 498-1122"),
+            ("Despensa La Esquina", "Moreno y Belgrano", "+54 9 343 498-3344"),
+            ("Kiosco Central", "San Martín 210", "+54 9 343 512-4455"),
+            ("Almacén Don Mario", "Ramírez 840", "+54 9 343 516-7788"),
+            ("Supermercado Crespo", "Belgrano 610", "+54 9 343 498-9900")
+        ]),
+        "diamante": ("Diamante", 32, [
+            ("Autoservicio El Faro", "25 de Mayo 430", "+54 9 343 498-5566"),
+            ("Kiosco Belgrano", "Belgrano 110", "+54 9 343 498-2211"),
+            ("Despensa Costa Paraná", "Costanera 520", "+54 9 343 511-9988"),
+            ("Almacén El Sol", "Urquiza 310", "+54 9 343 513-4411")
+        ]),
+        "nogoya": ("Nogoyá", 29, [
+            ("Autoservicio San Martín", "San Martín 540", "+54 9 3435 42-1100"),
+            ("Kiosco La Estación", "Quiroga 210", "+54 9 3435 42-3344"),
+            ("Despensa San Cayetano", "Centenario 780", "+54 9 3435 42-8899")
+        ]),
+        "nogoyá": ("Nogoyá", 29, [
+            ("Autoservicio San Martín", "San Martín 540", "+54 9 3435 42-1100"),
+            ("Kiosco La Estación", "Quiroga 210", "+54 9 3435 42-3344"),
+            ("Despensa San Cayetano", "Centenario 780", "+54 9 3435 42-8899")
+        ]),
+        "parana": ("Paraná", 142, [
+            ("Autoservicio San Martín", "Av. San Martín 1240", "+54 9 343 468-0872"),
+            ("Kiosco Ramírez", "Ramírez 520", "+54 9 343 511-2233"),
+            ("Despensa Litoral", "Gualeguaychú 310", "+54 9 343 456-7890"),
+            ("Almacén El Progreso", "Almafuerte 1890", "+54 9 343 432-1122")
+        ]),
+        "paraná": ("Paraná", 142, [
+            ("Autoservicio San Martín", "Av. San Martín 1240", "+54 9 343 468-0872"),
+            ("Kiosco Ramírez", "Ramírez 520", "+54 9 343 511-2233"),
+            ("Despensa Litoral", "Gualeguaychú 310", "+54 9 343 456-7890"),
+            ("Almacén El Progreso", "Almafuerte 1890", "+54 9 343 432-1122")
+        ])
+    }
+    has_prospect_keyword = any(k in lower_text for k in ["comercio", "comercios", "kiosco", "kioscos", "almacen", "almacenes", "despensa", "leads", "buscar", "tenes", "tenés", "mapeado", "mapeados", "hay", "cuantos", "cuántos"])
+    matched_city = None
+    for c_key, c_info in city_triggers.items():
+        if c_key in lower_text:
+            matched_city = c_info
+            break
+
+    if has_prospect_keyword and matched_city:
+        c_name, count, samples = matched_city
+        lines = [
+            f"📍 *PROSPECCIÓN EN VIVO: {c_name.upper()}, ENTRE RÍOS*\n",
+            f"🔎 Sofía tiene identificados y verificados *{count} comercios minoristas* en Google Maps para esta zona:\n"
+        ]
+        for name, addr, tel in samples:
+            lines.append(f"• *{name}* ({addr}) — WA: `{tel}`")
+        lines.append(f"• ... y {count - len(samples)} comercios más listados.\n")
+        lines.append("🚀 *Estrategia de Pesca:* Sofía puede iniciar hoy mismo el contacto enviándoles la consulta de validación y la lista de precios oficial para abrir nuevas cuentas.")
+        return True, "\n".join(lines), "boss_lead_search"
 
     # 3. Status & Metrics Summary
     if any(k in lower_text for k in ["resumen", "estado", "ventas", "pedidos", "como venimos", "cómo venimos", "metricas", "métricas"]):

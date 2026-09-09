@@ -544,6 +544,26 @@ async def receive_whatsapp_webhook(
                 "reply": order_summary,
                 "meeting_confirmed": False
             }
+        elif draft.unmatched_queries:
+            unmatched_str = ", ".join(f"*{q}*" for q in draft.unmatched_queries)
+            unmatched_reply = (
+                f"¡Hola! Disculpá, pero actualmente no trabajamos {unmatched_str} en nuestro catálogo de distribución "
+                f"(manejamos líneas de alimentos, bebidas, lácteos y artículos de almacén).\n\n"
+                f"💡 Si querés ver todos los artículos que tenemos disponibles para el reparto, "
+                f"escribime 'mandame la lista' o consultame por productos puntuales."
+            )
+            history.append({"sender": "ai", "text": unmatched_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+            prospect.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=unmatched_reply)
+            return {
+                "status": "success",
+                "order_unmatched": True,
+                "reply": unmatched_reply,
+                "meeting_confirmed": False
+            }
 
     # 2.5 Check if customer asks for the full price list / catalog / Excel
     price_list_triggers = [

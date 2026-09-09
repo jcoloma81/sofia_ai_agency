@@ -696,9 +696,14 @@ class CatalogService:
         if not query or not query.strip():
             return self.products[:limit]
 
+        stopwords = {
+            "de", "del", "la", "el", "los", "las", "un", "una", "unos", "unas", "y", "o",
+            "me", "te", "se", "nos", "les", "con", "sin", "por", "para", "en",
+            "mandas", "mandás", "traes", "traés", "mandame", "mándame", "quiero", "necesito"
+        }
         # Strip punctuation from query words
-        tokens = [re.sub(r'[^\w\s]', '', t).strip().lower() for t in query.split()]
-        tokens = [t for t in tokens if len(t) > 1]
+        raw_tokens = [re.sub(r'[^\w\s]', '', t).strip().lower() for t in query.split()]
+        tokens = [t for t in raw_tokens if len(t) >= 3 and t not in stopwords]
         if not tokens:
             return []
 
@@ -706,9 +711,9 @@ class CatalogService:
         for p in self.products:
             name_lower = p.name.lower()
             category_lower = p.category.lower()
-            if all(t in name_lower or t in category_lower for t in tokens):
+            if all(re.search(rf'\b{re.escape(t)}', name_lower) or re.search(rf'\b{re.escape(t)}', category_lower) for t in tokens):
                 matches.append(p)
-            elif any(t in name_lower for t in tokens):
+            elif any(re.search(rf'\b{re.escape(t)}', name_lower) for t in tokens):
                 matches.append(p)
 
         matches.sort(key=lambda p: (not p.in_stock, not (query.lower() in p.name.lower())))
