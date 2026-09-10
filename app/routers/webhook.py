@@ -315,52 +315,66 @@ async def receive_whatsapp_webhook(
     # Executive command check from Javier's personal alert line (Modo Jefe)
     if is_boss_number(clean_phone):
         boss_record = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
-        if not boss_record:
-            boss_record = Prospect(
-                phone=clean_phone,
-                name="Javier Coloma (Director)",
-                contact_name="Javier",
-                city="Paraná / Central",
-                campaign="boss_mode",
-                status="director",
-                conversation_history="[]"
-            )
-            db.add(boss_record)
-            db.commit()
-            db.refresh(boss_record)
 
-        try:
-            boss_history = json.loads(boss_record.conversation_history or "[]")
-        except Exception:
-            boss_history = []
+        # Check if boss is running a live Prospect Simulation
+        if boss_record and boss_record.campaign == "ai_agency" and boss_record.status in ["contacted", "in_conversation"]:
+            clean_cmd = message.strip().lower()
+            if clean_cmd in ["modo jefe", "salir de prueba", "terminar prueba", "fin prueba"]:
+                boss_record.status = "director"
+                boss_record.name = "Javier Coloma (Director)"
+                boss_record.campaign = "boss_mode"
+                db.commit()
+                revert_msg = "✅ Simulación finalizada. Has vuelto a Modo Jefe (Director)."
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=revert_msg)
+                return {"status": "success", "action": "exit_simulation", "reply": revert_msg}
+            logger.info(f"🧪 Boss number {clean_phone} is in PROSPECT SIMULATION mode ('{boss_record.name}'). Falling through to prospect flow.")
+        else:
+            if not boss_record:
+                boss_record = Prospect(
+                    phone=clean_phone,
+                    name="Javier Coloma (Director)",
+                    contact_name="Javier",
+                    city="Paraná / Central",
+                    campaign="boss_mode",
+                    status="director",
+                    conversation_history="[]"
+                )
+                db.add(boss_record)
+                db.commit()
+                db.refresh(boss_record)
 
-        history_item_text = "🎙️ [Nota de voz recibida]" if audio_b64 else message.strip()
-        boss_history.append({
-            "sender": "boss",
-            "text": history_item_text,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
+            try:
+                boss_history = json.loads(boss_record.conversation_history or "[]")
+            except Exception:
+                boss_history = []
 
-        handled, boss_reply, boss_action = await process_boss_message(
-            db=db,
-            sender_phone=clean_phone,
-            text=message,
-            doc_bytes=doc_bytes,
-            doc_name=doc_name,
-            conversation_history=boss_history
-        )
-        if handled:
+            history_item_text = "🎙️ [Nota de voz recibida]" if audio_b64 else message.strip()
             boss_history.append({
-                "sender": "ai",
-                "text": boss_reply.strip(),
+                "sender": "boss",
+                "text": history_item_text,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             })
-            boss_record.conversation_history = json.dumps(boss_history, ensure_ascii=False)
-            boss_record.updated_at = datetime.now(timezone.utc)
-            db.commit()
 
-            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=boss_reply)
-            return {"status": "success", "action": boss_action, "reply": boss_reply}
+            handled, boss_reply, boss_action = await process_boss_message(
+                db=db,
+                sender_phone=clean_phone,
+                text=message,
+                doc_bytes=doc_bytes,
+                doc_name=doc_name,
+                conversation_history=boss_history
+            )
+            if handled:
+                boss_history.append({
+                    "sender": "ai",
+                    "text": boss_reply.strip(),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                boss_record.conversation_history = json.dumps(boss_history, ensure_ascii=False)
+                boss_record.updated_at = datetime.now(timezone.utc)
+                db.commit()
+
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=boss_reply)
+                return {"status": "success", "action": boss_action, "reply": boss_reply}
 
     # Find or create prospect
     prospect = db.query(Prospect).filter(Prospect.phone == clean_phone).first()

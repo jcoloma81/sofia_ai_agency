@@ -444,7 +444,7 @@ async def parse_order_or_inquiry_with_ai(text: str) -> OrderAnalysis:
         if detect_order_intent(text_clean) or any(w in lower_text for w in ["caja", "cajas", "fardo", "fardos", "pack", "packs", "anotame", "mandame", "traeme", "cargame"]):
             return OrderAnalysis(intent="order", draft=draft)
         else:
-            return OrderAnalysis(intent="product_inquiry", inquired_products=[it.product.name for it in draft.items], draft=draft)
+            return OrderAnalysis(intent="product_inquiry", inquired_products=[it.product.name for it in draft.items])
     elif draft.unmatched_queries:
         clean_unmatched = [q for q in draft.unmatched_queries if not is_conversational_filler(q)]
         draft.unmatched_queries = clean_unmatched
@@ -452,7 +452,7 @@ async def parse_order_or_inquiry_with_ai(text: str) -> OrderAnalysis:
             if detect_order_intent(text_clean) or any(w in lower_text for w in ["caja", "cajas", "fardo", "fardos", "pack", "packs", "anotame", "mandame", "traeme", "cargame"]):
                 return OrderAnalysis(intent="order", draft=draft)
             else:
-                return OrderAnalysis(intent="product_inquiry", inquired_products=clean_unmatched, draft=draft)
+                return OrderAnalysis(intent="product_inquiry", inquired_products=clean_unmatched)
 
     return OrderAnalysis(intent="other")
 

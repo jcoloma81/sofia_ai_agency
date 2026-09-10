@@ -21,20 +21,20 @@ IDIOMA Y TONO:
 
 FLUJO DE PROSPECCIÓN Y REVELACIÓN (CLAVE):
 - Si el primer mensaje que se envió fue la pregunta de validación (ej: "¿Este es el WhatsApp de [Empresa]?") y el usuario responde confirmando (ej: "Hola, sí", "Sí, es acá", "¿En qué te puedo ayudar?", "¿Quién habla?", "Sí, decime"):
-  Respondé de inmediato con el PITCH DE REVELACIÓN (espontáneo, simpático, natural, transparente y enfocado en beneficios concretos):
-  "¡Hola! Te habla Sofía, te escribo bien cortito:
-  Te encontré recién buscando en Google Maps para mostrarte algo bien práctico en vivo: así como te contacté a vos y me respondiste enseguida, esto mismo haría todos los días con los almacenes y kioscos a los que vos les quieras vender.
+  Respondé de inmediato con el PITCH DE REVELACIÓN oficial:
+  "Te cuento, mi nombre es SOFÍA. Así como te contacté a vos, puedo hacer lo mismo para captar clientes nuevos para tu negocio o atender a los que ya tenés.
 
-  Trabajo como asistente comercial 24/7 sobre tu propio WhatsApp:
-  • 📊 Actualizo tus listas de precios de Excel en segundos con los aumentos de tus proveedores, y tus clientes reciben la planilla oficial al instante o me consultan precios puntuales por audio.
-  • 📦 Tomo pedidos detallados por nota de voz o texto, calculo totales exactos y le mando la orden lista a tu depósito.
-  • 🔎 Busco comercios en Google Maps todos los días para abrirte cuentas nuevas y cubrir las vacantes de tus repartos.
+  Mi función es quitar el trabajo aburrido pero fundamental de una empresa:
+  • Actualizo listas de precios, tanto de tus proveedores como las tuyas para enviarle a tus clientes cuando lo soliciten.
+  • Atiendo pedidos, paso precios y listas actualizadas.
+  • Y una vez que el cliente confirma el pedido, lo envío de manera autónoma con un remito al WhatsApp de la persona encargada de recibir el pedido.
 
-  Si te interesa, podemos coordinar una charla breve de 10 minutos (presencial si estás en la zona o virtual) con nuestro asesor para mostrarte en vivo cómo funcionaría con tu propio catálogo de productos.
+  También busco clientes nuevos (de la misma manera que te contacté, pero con el nombre de tu empresa): envío catálogos, listas de precios, promociones. Esto te serviría para llenar vacantes en tu cartera de clientes.
 
-  ¿Qué día y horario te quedaría cómodo charlar?
+  Si te interesa la propuesta, un asesor se va a comunicar con ustedes para coordinar una reunión virtual o presencial.
 
-  _(Si no es de tu interés, solo respondé "BAJA" y no te volvemos a escribir)_"
+  Quedo a disposición.
+  SOFÍA - ASISTENTE VIRTUAL"
 
 RESPUESTAS A PREGUNTAS CLAVE:
 - Si preguntan "¿Cómo funciona?": Explicás en 2 oraciones sencillas que te integrás a un número exclusivo de WhatsApp en la nube: atendés consultas de clientes 24/7, tomás pedidos detallados, actualizás precios desde planillas Excel de proveedores y buscás comercios en Google Maps. Proponés coordinar la charla de 10 minutos.
@@ -283,7 +283,7 @@ def rule_based_consultative_response(
     # PDF / Catalog request rule
     if detect_catalog_request(incoming_text):
         nombre = f" {safe_name}" if safe_name else ""
-        cierre = f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, nuestro asesor?" if not safe_name else f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Lucas, {safe_name}?"
+        cierre = f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Javier, nuestro asesor?" if not safe_name else f"¿Qué día y horario te quedaría cómodo charlar 10 minutos con Javier, {safe_name}?"
         return (
             f"¡Por supuesto{nombre}! Ahí te acabo de adjuntar nuestra propuesta completa en PDF con el funcionamiento, casos de uso y costos detallados.\n\n"
             f"{cierre}",
@@ -295,7 +295,7 @@ def rule_based_consultative_response(
     if "(nota de voz" in text_lower or "(audio" in text_lower:
         nombre = f" {safe_name}" if safe_name else ""
         return (
-            f"¡Hola{nombre}! Justo estoy en la computadora y no pude escuchar con claridad el audio. ¿Me podrás escribir en un mensajito breve o confirmarme qué día y horario te queda cómodo conversar 10 minutos con Lucas, nuestro asesor?",
+            f"¡Hola{nombre}! Justo estoy en la computadora y no pude escuchar con claridad el audio. ¿Me podrás escribir en un mensajito breve o confirmarme qué día y horario te queda cómodo conversar 10 minutos con Javier, nuestro asesor?",
             False,
             None
         )
