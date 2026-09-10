@@ -245,3 +245,21 @@ async def test_boss_dispatch_needs_phone(db):
     assert action == "dispatch_needs_phone"
     assert "Ricardo" in reply
     assert "número de teléfono" in reply
+
+@pytest.mark.asyncio
+async def test_boss_enviale_este_mensaje_con_los_pedidos(db):
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Enviale este mensaje con los pedidos de 5 cajas de tornillos a ferreteria nogoyá, el numero es 3434536447"
+        )
+        assert handled is True
+        assert action == "kiosk_order_dispatched"
+        assert "¡Pedido despachado con éxito!" in reply
+        assert "Ferretería Nogoyá" in reply or "ferreteria nogoyá" in reply.lower()
+        mock_msg.assert_called_once()
+        mock_doc.assert_called_once()
+

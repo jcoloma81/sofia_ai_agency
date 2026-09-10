@@ -126,6 +126,43 @@ ESTADO DEL SISTEMA EN TIEMPO REAL:
 
     return "¡Hola Javier! Acá estoy al 100% y con los sistemas activos. Decime, ¿en qué te puedo dar una mano hoy?", "boss_chat_fallback"
 
+async def parse_dispatch_intent_and_entities(text: str) -> dict:
+    """
+    Uses Gemini Flash Lite to understand when the user wants to dispatch an order
+    regardless of whether they say 'mandale', 'enviale este mensaje con los pedidos',
+    'pasale a la ferretería', etc. Extracts recipient, phone and items.
+    """
+    clean = text.strip()
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El usuario le pide a su asistente comercial Sofía que despache, pase o envíe un pedido, remito o mensaje a un proveedor, distribuidora o comercio.\n"
+            f"Mensaje del usuario:\n\"{clean}\"\n\n"
+            "Extraé en formato JSON con estas claves exactas:\n"
+            "- is_dispatch: true (si el usuario quiere enviar, pasar o despachar un pedido/mensaje a un tercero) o false\n"
+            "- recipient_name: nombre del destinatario (ej: 'Ferretería Nogoyá', 'Distribuidora Ricardo', o 'la Distribuidora')\n"
+            "- recipient_phone: número de teléfono extraído (solo dígitos, ej: '3434536447', o null si no se mencionó)\n"
+            "- items: lista de objetos con 'product_name' (str) y 'quantity' (int)\n"
+            "- raw_order_text: texto descriptivo de los productos a pedir\n"
+            "Respondé ÚNICAMENTE un JSON válido."
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=4.5) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            return json.loads(parts[0].get("text", "{}"))
+        except Exception as e:
+            logger.warning(f"Gemini dispatch parse error: {e}")
+    return {}
+
 async def process_boss_message(
     db: Session,
     sender_phone: str,
@@ -257,29 +294,46 @@ async def process_boss_message(
         "mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a",
         "mandale a", "mandá a", "hacele el pedido a", "hacé el pedido a",
         "despachar pedido a", "despachale a", "pasale el pedido a", "enviá el pedido a",
-        "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a"
+        "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a",
+        "enviale este mensaje", "enviá este mensaje", "enviale éste mensaje", "mandale este mensaje"
     ]
-    if any(k in lower_text for k in dispatch_triggers):
+    is_dispatch_candidate = any(k in lower_text for k in dispatch_triggers) or (
+        any(k in lower_text for k in ["enviale", "envíale", "mandale", "pasale", "despachale"]) and
+        any(k in lower_text for k in ["pedido", "pedidos", "remito", "tornillo", "disco", "caja", "bolsa", "harina", "aceite", "a ferreteria", "a ferretería", "a distribuidora", "el numero es", "el número es", "telefono es", "teléfono es"])
+    )
+
+    if is_dispatch_candidate:
         import os
         import asyncio
         from app.services import whatsapp
         from app.services.order_engine import parse_order_or_inquiry_with_ai, parse_order_text
         from app.services.pdf_generator import generate_remito_pdf as generate_order_pdf
+        from app.services.catalog import ProductItem
+        from app.services.order_engine import OrderItem, OrderDraft
 
-        digits = re.findall(r'\b\d{8,14}\b', clean_text.replace("-", "").replace(" ", ""))
-        target_phone = None
-        if digits:
-            target_phone = digits[0]
-        else:
-            phone_match = re.search(r'\bal\s+([0-9\s\-]+)', clean_text)
-            if phone_match:
-                candidate = "".join(filter(str.isdigit, phone_match.group(1)))
-                if len(candidate) >= 8:
-                    target_phone = candidate
+        ai_dispatch = await parse_dispatch_intent_and_entities(clean_text)
+        is_dispatch = ai_dispatch.get("is_dispatch", True)
 
-        distributor_match = re.search(r'(?:pedido\s+a|a|para)\s+([^\n\r]+?)(?:\s+al\s+\d+|\s+con\b|$)', clean_text, re.IGNORECASE)
-        dist_name = distributor_match.group(1).strip() if distributor_match else "la Distribuidora"
-        dist_name = re.sub(r'^(?:la|el|los|las)\s+', '', dist_name, flags=re.IGNORECASE)
+        target_phone = ai_dispatch.get("recipient_phone")
+        if not target_phone:
+            digits = re.findall(r'\d{8,14}', clean_text.replace("-", "").replace(" ", "").replace("+", ""))
+            if digits:
+                target_phone = digits[0]
+            else:
+                phone_match = re.search(r'(?:al|numero\s+es|número\s+es|telefono\s+es|teléfono\s+es)\s+([0-9\s\-]+)', clean_text, re.IGNORECASE)
+                if phone_match:
+                    candidate = "".join(filter(str.isdigit, phone_match.group(1)))
+                    if len(candidate) >= 8:
+                        target_phone = candidate
+
+        dist_name = ai_dispatch.get("recipient_name")
+        if not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]:
+            distributor_match = re.search(r'(?:pedido\s+a|a|para)\s+([^\n\r,]+?)(?:\s+al\s+\d+|\s+el\s+numero|\s+el\s+número|\s+con\b|$)', clean_text, re.IGNORECASE)
+            if distributor_match:
+                dist_name = distributor_match.group(1).strip()
+        if not dist_name:
+            dist_name = "la Distribuidora"
+        dist_name = re.sub(r'^(?:la|el|los|las)\s+', '', dist_name, flags=re.IGNORECASE).strip()
 
         if not target_phone:
             return True, (
@@ -289,44 +343,54 @@ async def process_boss_message(
             ), "dispatch_needs_phone"
 
         if target_phone:
-            distributor_match = re.search(r'(?:pedido\s+a|a|para)\s+([^\n\r]+?)\s+al\s+\d+', clean_text, re.IGNORECASE)
-            dist_name = distributor_match.group(1).strip() if distributor_match else "la Distribuidora"
+            ai_items = ai_dispatch.get("items", [])
+            fallback_items = []
+            if ai_items:
+                for it in ai_items:
+                    p_name = str(it.get("product_name") or "").strip()
+                    p_qty = int(it.get("quantity") or 1)
+                    if p_name:
+                        prod = catalog_service.find_product_exact_or_best(p_name)
+                        if prod:
+                            fallback_items.append(OrderItem(product=prod, quantity=p_qty, unit_price=prod.price, subtotal=prod.price * p_qty))
+                        else:
+                            dyn_prod = ProductItem(name=p_name.capitalize(), price=0.0, presentation="Bulto/Unidad")
+                            fallback_items.append(OrderItem(product=dyn_prod, quantity=p_qty, unit_price=0.0, subtotal=0.0))
 
-            clean_order_part = clean_text
-            for trig in dispatch_triggers:
-                clean_order_part = re.sub(rf'{trig}.*?al\s+[0-9\s\-]+(?:\s+con\s+)?', '', clean_order_part, flags=re.IGNORECASE)
-            clean_order_part = re.sub(r'^(?:sofi|sofia)[\s,:]*', '', clean_order_part, flags=re.IGNORECASE).strip()
-            clean_order_part = re.sub(r'^(?:con|de|el|la)\s+', '', clean_order_part, flags=re.IGNORECASE).strip()
+            if fallback_items:
+                draft = OrderDraft(items=fallback_items, total=sum(it.subtotal for it in fallback_items))
+            else:
+                clean_order_part = ai_dispatch.get("raw_order_text") or clean_text
+                for trig in dispatch_triggers:
+                    clean_order_part = re.sub(rf'{trig}.*?(?:al|el numero|el número)\s+[0-9\s\-]+(?:\s+con\s+)?', '', clean_order_part, flags=re.IGNORECASE)
+                clean_order_part = re.sub(r'^(?:sofi|sofia)[\s,:]*', '', clean_order_part, flags=re.IGNORECASE).strip()
+                clean_order_part = re.sub(r'^(?:con|de|el|la)\s+', '', clean_order_part, flags=re.IGNORECASE).strip()
 
-            order_analysis = await parse_order_or_inquiry_with_ai(clean_order_part.strip() or "10 bolsas de harina y 5 cajas de aceite")
-            draft = order_analysis.draft
-            if not draft.items:
-                draft = parse_order_text(clean_order_part.strip() or "10 bolsas de harina y 5 cajas de aceite")
+                order_analysis = await parse_order_or_inquiry_with_ai(clean_order_part.strip() or "10 bolsas de harina y 5 cajas de aceite")
+                draft = order_analysis.draft
+                if not draft.items:
+                    draft = parse_order_text(clean_order_part.strip() or "10 bolsas de harina y 5 cajas de aceite")
 
-            if not draft.items:
-                # If not found in internal catalog, extract items and quantities directly so any trade (ferretería, etc.) works
-                from app.services.catalog import ProductItem
-                from app.services.order_engine import OrderItem, OrderDraft
-                clauses = re.split(r'[,;\n]|\s+y\s+|\s+e\s+', clean_order_part)
-                fallback_items = []
-                for c in clauses:
-                    c_clean = re.sub(r'[^\w\s]', ' ', c).strip()
-                    if not c_clean:
-                        continue
-                    qty = 1
-                    num_m = re.search(r'\b(\d+)\b', c_clean)
-                    if num_m:
-                        qty = int(num_m.group(1))
-                        p_name = re.sub(r'\b\d+\b', '', c_clean).strip()
-                    else:
-                        p_name = c_clean
-                    p_name = re.sub(r'^(?:de|con|cajas?|fardos?|packs?|unidades?|bolsas?|tarros?|latas?|discos?|tubos?|litros?)\s+', '', p_name, flags=re.IGNORECASE).strip()
-                    p_name = re.sub(r'^(?:de|con)\s+', '', p_name, flags=re.IGNORECASE).strip()
-                    if p_name and len(p_name) > 1:
-                        prod = ProductItem(name=p_name.capitalize(), price=0.0, presentation="Bulto/Unidad")
-                        fallback_items.append(OrderItem(product=prod, quantity=qty, unit_price=0.0, subtotal=0.0))
-                if fallback_items:
-                    draft = OrderDraft(items=fallback_items, total=0.0)
+                if not draft.items:
+                    clauses = re.split(r'[,;\n]|\s+y\s+|\s+e\s+', clean_order_part)
+                    for c in clauses:
+                        c_clean = re.sub(r'[^\w\s]', ' ', c).strip()
+                        if not c_clean:
+                            continue
+                        qty = 1
+                        num_m = re.search(r'\b(\d+)\b', c_clean)
+                        if num_m:
+                            qty = int(num_m.group(1))
+                            p_name = re.sub(r'\b\d+\b', '', c_clean).strip()
+                        else:
+                            p_name = c_clean
+                        p_name = re.sub(r'^(?:de|con|cajas?|fardos?|packs?|unidades?|bolsas?|tarros?|latas?|discos?|tubos?|litros?)\s+', '', p_name, flags=re.IGNORECASE).strip()
+                        p_name = re.sub(r'^(?:de|con)\s+', '', p_name, flags=re.IGNORECASE).strip()
+                        if p_name and len(p_name) > 1:
+                            prod = ProductItem(name=p_name.capitalize(), price=0.0, presentation="Bulto/Unidad")
+                            fallback_items.append(OrderItem(product=prod, quantity=qty, unit_price=0.0, subtotal=0.0))
+                    if fallback_items:
+                        draft = OrderDraft(items=fallback_items, total=0.0)
 
             is_ferreteria = any(k in lower_text for k in ["ferreteria", "ferretería", "tornillo", "disco", "herramienta", "pintura", "thinner", "amoladora", "tuerca", "bazar"])
             client_name = "Ferretería 'El Amigo'" if is_ferreteria else "Kiosco 'Lo de Juan'"
