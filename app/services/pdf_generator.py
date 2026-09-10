@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import Any, Optional
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import (
@@ -222,5 +223,146 @@ def generate_agency_proposal_pdf(output_path: str = "assets/propuesta_sofia_ai_a
     logger.info(f"Corporate proposal PDF generated successfully at {output_path}")
     return output_path
 
+def generate_remito_pdf(
+    client_name: str,
+    contact_name: str,
+    phone: str,
+    city: str,
+    order_draft: Any,
+    order_number: str = "PED-001",
+    output_path: str = None
+) -> bytes:
+    """
+    Generates a formal order / remito PDF document for warehouse preparation or supplier dispatch.
+    """
+    import io
+    from datetime import datetime
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer if output_path is None else output_path,
+        pagesize=letter,
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'RemitoTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor('#0F172A')
+    )
+    header_right = ParagraphStyle(
+        'HeaderRight',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#475569'),
+        alignment=TA_RIGHT
+    )
+    cell_style = ParagraphStyle(
+        'TableCell',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=9,
+        leading=12
+    )
+
+    elements = []
+
+    # Header banner
+    date_str = datetime.now().strftime('%d/%m/%Y %H:%M')
+    hdr_data = [
+        [
+            Paragraph(f"<b>REMITO / ORDEN DE COMPRA</b><br/><font size=9 color='#64748B'>Sofía Asistente Comercial</font>", title_style),
+            Paragraph(f"<b>N° Orden:</b> {order_number}<br/><b>Fecha:</b> {date_str}", header_right)
+        ]
+    ]
+    hdr_table = Table(hdr_data, colWidths=[340, 200])
+    hdr_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(hdr_table)
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#6366F1'), spaceAfter=12))
+
+    # Client / Business info
+    info_data = [
+        [
+            Paragraph(f"<b>Comercio Emisor:</b> {client_name}<br/><b>Contacto:</b> {contact_name}", cell_style),
+            Paragraph(f"<b>Teléfono:</b> +{phone}<br/><b>Ubicación:</b> {city}", cell_style)
+        ]
+    ]
+    info_table = Table(info_data, colWidths=[270, 270])
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+        ('PADDING', (0, 0), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 14))
+
+    # Items Table
+    table_rows = [
+        [
+            Paragraph("<b>Cant.</b>", cell_style),
+            Paragraph("<b>Producto / Descripción</b>", cell_style),
+            Paragraph("<b>P. Unitario</b>", cell_style),
+            Paragraph("<b>Subtotal</b>", cell_style)
+        ]
+    ]
+    for it in getattr(order_draft, "items", []):
+        name = it.product.name if hasattr(it, "product") else str(it)
+        pres = it.product.presentation if hasattr(it, "product") and it.product.presentation else ""
+        desc = f"{name} ({pres})" if pres else name
+        subtotal_str = it.formatted_subtotal() if hasattr(it, "formatted_subtotal") else f"${getattr(it, 'subtotal', 0)}"
+        unit_str = f"${getattr(it, 'unit_price', 0):,.0f}".replace(",", ".")
+        table_rows.append([
+            Paragraph(str(getattr(it, "quantity", 1)), cell_style),
+            Paragraph(desc, cell_style),
+            Paragraph(unit_str, cell_style),
+            Paragraph(subtotal_str, cell_style)
+        ])
+
+    total_str = order_draft.formatted_total() if hasattr(order_draft, "formatted_total") else "$0"
+    table_rows.append([
+        Paragraph("", cell_style),
+        Paragraph("", cell_style),
+        Paragraph("<b>TOTAL ESTIMADO:</b>", cell_style),
+        Paragraph(f"<b>{total_str}</b>", cell_style)
+    ])
+
+    items_table = Table(table_rows, colWidths=[45, 295, 100, 100])
+    items_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#EEF2F6')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+        ('PADDING', (0, 0), (-1, -1), 6),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BACKGROUND', (2, -1), (-1, -1), colors.HexColor('#F1F5F9')),
+    ]))
+    elements.append(items_table)
+    elements.append(Spacer(1, 14))
+
+    footer_p = Paragraph(
+        "<font size=8 color='#64748B'>* Este documento es un comprobante formal emitido automáticamente mediante Sofía Asistente Comercial. "
+        "Favor de confirmar recepción y fecha de entrega al chat emisor.</font>",
+        cell_style
+    )
+    elements.append(footer_p)
+
+    doc.build(elements)
+    if output_path is not None:
+        with open(output_path, "rb") as f:
+            return f.read()
+    return buffer.getvalue()
+
 if __name__ == "__main__":
     generate_agency_proposal_pdf()
+

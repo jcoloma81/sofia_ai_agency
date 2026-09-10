@@ -219,6 +219,85 @@ async def process_boss_message(
         demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
 
+    # 2.95 Dispatch Order to External Distributor (Paso 7: Kiosco enviando pedido formal a Distribuidora)
+    dispatch_triggers = ["mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a", "mandale a", "hacele el pedido a", "hacé el pedido a"]
+    if any(k in lower_text for k in dispatch_triggers) and any(char.isdigit() for char in clean_text):
+        import os
+        import asyncio
+        from app.services import whatsapp
+        from app.services.order_engine import parse_order_or_inquiry_with_ai, parse_order_text
+        from app.services.pdf_generator import generate_remito_pdf as generate_order_pdf
+
+        digits = re.findall(r'\b\d{8,14}\b', clean_text.replace("-", "").replace(" ", ""))
+        target_phone = None
+        if digits:
+            target_phone = digits[0]
+        else:
+            phone_match = re.search(r'\bal\s+([0-9\s\-]+)', clean_text)
+            if phone_match:
+                candidate = "".join(filter(str.isdigit, phone_match.group(1)))
+                if len(candidate) >= 8:
+                    target_phone = candidate
+
+        if target_phone:
+            distributor_match = re.search(r'(?:pedido\s+a|a|para)\s+([^\n\r]+?)\s+al\s+\d+', clean_text, re.IGNORECASE)
+            dist_name = distributor_match.group(1).strip() if distributor_match else "la Distribuidora"
+
+            clean_order_part = clean_text
+            for trig in dispatch_triggers:
+                clean_order_part = re.sub(rf'{trig}.*?al\s+[0-9\s\-]+(?:\s+con\s+)?', '', clean_order_part, flags=re.IGNORECASE)
+            clean_order_part = re.sub(r'^(?:sofi|sofia)[\s,:]*', '', clean_order_part, flags=re.IGNORECASE).strip()
+            clean_order_part = re.sub(r'^(?:con|de|el|la)\s+', '', clean_order_part, flags=re.IGNORECASE).strip()
+
+            order_analysis = await parse_order_or_inquiry_with_ai(clean_order_part.strip() or "10 bolsas de harina y 5 cajas de aceite")
+            draft = order_analysis.draft
+            if not draft.items:
+                draft = parse_order_text(clean_order_part.strip() or "10 bolsas de harina y 5 cajas de aceite")
+
+            pdf_bytes = generate_order_pdf(
+                client_name="Kiosco 'Lo de Juan'",
+                contact_name="Juan (Comercio Minorista)",
+                phone=sender_phone,
+                city="Nogoyá 450, Paraná",
+                order_draft=draft,
+                order_number=f"PED-{datetime.now().strftime('%d%H%M')}"
+            )
+
+            item_lines = "\n".join([f"• {it.quantity}x {it.product.name} ({it.product.presentation})" for it in draft.items])
+            dist_msg = (
+                f"Hola {dist_name}! Te escribo de parte de Juan de *Kiosco 'Lo de Juan'* (Calle Nogoyá 450).\n\n"
+                f"Te paso su pedido formal para el reparto de mañana:\n"
+                f"{item_lines}\n"
+                f"Total estimado: {draft.formatted_total()}\n\n"
+                f"📄 Adjunto remito en PDF con el detalle formal.\n\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📌 *IMPORTANTE:* Por favor envíe confirmación de pedido, remitos o listas de precios actualizadas directamente a este chat. Soy la asistente del comercio 'Lo de Juan'. ¡Muchas gracias!"
+            )
+
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=target_phone, text=dist_msg))
+            base_url = settings.APP_BASE_URL.rstrip('/')
+            if "127.0.0.1" in base_url or "localhost" in base_url:
+                base_url = "https://sofia-ai-agency.onrender.com"
+            pdf_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "ultimo_pedido_kiosco.pdf"))
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_bytes)
+            pdf_url = f"{base_url}/assets/ultimo_pedido_kiosco.pdf"
+            asyncio.create_task(whatsapp.send_whatsapp_document(
+                to_phone=target_phone,
+                document_url=pdf_url,
+                filename="Pedido_Kiosco_Lo_De_Juan.pdf",
+                caption=f"📄 Pedido Formal Kiosco 'Lo de Juan' -> {dist_name}"
+            ))
+
+            return True, (
+                f"✅ *¡Pedido despachado con éxito!*\n\n"
+                f"Acabo de enviarle a *{dist_name}* (+{target_phone}) el detalle formal y el remito en PDF.\n\n"
+                f"📋 *Items enviados:*\n{item_lines}\n"
+                f"💰 *Total:* {draft.formatted_total()}\n\n"
+                f"📍 Les dejé la instrucción de que confirmen y manden sus listas de precios a este mismo chat."
+            ), "kiosk_order_dispatched"
+
+
     # 3. Live Demo / Order Test or Product Inquiry by the Boss (for video demos from personal phone)
     from app.services.order_engine import (
         parse_order_or_inquiry_with_ai,
