@@ -42,9 +42,16 @@ RESPUESTAS A PREGUNTAS CLAVE:
 - Si preguntan "¿Cómo hay que hacer para arrancar?": Explicás que es súper simple: solo se destina un chip nuevo exclusivo y nos pasan su lista de precios en Excel o PDF; una vez cargado el catálogo y calibrada la IA con nuestro equipo, ya queda operando 24/7 sin interrumpir su operatoria diaria.
 
 ACUERDO DE REUNIÓN / ASESOR:
-- Si aceptan o proponen un día u horario (ej: "el martes a las 10", "dale mañana a la tarde"): confirmale con calidez que ya le quedó agendada la charla para ese momento, agradecele con buena onda y decile que nuestro asesor se va a comunicar puntual por este mismo WhatsApp. No des más vueltas una vez acordado.
+- Si aceptan o proponen un día u horario (ej: "el martes a las 10", "dale mañana a la tarde", "podría ser hoy a la tarde o mañana"):
+  Confirmale con redacción humana, natural y fluida que ya le quedó anotado.
+  Ejemplo: "¡Buenísimo! Te anoto entonces para hoy a la tarde o mañana a la mañana. Nuestro asesor se va a comunicar puntual con vos por este mismo WhatsApp para coordinar el horario exacto. ¡Muchas gracias!"
+  PROHIBIDO pegar la frase del cliente como un robot ("agendada para Podría ser hoy...").
+  No des más vueltas una vez acordado.
 
-REGLA DE ORO:
+REGLAS DE ORO ANTI-ROBOT:
+- PROHIBIDO inventar o forzar nombres de pila si el usuario no se presentó con su nombre personal (ej: "Soy Juan"). Si no sabés su nombre personal, usá respuestas directas: "¡Buenísimo!", "¡Genial!", "¡Excelente!".
+- PROHIBIDO TERMINANTEMENTE saludar o dirigirte al usuario usando el nombre de su empresa ("¡Genial Distribuidora San Martín!"). Nadie habla así en la vida real.
+- PROHIBIDO el entusiasmo exagerado o frases de cassette ("¡Me alegro mucho de que te sume la propuesta!", "Es un placer atenderte"). Sé sobria, directa, cálida y ejecutiva.
 - Sos una ejecutiva comercial cálida y humana (Appointment Setter). Respondés con naturalidad, resolvés dudas y derivás la demo al asesor o al video explicativo.
 - NO pidas el número de teléfono (ya estamos conversando directamente por su WhatsApp).
 """
@@ -242,10 +249,19 @@ def rule_based_consultative_response(
                 True,
                 meeting_details
             )
+        # Clean modal verbs and agreement prefixes from meeting text
+        clean_time = re.sub(
+            r'^(?:dale|bueno|perfecto|ok|s[ií]|coordinemos|charlemos|de acuerdo|listo|podr[ií]a ser|puede ser|ser[ií]a|tal vez|quiz[aá]s?|tipo|alrededor de|para|[,\s-])+\b',
+            '',
+            incoming_text.strip(),
+            flags=re.IGNORECASE
+        ).strip()
+        formatted_time = f"para {clean_time}" if not clean_time.lower().startswith("para") else clean_time
         nombre = f" {safe_name}" if safe_name else ""
+
         return (
-            f"¡Perfecto{nombre}! Ya te dejo agendada la reunión para {meeting_details}. "
-            f"Nuestro asesor se va a comunicar puntual con vos por este mismo medio. "
+            f"¡Perfecto{nombre}! Ya te dejo agendada la reunión {formatted_time}. "
+            f"Nuestro asesor se va a comunicar puntual con vos por este mismo WhatsApp para coordinar el horario exacto. "
             f"¡Muchas gracias y que tengas un gran día!",
             True,
             meeting_details
@@ -455,7 +471,7 @@ async def generate_ai_response(
                 f"{selected_prompt}\n\n"
                 f"Datos actuales:\n"
                 f"- {entity_label}: {prospect_name or 'No especificado'}\n"
-                f"- Contacto: {safe_name or 'Estimado'}\n"
+                f"- Contacto: {safe_name if safe_name else 'Aún no se presentó con su nombre personal (NO inventes ni uses nombres)'}\n"
                 f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n\n"
                 f"{directives_ctx}\n\n"
                 f"{catalog_ctx}\n"
