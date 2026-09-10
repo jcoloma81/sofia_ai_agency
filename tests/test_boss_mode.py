@@ -221,3 +221,27 @@ async def test_boss_ferreteria_order_dispatch(db):
         assert "Tornillos autoperforantes" in reply
         mock_msg.assert_called_once()
         mock_doc.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_boss_switch_rubro_ferreteria(db):
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "rubro ferreteria"
+    )
+    assert handled is True
+    assert action == "rubro_switched"
+    assert "MODO FERRETERIA ACTIVADO" in reply
+    assert "Ferretería & Bazar Industrial" in reply
+
+@pytest.mark.asyncio
+async def test_boss_dispatch_needs_phone(db):
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, mandale el pedido a Ferretería Ricardo con 5 cajas de tornillos"
+    )
+    assert handled is True
+    assert action == "dispatch_needs_phone"
+    assert "Ricardo" in reply
+    assert "número de teléfono" in reply

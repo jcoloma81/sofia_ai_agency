@@ -269,6 +269,7 @@ class CatalogService:
         self.products: List[ProductItem] = []
         self.last_updated: Optional[datetime] = None
         self.source_info: str = "Empty"
+        self.current_rubro: str = "Distribuidora Mayorista San Martín"
 
     def load_from_csv(self, csv_content: str, source_name: str = "CSV") -> int:
         """Parses CSV text into product catalog, ignoring banners and headers."""
@@ -782,6 +783,95 @@ class CatalogService:
 
         blocks.append("💡 *Para hacer un pedido, escribí o mandá un audio con los productos y cantidades que necesitás.*")
         return "\n".join(blocks)
+
+    def set_rubro(self, rubro: str) -> Tuple[str, int]:
+        """
+        Switches the active catalog and merchant profile to a specific commercial trade:
+        - 'ferreteria': Tools, screws, abrasives, paints, fixings
+        - 'kiosco': Candies, chocolates, drinks, snacks, cigarettes
+        - 'distribuidora': Wholesale food, beverages, dairy, bulk items
+        """
+        clean_r = rubro.lower().strip()
+        items: List[ProductItem] = []
+        trade_title = ""
+
+        if "ferret" in clean_r or "herramient" in clean_r:
+            trade_title = "Ferretería & Bazar Industrial"
+            ferreteria_catalog = [
+                ("Tornillos autoperforantes 1 pulgada", 8500.0, "Caja x 1000", "Tornillería"),
+                ("Tornillos tirafondo 1/4 x 2", 7200.0, "Caja x 100", "Tornillería"),
+                ("Tarugos con tope N°8", 3200.0, "Bolsa x 100", "Fijación"),
+                ("Disco de corte amoladora 115mm x 1mm", 1400.0, "Unidad", "Abrasivos"),
+                ("Disco de desbaste metal 115mm", 2800.0, "Unidad", "Abrasivos"),
+                ("Disco diamantado continuo 115mm", 6500.0, "Unidad", "Abrasivos"),
+                ("Amoladora angular 115mm 850W", 68000.0, "Unidad", "Herramientas Eléctricas"),
+                ("Taladro percutor 13mm 650W", 74000.0, "Unidad", "Herramientas Eléctricas"),
+                ("Destornillador Phillips 6x100mm", 4800.0, "Unidad", "Herramientas Manuales"),
+                ("Destornillador Plano 6x100mm", 4500.0, "Unidad", "Herramientas Manuales"),
+                ("Juego de destornilladores x 6 piezas", 18500.0, "Set", "Herramientas Manuales"),
+                ("Martillo galponero mango fibra 500g", 14500.0, "Unidad", "Herramientas Manuales"),
+                ("Pinza universal 8 pulgadas aislada", 12500.0, "Unidad", "Herramientas Manuales"),
+                ("Alicate corte diagonal 6 pulgadas", 11000.0, "Unidad", "Herramientas Manuales"),
+                ("Llave francesa ajustable 10 pulgadas", 16500.0, "Unidad", "Herramientas Manuales"),
+                ("Cinta aisladora negra 20 metros", 1500.0, "Rollo", "Electricidad"),
+                ("Cinta de teflón 3/4 x 20m", 950.0, "Rollo", "Plomería"),
+                ("Thinner estándar 1 litro", 4200.0, "Botella", "Pinturas & Química"),
+                ("Aguarrás mineral 1 litro", 3800.0, "Botella", "Pinturas & Química"),
+                ("Sellador de silicona neutra transparente 280ml", 6800.0, "Tubo", "Adhesivos & Selladores"),
+                ("Pegamento de contacto Poxiran 250cc", 5400.0, "Lata", "Adhesivos & Selladores"),
+                ("Candado de bronce 40mm con 3 llaves", 8900.0, "Unidad", "Cerrajería"),
+                ("Pintura látex interior blanco 4L", 22000.0, "Balde", "Pinturas & Química"),
+                ("Lija al agua grano 180", 650.0, "Pliego", "Abrasivos")
+            ]
+            for name, price, pres, cat in ferreteria_catalog:
+                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True))
+
+        elif "kiosc" in clean_r or "almacen" in clean_r or "almacén" in clean_r:
+            trade_title = "Kiosco & Almacén 'Lo de Juan'"
+            kiosco_catalog = [
+                ("Alfajor Guaymallén chocolate", 18000.0, "Caja x 40", "Golosinas"),
+                ("Alfajor Jorgito blanco", 16800.0, "Caja x 24", "Golosinas"),
+                ("Alfajor Havanna clásico", 24000.0, "Caja x 12", "Golosinas"),
+                ("Chocolate Milka Leger 45g", 28800.0, "Caja x 24", "Chocolates"),
+                ("Chicles Beldent menta", 12000.0, "Caja x 20", "Golosinas"),
+                ("Caramelos Sugus surtidos 500g", 4500.0, "Bolsa", "Golosinas"),
+                ("Coca Cola 500ml", 8400.0, "Pack x 6", "Bebidas"),
+                ("Coca Cola 1.5L", 14400.0, "Pack x 6", "Bebidas"),
+                ("Sprite 1.5L", 13800.0, "Pack x 6", "Bebidas"),
+                ("Cerveza Quilmes clásica 473ml", 8100.0, "Pack x 6", "Bebidas"),
+                ("Agua mineral Villavicencio 500ml", 5400.0, "Pack x 6", "Bebidas"),
+                ("Papas fritas Lays clásicas 85g", 18500.0, "Tira x 10", "Snacks"),
+                ("Galletitas Oreo 118g", 7200.0, "Pack x 6", "Galletitas"),
+                ("Cigarrillos Philip Morris Box 20", 3200.0, "Atado", "Tabaquería"),
+                ("Encendedor Bic mini", 15600.0, "Blister x 12", "Varios")
+            ]
+            for name, price, pres, cat in kiosco_catalog:
+                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True))
+
+        else:
+            trade_title = "Distribuidora Mayorista San Martín"
+            dist_catalog = [
+                ("Harina 000 Cañuelas", 18500.0, "Bolsa 25kg", "Harinas"),
+                ("Aceite de Girasol Cañuelas", 16800.0, "Caja 12x900ml", "Aceites"),
+                ("Fideos Guiseros Matarazzo", 11200.0, "Fardo 10x500g", "Pastas Secas"),
+                ("Arroz Largo Fino Lucchetti", 14000.0, "Fardo 10x1kg", "Arroces"),
+                ("Azúcar Ledesma clásica", 9800.0, "Fardo 10x1kg", "Endulzantes"),
+                ("Leche Entera La Serenísima", 17400.0, "Caja 12x1L", "Lácteos"),
+                ("Yerba Playadito suave", 38000.0, "Fardo 10x1kg", "Infusiones"),
+                ("Cerveza Quilmes Clásica", 19500.0, "Cajón 12x1L", "Bebidas"),
+                ("Coca Cola Original", 16500.0, "Pack 6x2.25L", "Bebidas"),
+                ("Puré de Tomate Noel", 8900.0, "Caja 12x520g", "Conservas"),
+                ("Galletitas Criollitas", 12500.0, "Caja 20x100g", "Galletitas")
+            ]
+            for name, price, pres, cat in dist_catalog:
+                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True))
+
+        self.products = items
+        self.last_updated = datetime.now(timezone.utc)
+        self.source_info = f"Preset {trade_title} ({len(items)} productos)"
+        self.current_rubro = trade_title
+        logger.info(f"Switched rubro to {trade_title} with {len(items)} items")
+        return trade_title, len(items)
 
 
 catalog_service = CatalogService()

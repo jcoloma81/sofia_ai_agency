@@ -167,6 +167,38 @@ async def process_boss_message(
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
             return True, f"✅ *¡Lista CSV cargada con éxito!*\n\nSe procesaron *{count} productos* desde `{doc_name}`.", "catalog_updated"
 
+    # 1.5 Switch Rubro (Selector de Rubro en 1 segundo: Ferretería, Kiosco, Distribuidora)
+    rubro_keywords = ["rubro", "modo ferreteria", "modo ferretería", "modo kiosco", "modo distribuidora", "modo mayorista", "cambiar rubro", "cambiar a"]
+    if any(lower_text.startswith(r) for r in ["rubro", "modo"]) or any(k in lower_text for k in ["cambiar a ferreteria", "cambiar a ferretería", "cambiar a kiosco", "cambiar a distribuidora"]):
+        target_rubro = "distribuidora"
+        if any(k in lower_text for k in ["ferret", "herramient"]):
+            target_rubro = "ferreteria"
+        elif any(k in lower_text for k in ["kiosc", "almacen", "almacén"]):
+            target_rubro = "kiosco"
+        elif any(k in lower_text for k in ["distribuidora", "mayorista", "alimento"]):
+            target_rubro = "distribuidora"
+        elif any(k in lower_text for k in ["ayuda", "cuales", "cuáles", "opciones", "lista", "?"]):
+            return True, (
+                "🎯 *SELECTOR DE RUBRO DISPONIBLE:*\n\n"
+                "Podés cambiar el rubro de Sofía al instante para tus demostraciones en vivo:\n\n"
+                "• `rubro ferreteria`: Activa 24 herramientas, tornillos, discos de amoladora, martillos, thinner y pinturas con precios reales.\n"
+                "• `rubro kiosco`: Activa alfajores, chocolates Milka, bebidas, snacks y cigarrillos.\n"
+                "• `rubro distribuidora`: Vuelve al catálogo mayorista de alimentos y bebidas con flete y corte a las 21 hs.\n\n"
+                "💡 *Probá escribiendo ahora: `rubro ferreteria`*"
+            ), "rubro_help"
+
+        trade_title, count = catalog_service.set_rubro(target_rubro)
+        icon = "🛠️" if target_rubro == "ferreteria" else ("🏪" if target_rubro == "kiosco" else "🏢")
+        return True, (
+            f"{icon} *¡MODO {target_rubro.upper()} ACTIVADO CON ÉXITO!*\n\n"
+            f"Perfil actual: *{trade_title}*\n"
+            f"📦 Catálogo cargado con *{count} productos* y precios actualizados.\n\n"
+            f"🚀 *Ahora podés probar en vivo desde este chat:*\n"
+            f"1. Consultarme precios: *\"¿A cuánto tenés los discos y los tornillos?\"*\n"
+            f"2. Pasarme un pedido: *\"Anotame 5 cajas de tornillos y 2 pinzas\"*\n"
+            f"3. Despachar a proveedor: *\"Sofi, mandale el pedido a Distribuidora Ricardo al [Teléfono] con...\"*"
+        ), "rubro_switched"
+
     # 2. Commercial Directives set by the boss (e.g. horarios, montos mínimos, zonas, requisitos)
     directive_keywords = [
         "minimo", "mínimo", "directiva", "directivas", "regla", "reglas",
@@ -174,7 +206,7 @@ async def process_boss_message(
         "cobertura", "cupo", "politica", "política", "condicion", "condición", "condiciones",
         "requisito", "requisitos", "horario", "horarios", "tengan en cuenta", "tener en cuenta"
     ]
-    is_dispatch_cmd = any(k in lower_text for k in ["mandale el pedido", "mandar pedido", "pasar pedido", "enviar pedido", "mandale a", "hacele el pedido"])
+    is_dispatch_cmd = any(k in lower_text for k in ["mandale el pedido", "mandar pedido", "pasar pedido", "enviar pedido", "mandale a", "hacele el pedido", "despachale a", "despachar pedido", "pasale a", "enviale a"])
     if any(k in lower_text for k in directive_keywords) and not is_dispatch_cmd:
         from app.services.directives import directives_service
         reply = await directives_service.update_from_boss_message(clean_text)
@@ -220,9 +252,14 @@ async def process_boss_message(
         demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
 
-    # 2.95 Dispatch Order to External Distributor (Paso 7: Kiosco enviando pedido formal a Distribuidora)
-    dispatch_triggers = ["mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a", "mandale a", "hacele el pedido a", "hacé el pedido a"]
-    if any(k in lower_text for k in dispatch_triggers) and any(char.isdigit() for char in clean_text):
+    # 2.95 Dispatch Order to External Distributor (Paso 7: Kiosco / Ferretería enviando pedido formal a Distribuidora)
+    dispatch_triggers = [
+        "mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a",
+        "mandale a", "mandá a", "hacele el pedido a", "hacé el pedido a",
+        "despachar pedido a", "despachale a", "pasale el pedido a", "enviá el pedido a",
+        "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a"
+    ]
+    if any(k in lower_text for k in dispatch_triggers):
         import os
         import asyncio
         from app.services import whatsapp
@@ -239,6 +276,17 @@ async def process_boss_message(
                 candidate = "".join(filter(str.isdigit, phone_match.group(1)))
                 if len(candidate) >= 8:
                     target_phone = candidate
+
+        distributor_match = re.search(r'(?:pedido\s+a|a|para)\s+([^\n\r]+?)(?:\s+al\s+\d+|\s+con\b|$)', clean_text, re.IGNORECASE)
+        dist_name = distributor_match.group(1).strip() if distributor_match else "la Distribuidora"
+        dist_name = re.sub(r'^(?:la|el|los|las)\s+', '', dist_name, flags=re.IGNORECASE)
+
+        if not target_phone:
+            return True, (
+                f"📋 *¡Pedido formal en preparación para {dist_name}!* \n\n"
+                f"Para despacharle el remito PDF adjunto por WhatsApp, por favor pasame su número de teléfono.\n\n"
+                f"💡 Podés escribir por ejemplo: `al 3434536447` o mandarme el contacto."
+            ), "dispatch_needs_phone"
 
         if target_phone:
             distributor_match = re.search(r'(?:pedido\s+a|a|para)\s+([^\n\r]+?)\s+al\s+\d+', clean_text, re.IGNORECASE)
