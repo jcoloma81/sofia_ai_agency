@@ -376,7 +376,7 @@ async def receive_whatsapp_webhook(
                 db.commit()
 
                 await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=boss_reply)
-                if is_incoming_voice or clean_phone in ["5493434536447", "543434536447"]:
+                if getattr(settings, "ENABLE_VOICE_RESPONSES", False) and (is_incoming_voice or clean_phone in ["5493434536447", "543434536447"]):
                     try:
                         from app.services.voice import text_to_speech_bytes
                         audio_bytes = await text_to_speech_bytes(boss_reply)
@@ -805,7 +805,7 @@ async def receive_whatsapp_webhook(
     await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=ai_response)
 
     # If incoming message was voice or from test phone, also send response as voice audio!
-    if is_incoming_voice or clean_phone in ["5493434536447", "543434536447"]:
+    if getattr(settings, "ENABLE_VOICE_RESPONSES", False) and (is_incoming_voice or clean_phone in ["5493434536447", "543434536447"]):
         try:
             from app.services.voice import text_to_speech_bytes
             audio_bytes = await text_to_speech_bytes(ai_response)

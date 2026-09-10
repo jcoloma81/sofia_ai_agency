@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # ElevenLabs Ultra-Realistic Voice AI
     ELEVENLABS_API_KEY: Optional[str] = None
     ELEVENLABS_VOICE_ID: str = "cgSgspJ2msm6clMCkdW9"  # Jessica (Warm, conversational)
+    ENABLE_VOICE_RESPONSES: bool = False
 
     # WhatsApp SDR Gateway (Whapi.cloud)
     WHATSAPP_AGENT_PHONE: Optional[str] = "5493435720312"
