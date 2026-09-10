@@ -208,6 +208,28 @@ def test_ai_agency_outreach_pitch_content(db, mock_whatsapp):
     assert lead.campaign == "ai_agency"
     assert lead.business_type == "distribuidora"
 
+def test_ai_agency_outreach_direct_pitch(db, mock_whatsapp):
+    mock_send, _ = mock_whatsapp
+
+    payload = {
+        "phone": "5493434112233",
+        "name": "Distribuidora Río Paraná",
+        "contact_name": "Martín",
+        "city": "Paraná",
+        "campaign": "ai_agency",
+        "business_type": "distribuidora",
+        "strategy": "direct_pitch"
+    }
+
+    res = client.post("/api/v1/outreach/start-outreach", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "outreach_started"
+
+    sent_text = mock_send.call_args[1]["text"]
+    assert "Hola! Mi nombre es SOFÍA." in sent_text
+    assert "sacar el trabajo repetitivo" in sent_text
+
 def test_sdr_status_and_listing(db):
     response = client.get("/api/v1/outreach/status")
     assert response.status_code == 200

@@ -97,14 +97,13 @@ async def start_outreach(
     if getattr(payload, "strategy", "two_step") == "direct_pitch" and campaign in ["ai_agency", "canchas_futbol"]:
         clean_company = payload.name.strip() if payload.name else "tu negocio"
         initial_pitch = (
-            f"Hola! Te escribo por {clean_company}.\n\n"
-            f"Te cuento, mi nombre es SOFÍA. Así como te contacté a vos, puedo hacer lo mismo para captar clientes nuevos para tu negocio o atender las 24 hs a los que ya tenés.\n\n"
-            f"Mi función es sacar el trabajo repetitivo que quita tiempo en WhatsApp:\n"
-            f"• Respondo consultas al instante, paso listas de precios, presupuestos o disponibilidad de turnos.\n"
-            f"• Registro pedidos o reservas de manera autónoma y le derivo la confirmación por WhatsApp a la persona encargada en tu empresa.\n"
-            f"• Busco clientes nuevos (vos podés estar descansando y yo generando oportunidades de manera autónoma con el nombre de tu negocio).\n\n"
-            f"Si te interesa la propuesta, un asesor se puede comunicar con ustedes para coordinar una reunión breve (virtual o presencial).\n\n"
-            f"Quedo a disposición.\nSOFÍA - ASISTENTE VIRTUAL"
+            "Hola! Mi nombre es SOFÍA. Así como te contacté a vos, puedo hacer lo mismo para captar clientes nuevos para tu negocio o atender las 24 hs a los que ya tenés.\n\n"
+            "Mi función es sacar el trabajo repetitivo que quita tiempo en WhatsApp:\n"
+            "• Respondo consultas al instante, paso listas de precios, presupuestos o disponibilidad de turnos.\n"
+            "• Registro pedidos o reservas de manera autónoma y le derivo la confirmación por WhatsApp a la persona encargada en tu empresa.\n"
+            "• Busco clientes nuevos (vos podés estar descansando y yo generando oportunidades de manera autónoma con el nombre de tu negocio).\n\n"
+            "Si te interesa la propuesta, un asesor se puede comunicar con ustedes para coordinar una reunión breve (virtual o presencial).\n\n"
+            "Quedo a disposición.\nSOFÍA - ASISTENTE VIRTUAL"
         )
         components = [
             {
@@ -114,7 +113,7 @@ async def start_outreach(
                 ]
             }
         ]
-        template_chain = ["pitch_universal_v1", "contacto_comercial_v3", "contacto_comercial_v1"]
+        template_chain = ["pitch_directo_v1", "pitch_universal_v1", "contacto_comercial_v3", "contacto_comercial_v1"]
     elif campaign in ["ai_agency", "canchas_futbol"]:
         clean_company = payload.name.strip() if payload.name else ("el complejo" if campaign == "canchas_futbol" else "la empresa")
         initial_pitch = f"Hola buenas! Te escribo por {clean_company}, este es su WhatsApp?"
@@ -151,11 +150,12 @@ async def start_outreach(
     sent = False
     if campaign in ["ai_agency", "canchas_futbol"] and settings.META_ACCESS_TOKEN:
         for t_name in template_chain:
+            curr_components = None if t_name == "pitch_directo_v1" else components
             sent = await whatsapp.send_whatsapp_template(
                 to_phone=clean_phone,
                 template_name=t_name,
                 language_code="es_AR",
-                components=components
+                components=curr_components
             )
             if sent:
                 break
