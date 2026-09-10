@@ -29,7 +29,7 @@ FLUJO DE PROSPECCIÓN Y REVELACIÓN (CLAVE):
   • Atiendo pedidos, paso precios y listas actualizadas.
   • Y una vez que el cliente confirma el pedido, lo envío de manera autónoma con un remito al WhatsApp de la persona encargada de recibir el pedido.
 
-  También busco clientes nuevos (de la misma manera que te contacté, pero con el nombre de tu empresa): envío catálogos, listas de precios, promociones. Esto te serviría para llenar vacantes en tu cartera de clientes.
+  También busco clientes nuevos de manera autónoma (vos podés estar descansando y yo prospectando con el nombre de tu empresa): envío catálogos, listas de precios y promociones para llenar vacantes en tu cartera de clientes.
 
   Si te interesa la propuesta, un asesor se va a comunicar con ustedes para coordinar una reunión virtual o presencial.
 
