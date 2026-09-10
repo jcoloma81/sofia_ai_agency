@@ -76,3 +76,32 @@ def test_order_confirmation_detection():
     assert is_order_confirmation("mandalo") is True
     assert is_order_confirmation("listo perfecto") is True
     assert is_order_confirmation("no, cancelalo") is False
+
+def test_conversational_filler_filter():
+    from app.services.order_engine import is_conversational_filler
+    assert is_conversational_filler("ml para para pedirte") is True
+    assert is_conversational_filler("para pedirte") is True
+    assert is_conversational_filler("te quería pedir") is True
+    assert is_conversational_filler("un favor") is True
+    assert is_conversational_filler("aceite") is False
+    assert is_conversational_filler("fideo") is False
+    assert is_conversational_filler("harina pureza") is False
+
+@pytest.mark.asyncio
+async def test_parse_stutter_audio_inquiry():
+    from app.services.order_engine import parse_order_or_inquiry_with_ai, build_product_inquiry_reply
+    phrase = "ml para para pedirte y bien necesitar fideo del más económico que tengas"
+    analysis = await parse_order_or_inquiry_with_ai(phrase)
+
+    # Must be classified as product inquiry, NOT an order with fake items!
+    assert analysis.intent in ["product_inquiry", "other"]
+    assert len(analysis.draft.items) == 0
+    # Must NEVER put the stutter into unmatched products!
+    for q in analysis.draft.unmatched_queries:
+        assert "para para pedirte" not in q
+
+    reply = build_product_inquiry_reply(analysis.inquired_products or ["fideo"], contact_name="Javier")
+    assert "para para pedirte" not in reply
+    assert "ml" not in reply
+    assert "fideo" in reply.lower()
+    assert "Javier" in reply

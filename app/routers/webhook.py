@@ -21,7 +21,9 @@ from app.services.order_engine import (
     parse_order_text,
     format_order_summary_message,
     detect_order_intent,
-    is_order_confirmation
+    is_order_confirmation,
+    parse_order_or_inquiry_with_ai,
+    build_product_inquiry_reply
 )
 
 logger = logging.getLogger(__name__)
@@ -518,20 +520,19 @@ async def receive_whatsapp_webhook(
             "meeting_confirmed": False
         }
 
-    # 2. Check if customer wants to place a new order
-    order_triggers = ["caja", "fardo", "pack", "bolsa", "aceite", "harina", "arroz", "fideo", "yerba", "leche", "queso", "coca", "quilmes", "cajon", "cajón"]
-    if detect_order_intent(message) or (len(re.findall(r'\d+', message)) > 0 and any(k in message.lower() for k in order_triggers)):
-        draft = parse_order_text(message)
-        if draft.items:
-            order_summary = format_order_summary_message(draft, prospect.contact_name)
+    # 2. Check if customer wants to place a new order or consult product/stock
+    analysis = await parse_order_or_inquiry_with_ai(message)
+    if analysis.intent == "order":
+        if analysis.draft.items:
+            order_summary = format_order_summary_message(analysis.draft, prospect.contact_name)
             prospect.notes = json.dumps({
                 "type": "PEDIDO_PENDIENTE",
                 "items": [
                     {"name": it.product.name, "presentation": it.product.presentation, "qty": it.quantity, "subtotal": it.subtotal}
-                    for it in draft.items if it.in_stock
+                    for it in analysis.draft.items if it.in_stock
                 ],
-                "total": draft.total,
-                "total_str": draft.formatted_total()
+                "total": analysis.draft.total,
+                "total_str": analysis.draft.formatted_total()
             })
             history.append({"sender": "ai", "text": order_summary, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -545,8 +546,8 @@ async def receive_whatsapp_webhook(
                 "reply": order_summary,
                 "meeting_confirmed": False
             }
-        elif draft.unmatched_queries:
-            unmatched_str = ", ".join(f"*{q}*" for q in draft.unmatched_queries)
+        elif analysis.draft.unmatched_queries:
+            unmatched_str = ", ".join(f"*{q}*" for q in analysis.draft.unmatched_queries)
             unmatched_reply = (
                 f"¡Hola! Disculpá, pero actualmente no trabajamos {unmatched_str} en nuestro catálogo de distribución "
                 f"(manejamos líneas de alimentos, bebidas, lácteos y artículos de almacén).\n\n"
@@ -565,6 +566,23 @@ async def receive_whatsapp_webhook(
                 "reply": unmatched_reply,
                 "meeting_confirmed": False
             }
+    elif analysis.intent == "product_inquiry":
+        found_prods = [catalog_service.find_product_exact_or_best(q) for q in analysis.inquired_products]
+        is_quote = any(p is not None for p in found_prods)
+        inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name=prospect.contact_name)
+        history.append({"sender": "ai", "text": inquiry_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=inquiry_reply)
+        return {
+            "status": "success",
+            "product_inquiry": True,
+            "price_quote": is_quote,
+            "reply": inquiry_reply,
+            "meeting_confirmed": False
+        }
 
     # 2.5 Check if customer asks for the full price list / catalog / Excel
     price_list_triggers = [

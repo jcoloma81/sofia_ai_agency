@@ -213,35 +213,32 @@ async def process_boss_message(
 
         return True, demo_reply, "boss_price_list_demo"
 
-    # 3. Live Demo / Order Test by the Boss (for video demos from personal phone)
+    # 3. Live Demo / Order Test or Product Inquiry by the Boss (for video demos from personal phone)
     from app.services.order_engine import (
-        parse_order_text,
+        parse_order_or_inquiry_with_ai,
         format_order_summary_message,
-        detect_order_intent,
-        is_order_confirmation,
-        SPANISH_NUMBER_WORDS
+        build_product_inquiry_reply,
+        is_order_confirmation
     )
-    order_triggers = [
-        "caja", "cajas", "fardo", "fardos", "pack", "packs", "bolsa", "bolsas",
-        "aceite", "harina", "arroz", "fideo", "fideos", "yerba", "leche", "queso",
-        "coca", "quilmes", "cajon", "cajones", "cajón"
-    ]
-    has_number = len(re.findall(r'\d+', clean_text)) > 0 or any(w in lower_text.split() for w in SPANISH_NUMBER_WORDS.keys())
-    if detect_order_intent(clean_text) or (has_number and any(k in lower_text for k in order_triggers)):
-        draft = parse_order_text(clean_text)
-        if draft.items:
+
+    analysis = await parse_order_or_inquiry_with_ai(clean_text)
+    if analysis.intent == "order":
+        if analysis.draft.items:
             clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
-            LAST_BOSS_ORDERS[clean_sender] = draft
-            summary = format_order_summary_message(draft, contact_name="Javier")
+            LAST_BOSS_ORDERS[clean_sender] = analysis.draft
+            summary = format_order_summary_message(analysis.draft, contact_name="Javier")
             return True, f"🧪 *[DEMO EN VIVO]*\n\n{summary}", "boss_order_test"
-        elif draft.unmatched_queries:
-            unmatched_str = ", ".join(f"*{q}*" for q in draft.unmatched_queries)
+        elif analysis.draft.unmatched_queries:
+            unmatched_str = ", ".join(f"*{q}*" for q in analysis.draft.unmatched_queries)
             return True, (
                 f"🧪 *[DEMO EN VIVO — PRODUCTOS FUERA DE CATÁLOGO]*\n\n"
                 f"¡Hola Javier! Disculpá, pero actualmente no trabajamos {unmatched_str} en nuestro catálogo de distribución "
                 f"(manejamos alimentos, bebidas, lácteos y artículos de almacén).\n\n"
                 f"💡 Podés pedirme la lista de precios o consultarme por productos como aceite, harina, arroz o bebidas."
             ), "boss_order_unmatched"
+    elif analysis.intent == "product_inquiry":
+        inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name="Javier")
+        return True, f"🧪 *[DEMO EN VIVO — CONSULTA DE PRODUCTO]*\n\n{inquiry_reply}", "boss_product_inquiry"
 
     if is_order_confirmation(clean_text):
         import asyncio

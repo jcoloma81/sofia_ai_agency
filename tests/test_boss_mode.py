@@ -159,5 +159,19 @@ async def test_boss_conversational_chat(db):
     # Must NEVER contain the robotic menu!
     assert "Estoy activa y monitoreando todos los canales. Podés pedirme:" not in reply
 
+@pytest.mark.asyncio
+async def test_boss_audio_stutter_inquiry(db):
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "ml para para pedirte y bien necesitar fideo del más económico que tengas"
+    )
+    assert handled is True
+    assert action in ["boss_product_inquiry", "boss_chat"]
+    # Must NEVER generate the broken robotic template with stutters!
+    assert "para para pedirte" not in reply
+    assert "ml" not in reply
+    assert "fideo" in reply.lower()
+
 
 
