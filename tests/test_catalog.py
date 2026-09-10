@@ -189,7 +189,9 @@ ART03;Coca Cola 2.25L;Pack x 6;19200;SI;Bebidas"""
     wb.save(stream)
     stream.seek(0)
 
-    res = service.update_from_supplier_excel(stream.read(), filename="aumentos_molinos.xlsx")
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".xlsx") as tmp:
+        res = service.update_from_supplier_excel(stream.read(), filename="aumentos_molinos.xlsx", export_path=tmp.name)
     assert res["status"] == "success"
     assert res["matched_count"] == 3
     assert res["new_count"] == 1

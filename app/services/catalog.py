@@ -486,7 +486,12 @@ class CatalogService:
 
         wb.save(file_path)
 
-    def update_from_supplier_excel(self, content: bytes, filename: str = "proveedor.xlsx") -> Dict[str, Any]:
+    def update_from_supplier_excel(
+        self,
+        content: bytes,
+        filename: str = "proveedor.xlsx",
+        export_path: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Cross-references an incoming supplier Excel sheet with the active product catalog.
         Matches by SKU code or fuzzy semantic description, updates catalog prices in-place,
@@ -604,7 +609,8 @@ class CatalogService:
             self.last_updated = datetime.now(timezone.utc)
 
             # Export updated catalog Excel
-            export_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx")
+            if export_path is None:
+                export_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx")
             export_path = os.path.abspath(export_path)
             os.makedirs(os.path.dirname(export_path), exist_ok=True)
             self.export_to_excel(export_path)
