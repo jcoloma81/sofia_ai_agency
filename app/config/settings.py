@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # AI Brain (Gemini Flash Lite Multimodal)
     GEMINI_API_KEY: Optional[str] = None
 
+    # ElevenLabs Ultra-Realistic Voice AI
+    ELEVENLABS_API_KEY: Optional[str] = None
+    ELEVENLABS_VOICE_ID: str = "cgSgspJ2msm6clMCkdW9"  # Jessica (Warm, conversational)
+
     # WhatsApp SDR Gateway (Whapi.cloud)
     WHATSAPP_AGENT_PHONE: Optional[str] = "5493435720312"
     WHATSAPP_ALERT_PHONE: Optional[str] = "5493434536447"

@@ -405,12 +405,17 @@ async def send_whatsapp_audio(
         upload_url = f"https://graph.facebook.com/v20.0/{phone_id}/media"
         headers = {"Authorization": f"Bearer {token}"}
 
+        # Detect if audio is OGG Opus (starts with OggS magic bytes)
+        is_ogg = audio_bytes[:4] == b"OggS"
+        mime_type = "audio/ogg" if is_ogg else "audio/mpeg"
+        upload_name = "voice_note.ogg" if is_ogg else filename
+
         files = {
-            "file": (filename, audio_bytes, "audio/mpeg")
+            "file": (upload_name, audio_bytes, mime_type)
         }
         data = {
             "messaging_product": "whatsapp",
-            "type": "audio/mpeg"
+            "type": mime_type
         }
 
         try:

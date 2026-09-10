@@ -376,6 +376,16 @@ async def receive_whatsapp_webhook(
                 db.commit()
 
                 await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=boss_reply)
+                if is_incoming_voice or clean_phone in ["5493434536447", "543434536447"]:
+                    try:
+                        from app.services.voice import text_to_speech_bytes
+                        audio_bytes = await text_to_speech_bytes(boss_reply)
+                        if audio_bytes:
+                            await whatsapp.send_whatsapp_audio(to_phone=clean_phone, audio_bytes=audio_bytes)
+                            logger.info(f"🎙️ Sent boss voice response audio to {clean_phone}")
+                    except Exception as v_err:
+                        logger.error(f"Error generating boss voice response: {v_err}")
+
                 return {"status": "success", "action": boss_action, "reply": boss_reply}
 
     # Find or create prospect
