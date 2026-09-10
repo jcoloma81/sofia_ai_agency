@@ -92,6 +92,7 @@ async def receive_whatsapp_webhook(
     audio_mime = None
     doc_bytes = None
     doc_name = None
+    is_incoming_voice = False
 
     # 0. Handle Official Meta WhatsApp Cloud API format (Production & Dashboard Test Tool)
     if body.get("object") == "whatsapp_business_account" or ("value" in body and isinstance(body.get("value"), dict) and "messages" in body["value"]):
@@ -144,6 +145,7 @@ async def receive_whatsapp_webhook(
             elif interactive.get("type") == "list_reply":
                 message = interactive.get("list_reply", {}).get("title", "")
         elif msg_type in ["voice", "audio"]:
+            is_incoming_voice = True
             audio_info = incoming_meta_msg.get("audio") or incoming_meta_msg.get("voice") or {}
             media_id = audio_info.get("id")
             audio_mime = audio_info.get("mime_type", "audio/ogg")
@@ -791,6 +793,17 @@ async def receive_whatsapp_webhook(
 
     # Send response back to prospect via WhatsApp
     await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=ai_response)
+
+    # If incoming message was voice or from test phone, also send response as voice audio!
+    if is_incoming_voice or clean_phone in ["5493434536447", "543434536447"]:
+        try:
+            from app.services.voice import text_to_speech_bytes
+            audio_bytes = await text_to_speech_bytes(ai_response)
+            if audio_bytes:
+                await whatsapp.send_whatsapp_audio(to_phone=clean_phone, audio_bytes=audio_bytes)
+                logger.info(f"🎙️ Sent voice response audio to {clean_phone}")
+        except Exception as v_err:
+            logger.error(f"Error generating or sending voice response: {v_err}")
 
     # Check if prospect requested proposal / catalog / PDF
     if brain.detect_catalog_request(message) or any(k in ai_response.lower() for k in ["adjuntar nuestra propuesta", "adjunto nuestra propuesta", "propuesta en pdf"]):

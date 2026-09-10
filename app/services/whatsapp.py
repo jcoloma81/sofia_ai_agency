@@ -388,3 +388,58 @@ async def notify_owner_demo_requested(
     await asyncio.sleep(1.0)
     await send_whatsapp_message(to_phone=alert_phone, text=wa_text)
     logger.info(f"Demo request alert dispatched to owner ({alert_phone}) for {phone}")
+
+async def send_whatsapp_audio(
+    to_phone: str,
+    audio_bytes: bytes,
+    filename: str = "sofia_voice.mp3"
+) -> bool:
+    """
+    Sends an audio message (voice note) through Meta WhatsApp Cloud API.
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+
+    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
+        token = settings.META_ACCESS_TOKEN
+        phone_id = settings.META_PHONE_NUMBER_ID
+        upload_url = f"https://graph.facebook.com/v20.0/{phone_id}/media"
+        headers = {"Authorization": f"Bearer {token}"}
+
+        files = {
+            "file": (filename, audio_bytes, "audio/mpeg")
+        }
+        data = {
+            "messaging_product": "whatsapp",
+            "type": "audio/mpeg"
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                res = await client.post(upload_url, headers=headers, data=data, files=files)
+                if res.status_code in [200, 201]:
+                    media_id = res.json().get("id")
+                    if media_id:
+                        msg_url = f"https://graph.facebook.com/v20.0/{phone_id}/messages"
+                        for target_phone in get_phone_candidates(clean_phone):
+                            payload = {
+                                "messaging_product": "whatsapp",
+                                "recipient_type": "individual",
+                                "to": target_phone,
+                                "type": "audio",
+                                "audio": {
+                                    "id": media_id
+                                }
+                            }
+                            send_res = await client.post(msg_url, headers=headers, json=payload)
+                            if send_res.status_code in [200, 201]:
+                                logger.info(f"✅ Meta WhatsApp audio sent successfully to {target_phone}")
+                                return True
+                            else:
+                                logger.warning(f"Meta send audio failed for {target_phone}: {send_res.text}")
+                else:
+                    logger.warning(f"Meta audio upload failed: {res.status_code} {res.text}")
+        except Exception as e:
+            logger.error(f"Error sending WhatsApp audio to {clean_phone}: {e}")
+
+    return False
+
