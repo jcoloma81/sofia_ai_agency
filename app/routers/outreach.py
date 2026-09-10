@@ -97,7 +97,7 @@ async def start_outreach(
 
     if campaign in ["ai_agency", "canchas_futbol"]:
         clean_company = payload.name.strip() if payload.name else ("el complejo" if campaign == "canchas_futbol" else "la empresa")
-        initial_pitch = f"Hola buenas! ¿Este es el WhatsApp de {clean_company}? Disculpá la molestia."
+        initial_pitch = f"Hola buenas! ¿Este es el WhatsApp de {clean_company}?"
         components = [
             {
                 "type": "body",
@@ -129,10 +129,17 @@ async def start_outreach(
     if campaign in ["ai_agency", "canchas_futbol"] and settings.META_ACCESS_TOKEN:
         sent = await whatsapp.send_whatsapp_template(
             to_phone=clean_phone,
-            template_name="contacto_comercial_v1",
+            template_name="contacto_comercial_v2",
             language_code="es_AR",
             components=components
         )
+        if not sent:
+            sent = await whatsapp.send_whatsapp_template(
+                to_phone=clean_phone,
+                template_name="contacto_comercial_v1",
+                language_code="es_AR",
+                components=components
+            )
         if not sent:
             sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v2")
         if not sent:
