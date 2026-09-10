@@ -24,6 +24,7 @@ class OutreachRequest(BaseModel):
     units_count: Optional[int] = None
     campaign: Optional[str] = "ai_agency"
     business_type: Optional[str] = None
+    strategy: Optional[str] = "two_step"
 
 class BatchOutreachRequest(BaseModel):
     leads: List[OutreachRequest]
@@ -92,10 +93,29 @@ async def start_outreach(
         prospect.meeting_details = None
         prospect.meeting_scheduled_at = None
 
-    # Natural Argentine initial pitch based on campaign
-    greeting = f"¡Hola! Te escribo por {payload.name}." if payload.name else "¡Hola!"
-
-    if campaign in ["ai_agency", "canchas_futbol"]:
+    # Determine pitch & template strategy
+    if getattr(payload, "strategy", "two_step") == "direct_pitch" and campaign in ["ai_agency", "canchas_futbol"]:
+        clean_company = payload.name.strip() if payload.name else "tu negocio"
+        initial_pitch = (
+            f"Hola! Te escribo por {clean_company}.\n\n"
+            f"Te cuento, mi nombre es SOFÍA. Así como te contacté a vos, puedo hacer lo mismo para captar clientes nuevos para tu negocio o atender las 24 hs a los que ya tenés.\n\n"
+            f"Mi función es sacar el trabajo repetitivo que quita tiempo en WhatsApp:\n"
+            f"• Respondo consultas al instante, paso listas de precios, presupuestos o disponibilidad de turnos.\n"
+            f"• Registro pedidos o reservas de manera autónoma y le derivo la confirmación por WhatsApp a la persona encargada en tu empresa.\n"
+            f"• Busco clientes nuevos (vos podés estar descansando y yo generando oportunidades de manera autónoma con el nombre de tu negocio).\n\n"
+            f"Si te interesa la propuesta, un asesor se puede comunicar con ustedes para coordinar una reunión breve (virtual o presencial).\n\n"
+            f"Quedo a disposición.\nSOFÍA - ASISTENTE VIRTUAL"
+        )
+        components = [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": clean_company}
+                ]
+            }
+        ]
+        template_chain = ["pitch_universal_v1", "contacto_comercial_v3", "contacto_comercial_v1"]
+    elif campaign in ["ai_agency", "canchas_futbol"]:
         clean_company = payload.name.strip() if payload.name else ("el complejo" if campaign == "canchas_futbol" else "la empresa")
         initial_pitch = f"Hola buenas! Te escribo por {clean_company}, este es su WhatsApp?"
         components = [
@@ -106,6 +126,7 @@ async def start_outreach(
                 ]
             }
         ]
+        template_chain = ["contacto_comercial_v3", "contacto_comercial_v2", "contacto_comercial_v1"]
     else:
         initial_pitch = (
             f"{greeting} Te escribe Sofía de Air Control.\n\n"
@@ -116,6 +137,7 @@ async def start_outreach(
             f"Sofía — Air Control"
         )
         components = None
+        template_chain = []
 
     history = [{
         "sender": "ai",
@@ -126,31 +148,17 @@ async def start_outreach(
     db.commit()
     db.refresh(prospect)
 
+    sent = False
     if campaign in ["ai_agency", "canchas_futbol"] and settings.META_ACCESS_TOKEN:
-        sent = await whatsapp.send_whatsapp_template(
-            to_phone=clean_phone,
-            template_name="contacto_comercial_v3",
-            language_code="es_AR",
-            components=components
-        )
-        if not sent:
+        for t_name in template_chain:
             sent = await whatsapp.send_whatsapp_template(
                 to_phone=clean_phone,
-                template_name="contacto_comercial_v2",
+                template_name=t_name,
                 language_code="es_AR",
                 components=components
             )
-        if not sent:
-            sent = await whatsapp.send_whatsapp_template(
-                to_phone=clean_phone,
-                template_name="contacto_comercial_v1",
-                language_code="es_AR",
-                components=components
-            )
-        if not sent:
-            sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v2")
-        if not sent:
-            sent = await whatsapp.send_whatsapp_template(to_phone=clean_phone, template_name="prospeccion_sofia_v1")
+            if sent:
+                break
         if not sent:
             sent = await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=initial_pitch)
     else:
