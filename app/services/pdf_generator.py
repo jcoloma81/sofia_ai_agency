@@ -321,9 +321,11 @@ def generate_remito_pdf(
     for it in getattr(order_draft, "items", []):
         name = it.product.name if hasattr(it, "product") else str(it)
         pres = it.product.presentation if hasattr(it, "product") and it.product.presentation else ""
-        desc = f"{name} ({pres})" if pres else name
-        subtotal_str = it.formatted_subtotal() if hasattr(it, "formatted_subtotal") else f"${getattr(it, 'subtotal', 0)}"
-        unit_str = f"${getattr(it, 'unit_price', 0):,.0f}".replace(",", ".")
+        desc = f"{name} ({pres})" if pres and pres != "Unidad" else name
+        unit_val = getattr(it, "unit_price", 0)
+        unit_str = f"${unit_val:,.0f}".replace(",", ".") if unit_val > 0 else "A cotizar"
+        subtotal_val = getattr(it, "subtotal", 0)
+        subtotal_str = it.formatted_subtotal() if (hasattr(it, "formatted_subtotal") and subtotal_val > 0) else "-"
         table_rows.append([
             Paragraph(str(getattr(it, "quantity", 1)), cell_style),
             Paragraph(desc, cell_style),
@@ -331,7 +333,8 @@ def generate_remito_pdf(
             Paragraph(subtotal_str, cell_style)
         ])
 
-    total_str = order_draft.formatted_total() if hasattr(order_draft, "formatted_total") else "$0"
+    total_val = getattr(order_draft, "total", 0)
+    total_str = order_draft.formatted_total() if (hasattr(order_draft, "formatted_total") and total_val > 0) else "A cotizar por distribuidor"
     table_rows.append([
         Paragraph("", cell_style),
         Paragraph("", cell_style),

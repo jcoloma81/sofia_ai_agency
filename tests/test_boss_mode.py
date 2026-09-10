@@ -204,7 +204,20 @@ async def test_boss_kiosk_order_dispatch(db):
         mock_msg.assert_called_once()
         mock_doc.assert_called_once()
 
-
-
-
-
+@pytest.mark.asyncio
+async def test_boss_ferreteria_order_dispatch(db):
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, mandale el pedido a Ferretería Industrial Ricardo al 3434536447 con 5 cajas de tornillos autoperforantes y 2 discos de corte"
+        )
+        assert handled is True
+        assert action == "kiosk_order_dispatched"
+        assert "¡Pedido despachado con éxito!" in reply
+        assert "Ferretería Industrial Ricardo" in reply
+        assert "Tornillos autoperforantes" in reply
+        mock_msg.assert_called_once()
+        mock_doc.assert_called_once()

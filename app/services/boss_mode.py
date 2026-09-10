@@ -170,11 +170,12 @@ async def process_boss_message(
     # 2. Commercial Directives set by the boss (e.g. horarios, montos mínimos, zonas, requisitos)
     directive_keywords = [
         "minimo", "mínimo", "directiva", "directivas", "regla", "reglas",
-        "flete", "reparto", "repartimos", "envio", "envío", "corte", "zona", "zonas",
+        "flete", "reparto", "repartimos", "envio", "envío", "horario de corte", "hora de corte", "corte de pedidos", "zona", "zonas",
         "cobertura", "cupo", "politica", "política", "condicion", "condición", "condiciones",
         "requisito", "requisitos", "horario", "horarios", "tengan en cuenta", "tener en cuenta"
     ]
-    if any(k in lower_text for k in directive_keywords):
+    is_dispatch_cmd = any(k in lower_text for k in ["mandale el pedido", "mandar pedido", "pasar pedido", "enviar pedido", "mandale a", "hacele el pedido"])
+    if any(k in lower_text for k in directive_keywords) and not is_dispatch_cmd:
         from app.services.directives import directives_service
         reply = await directives_service.update_from_boss_message(clean_text)
         return True, reply, "boss_directive_set"
@@ -254,24 +255,58 @@ async def process_boss_message(
             if not draft.items:
                 draft = parse_order_text(clean_order_part.strip() or "10 bolsas de harina y 5 cajas de aceite")
 
+            if not draft.items:
+                # If not found in internal catalog, extract items and quantities directly so any trade (ferretería, etc.) works
+                from app.services.catalog import ProductItem
+                from app.services.order_engine import OrderItem, OrderDraft
+                clauses = re.split(r'[,;\n]|\s+y\s+|\s+e\s+', clean_order_part)
+                fallback_items = []
+                for c in clauses:
+                    c_clean = re.sub(r'[^\w\s]', ' ', c).strip()
+                    if not c_clean:
+                        continue
+                    qty = 1
+                    num_m = re.search(r'\b(\d+)\b', c_clean)
+                    if num_m:
+                        qty = int(num_m.group(1))
+                        p_name = re.sub(r'\b\d+\b', '', c_clean).strip()
+                    else:
+                        p_name = c_clean
+                    p_name = re.sub(r'^(?:de|con|cajas?|fardos?|packs?|unidades?|bolsas?|tarros?|latas?|discos?|tubos?|litros?)\s+', '', p_name, flags=re.IGNORECASE).strip()
+                    p_name = re.sub(r'^(?:de|con)\s+', '', p_name, flags=re.IGNORECASE).strip()
+                    if p_name and len(p_name) > 1:
+                        prod = ProductItem(name=p_name.capitalize(), price=0.0, presentation="Bulto/Unidad")
+                        fallback_items.append(OrderItem(product=prod, quantity=qty, unit_price=0.0, subtotal=0.0))
+                if fallback_items:
+                    draft = OrderDraft(items=fallback_items, total=0.0)
+
+            is_ferreteria = any(k in lower_text for k in ["ferreteria", "ferretería", "tornillo", "disco", "herramienta", "pintura", "thinner", "amoladora", "tuerca", "bazar"])
+            client_name = "Ferretería 'El Amigo'" if is_ferreteria else "Kiosco 'Lo de Juan'"
+            contact_name = "Encargado de Compras" if is_ferreteria else "Juan (Comercio Minorista)"
+            total_display = draft.formatted_total() if getattr(draft, "total", 0) > 0 else "A cotizar según lista de distribuidor"
+
             pdf_bytes = generate_order_pdf(
-                client_name="Kiosco 'Lo de Juan'",
-                contact_name="Juan (Comercio Minorista)",
+                client_name=client_name,
+                contact_name=contact_name,
                 phone=sender_phone,
-                city="Nogoyá 450, Paraná",
+                city="Paraná, Entre Ríos",
                 order_draft=draft,
                 order_number=f"PED-{datetime.now().strftime('%d%H%M')}"
             )
 
-            item_lines = "\n".join([f"• {it.quantity}x {it.product.name} ({it.product.presentation})" for it in draft.items])
+            item_lines = "\n".join([
+                f"• {it.quantity}x {it.product.name}" + (f" ({it.product.presentation})" if it.product.presentation and it.product.presentation != "Unidad" else "")
+                for it in draft.items
+            ]) if draft.items else f"• 1x {clean_order_part}"
+
             dist_msg = (
-                f"Hola {dist_name}! Te escribo de parte de Juan de *Kiosco 'Lo de Juan'* (Calle Nogoyá 450).\n\n"
+                f"Hola {dist_name}! Te escribo de parte del {contact_name} de *{client_name}*.\n\n"
                 f"Te paso su pedido formal para el reparto de mañana:\n"
                 f"{item_lines}\n"
-                f"Total estimado: {draft.formatted_total()}\n\n"
+                f"Total estimado: {total_display}\n\n"
                 f"📄 Adjunto remito en PDF con el detalle formal.\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"📌 *IMPORTANTE:* Por favor envíe confirmación de pedido, remitos o listas de precios actualizadas directamente a este chat. Soy la asistente del comercio 'Lo de Juan'. ¡Muchas gracias!"
+                f"📌 *IMPORTANTE:* Por favor envíe confirmación de pedido, remitos o listas de precios actualizadas directamente a este chat. Soy la asistente del comercio '{client_name}'. ¡Muchas gracias!"
             )
 
             asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=target_phone, text=dist_msg))
@@ -285,15 +320,15 @@ async def process_boss_message(
             asyncio.create_task(whatsapp.send_whatsapp_document(
                 to_phone=target_phone,
                 document_url=pdf_url,
-                filename="Pedido_Kiosco_Lo_De_Juan.pdf",
-                caption=f"📄 Pedido Formal Kiosco 'Lo de Juan' -> {dist_name}"
+                filename="Pedido_Formal.pdf",
+                caption=f"📄 Pedido Formal {client_name} -> {dist_name}"
             ))
 
             return True, (
                 f"✅ *¡Pedido despachado con éxito!*\n\n"
                 f"Acabo de enviarle a *{dist_name}* (+{target_phone}) el detalle formal y el remito en PDF.\n\n"
                 f"📋 *Items enviados:*\n{item_lines}\n"
-                f"💰 *Total:* {draft.formatted_total()}\n\n"
+                f"💰 *Total:* {total_display}\n\n"
                 f"📍 Les dejé la instrucción de que confirmen y manden sus listas de precios a este mismo chat."
             ), "kiosk_order_dispatched"
 
