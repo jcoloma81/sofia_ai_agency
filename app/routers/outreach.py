@@ -95,8 +95,8 @@ async def start_outreach(
     # Natural Argentine initial pitch based on campaign
     greeting = f"¡Hola! Te escribo por {payload.name}." if payload.name else "¡Hola!"
 
-    if campaign == "ai_agency":
-        clean_company = payload.name.strip() if payload.name else "la empresa"
+    if campaign in ["ai_agency", "canchas_futbol"]:
+        clean_company = payload.name.strip() if payload.name else ("el complejo" if campaign == "canchas_futbol" else "la empresa")
         initial_pitch = f"Hola buenas! ¿Este es el WhatsApp de {clean_company}? Disculpá la molestia."
         components = [
             {
@@ -108,7 +108,7 @@ async def start_outreach(
         ]
     else:
         initial_pitch = (
-            f"{greeting} Te escribe Sofía de Air Control.{referencia}\n\n"
+            f"{greeting} Te escribe Sofía de Air Control.\n\n"
             f"Somos una empresa nueva y estamos ofreciendo un sistema para el ahorro energético enfocado en hoteles y alojamientos turísticos.\n\n"
             f"El sistema permite reducir la factura eléctrica hasta en un 50% o más, dependiendo de la configuración. La instalación es rápida, limpia, pero lo más importante: ¡funciona muy bien!\n\n"
             f"Lo que proponemos con este mensaje es coordinar una reunión breve (presencial o virtual) para que nuestro asesor les muestre en detalle el funcionamiento.\n\n"
@@ -126,7 +126,7 @@ async def start_outreach(
     db.commit()
     db.refresh(prospect)
 
-    if campaign == "ai_agency" and settings.META_ACCESS_TOKEN:
+    if campaign in ["ai_agency", "canchas_futbol"] and settings.META_ACCESS_TOKEN:
         sent = await whatsapp.send_whatsapp_template(
             to_phone=clean_phone,
             template_name="contacto_comercial_v1",
