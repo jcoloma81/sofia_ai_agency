@@ -351,7 +351,11 @@ async def parse_order_or_inquiry_with_ai(text: str) -> OrderAnalysis:
         "mandame la lista", "pasanos la lista", "ver la lista", "catalogo", "catálogo", 
         "tienen lista", "tenes lista", "tenés lista", "mandame los precios", "pasame los precios",
         "precios actualizados", "que precios tenes", "qué precios tenés", "el excel", "mandame el excel",
-        "pasame el excel", "tu excel", "la planilla", "manda a tabela", "tabela de precos", "tabela de preços"
+        "pasame el excel", "tu excel", "la planilla", "manda a tabela", "tabela de precos", "tabela de preços",
+        "lista completa", "lista de precios completa", "mandame la lista completa", "pasame la lista completa",
+        "catalogo completo", "catálogo completo", "el catalogo", "el catálogo", "la lista", "lista entera",
+        "todos los precios", "enviame la lista", "enviar la lista", "pasar la lista", "mandame el catalogo",
+        "pasame el catalogo", "mandame el catálogo", "pasame el catálogo"
     ]
     if any(k in lower_text for k in price_list_triggers) and not any(k in lower_text for k in ["caja", "fardo", "pack", "anotame", "mandame 2", "mandame 1", "sumame"]):
         return OrderAnalysis(intent="price_list_request")

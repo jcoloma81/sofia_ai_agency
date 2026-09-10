@@ -591,11 +591,15 @@ async def receive_whatsapp_webhook(
         "tienen lista", "tenes lista", "tenés lista", "mandame los precios", "pasame los precios",
         "precios actualizados", "que precios tenes", "qué precios tenés", "el excel", "mandame el excel",
         "pasame el excel", "tu excel", "la planilla",
+        "lista completa", "lista de precios completa", "mandame la lista completa", "pasame la lista completa",
+        "catalogo completo", "catálogo completo", "el catalogo", "el catálogo", "la lista", "lista entera",
+        "todos los precios", "enviame la lista", "enviar la lista", "pasar la lista", "mandame el catalogo",
+        "pasame el catalogo", "mandame el catálogo", "pasame el catálogo",
         # Brazilian Portuguese triggers
         "tabela de preço", "tabela de preços", "tabela de precos", "manda a tabela",
         "manda a lista", "passa a tabela", "tem tabela", "ver tabela"
     ]
-    if any(trigger in message.lower() for trigger in price_list_triggers) and catalog_service.products:
+    if (any(trigger in message.lower() for trigger in price_list_triggers) or analysis.intent == "price_list_request") and catalog_service.products:
         if not any(k in message.lower() for k in ["servicio", "software", "agencia", "abono", "ia"]):
             # Extract name if prospect introduced themselves (e.g. "soy Martin del kiosco..." or "sou a Mariana...")
             soy_match = re.search(r'\b(?:soy|me llamo|te habla|habla|sou|me chamo)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑãõÃÕ]{3,15})\b', message, re.IGNORECASE)

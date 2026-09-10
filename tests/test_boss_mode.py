@@ -173,5 +173,20 @@ async def test_boss_audio_stutter_inquiry(db):
     assert "ml" not in reply
     assert "fideo" in reply.lower()
 
+@pytest.mark.asyncio
+async def test_boss_lista_completa(db):
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Hola Sofía, mandame la lista completa"
+        )
+        assert handled is True
+        assert action == "boss_price_list_demo"
+        assert "ENVÍO DE LISTA" in reply
+        mock_doc.assert_called_once()
+
+
 
 

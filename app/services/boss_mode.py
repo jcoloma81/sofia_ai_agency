@@ -46,7 +46,8 @@ async def generate_boss_ai_response(
 
     from app.services.directives import directives_service
     directives_ctx = directives_service.get_prompt_context()
-    cat_summary = f"{len(catalog_service.products)} productos activos ({catalog_service.source_info})"
+    catalog_preview = catalog_service.get_summary_prompt(max_items=15) if catalog_service.products else ""
+    cat_summary = f"{len(catalog_service.products)} productos activos ({catalog_service.source_info})\n{catalog_preview}"
 
     system_prompt = f"""Sos Sofía, la asistente ejecutiva de Inteligencia Artificial y mano derecha de Javier Coloma.
 Javier es tu creador y el director general de la agencia de IA y de las soluciones comerciales para distribuidoras y comercios.
@@ -183,15 +184,16 @@ async def process_boss_message(
         "lista de precio", "lista de precios", "lista actualizada", "pasame la lista", 
         "mandame la lista", "pasanos la lista", "ver la lista", "mandame los precios", "pasame los precios",
         "precios actualizados", "que precios tenes", "qué precios tenés", "el excel", "mandame el excel",
-        "pasame el excel", "la planilla", "tu excel", "archivo de excel", "planilla de precios"
+        "pasame el excel", "la planilla", "tu excel", "archivo de excel", "planilla de precios",
+        "lista completa", "lista de precios completa", "mandame la lista completa", "pasame la lista completa",
+        "catalogo completo", "catálogo completo", "el catalogo", "el catálogo", "la lista", "lista entera",
+        "todos los precios", "enviame la lista", "enviar la lista", "pasar la lista", "mandame el catalogo",
+        "pasame el catalogo", "mandame el catálogo", "pasame el catálogo"
     ]
     is_admin_internal_view = any(k in lower_text for k in ["mostrar catálogo", "mostrar catalogo", "estado del catálogo", "estado del catalogo", "resumen catalogo", "resumen catálogo", "inventario", "ver productos"])
 
-    if any(k in lower_text for k in price_list_triggers) and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
-        import asyncio
-        from app.services import whatsapp
-
-        clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+    def _build_price_list_demo(sender: str):
+        clean_s = "".join(filter(str.isdigit, str(sender)))
         demo_reply = (
             f"🧪 *[DEMO EN VIVO — ENVÍO DE LISTA]*\n\n"
             f"¡Hola Javier! ¿Cómo estás? Te adjunto acá mismo el archivo de Excel con nuestra lista de precios "
@@ -202,15 +204,19 @@ async def process_boss_message(
             f"💡 Si preferís consultarme el precio de algún artículo puntual o armar tu pedido, "
             f"escribime o mandame un audio directo por acá y te lo anoto en el acto."
         )
-
         excel_url = "https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx"
         asyncio.create_task(whatsapp.send_whatsapp_document(
-            to_phone=clean_sender,
+            to_phone=clean_s,
             document_url=excel_url,
             filename="Lista_Precios_Distribuidora.xlsx",
             caption="📊 Lista de Precios Oficial Actualizada"
         ))
+        return demo_reply
 
+    if any(k in lower_text for k in price_list_triggers) and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
+        import asyncio
+        from app.services import whatsapp
+        demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
 
     # 3. Live Demo / Order Test or Product Inquiry by the Boss (for video demos from personal phone)
@@ -222,6 +228,12 @@ async def process_boss_message(
     )
 
     analysis = await parse_order_or_inquiry_with_ai(clean_text)
+    if analysis.intent == "price_list_request" and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
+        import asyncio
+        from app.services import whatsapp
+        demo_reply = _build_price_list_demo(sender_phone)
+        return True, demo_reply, "boss_price_list_demo"
+
     if analysis.intent == "order":
         if analysis.draft.items:
             clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
