@@ -435,6 +435,75 @@ class CatalogService:
             logger.error(f"Error reading Excel bytes: {e}")
             return 0
 
+    async def load_from_pdf_bytes(self, content: bytes, filename: str = "Catalogo.pdf") -> int:
+        """
+        Uses Gemini Multimodal to extract products and prices from a supplier PDF catalog,
+        handling multi-page documents, columns, tables, codes and prices.
+        """
+        import base64
+        gemini_key = settings.GEMINI_API_KEY
+        if not gemini_key:
+            logger.warning("No Gemini API key for PDF parsing")
+            return 0
+
+        b64_pdf = base64.b64encode(content).decode("utf-8")
+        prompt = (
+            "Extraé todos los productos, artículos y materiales de esta lista de precios o catálogo en PDF.\n"
+            "Por cada producto extraé en formato JSON una lista con estas claves exactas:\n"
+            "- name: descripción o nombre del producto (ej: 'Martillo Galponero 20mm')\n"
+            "- price: precio numérico (float, ej: 14500.0, sin signos $ ni puntos de miles)\n"
+            "- code: código de artículo o SKU si figura (o null)\n"
+            "- presentation: unidad o presentación (ej: 'Unidad', 'Caja x 100', 'Bolsa')\n"
+            "- category: rubro o familia del producto (ej: 'Herramientas', 'Bulonería', 'Pinturas')\n"
+            "Respondé ÚNICAMENTE un JSON con la clave 'products' conteniendo la lista de productos."
+        )
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"inline_data": {"mime_type": "application/pdf", "data": b64_pdf}},
+                        {"text": prompt}
+                    ]
+                }
+            ],
+            "generationConfig": {"response_mime_type": "application/json"}
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=45.0) as client:
+                res = await client.post(url, json=payload)
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            data = json.loads(parts[0].get("text", "{}"))
+                            raw_prods = data.get("products", [])
+                            items: List[ProductItem] = []
+                            for p in raw_prods:
+                                n = str(p.get("name") or "").strip()
+                                pr = float(p.get("price") or 0.0)
+                                if n and pr > 0:
+                                    items.append(ProductItem(
+                                        name=n,
+                                        price=pr,
+                                        code=p.get("code"),
+                                        presentation=p.get("presentation") or "Unidad",
+                                        category=p.get("category") or "General",
+                                        in_stock=True
+                                    ))
+                            if items:
+                                self.products = items
+                                self.last_updated = datetime.now(timezone.utc)
+                                self.source_info = f"{filename} ({len(items)} productos)"
+                                logger.info(f"Loaded {len(items)} products from PDF: {filename}")
+                                return len(items)
+        except Exception as e:
+            logger.error(f"Error parsing PDF catalog with Gemini: {e}")
+        return 0
+
     def export_to_excel(self, file_path: str):
         """Exports the active catalog to a beautifully formatted Excel workbook."""
         wb = openpyxl.Workbook()

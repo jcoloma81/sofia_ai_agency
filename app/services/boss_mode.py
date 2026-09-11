@@ -374,6 +374,16 @@ async def process_boss_message(
                 csv_str = doc_bytes.decode("latin-1", errors="ignore")
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
             return True, f"✅ *¡Lista CSV cargada con éxito!*\n\nSe procesaron *{count} productos* desde `{doc_name}`.", "catalog_updated"
+        elif fname.endswith(".pdf"):
+            count = await catalog_service.load_from_pdf_bytes(doc_bytes, filename=doc_name)
+            if count > 0:
+                return True, (
+                    f"✅ *¡Catálogo PDF procesado con éxito!*\n\n"
+                    f"Se procesaron y cargaron *{count} productos* desde el archivo `{doc_name}`.\n"
+                    f"Sofía ya está lista para cotizar y tomar pedidos con estos nuevos precios."
+                ), "catalog_updated"
+            else:
+                return True, f"📄 Recibí el archivo PDF `{doc_name}` pero no pude extraer listas de precios automáticas. Verificá que contenga texto o tablas legibles.", "catalog_pdf_error"
 
     # 1.3 Client Onboarding on-the-fly via WhatsApp Audio or Text
     onboarding_data = await parse_client_onboarding_intent(clean_text)
