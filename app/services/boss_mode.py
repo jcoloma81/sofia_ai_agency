@@ -1192,9 +1192,15 @@ async def process_boss_message(
                 contact_name = active_client.get("contact_name") or ("Encargado de Compras" if is_ferreteria else "Juan (Comercio Minorista)")
                 client_city = active_client.get("city") or "Paraná, Entre Ríos"
             else:
-                client_name = "Ferretería 'El Amigo'" if is_ferreteria else "Kiosco 'Lo de Juan'"
-                contact_name = "Encargado de Compras" if is_ferreteria else "Juan (Comercio Minorista)"
-                client_city = "Paraná, Entre Ríos"
+                sender_p = db.query(Prospect).filter(Prospect.phone == sender_phone).first() if db else None
+                if sender_p and sender_p.name:
+                    client_name = sender_p.name
+                    contact_name = sender_p.contact_name or ("Encargado de Compras" if is_ferreteria else "Comercio Minorista")
+                    client_city = sender_p.city or "Paraná, Entre Ríos"
+                else:
+                    client_name = "Ferretería 'El Amigo'" if is_ferreteria else "Kiosco 'Lo de Juan'"
+                    contact_name = "Encargado de Compras" if is_ferreteria else "Juan (Comercio Minorista)"
+                    client_city = "Paraná, Entre Ríos"
 
             total_display = draft.formatted_total() if getattr(draft, "total", 0) > 0 else "A cotizar según lista de distribuidor"
 

@@ -530,6 +530,33 @@ async def receive_whatsapp_webhook(
                 await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
                 return {"status": "success", "action": "prospect_catalog_error", "reply": doc_reply}
 
+    # 0.8 Merchant / Boss Directives from Client (e.g. dispatching orders to suppliers or managing baskets)
+    merchant_dispatch_triggers = [
+        "mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a",
+        "mandale a", "mandá a", "hacele el pedido a", "hacé el pedido a",
+        "despachar pedido a", "despachale a", "pasale el pedido a", "enviá el pedido a",
+        "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a",
+        "anota para", "anotame para", "anotá para", "pedidos a proveedores", "pedidos pendientes"
+    ]
+    is_merchant_action = any(k in clean_msg_lower for k in merchant_dispatch_triggers)
+    if is_merchant_action:
+        handled_b, reply_b, action_b = await process_boss_message(
+            db=db,
+            sender_phone=clean_phone,
+            text=message,
+            conversation_history=history
+        )
+        if handled_b and action_b in [
+            "kiosk_order_dispatched", "basket_item_added", "single_basket_detail",
+            "all_baskets_summary", "supplier_registered", "dispatch_needs_phone"
+        ]:
+            history.append({"sender": "ai", "text": reply_b, "timestamp": datetime.now(timezone.utc).isoformat()})
+            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+            prospect.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=reply_b)
+            return {"status": "success", "action": action_b, "reply": reply_b}
+
     # 1. Check if prospect is confirming an existing pending order
     is_confirming_order = False
     pending_order = None

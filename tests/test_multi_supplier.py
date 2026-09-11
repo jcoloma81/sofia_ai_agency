@@ -178,3 +178,73 @@ def test_catalog_supplier_tagging_and_excel_export():
     
     if os.path.exists(export_path):
         os.remove(export_path)
+
+
+def test_merchant_client_dispatch_to_distribuidora_alem_simulation(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+    from app.services.boss_mode import LAST_ONBOARDED_CLIENT
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    # 1. Setup Distribuidora Alem with Javier's phone in DB
+    alem = Prospect(
+        name="Distribuidora Alem",
+        contact_name="Javier (Distribuidora Alem)",
+        phone="5493434536447",
+        city="Paraná",
+        campaign="supplier",
+        status="supplier"
+    )
+    db.add(alem)
+
+    # 2. Setup Ferretería Nogoyá as the active merchant client
+    ferreteria = Prospect(
+        name="Ferretería Nogoyá",
+        contact_name="Ricardo",
+        phone="5493435112233",
+        city="Nogoyá",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    db.add(ferreteria)
+    db.commit()
+
+    LAST_ONBOARDED_CLIENT.clear()
+    LAST_ONBOARDED_CLIENT.update({
+        "phone": "5493435112233",
+        "business_name": "Ferretería Nogoyá",
+        "contact_name": "Ricardo",
+        "business_type": "ferreteria",
+        "city": "Nogoyá"
+    })
+
+    with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
+        
+        # Ricardo sends dispatch directive from his phone via webhook
+        payload = {
+            "phone": "5493435112233",
+            "message": "Sofi, mandale el pedido a Distribuidora Alem con 4 martillos y 2 alicates",
+            "complex_name": "Ferretería Nogoyá",
+            "contact_name": "Ricardo",
+            "city": "Nogoyá"
+        }
+        response = client.post("/webhook", json=payload)
+        assert response.status_code == 200
+        res = response.json()
+
+        assert res["status"] == "success"
+        assert res["action"] == "kiosk_order_dispatched"
+        assert "Distribuidora Alem" in res["reply"]
+        assert "5493434536447" in res["reply"]
+
+        # Verify dispatch reached Javier's phone (representing Distribuidora Alem)
+        mock_msg.assert_called()
+        dispatched_to_phones = [call[1]["to_phone"] for call in mock_msg.call_args_list]
+        assert "5493434536447" in dispatched_to_phones
+        assert "5493435112233" in dispatched_to_phones
+
