@@ -598,6 +598,10 @@ class CatalogService:
             cell.font = header_font
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
+        data_font = Font(name="Arial", size=10, color="000000")
+        data_font_bold = Font(name="Arial", size=10, bold=True, color="000000")
+        data_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+
         for r_idx, p in enumerate(self.products, start=2):
             row_data = [
                 p.code or f"ART-{r_idx-1:03d}",
@@ -609,14 +613,20 @@ class CatalogService:
                 p.supplier or "General"
             ]
             ws.append(row_data)
+            ws.row_dimensions[r_idx].height = 24
             for c_idx in range(1, len(headers) + 1):
                 cell = ws.cell(row=r_idx, column=c_idx)
+                cell.font = data_font
+                cell.fill = data_fill
                 cell.border = thin_border
                 if c_idx == 4:
-                    cell.number_format = "$#,##0"
-                    cell.alignment = Alignment(horizontal="right")
+                    cell.font = data_font_bold
+                    cell.number_format = '"$"#,##0'
+                    cell.alignment = Alignment(horizontal="right", vertical="center")
                 elif c_idx in [1, 5, 7]:
-                    cell.alignment = Alignment(horizontal="center")
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+                else:
+                    cell.alignment = Alignment(horizontal="left", vertical="center")
 
         ws.column_dimensions["A"].width = 14
         ws.column_dimensions["B"].width = 34
