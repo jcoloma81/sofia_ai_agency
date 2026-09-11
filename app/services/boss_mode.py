@@ -564,6 +564,12 @@ def parse_supplier_basket_inquiry_intent(text: str) -> dict:
     clean_no_accents = clean_no_prefix.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
 
     if any(k in clean_no_accents for k in [
+        "mis clientes", "lista de clientes", "ver clientes", "cuales son mis clientes",
+        "comercios", "comercios dados de alta", "clientes dados de alta", "mis comercios"
+    ]) or clean_no_accents in ["clientes", "comercios"]:
+        return {"is_inquiry": True, "type": "list_clients"}
+
+    if any(k in clean_no_accents for k in [
         "mis proveedores", "lista de proveedores", "ver proveedores",
         "cuales son mis proveedores", "quienes son mis proveedores", "agenda de proveedores"
     ]) or clean_no_accents in ["proveedores", "proveedor"]:
@@ -724,6 +730,19 @@ async def process_boss_message(
             "city": city
         })
 
+        # Trigger instant welcome message to client's phone
+        welcome_text = (
+            f"¡Hola {c_name}! 👋 Te doy la bienvenida a *{b_name}*.\n\n"
+            f"Soy Sofía, tu asistente comercial virtual. Ya tengo activado el catálogo de tu negocio y estoy lista para atenderte, pasarte precios o tomar tus pedidos 24/7.\n\n"
+            f"💡 *Podés mandarme un audio o texto con lo que necesites:* por ejemplo _«¿A cuánto tenés los martillos?»_ o _«Pasame 3 harinas y 2 aceites»_."
+        )
+        try:
+            import asyncio
+            from app.services import whatsapp
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=norm_phone, text=welcome_text))
+        except Exception as e:
+            logger.warning(f"Could not auto-send welcome WhatsApp message to {norm_phone}: {e}")
+
         header_title = "✅ *¡CLIENTE ACTUALIZADO CON ÉXITO!* 🚀" if is_update else "✅ *¡CLIENTE DADO DE ALTA CON ÉXITO!* 🚀"
         action_name = "client_updated" if is_update else "client_onboarded"
 
@@ -734,6 +753,7 @@ async def process_boss_message(
             f"📱 *WhatsApp:* +{norm_phone}\n"
             f"📍 *Ubicación:* {city}\n"
             f"{catalog_info}\n"
+            f"📩 *Mensaje de bienvenida enviado a su celular:* Le avisé que su catálogo ya está activo.\n\n"
             f"🎯 *Pruebas en vivo listas para hacer delante de {c_name}:*\n"
             f"1️⃣ *Enviar pedido a su número:*\n"
             f"   _«Mandale a {c_name} el pedido de 4 martillos, 2 alicates y tornillos»_\n"
@@ -874,7 +894,34 @@ async def process_boss_message(
     inquiry_data = parse_supplier_basket_inquiry_intent(clean_text)
     if inquiry_data.get("is_inquiry"):
         inq_type = inquiry_data.get("type")
-        if inq_type == "list_suppliers":
+        if inq_type == "list_clients":
+            clients = db.query(Prospect).filter(
+                (Prospect.business_type != "proveedor") & (Prospect.campaign != "supplier")
+            ).filter(Prospect.phone != sender_phone).order_by(Prospect.updated_at.desc()).all()
+            if not clients:
+                return True, (
+                    "📋 *No tenés clientes ni comercios registrados todavía.*\n\n"
+                    "💡 Podés dar de alta uno por voz diciendo:\n"
+                    "_«Sofía, cargar cliente Ferretería Nogoyá, titular Ricardo, teléfono [número]»_"
+                ), "no_clients"
+
+            lines = [f"🏪 *TUS CLIENTES Y COMERCIOS ACTIVOS ({len(clients)}):*\n"]
+            for idx, c in enumerate(clients, 1):
+                b_name = c.name or "Comercio"
+                c_name = c.contact_name or "Titular"
+                b_type = (c.business_type or "Comercio").capitalize()
+                city = c.city or "Entre Ríos"
+                lines.append(f"{idx}. *{b_name}* ({b_type})")
+                lines.append(f"   👤 Titular: {c_name} | 📍 {city}")
+                lines.append(f"   📱 WhatsApp: +{c.phone}")
+                lines.append("")
+
+            lines.append("💡 *Acciones disponibles con tus clientes:*")
+            lines.append("• _«Mandale la demo a [Nombre] con 4 martillos y 2 alicates»_")
+            lines.append("• _«Mandale la lista a [Nombre]»_")
+            return True, "\n".join(lines), "clients_list"
+
+        elif inq_type == "list_suppliers":
             sups = db.query(Prospect).filter(
                 (Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier")
             ).all()
