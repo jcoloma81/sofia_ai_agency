@@ -1234,7 +1234,6 @@ async def process_boss_message(
                     f"📌 *IMPORTANTE:* Por favor envíe confirmación de pedido, remitos o listas de precios actualizadas directamente a este chat. Soy la asistente del comercio '{client_name}'. ¡Muchas gracias!"
                 )
 
-            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=target_phone, text=dist_msg))
             base_url = settings.APP_BASE_URL.rstrip('/')
             if "127.0.0.1" in base_url or "localhost" in base_url:
                 base_url = "https://sofia-ai-agency.onrender.com"
@@ -1242,6 +1241,32 @@ async def process_boss_message(
             with open(pdf_path, "wb") as f:
                 f.write(pdf_bytes)
             pdf_url = f"{base_url}/assets/ultimo_pedido_kiosco.pdf"
+
+            # Dispatch payload:
+            # 1. Attempt official Meta Template (essential if outside 24h window)
+            template_name = "demo_comercio_v1" if is_demo_to_client else "orden_compra_v1"
+            components = [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": dist_name},
+                        {"type": "text", "text": client_name},
+                        {"type": "text", "text": item_lines[:240]},
+                        {"type": "text", "text": total_display}
+                    ]
+                }
+            ]
+            asyncio.create_task(whatsapp.send_whatsapp_template(
+                to_phone=target_phone,
+                template_name=template_name,
+                language_code="es_AR",
+                components=components
+            ))
+
+            # 2. Conversational text detail (delivered via Meta or Whapi gateway)
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=target_phone, text=dist_msg))
+
+            # 3. Formal PDF document
             asyncio.create_task(whatsapp.send_whatsapp_document(
                 to_phone=target_phone,
                 document_url=pdf_url,
