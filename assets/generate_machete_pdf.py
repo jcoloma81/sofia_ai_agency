@@ -201,9 +201,9 @@ def build_pdf(filename="assets/machete_venta_calle.pdf"):
             Paragraph("Sofía procesa en 3 seg. Ricardo vuelve a preguntar por audio y Sofía cotiza con aumento ($17.400).", see_style)
         ],
         [
-            Paragraph("<b>PASO 4</b><br/>Multi-Canasta<br/>(Despacho)", body_style),
-            Paragraph("Carga faltante: <i>'Sofi, anotá para la Bulonera 5 cajas de tornillos T1 y 2 pinzas'</i>. Luego: <i>'Mandale el pedido'</i>.", do_style),
-            Paragraph("Suena tu cel con el <b>Remito PDF formal</b> membretado y la canasta de la Bulonera se vacía sola.", see_style)
+            Paragraph("<b>PASO 4</b><br/>Pase al Mayorista<br/>(Simulación Alem)", body_style),
+            Paragraph("<i>'Ricardo, mirá el pase de gol: hagamos de cuenta que mi cel es Distribuidora Alem. Mandale vos un audio a Sofía: mandale el pedido a Distribuidora Alem con 4 martillos y 2 alicates'</i>.", do_style),
+            Paragraph("Sofía le confirma el envío. En el <b>mismo segundo tu cel suena</b> con la <b>Plantilla B y el Remito PDF formal</b>. Le mostrás tu pantalla: <i>'Ya tengo tu pedido listo para el camión'</i>.<br/><i>(Nota: En uso real va al teléfono del viajante real).</i>", see_style)
         ],
         [
             Paragraph("<b>PASO 5</b><br/>Cierre Cero<br/>Riesgo", body_style),
