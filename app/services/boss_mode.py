@@ -739,6 +739,26 @@ async def process_boss_message(
         try:
             import asyncio
             from app.services import whatsapp
+            # 1. Attempt official Meta Template (Plantilla A: demo_comercio_v1)
+            demo_items = "• 4x Martillos\n• 2x Alicates" if any(k in b_type for k in ["ferret", "herramient"]) else "• 3x Harina 000\n• 2x Aceite Cañuelas"
+            tpl_components = [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": c_name},
+                        {"type": "text", "text": b_name},
+                        {"type": "text", "text": demo_items},
+                        {"type": "text", "text": "A cotizar"}
+                    ]
+                }
+            ]
+            asyncio.create_task(whatsapp.send_whatsapp_template(
+                to_phone=norm_phone,
+                template_name="demo_comercio_v1",
+                language_code="es_AR",
+                components=tpl_components
+            ))
+            # 2. Also attempt free-form greeting (delivered via Whapi gateway or within window)
             asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=norm_phone, text=welcome_text))
         except Exception as e:
             logger.warning(f"Could not auto-send welcome WhatsApp message to {norm_phone}: {e}")
