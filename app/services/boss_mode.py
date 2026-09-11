@@ -317,11 +317,13 @@ async def parse_client_onboarding_intent(text: str) -> dict:
         "registrar cliente", "registrá este cliente", "nuevo cliente", "cliente nuevo",
         "anotá este comercio", "cargá este comercio", "guardá este cliente", "guardar cliente",
         "alta de comercio", "alta comercio", "anotá este local", "cargá este negocio", "alta negocio",
-        "anotá a", "anota a", "cargá a", "carga a", "cargar a", "alta a", "registrá a", "registra a"
+        "anotá a", "anota a", "cargá a", "carga a", "cargar a", "alta a", "registrá a", "registra a",
+        "corregí", "corregi", "corregir", "modificá", "modifica", "modificar",
+        "actualizá", "actualiza", "actualizar", "cambiá", "cambia", "cambiar"
     ]
     is_candidate = any(v in lower for v in onboarding_verbs)
-    if not is_candidate and (lower.startswith("alta ") or lower.startswith("cargar ") or lower.startswith("cargá ") or lower.startswith("anotá ") or lower.startswith("anota ")):
-        if any(k in lower for k in ["cliente", "comercio", "negocio", "ferreteria", "ferretería", "kiosco", "almacen", "almacén", "local", "titular", "telefono", "teléfono", "celular", "celu"]):
+    if not is_candidate and (lower.startswith("alta ") or lower.startswith("cargar ") or lower.startswith("cargá ") or lower.startswith("anotá ") or lower.startswith("anota ") or lower.startswith("corregí ") or lower.startswith("modificá ") or lower.startswith("actualizá ")):
+        if any(k in lower for k in ["cliente", "comercio", "negocio", "ferreteria", "ferretería", "kiosco", "almacen", "almacén", "despensa", "local", "titular", "telefono", "teléfono", "celular", "celu", "nombre"]):
             is_candidate = True
 
     if not is_candidate:
@@ -331,15 +333,15 @@ async def parse_client_onboarding_intent(text: str) -> dict:
     if gemini_key:
         prompt = (
             "El director general (Javier) le habla a su asistente comercial Sofía por WhatsApp para dar de alta, "
-            "cargar, anotar o registrar a un cliente minorista (comercio, ferretería, kiosco, almacén, distribuidora, etc.).\n"
+            "cargar, anotar, registrar, corregir o actualizar los datos de un cliente minorista (comercio, ferretería, kiosco, almacén, despensa, distribuidora, etc.).\n"
             f"Mensaje recibido:\n\"{clean}\"\n\n"
-            "Analizá si el mensaje contiene la intención de dar de alta, registrar, cargar o anotar los datos de un cliente o comercio.\n"
+            "Analizá si el mensaje contiene la intención de dar de alta, registrar, cargar, anotar, corregir o modificar los datos de un cliente o comercio.\n"
             "Extraé en formato JSON con estas claves exactas:\n"
-            "- is_onboarding: true (si Javier está dando de alta, registrando, anotando o guardando un cliente/comercio nuevo) o false\n"
-            "- business_name: nombre del comercio o razón social (ej: 'Ferretería Nogoyá', 'Kiosco Central') o null\n"
-            "- contact_name: nombre del dueño, titular o encargado (ej: 'Ricardo') o null\n"
-            "- phone: número de teléfono mencionado (ej: '3434556679') o null\n"
-            "- business_type: 'ferreteria', 'kiosco', 'almacen', 'distribuidora', 'hotel', 'restaurante' o 'comercio'\n"
+            "- is_onboarding: true (si Javier está dando de alta, registrando, anotando, corrigiendo o guardando un cliente/comercio) o false\n"
+            "- business_name: nombre del comercio o razón social (ej: 'Ferretería Nogoyá', 'Despensa El Sol') o null\n"
+            "- contact_name: nombre del dueño, titular o encargado (ej: 'Ricardo', 'Juan') o null\n"
+            "- phone: número de teléfono mencionado (ej: '3434482186') o null\n"
+            "- business_type: 'ferreteria', 'kiosco', 'almacen', 'despensa', 'distribuidora', 'hotel', 'restaurante' o 'comercio'\n"
             "- city: ciudad o dirección mencionada (ej: 'Paraná', 'calle Nogoyá 450') o null\n"
             "- notes: cualquier detalle adicional mencionado o null\n"
             "Respondé ÚNICAMENTE un JSON válido."
@@ -664,15 +666,25 @@ async def process_boss_message(
 
         # Check existing Prospect by phone
         existing_prospect = db.query(Prospect).filter(Prospect.phone == norm_phone).first()
+        is_update = bool(existing_prospect)
         if existing_prospect:
-            existing_prospect.name = b_name
-            existing_prospect.contact_name = c_name
-            existing_prospect.business_type = b_type
-            existing_prospect.city = city
+            if b_name and b_name != "Comercio Minorista":
+                existing_prospect.name = b_name
+            if c_name and c_name != "Titular":
+                existing_prospect.contact_name = c_name
+            if b_type and b_type != "comercio":
+                existing_prospect.business_type = b_type
+            if city:
+                existing_prospect.city = city
             existing_prospect.campaign = "client_onboarding"
             existing_prospect.status = "new"
             existing_prospect.notes = f"Actualizado desde WhatsApp (Modo Jefe) el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
             db.commit()
+            db.refresh(existing_prospect)
+            b_name = existing_prospect.name
+            c_name = existing_prospect.contact_name
+            b_type = (existing_prospect.business_type or "comercio").lower()
+            city = existing_prospect.city
         else:
             new_prospect = Prospect(
                 name=b_name,
@@ -693,9 +705,12 @@ async def process_boss_message(
         if any(k in b_type for k in ["ferret", "herramient"]):
             trade_title, catalog_count = catalog_service.set_rubro("ferreteria")
             catalog_info = f"🛠️ *Rubro activado:* Ferretería ({catalog_count} productos cargados con precios reales)\n"
-        elif any(k in b_type for k in ["kiosc", "despensa", "almacen", "almacén"]):
+        elif any(k in b_type for k in ["despensa", "almacen", "almacén", "alimento", "comestible"]):
+            trade_title, catalog_count = catalog_service.set_rubro("almacen")
+            catalog_info = f"🏪 *Rubro activado:* Despensa & Alimentos ({catalog_count} productos: harina, aceite, lácteos, etc.)\n"
+        elif any(k in b_type for k in ["kiosc"]):
             trade_title, catalog_count = catalog_service.set_rubro("kiosco")
-            catalog_info = f"🏪 *Rubro activado:* Kiosco ({catalog_count} artículos cargados)\n"
+            catalog_info = f"🍬 *Rubro activado:* Kiosco ({catalog_count} artículos: golosinas, snacks, bebidas)\n"
         elif any(k in b_type for k in ["distribuidora", "mayorista"]):
             trade_title, catalog_count = catalog_service.set_rubro("distribuidora")
             catalog_info = f"🏢 *Rubro activado:* Distribuidora mayorista\n"
@@ -709,8 +724,11 @@ async def process_boss_message(
             "city": city
         })
 
+        header_title = "✅ *¡CLIENTE ACTUALIZADO CON ÉXITO!* 🚀" if is_update else "✅ *¡CLIENTE DADO DE ALTA CON ÉXITO!* 🚀"
+        action_name = "client_updated" if is_update else "client_onboarded"
+
         reply = (
-            f"✅ *¡CLIENTE DADO DE ALTA CON ÉXITO!* 🚀\n\n"
+            f"{header_title}\n\n"
             f"🏪 *Comercio:* {b_name}\n"
             f"👤 *Titular:* {c_name}\n"
             f"📱 *WhatsApp:* +{norm_phone}\n"
@@ -724,7 +742,7 @@ async def process_boss_message(
             f"3️⃣ *Simular pedido a una distribuidora:*\n"
             f"   _«Mandale a Distribuidora Alem al [tel] el pedido de {b_name}...»_"
         )
-        return True, reply, "client_onboarded"
+        return True, reply, action_name
 
     # Pending onboarding phone follow-up
     if LAST_ONBOARDED_CLIENT.get("business_name") and not LAST_ONBOARDED_CLIENT.get("phone"):
@@ -1358,6 +1376,45 @@ async def process_boss_message(
             "¡Excelente Javier! Tu pedido de prueba ya fue ingresado a depósito para preparar el despacho.\n\n"
             "📦 *ALERTA ENVIADA A DEPÓSITO:* En instantes entra la orden de preparación a este chat."
         ), "boss_confirm_test"
+
+    # 2.8.1 Multi-supplier Price Comparison & Cheapest Supplier Inquiry
+    if any(k in lower_text for k in [
+        "mas barato", "más barato", "vende mas barato", "vende más barato",
+        "tiene mas barato", "tiene más barato", "quien tiene", "quién tiene",
+        "comparame", "comparar precios", "comparativa de precios", "comparar", "mejor precio"
+    ]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
+        comp_res = catalog_service.compare_supplier_prices(clean_text)
+        if comp_res:
+            canonical_q, matches = comp_res
+            if len(matches) > 1:
+                cheapest = matches[0]
+                expensive = matches[-1]
+                diff = expensive.price - cheapest.price
+                pct = round((diff / expensive.price) * 100) if expensive.price > 0 else 0
+
+                lines = [
+                    f"📊 *COMPARATIVA DE PRECIOS ENTRE PROVEEDORES* 💡\n",
+                    f"🔍 *Búsqueda:* _{canonical_q.title()}_\n"
+                ]
+                medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+                for i, prod in enumerate(matches[:5]):
+                    m = medals[i] if i < len(medals) else "•"
+                    sup_name = prod.supplier or "Distribuidor Principal"
+                    lines.append(f"{m} *{sup_name}:* {prod.formatted_price()} ({prod.name})")
+
+                lines.append("")
+                if diff > 0:
+                    lines.append(f"💰 *Ahorro:* Comprándole a *{cheapest.supplier or 'la primera opción'}* ahorrás *${diff:,.0f} por unidad* ({pct}% menos) frente a {expensive.supplier or 'otro proveedor'}.")
+                lines.append(f"💡 *¿Querés que te anote un pedido para {cheapest.supplier or 'el más barato'}?*")
+                return True, "\n".join(lines), "boss_price_comparison"
+            elif len(matches) == 1:
+                p = matches[0]
+                sup_str = f" de *{p.supplier}*" if p.supplier else ""
+                return True, (
+                    f"📊 *PRECIO DE PROVEEDOR* 💡\n\n"
+                    f"Para *{canonical_q.title()}* tengo registrado el artículo *{p.name}* a *{p.formatted_price()}*{sup_str}.\n\n"
+                    f"💡 *Aviso:* Tengo cargada la lista de 1 solo proveedor para este artículo. Cuando me pases las listas de tus otros distribuidores en Excel o PDF, te hago la comparativa automática de cuál te conviene en cada compra."
+                ), "boss_price_single_supplier"
 
     if any(k in lower_text for k in ["cuanto", "cuánto", "precio", "sale", "a cuanto", "a cuánto"]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
         p = catalog_service.find_product_exact_or_best(clean_text)

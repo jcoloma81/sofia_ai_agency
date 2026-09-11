@@ -885,13 +885,20 @@ class CatalogService:
         matches = []
         for p in self.products:
             name_lower = p.name.lower()
-            category_lower = p.category.lower()
+            category_lower = (p.category or "").lower()
             if all(re.search(rf'\b{re.escape(t)}', name_lower) or re.search(rf'\b{re.escape(t)}', category_lower) for t in tokens):
                 matches.append(p)
             elif any(re.search(rf'\b{re.escape(t)}', name_lower) for t in tokens):
                 matches.append(p)
 
-        matches.sort(key=lambda p: (not p.in_stock, not (query.lower() in p.name.lower())))
+        def score_match(p: ProductItem) -> tuple:
+            norm_name = normalize_product_text(p.name)
+            clean_q = normalize_product_text(query)
+            exact_sub = clean_q in norm_name
+            tokens_in_name = sum(1 for t in tokens if t in norm_name)
+            return (not p.in_stock, not exact_sub, -tokens_in_name)
+
+        matches.sort(key=score_match)
         return matches[:limit]
 
     def find_product_exact_or_best(self, name_or_code: str) -> Optional[ProductItem]:
@@ -949,8 +956,48 @@ class CatalogService:
                 blocks.append(f"• {p.name} ({p.presentation}): *{p.formatted_price()}*{status}")
             blocks.append("")
 
-        blocks.append("💡 *Para hacer un pedido, escribí o mandá un audio con los productos y cantidades que necesitás.*")
-        return "\n".join(blocks)
+    def compare_supplier_prices(self, query: str) -> Optional[Tuple[str, List[ProductItem]]]:
+        """
+        Finds matching products across the catalog / suppliers,
+        normalizing text (e.g. foco == lámpara == bombilla, led, watts),
+        and returns the canonical title and matched products sorted by price ascending.
+        """
+        if not self.products:
+            return None
+
+        clean_q = normalize_product_text(query)
+        # Remove inquiry filler words
+        clean_q = re.sub(r'\b(?:sofi|sofia|hola|quien|quién|cual|cuál|que|qué|comparame|comparar|precios?|de|el|la|los|las|mas|más|barato|baratos|barata|baratas|vende|tiene|cuanto|cuánto|sale|me|por|favor)\b', ' ', clean_q)
+        clean_q = re.sub(r'\s+', ' ', clean_q).strip()
+        if not clean_q:
+            clean_q = query.strip()
+        tokens = set(clean_q.split())
+        if any(w in tokens for w in ["foco", "focos", "lampara", "lamparas", "bombilla", "bombillas", "lamparita", "lamparitas"]):
+            tokens.update(["foco", "lampara", "led"])
+        if any(w in tokens for w in ["tornillo", "tornillos", "tirafondo"]):
+            tokens.update(["tornillo", "tornillos"])
+
+        matches: List[ProductItem] = []
+        for p in self.products:
+            norm_p = normalize_product_text(p.name)
+            p_tokens = set(norm_p.split())
+            if any(w in p_tokens for w in ["foco", "focos", "lampara", "lamparas", "bombilla", "bombillas", "lamparita"]):
+                p_tokens.update(["foco", "lampara", "led"])
+
+            intersection = tokens & p_tokens
+            if len(intersection) >= 2 or (len(tokens) == 1 and len(intersection) >= 1) or SequenceMatcher(None, clean_q, norm_p).ratio() >= 0.5:
+                matches.append(p)
+
+        if not matches:
+            best = self.find_product_exact_or_best(query)
+            if best:
+                matches = [best]
+
+        if not matches:
+            return None
+
+        matches.sort(key=lambda x: x.price)
+        return clean_q, matches
 
     def set_rubro(self, rubro: str) -> Tuple[str, int]:
         """
@@ -966,36 +1013,69 @@ class CatalogService:
         if "ferret" in clean_r or "herramient" in clean_r:
             trade_title = "Ferretería & Bazar Industrial"
             ferreteria_catalog = [
-                ("Tornillos autoperforantes 1 pulgada", 8500.0, "Caja x 1000", "Tornillería"),
-                ("Tornillos tirafondo 1/4 x 2", 7200.0, "Caja x 100", "Tornillería"),
-                ("Tarugos con tope N°8", 3200.0, "Bolsa x 100", "Fijación"),
-                ("Disco de corte amoladora 115mm x 1mm", 1400.0, "Unidad", "Abrasivos"),
-                ("Disco de desbaste metal 115mm", 2800.0, "Unidad", "Abrasivos"),
-                ("Disco diamantado continuo 115mm", 6500.0, "Unidad", "Abrasivos"),
-                ("Amoladora angular 115mm 850W", 68000.0, "Unidad", "Herramientas Eléctricas"),
-                ("Taladro percutor 13mm 650W", 74000.0, "Unidad", "Herramientas Eléctricas"),
-                ("Destornillador Phillips 6x100mm", 4800.0, "Unidad", "Herramientas Manuales"),
-                ("Destornillador Plano 6x100mm", 4500.0, "Unidad", "Herramientas Manuales"),
-                ("Juego de destornilladores x 6 piezas", 18500.0, "Set", "Herramientas Manuales"),
-                ("Martillo galponero mango fibra 500g", 14500.0, "Unidad", "Herramientas Manuales"),
-                ("Pinza universal 8 pulgadas aislada", 12500.0, "Unidad", "Herramientas Manuales"),
-                ("Alicate corte diagonal 6 pulgadas", 11000.0, "Unidad", "Herramientas Manuales"),
-                ("Llave francesa ajustable 10 pulgadas", 16500.0, "Unidad", "Herramientas Manuales"),
-                ("Cinta aisladora negra 20 metros", 1500.0, "Rollo", "Electricidad"),
-                ("Cinta de teflón 3/4 x 20m", 950.0, "Rollo", "Plomería"),
-                ("Thinner estándar 1 litro", 4200.0, "Botella", "Pinturas & Química"),
-                ("Aguarrás mineral 1 litro", 3800.0, "Botella", "Pinturas & Química"),
-                ("Sellador de silicona neutra transparente 280ml", 6800.0, "Tubo", "Adhesivos & Selladores"),
-                ("Pegamento de contacto Poxiran 250cc", 5400.0, "Lata", "Adhesivos & Selladores"),
-                ("Candado de bronce 40mm con 3 llaves", 8900.0, "Unidad", "Cerrajería"),
-                ("Pintura látex interior blanco 4L", 22000.0, "Balde", "Pinturas & Química"),
-                ("Lija al agua grano 180", 650.0, "Pliego", "Abrasivos")
+                ("Tornillos autoperforantes 1 pulgada", 8500.0, "Caja x 1000", "Tornillería", "Bulonera del Litoral"),
+                ("Tornillos tirafondo 1/4 x 2", 7200.0, "Caja x 100", "Tornillería", "Bulonera del Litoral"),
+                ("Tarugos con tope N°8", 3200.0, "Bolsa x 100", "Fijación", "Bulonera del Litoral"),
+                ("Disco de corte amoladora 115mm x 1mm", 1400.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá"),
+                ("Disco de desbaste metal 115mm", 2800.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá"),
+                ("Disco diamantado continuo 115mm", 6500.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá"),
+                ("Amoladora angular 115mm 850W", 68000.0, "Unidad", "Herramientas Eléctricas", "Mayorista Central"),
+                ("Taladro percutor 13mm 650W", 74000.0, "Unidad", "Herramientas Eléctricas", "Mayorista Central"),
+                ("Destornillador Phillips 6x100mm", 4800.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
+                ("Destornillador Plano 6x100mm", 4500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
+                ("Juego de destornilladores x 6 piezas", 18500.0, "Set", "Herramientas Manuales", "Distribuidora Nogoyá"),
+                ("Martillo galponero mango fibra 500g", 14500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
+                ("Pinza universal 8 pulgadas aislada", 12500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
+                ("Alicate corte diagonal 6 pulgadas", 11000.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
+                ("Llave francesa ajustable 10 pulgadas", 16500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
+                ("Cinta aisladora negra 20 metros", 1500.0, "Rollo", "Electricidad", "Eléctrica Paraná"),
+                ("Lámpara LED 9W Luz Cálida E27", 950.0, "Unidad", "Electricidad", "Eléctrica Paraná"),
+                ("Foco LED 9W Luz Fría E27", 1150.0, "Unidad", "Electricidad", "Distribuidora Nogoyá"),
+                ("Lámpara LED 12W Luz Fría E27", 1450.0, "Unidad", "Electricidad", "Mayorista Central"),
+                ("Cinta de teflón 3/4 x 20m", 950.0, "Rollo", "Plomería", "Sanitarios Paraná"),
+                ("Thinner estándar 1 litro", 4200.0, "Botella", "Pinturas & Química", "Pinturas Litoral"),
+                ("Aguarrás mineral 1 litro", 3800.0, "Botella", "Pinturas & Química", "Pinturas Litoral"),
+                ("Sellador de silicona neutra transparente 280ml", 6800.0, "Tubo", "Adhesivos & Selladores", "Pinturas Litoral"),
+                ("Pegamento de contacto Poxiran 250cc", 5400.0, "Lata", "Adhesivos & Selladores", "Pinturas Litoral"),
+                ("Candado de bronce 40mm con 3 llaves", 8900.0, "Unidad", "Cerrajería", "Distribuidora Nogoyá"),
+                ("Pintura látex interior blanco 4L", 22000.0, "Balde", "Pinturas & Química", "Pinturas Litoral"),
+                ("Lija al agua grano 180", 650.0, "Pliego", "Abrasivos", "Pinturas Litoral")
             ]
-            for name, price, pres, cat in ferreteria_catalog:
-                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True))
+            for row in ferreteria_catalog:
+                name, price, pres, cat = row[0], row[1], row[2], row[3]
+                sup = row[4] if len(row) > 4 else None
+                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True, supplier=sup))
 
-        elif "kiosc" in clean_r or "almacen" in clean_r or "almacén" in clean_r:
-            trade_title = "Kiosco & Almacén 'Lo de Juan'"
+        elif "despensa" in clean_r or "almacen" in clean_r or "almacén" in clean_r or "alimento" in clean_r:
+            trade_title = "Despensa & Almacén de Alimentos"
+            almacen_catalog = [
+                ("Harina 000 Cañuelas 1kg", 1250.0, "Fardo x 10", "Almacén", "Molinos Cañuelas"),
+                ("Harina Pureza 000 1kg", 1250.0, "Fardo x 10", "Almacén", "Distribuidora San Martín"),
+                ("Aceite Cañuelas 1.5L", 2400.0, "Caja x 6", "Almacén", "Molinos Cañuelas"),
+                ("Aceite de Girasol Natura 900ml", 1850.0, "Caja x 12", "Almacén", "Distribuidora San Martín"),
+                ("Puré de Tomate Noel 520g", 850.0, "Caja x 12", "Almacén", "Arcor Distribución"),
+                ("Mayonesa Hellmann's clásica 475g", 1650.0, "Caja x 12", "Almacén", "Unilever Distribución"),
+                ("Fideos Guiseros Matarazzo 500g", 1200.0, "Caja x 15", "Almacén", "Molinos Río"),
+                ("Arroz Lucchetti Largo Fino 1kg", 1600.0, "Fardo x 10", "Almacén", "Molinos Río"),
+                ("Azúcar Ledesma Clásica 1kg", 1100.0, "Fardo x 10", "Almacén", "Distribuidora San Martín"),
+                ("Leche Entera La Serenísima 1L", 1300.0, "Caja x 12", "Lácteos", "Mastellone Hnos"),
+                ("Queso Cremoso La Paulina", 7000.0, "Horma x 4kg", "Lácteos", "Distribuidora Lácteos"),
+                ("Yerba Playadito 1kg", 3800.0, "Fardo x 10", "Almacén", "Cooperativa Liebig"),
+                ("Galletitas Criollitas", 650.0, "Caja x 20", "Galletitas", "Arcor Distribución"),
+                ("Gaseosa Coca Cola 2.25L", 3200.0, "Pack x 6", "Bebidas", "Femsa"),
+                ("Cerveza Quilmes Clásica 1L", 2000.0, "Cajón x 12", "Bebidas", "Cervecería Quilmes"),
+                ("Agua Mineral Villavicencio 2L", 1400.0, "Pack x 6", "Bebidas", "Aguas Danone"),
+                ("Papas fritas Lays clásicas 85g", 1850.0, "Tira x 10", "Snacks", "PepsiCo Snacks"),
+                ("Alfajor Guaymallén chocolate", 450.0, "Caja x 40", "Golosinas", "Distribuidora San Martín"),
+                ("Alfajor Jorgito blanco", 700.0, "Caja x 24", "Golosinas", "Distribuidora San Martín")
+            ]
+            for row in almacen_catalog:
+                name, price, pres, cat = row[0], row[1], row[2], row[3]
+                sup = row[4] if len(row) > 4 else None
+                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True, supplier=sup))
+
+        elif "kiosc" in clean_r:
+            trade_title = "Kiosco 'Lo de Juan'"
             kiosco_catalog = [
                 ("Alfajor Guaymallén chocolate", 18000.0, "Caja x 40", "Golosinas"),
                 ("Alfajor Jorgito blanco", 16800.0, "Caja x 24", "Golosinas"),
