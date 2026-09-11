@@ -390,7 +390,7 @@ def rule_based_consultative_response(
 
     # Bridge all inquiries soberly to meeting setting without fake cheerfulness
     pregunta_cierre = f"¿Qué día y horario te quedaría más cómodo, {safe_name}?" if safe_name else "¿Con quién tengo el gusto y qué día y horario te quedaría más cómodo?"
-    if campaign == "ai_agency":
+    if campaign in ["ai_agency", "client_onboarding"]:
         return (
             f"Para mostrarte en detalle el funcionamiento según el rubro de tu empresa, ver una demo en vivo y los costos adaptados, nuestro asesor se pone en contacto con ustedes en una charla breve de 10 minutos (presencial si están en la zona o por videollamada corta).\n\n"
             f"{pregunta_cierre}",
@@ -507,13 +507,13 @@ async def generate_ai_response(
                 f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n\n"
             )
         else:
-            selected_prompt = SYSTEM_PROMPT_AGENCY if campaign == "ai_agency" else SYSTEM_PROMPT_AIR_CONTROL
-            entity_label = "Empresa / Distribuidora" if campaign == "ai_agency" else "Complejo"
+            selected_prompt = SYSTEM_PROMPT_AGENCY if campaign in ["ai_agency", "client_onboarding"] else SYSTEM_PROMPT_AIR_CONTROL
+            entity_label = "Empresa / Comercio" if campaign in ["ai_agency", "client_onboarding"] else "Complejo"
             
             from app.services.directives import directives_service
             from app.services.catalog import catalog_service
-            directives_ctx = directives_service.get_prompt_context() if campaign == "ai_agency" else ""
-            catalog_ctx = catalog_service.get_summary_prompt() if (campaign == "ai_agency" and catalog_service.products) else ""
+            directives_ctx = directives_service.get_prompt_context() if campaign in ["ai_agency", "client_onboarding"] else ""
+            catalog_ctx = catalog_service.get_summary_prompt() if (campaign in ["ai_agency", "client_onboarding"] and catalog_service.products) else ""
 
             system_context = (
                 f"{selected_prompt}\n\n"
