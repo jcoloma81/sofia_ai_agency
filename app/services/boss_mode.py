@@ -1,8 +1,9 @@
+import os
 import re
 import json
 import logging
 import httpx
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,82 @@ logger = logging.getLogger(__name__)
 
 LAST_BOSS_ORDERS = {}
 LAST_ONBOARDED_CLIENT = {}
+
+SUPPLIER_DRAFTS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "supplier_draft_orders.json")
+
+def load_supplier_drafts() -> dict:
+    if os.path.exists(SUPPLIER_DRAFTS_FILE):
+        try:
+            with open(SUPPLIER_DRAFTS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error reading supplier drafts: {e}")
+    return {}
+
+def save_supplier_drafts(drafts: dict):
+    try:
+        os.makedirs(os.path.dirname(SUPPLIER_DRAFTS_FILE), exist_ok=True)
+        with open(SUPPLIER_DRAFTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(drafts, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"Error saving supplier drafts: {e}")
+
+def add_items_to_supplier_draft(supplier_name: str, items: List[dict]) -> dict:
+    drafts = load_supplier_drafts()
+    sup_key = re.sub(r'[^\w\s]', '', supplier_name).strip().lower().replace(' ', '_')
+    if sup_key not in drafts:
+        drafts[sup_key] = {
+            "supplier_name": supplier_name,
+            "items": [],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+    current_items = drafts[sup_key]["items"]
+    for it in items:
+        p_name = str(it.get("product_name") or "").strip()
+        p_qty = int(it.get("quantity") or 1)
+        p_price = float(it.get("unit_price") or 0.0)
+        found = False
+        for ex in current_items:
+            if ex["product_name"].lower() == p_name.lower():
+                ex["quantity"] += p_qty
+                if p_price > 0:
+                    ex["unit_price"] = p_price
+                found = True
+                break
+        if not found:
+            current_items.append({
+                "product_name": p_name,
+                "quantity": p_qty,
+                "unit_price": p_price
+            })
+    drafts[sup_key]["updated_at"] = datetime.now(timezone.utc).isoformat()
+    save_supplier_drafts(drafts)
+    return drafts[sup_key]
+
+def get_supplier_draft(supplier_name: str) -> Optional[dict]:
+    drafts = load_supplier_drafts()
+    sup_key = re.sub(r'[^\w\s]', '', supplier_name).strip().lower().replace(' ', '_')
+    if sup_key in drafts:
+        return drafts[sup_key]
+    for k, v in drafts.items():
+        s_title = v.get("supplier_name", "").lower()
+        if supplier_name.lower() in s_title or s_title in supplier_name.lower():
+            return v
+    return None
+
+def clear_supplier_draft(supplier_name: str):
+    drafts = load_supplier_drafts()
+    sup_key = re.sub(r'[^\w\s]', '', supplier_name).strip().lower().replace(' ', '_')
+    if sup_key in drafts:
+        del drafts[sup_key]
+        save_supplier_drafts(drafts)
+        return
+    for k, v in list(drafts.items()):
+        s_title = v.get("supplier_name", "").lower()
+        if supplier_name.lower() in s_title or s_title in supplier_name.lower():
+            del drafts[k]
+            save_supplier_drafts(drafts)
+            return
 
 def normalize_argentine_phone(raw_phone: str) -> str:
     """
@@ -334,6 +411,178 @@ async def parse_client_onboarding_intent(text: str) -> dict:
 
     return {"is_onboarding": False}
 
+async def parse_supplier_registration_intent(text: str) -> dict:
+    """
+    Detects if the merchant wants to register a new supplier/distributor.
+    e.g. 'Sofi, agendá al proveedor Bulonera del Litoral al 3434536447'
+         'anotá al proveedor Pinturas Litoral al 3424112233'
+         'guardá el proveedor Sanitarios del Centro al 343...'
+    """
+    clean = text.strip()
+    lower = clean.lower()
+    triggers = [
+        "agendá al proveedor", "agenda al proveedor", "agendar proveedor",
+        "anotá al proveedor", "anota al proveedor", "anotar proveedor",
+        "guardá al proveedor", "guarda al proveedor", "guardar proveedor",
+        "nuevo proveedor", "proveedor nuevo", "el proveedor es", "el proveedor de"
+    ]
+    is_candidate = any(trig in lower for trig in triggers) or ("proveedor" in lower and any(k in lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el"]))
+    if not is_candidate:
+        return {"is_supplier_registration": False}
+
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El dueño de un comercio minorista le habla a su asistente comercial Sofía por WhatsApp para registrar o agendar a un proveedor o distribuidora.\n"
+            f"Mensaje: \"{clean}\"\n\n"
+            "Analizá y extraé en formato JSON con estas claves:\n"
+            "- is_supplier_registration: true o false\n"
+            "- supplier_name: nombre comercial del proveedor o distribuidora (ej: 'Bulonera del Litoral', 'Pinturas Paraná')\n"
+            "- phone: número de teléfono extraído (solo dígitos, o null)\n"
+            "- category: rubro de lo que vende si se menciona (ej: 'tornillos', 'pinturas', 'herramientas', o null)\n"
+            "Respondé ÚNICAMENTE un JSON válido."
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            data = json.loads(parts[0].get("text", "{}"))
+                            if data.get("is_supplier_registration"):
+                                return data
+        except Exception as e:
+            logger.warning(f"Gemini supplier registration parse error: {e}")
+
+    # Fallback deterministic
+    phone_m = re.search(r'(?:al|el|numero|número|telefono|teléfono)?\s*([0-9\s\-+]{8,16})', clean)
+    phone = "".join(filter(str.isdigit, phone_m.group(1))) if phone_m else None
+    name_m = re.search(r'(?:proveedor\s+|distribuidora\s+)([A-Za-z0-9\s\.\'\"]+?)(?:\s+al|\s+con|\s+el|\s*$)', clean, re.IGNORECASE)
+    name = name_m.group(1).strip() if name_m else "Proveedor"
+    return {
+        "is_supplier_registration": True,
+        "supplier_name": name,
+        "phone": phone,
+        "category": None
+    }
+
+
+async def parse_supplier_basket_add_intent(text: str) -> dict:
+    """
+    Detects if the merchant wants to add items to a supplier's draft basket.
+    e.g. 'Sofi, anotá para la Bulonera 5 cajas de tornillos T1 y 2 alicates'
+         'agregá al pedido de Pinturas Litoral 3 latas de látex'
+         'para Sanitarios Paraná anotame 10 codos de 110'
+    """
+    clean = text.strip()
+    lower = clean.lower()
+    is_cand = (re.search(r'\bpara\s+[A-Za-z0-9]', lower) or any(k in lower for k in ["al pedido de", "en el pedido de", "a la distribuidora", "al proveedor"])) and \
+              any(k in lower for k in ["anotá", "anota", "anotame", "agregá", "agrega", "sumá", "suma", "guardá", "guarda", "poné", "pone", "pedí", "pedi"])
+    if not is_cand:
+        return {"is_basket_add": False}
+
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El dueño de un comercio minorista le habla a su asistente comercial Sofía por WhatsApp para agregar productos a la canasta de compras de un proveedor o distribuidora específica.\n"
+            f"Mensaje: \"{clean}\"\n\n"
+            "Analizá y extraé en formato JSON con estas claves:\n"
+            "- is_basket_add: true o false\n"
+            "- supplier_name: nombre del proveedor o distribuidora (ej: 'Bulonera del Litoral', 'Pinturas Litoral')\n"
+            "- items: lista de objetos con 'product_name' (str) y 'quantity' (int)\n"
+            "Respondé ÚNICAMENTE un JSON válido."
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            data = json.loads(parts[0].get("text", "{}"))
+                            if data.get("is_basket_add"):
+                                return data
+        except Exception as e:
+            logger.warning(f"Gemini basket add parse error: {e}")
+
+    # Fallback deterministic
+    sup_m = re.search(r'(?:para|de|al pedido de)\s+(?:la|el)?\s*([A-Za-z0-9\s]+?)(?:\s+anot|\s+agreg|\s+sum|\s+ped|\s*:|\s+\d+|$)', clean, re.IGNORECASE)
+    sup_name = sup_m.group(1).strip() if sup_m else "Proveedor"
+    order_part = re.sub(r'.*?(?:anotá|anota|anotame|agregá|agrega|sumá|suma|pedí|pedi|guardá|guarda|poné|pone)\s+', '', clean, flags=re.IGNORECASE)
+    items = []
+    chunks = re.split(r'[,;\n]|\s+y\s+', order_part)
+    for ch in chunks:
+        ch_clean = ch.strip()
+        if not ch_clean:
+            continue
+        num_m = re.search(r'\b(\d+)\b', ch_clean)
+        if num_m:
+            qty = int(num_m.group(1))
+            p_name = re.sub(r'\b\d+\b', '', ch_clean).strip()
+            p_name = re.sub(r'^(?:de|con|cajas?|latas?|bolsas?|fardos?|packs?|unidades?)\s+(?:de\s+)?', '', p_name, flags=re.IGNORECASE).strip()
+            if p_name:
+                items.append({"product_name": p_name.capitalize(), "quantity": qty})
+
+    if not items:
+        for n, p in re.findall(r'(\d+)\s+([A-Za-z0-9\s]+)', order_part):
+            items.append({"product_name": p.strip().capitalize(), "quantity": int(n)})
+
+    return {
+        "is_basket_add": bool(items),
+        "supplier_name": sup_name,
+        "items": items
+    }
+
+
+def parse_supplier_basket_inquiry_intent(text: str) -> dict:
+    """
+    Detects if user asks what's pending for a supplier or for all suppliers,
+    or asks for the list of registered suppliers.
+    e.g. 'qué tengo para pedirle a la Bulonera?'
+         'pedidos a proveedores'
+         'qué pedidos tengo pendientes?'
+         'canastas abiertas'
+         'proveedores'
+    """
+    lower = text.lower().strip()
+    clean_no_punct = re.sub(r'[^\w\s]', '', lower).strip()
+    clean_no_prefix = re.sub(r'^(?:sofi|sofia|hola|buenas)[\s,:]*', '', clean_no_punct).strip()
+    clean_no_accents = clean_no_prefix.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
+
+    if any(k in clean_no_accents for k in [
+        "mis proveedores", "lista de proveedores", "ver proveedores",
+        "cuales son mis proveedores", "quienes son mis proveedores", "agenda de proveedores"
+    ]) or clean_no_accents in ["proveedores", "proveedor"]:
+        return {"is_inquiry": True, "type": "list_suppliers"}
+
+    if any(clean_no_prefix == q for q in [
+        "pedidos a proveedores", "pedidos pendientes a proveedores", "canastas",
+        "canastas abiertas", "que tengo para pedir", "pedidos por proveedor", "canastas de proveedores"
+    ]) or ("pedidos" in clean_no_prefix and "proveedor" in clean_no_prefix):
+        return {"is_inquiry": True, "type": "all_baskets"}
+
+    m = re.search(r'(?:que|qué)\s+tengo\s+para\s+pedir(?:le)?\s+a\s+(?:la|el)?\s*([A-Za-z0-9\s]+?)(?:\?|$)', lower)
+    if m:
+        return {"is_inquiry": True, "type": "single_basket", "supplier_name": m.group(1).strip()}
+
+    m2 = re.search(r'(?:pedido|canasta|borrador)\s+(?:de|para)\s+(?:la|el)?\s*([A-Za-z0-9\s]+?)(?:\?|$)', lower)
+    if m2 and not any(k in lower for k in ["mandale", "despachale", "enviar", "pasar", "hacele"]):
+        return {"is_inquiry": True, "type": "single_basket", "supplier_name": m2.group(1).strip()}
+
+    return {"is_inquiry": False}
+
+
 async def process_boss_message(
     db: Session,
     sender_phone: str,
@@ -362,7 +611,9 @@ async def process_boss_message(
                                  any(k in lower_text for k in ["proveedor", "aumento", "costo", "fabrica", "suba", "actualizar", "actualiza"])
 
             if is_supplier_update and len(catalog_service.products) > 0:
-                result = catalog_service.update_from_supplier_excel(doc_bytes, filename=doc_name)
+                sup_match = re.search(r'(?:de|para|del proveedor|de la distribuidora)\s+([A-Za-z0-9\s]+?)(?:\s+con|\s+para|\s*$)', clean_text, re.IGNORECASE)
+                sup_name_hint = sup_match.group(1).strip() if sup_match else None
+                result = catalog_service.update_from_supplier_excel(doc_bytes, filename=doc_name, supplier_name=sup_name_hint)
                 return True, result.get("whatsapp_message", "✅ Lista de proveedor procesada."), "supplier_update"
             else:
                 count = catalog_service.load_from_excel_bytes(doc_bytes, filename=doc_name)
@@ -555,6 +806,146 @@ async def process_boss_message(
             f"3. Despachar a proveedor: *\"Sofi, mandale el pedido a Distribuidora Ricardo al [Teléfono] con...\"*"
         ), "rubro_switched"
 
+    # 1.6 Supplier Registration on-the-fly via WhatsApp Audio or Text
+    sup_reg_data = await parse_supplier_registration_intent(clean_text)
+    if sup_reg_data.get("is_supplier_registration"):
+        s_name = sup_reg_data.get("supplier_name") or "Proveedor"
+        raw_p = sup_reg_data.get("phone")
+        norm_p = normalize_argentine_phone(raw_p) if raw_p else None
+
+        if norm_p:
+            existing_sup = db.query(Prospect).filter(Prospect.phone == norm_p).first()
+            if existing_sup:
+                existing_sup.name = s_name
+                existing_sup.contact_name = s_name
+                existing_sup.business_type = "proveedor"
+                existing_sup.campaign = "supplier"
+                existing_sup.notes = f"Proveedor actualizado desde WhatsApp el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+                db.commit()
+            else:
+                new_sup = Prospect(
+                    name=s_name,
+                    contact_name=s_name,
+                    phone=norm_p,
+                    business_type="proveedor",
+                    campaign="supplier",
+                    notes=f"Proveedor agendado desde WhatsApp el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+                )
+                db.add(new_sup)
+                db.commit()
+
+            return True, (
+                f"✅ *¡PROVEEDOR REGISTRADO CON ÉXITO!* 📦\n\n"
+                f"🏢 *Proveedor:* {s_name}\n"
+                f"📱 *WhatsApp:* +{norm_p}\n\n"
+                f"💡 *A partir de ahora podés:*\n"
+                f"• Anotarle ítems: _«Sofi, anotá para {s_name} 5 cajas de tornillos...»_\n"
+                f"• Consultar su canasta: _«¿Qué tengo para pedirle a {s_name}?»_\n"
+                f"• Despacharle su pedido: _«Mandale el pedido a {s_name}»_\n"
+                f"• Enviarle aumentos: me pasás su Excel y te actualizo los precios."
+            ), "supplier_registered"
+        else:
+            return True, (
+                f"📋 *¡Registro de Proveedor en proceso!* 📦\n\n"
+                f"Tengo el nombre *{s_name}*, pero me falta su número de WhatsApp.\n\n"
+                f"💡 Pasámelo diciendo por ejemplo: `el teléfono de {s_name} es 343 4556679`"
+            ), "supplier_needs_phone"
+
+    # 1.7 Supplier Baskets and Supplier Listing Inquiries
+    inquiry_data = parse_supplier_basket_inquiry_intent(clean_text)
+    if inquiry_data.get("is_inquiry"):
+        inq_type = inquiry_data.get("type")
+        if inq_type == "list_suppliers":
+            sups = db.query(Prospect).filter(
+                (Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier")
+            ).all()
+            if not sups:
+                return True, (
+                    "📋 *No tenés proveedores agendados todavía.*\n\n"
+                    "💡 Para agendar a uno decime por audio o texto:\n"
+                    "_«Sofi, agendá al proveedor Bulonera del Litoral al 3434536447»_"
+                ), "no_suppliers"
+
+            lines = [f"📋 *TUS PROVEEDORES AGENDADOS ({len(sups)}):*\n"]
+            for idx, s in enumerate(sups, 1):
+                lines.append(f"{idx}. *{s.name}* (📱 +{s.phone})")
+            lines.append("\n💡 Podés dictarme pedidos diciendo: _«Anotá para [Proveedor] [artículos]»_")
+            return True, "\n".join(lines), "suppliers_list"
+
+        elif inq_type == "all_baskets":
+            drafts = load_supplier_drafts()
+            active_baskets = {k: v for k, v in drafts.items() if v.get("items")}
+            if not active_baskets:
+                return True, (
+                    "🧺 *No tenés pedidos pendientes en ninguna canasta de proveedores.*\n\n"
+                    "💡 Para anotar mercadería que te falte decime:\n"
+                    "_«Sofi, anotá para la Bulonera 5 cajas de tornillos T1»_"
+                ), "no_active_baskets"
+
+            lines = [f"🧺 *CANASTAS DE REPOSICIÓN ABIERTAS ({len(active_baskets)}):*\n"]
+            for k, b in active_baskets.items():
+                s_name = b.get("supplier_name", "Proveedor")
+                items_cnt = sum(it.get("quantity", 1) for it in b.get("items", []))
+                lines.append(f"🏢 *{s_name}* ({len(b.get('items', []))} productos, {items_cnt} bultos/unidades):")
+                for it in b.get("items", [])[:4]:
+                    lines.append(f"  • {it.get('quantity')}x {it.get('product_name')}")
+                if len(b.get("items", [])) > 4:
+                    lines.append(f"  • ... y {len(b.get('items', [])) - 4} más.")
+                lines.append(f"  👉 Despachar: _«Mandale el pedido a {s_name}»_\n")
+            return True, "\n".join(lines), "all_baskets_summary"
+
+        elif inq_type == "single_basket":
+            target_sup = inquiry_data.get("supplier_name", "")
+            basket = get_supplier_draft(target_sup)
+            if not basket or not basket.get("items"):
+                return True, (
+                    f"🧺 *La canasta de {target_sup} está vacía.*\n\n"
+                    f"💡 Para anotarle mercadería decime:\n"
+                    f"_«Sofi, anotá para {target_sup} 10 cajas de tornillos...»_"
+                ), "single_basket_empty"
+
+            items = basket.get("items", [])
+            lines = [f"🧺 *CANASTA PENDIENTE PARA {basket.get('supplier_name', target_sup).upper()}* ({len(items)} productos):\n"]
+            for idx, it in enumerate(items, 1):
+                lines.append(f"{idx}. *{it.get('quantity')}x {it.get('product_name')}*")
+            lines.append(f"\n🚀 *Para despachar este pedido decime:*")
+            lines.append(f"_«Sofi, mandale el pedido a {basket.get('supplier_name', target_sup)}»_")
+            return True, "\n".join(lines), "single_basket_detail"
+
+    # 1.8 Add items to Supplier Basket
+    basket_add_data = await parse_supplier_basket_add_intent(clean_text)
+    if basket_add_data.get("is_basket_add") and basket_add_data.get("items"):
+        sup_name = basket_add_data.get("supplier_name") or "Proveedor"
+        raw_items = basket_add_data.get("items", [])
+
+        # Enrich items with prices from catalog if available
+        enriched_items = []
+        for it in raw_items:
+            p_name = it.get("product_name", "").strip()
+            p_qty = int(it.get("quantity", 1))
+            prod = catalog_service.find_product_exact_or_best(p_name)
+            price = prod.price if prod else 0.0
+            enriched_items.append({
+                "product_name": prod.name if prod else p_name.capitalize(),
+                "quantity": p_qty,
+                "unit_price": price
+            })
+
+        updated_basket = add_items_to_supplier_draft(sup_name, enriched_items)
+        total_items = len(updated_basket.get("items", []))
+        total_units = sum(it.get("quantity", 1) for it in updated_basket.get("items", []))
+
+        lines = [
+            f"🧺 *¡Anotado en la canasta de {sup_name}!* 📝\n",
+            f"Se agregaron los siguientes productos:"
+        ]
+        for it in enriched_items:
+            lines.append(f"• {it['quantity']}x {it['product_name']}")
+        lines.append(f"\n📦 *Total acumulado en canasta:* {total_items} productos ({total_units} unidades/bultos).")
+        lines.append(f"💡 Cuando quieras despacharle decime: _«Mandale el pedido a {sup_name}»_")
+
+        return True, "\n".join(lines), "basket_item_added"
+
     # 2. Commercial Directives set by the boss (e.g. horarios, montos mínimos, zonas, requisitos)
     directive_keywords = [
         "minimo", "mínimo", "directiva", "directivas", "regla", "reglas",
@@ -737,19 +1128,27 @@ async def process_boss_message(
             ), "dispatch_needs_phone"
 
         if target_phone:
+            # Check if there is an open supplier basket for dist_name
+            sup_basket = get_supplier_draft(dist_name)
+            has_basket = bool(sup_basket and sup_basket.get("items"))
+
             ai_items = ai_dispatch.get("items", [])
+            if not ai_items and has_basket:
+                ai_items = sup_basket["items"]
+
             fallback_items = []
             if ai_items:
                 for it in ai_items:
                     p_name = str(it.get("product_name") or "").strip()
                     p_qty = int(it.get("quantity") or 1)
+                    p_price = float(it.get("unit_price") or 0.0)
                     if p_name:
                         prod = catalog_service.find_product_exact_or_best(p_name)
                         if prod:
                             fallback_items.append(OrderItem(product=prod, quantity=p_qty, unit_price=prod.price, subtotal=prod.price * p_qty))
                         else:
-                            dyn_prod = ProductItem(name=p_name.capitalize(), price=0.0, presentation="Bulto/Unidad")
-                            fallback_items.append(OrderItem(product=dyn_prod, quantity=p_qty, unit_price=0.0, subtotal=0.0))
+                            dyn_prod = ProductItem(name=p_name.capitalize(), price=p_price, presentation="Bulto/Unidad")
+                            fallback_items.append(OrderItem(product=dyn_prod, quantity=p_qty, unit_price=p_price, subtotal=p_price * p_qty))
 
             if fallback_items:
                 draft = OrderDraft(items=fallback_items, total=sum(it.subtotal for it in fallback_items))
@@ -850,12 +1249,18 @@ async def process_boss_message(
                 caption=f"📄 Pedido Formal {client_name} -> {dist_name}"
             ))
 
+            if has_basket:
+                clear_supplier_draft(dist_name)
+
+            basket_note = f"\n\n✨ *La canasta de {dist_name} quedó vaciada y lista para la próxima reposición.*" if has_basket else ""
+
             return True, (
                 f"✅ *¡Pedido despachado con éxito!*\n\n"
                 f"Acabo de enviarle a *{dist_name}* (+{target_phone}) el detalle formal y el remito en PDF.\n\n"
                 f"📋 *Items enviados:*\n{item_lines}\n"
                 f"💰 *Total:* {total_display}\n\n"
                 f"📍 Mensaje y remito PDF enviados correctamente."
+                f"{basket_note}"
             ), "kiosk_order_dispatched"
 
 

@@ -9,6 +9,7 @@ import httpx
 from difflib import SequenceMatcher
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,8 @@ class ProductItem:
     category: str = "General"
     in_stock: bool = True
     code: Optional[str] = None
+    supplier: Optional[str] = None
+    cost_price: Optional[float] = None
 
     def formatted_price(self) -> str:
         """Returns Argentine-formatted currency string e.g. $14.400"""
@@ -138,6 +141,67 @@ def identify_columns(headers: List[str]) -> Dict[str, Optional[int]]:
     return mapping
 
 
+def gemini_extract_header_mapping(rows: List[Any]) -> Optional[Tuple[int, Dict[str, Optional[int]]]]:
+    """
+    Uses Gemini Flash Lite to understand complex, merged, or non-standard supplier Excel sheets,
+    identifying the header row and exact column indices for product name, price, code, etc.
+    """
+    gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+    if not gemini_key:
+        return None
+    try:
+        sample_lines = []
+        for idx, r in enumerate(rows[:20]):
+            if r and any(r):
+                non_empty = [str(c).strip() for c in r[:12] if c is not None and str(c).strip()]
+                if non_empty:
+                    sample_lines.append(f"Fila {idx}: " + " | ".join(non_empty))
+        if not sample_lines:
+            return None
+        sample_text = "\n".join(sample_lines)
+        prompt = (
+            "Analizá estas primeras filas de una planilla comercial de lista de precios de un proveedor.\n"
+            f"{sample_text}\n\n"
+            "Tu tarea es identificar la estructura de la tabla para extraer productos y precios:\n"
+            "1. header_row: índice de la fila (0-indexed) donde están los encabezados de columna reales (salteando logos, notas o títulos).\n"
+            "2. name: índice de columna (0-indexed) con la descripción o nombre del producto/artículo.\n"
+            "3. price: índice de columna (0-indexed) con el precio o costo.\n"
+            "4. code: índice de columna de código o SKU (o null si no hay).\n"
+            "5. presentation: índice de columna de presentación, bulto o medida (o null).\n"
+            "6. category: índice de columna de categoría o rubro (o null).\n\n"
+            "Respondé ÚNICAMENTE un objeto JSON válido con este esquema exacto:\n"
+            '{"header_row": 0, "name": 0, "price": 1, "code": null, "presentation": null, "category": null}'
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        with httpx.Client(timeout=4.0) as client:
+            res = client.post(
+                url,
+                json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+            )
+            if res.status_code == 200:
+                data = res.json()
+                cand = data.get("candidates", [])
+                if cand and "content" in cand[0]:
+                    parts = cand[0]["content"].get("parts", [])
+                    if parts:
+                        parsed = json.loads(parts[0].get("text", "{}"))
+                        h_idx = int(parsed.get("header_row", 0))
+                        mapping = {
+                            "name": parsed.get("name"),
+                            "price": parsed.get("price"),
+                            "presentation": parsed.get("presentation"),
+                            "stock": None,
+                            "category": parsed.get("category"),
+                            "code": parsed.get("code")
+                        }
+                        if mapping["name"] is not None and mapping["price"] is not None:
+                            logger.info(f"✨ Gemini identified Excel header at row {h_idx}: {mapping}")
+                            return h_idx, mapping
+    except Exception as e:
+        logger.warning(f"Gemini header mapping fallback error: {e}")
+    return None
+
+
 def find_header_and_mapping(rows: List[Any]) -> Tuple[int, Dict[str, Optional[int]]]:
     """
     Scans candidate rows (e.g. up to 25 rows) to automatically locate the real
@@ -174,6 +238,12 @@ def find_header_and_mapping(rows: List[Any]) -> Tuple[int, Dict[str, Optional[in
             best_mapping = m
             if score >= 130:
                 break
+
+    # If heuristic score is low (< 70) and rows exist, try intelligent Gemini fallback
+    if best_score < 70 and rows:
+        gemini_res = gemini_extract_header_mapping(rows)
+        if gemini_res:
+            return gemini_res
 
     # If no header was recognized by keywords, fallback to first non-empty row
     if best_score < 30:
@@ -510,7 +580,7 @@ class CatalogService:
         ws = wb.active
         ws.title = "Catálogo Actualizado"
 
-        headers = ["Código", "Producto", "Presentación", "Precio Unitario ($)", "Stock", "Categoría"]
+        headers = ["Código", "Producto", "Presentación", "Precio Unitario ($)", "Stock", "Categoría", "Proveedor"]
         ws.append(headers)
 
         header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
@@ -535,7 +605,8 @@ class CatalogService:
                 p.presentation,
                 p.price,
                 "SI" if p.in_stock else "NO",
-                p.category
+                p.category,
+                p.supplier or "General"
             ]
             ws.append(row_data)
             for c_idx in range(1, len(headers) + 1):
@@ -544,7 +615,7 @@ class CatalogService:
                 if c_idx == 4:
                     cell.number_format = "$#,##0"
                     cell.alignment = Alignment(horizontal="right")
-                elif c_idx in [1, 5]:
+                elif c_idx in [1, 5, 7]:
                     cell.alignment = Alignment(horizontal="center")
 
         ws.column_dimensions["A"].width = 14
@@ -553,6 +624,7 @@ class CatalogService:
         ws.column_dimensions["D"].width = 20
         ws.column_dimensions["E"].width = 12
         ws.column_dimensions["F"].width = 18
+        ws.column_dimensions["G"].width = 22
 
         wb.save(file_path)
 
@@ -560,14 +632,21 @@ class CatalogService:
         self,
         content: bytes,
         filename: str = "proveedor.xlsx",
-        export_path: Optional[str] = None
+        export_path: Optional[str] = None,
+        supplier_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Cross-references an incoming supplier Excel sheet with the active product catalog.
         Matches by SKU code or fuzzy semantic description, updates catalog prices in-place,
-        detects new supplier products, generates an updated catalog .xlsx, and returns an executive report.
+        detects new supplier products, tags items with the supplier name, generates an updated
+        catalog .xlsx, and returns an executive report.
         """
-        import os
+        if not supplier_name and filename:
+            base_fn = os.path.splitext(os.path.basename(filename))[0]
+            cleaned_fn = re.sub(r'(?:lista|precios?|proveedor|aumentos?|catalogo|actualizad\w*|[_\-\d]+)', ' ', base_fn, flags=re.IGNORECASE).strip()
+            if cleaned_fn and len(cleaned_fn) > 2:
+                supplier_name = cleaned_fn.title()
+
         try:
             wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
             supplier_items: List[ProductItem] = []
@@ -607,7 +686,7 @@ class CatalogService:
                         if cd:
                             code = cd
 
-                    supplier_items.append(ProductItem(name=raw_name, price=price, code=code))
+                    supplier_items.append(ProductItem(name=raw_name, price=price, code=code, supplier=supplier_name))
 
             if not supplier_items:
                 return {
@@ -665,16 +744,22 @@ class CatalogService:
                     pct = ((diff / old_price) * 100) if old_price > 0 else 0.0
 
                     best_match.price = new_price
+                    if supplier_name and not best_match.supplier:
+                        best_match.supplier = supplier_name
                     matched_items.append({
                         "product": best_match.name,
                         "presentation": best_match.presentation,
                         "old_price": old_price,
                         "new_price": new_price,
                         "diff": diff,
-                        "pct": pct
+                        "pct": pct,
+                        "supplier": best_match.supplier or supplier_name
                     })
                 else:
+                    if supplier_name:
+                        sup.supplier = supplier_name
                     new_items.append(sup)
+                    self.products.append(sup)
 
             self.last_updated = datetime.now(timezone.utc)
 
@@ -688,9 +773,13 @@ class CatalogService:
             # Build WhatsApp message
             lines = [
                 f"📊 *¡Actualización de Proveedor Procesada!*",
+            ]
+            if supplier_name:
+                lines.append(f"🏢 *Proveedor:* {supplier_name}")
+            lines.extend([
                 f"📁 *Archivo:* `{filename}`\n",
                 f"✅ *{len(matched_items)} productos actualizados* con nuevo precio.",
-            ]
+            ])
             if new_items:
                 lines.append(f"📦 *{len(new_items)} productos nuevos* detectados en la lista del proveedor.")
             lines.append("⚡ *Sofía ya está cotizando con estos nuevos precios.*\n")

@@ -1,0 +1,13 @@
+{
+  "pinturas_litoral": {
+    "supplier_name": "Pinturas Litoral",
+    "items": [
+      {
+        "product_name": "Látex blanco",
+        "quantity": 3,
+        "unit_price": 0.0
+      }
+    ],
+    "updated_at": "2026-09-11T16:42:44.677382+00:00"
+  }
+}
