@@ -260,11 +260,11 @@ async def parse_dispatch_intent_and_entities(text: str) -> dict:
     gemini_key = settings.GEMINI_API_KEY
     if gemini_key:
         prompt = (
-            "El usuario le pide a su asistente comercial Sofía que despache, pase o envíe un pedido, remito o mensaje a un proveedor, distribuidora o comercio.\n"
+            "El usuario le pide a su asistente comercial Sofía que despache, pase o envíe un pedido, demo, remito o mensaje a un proveedor, distribuidora, cliente o comercio.\n"
             f"Mensaje del usuario:\n\"{clean}\"\n\n"
             "Extraé en formato JSON con estas claves exactas:\n"
-            "- is_dispatch: true (si el usuario quiere enviar, pasar o despachar un pedido/mensaje a un tercero) o false\n"
-            "- recipient_name: nombre del destinatario (ej: 'Ferretería Nogoyá', 'Distribuidora Ricardo', o 'la Distribuidora')\n"
+            "- is_dispatch: true (si el usuario quiere enviar, pasar o despachar un pedido, demo o mensaje a un tercero) o false\n"
+            "- recipient_name: nombre del destinatario (ej: 'Ricardo', 'Ferretería Nogoyá', 'Distribuidora Alem', 'la Distribuidora')\n"
             "- recipient_phone: número de teléfono extraído (solo dígitos, ej: '3434536447', o null si no se mencionó)\n"
             "- items: lista de objetos con 'product_name' (str) y 'quantity' (int)\n"
             "- raw_order_text: texto descriptivo de los productos a pedir\n"
@@ -482,9 +482,10 @@ async def parse_supplier_basket_add_intent(text: str) -> dict:
     """
     clean = text.strip()
     lower = clean.lower()
-    is_cand = (re.search(r'\bpara\s+[A-Za-z0-9]', lower) or any(k in lower for k in ["al pedido de", "en el pedido de", "a la distribuidora", "al proveedor"])) and \
-              any(k in lower for k in ["anotá", "anota", "anotame", "agregá", "agrega", "sumá", "suma", "guardá", "guarda", "poné", "pone", "pedí", "pedi"])
-    if not is_cand:
+    has_target = bool(re.search(r'\bpara\s+(?!pedir|preguntar|saber|ver|consultar|avisar|mi\b|vos\b)[A-Za-z0-9]', lower) or any(k in lower for k in ["al pedido de", "en el pedido de", "a la distribuidora", "al proveedor"]))
+    basket_verbs = ["anotá", "anota", "anotame", "agregá", "agrega", "agregame", "sumá", "suma", "sumame", "guardá", "guarda", "guardame", "poné", "pone", "poneme", "cargá", "carga", "cargame"]
+    has_action = any(re.search(rf'\b{k}\b', lower) for k in basket_verbs)
+    if not (has_target and has_action):
         return {"is_basket_add": False}
 
     gemini_key = settings.GEMINI_API_KEY
@@ -1049,17 +1050,19 @@ async def process_boss_message(
         demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
 
-    # 2.95 Dispatch Order to External Distributor (Paso 7: Kiosco / Ferretería enviando pedido formal a Distribuidora)
+    # 2.95 Dispatch Order to External Distributor or Live Demo to Merchant
     dispatch_triggers = [
         "mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a",
         "mandale a", "mandá a", "hacele el pedido a", "hacé el pedido a",
         "despachar pedido a", "despachale a", "pasale el pedido a", "enviá el pedido a",
         "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a",
-        "enviale este mensaje", "enviá este mensaje", "enviale éste mensaje", "mandale este mensaje"
+        "enviale este mensaje", "enviá este mensaje", "enviale éste mensaje", "mandale este mensaje",
+        "mandale la demo a", "mandar la demo a", "mandá la demo a", "enviar la demo a", "pasale la demo a",
+        "mandale demo a", "mandar demo a", "enviar demo a"
     ]
     is_dispatch_candidate = any(k in lower_text for k in dispatch_triggers) or (
-        any(k in lower_text for k in ["enviale", "envíale", "mandale", "pasale", "despachale"]) and
-        any(k in lower_text for k in ["pedido", "pedidos", "remito", "tornillo", "disco", "caja", "bolsa", "harina", "aceite", "a ferreteria", "a ferretería", "a distribuidora", "el numero es", "el número es", "telefono es", "teléfono es"])
+        any(k in lower_text for k in ["enviale", "envíale", "mandale", "pasale", "despachale", "mandar", "enviar"]) and
+        any(k in lower_text for k in ["demo", "pedido", "pedidos", "remito", "prueba", "martillo", "alicate", "tornillo", "disco", "caja", "bolsa", "harina", "aceite", "a ferreteria", "a ferretería", "a distribuidora", "el numero es", "el número es", "telefono es", "teléfono es"])
     )
 
     if is_dispatch_candidate:
@@ -1088,7 +1091,7 @@ async def process_boss_message(
 
         dist_name = ai_dispatch.get("recipient_name")
         if not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]:
-            distributor_match = re.search(r'(?:pedido\s+a|a|para)\s+([^\n\r,]+?)(?:\s+al\s+\d+|\s+el\s+numero|\s+el\s+número|\s+con\b|$)', clean_text, re.IGNORECASE)
+            distributor_match = re.search(r'(?:pedido\s+a|la\s+demo\s+a|demo\s+a|a|para)\s+([^\n\r,]+?)(?:\s+al\s+\d+|\s+el\s+numero|\s+el\s+número|\s+con\b|$)', clean_text, re.IGNORECASE)
             if distributor_match:
                 dist_name = distributor_match.group(1).strip()
         if not dist_name:

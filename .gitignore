@@ -53,3 +53,6 @@ Thumbs.db
 # Media & Scratch
 *.mp4
 scratch/
+assets/catalogo_base.xlsx
+assets/lista_proveedor_aumento.xlsx
+assets/ultimo_pedido_*.pdf
