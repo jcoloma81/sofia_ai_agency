@@ -25,3 +25,13 @@ def setup_test_database():
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
+
+@pytest.fixture(autouse=True)
+def reset_catalog_to_base():
+    from app.services.catalog import catalog_service
+    sample_csv = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "app", "data", "sample_catalog.csv"))
+    if os.path.exists(sample_csv):
+        with open(sample_csv, "r", encoding="utf-8") as f:
+            catalog_service.load_from_csv(f.read(), source_name="Catálogo Base")
+    yield
+

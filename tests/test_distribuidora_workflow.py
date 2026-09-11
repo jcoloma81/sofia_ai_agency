@@ -165,3 +165,40 @@ def test_boss_mode_full_controls(db, mock_whatsapp):
     db.refresh(lead)
     assert lead.status == "in_conversation"
 
+
+def test_prospect_direct_catalog_upload(db, mock_whatsapp):
+    import base64
+    import io
+    import openpyxl
+
+    mock_send, _, _ = mock_whatsapp
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Lista Precios"
+    ws.append(["Producto", "Precio", "Presentacion", "Rubro"])
+    ws.append(["Tornillo Roscalata 2 pulgadas", 4500, "Caja x 500", "Ferretería"])
+    ws.append(["Mecha Widia 8mm", 2800, "Unidad", "Herramientas"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    b64_doc = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    payload = {
+        "phone": "5493434778899",
+        "doc_base64": b64_doc,
+        "doc_name": "Lista_Proveedor_Alem.xlsx",
+        "complex_name": "Ferretería Nogoyá",
+        "contact_name": "Ricardo",
+        "city": "Paraná"
+    }
+
+    res = client.post("/webhook", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert data["action"] == "prospect_catalog_loaded"
+    assert data["count"] == 2
+    assert "Ricardo" in data["reply"]
+    assert "2 productos" in data["reply"]
+
+

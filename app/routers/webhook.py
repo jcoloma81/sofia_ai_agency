@@ -309,6 +309,11 @@ async def receive_whatsapp_webhook(
         phone = phone or body.get("phone") or body.get("from") or body.get("sender") or ""
         message = body.get("message") or body.get("text") or body.get("body") or ""
         contact_name = contact_name or body.get("contact_name")
+        if not doc_bytes and body.get("doc_base64"):
+            doc_bytes = base64.b64decode(body["doc_base64"])
+            doc_name = body.get("doc_name", "catalogo.xlsx")
+            if not message:
+                message = f"(Documento adjunto recibido: {doc_name})"
 
     clean_phone = "".join(filter(str.isdigit, str(phone)))
     if not clean_phone or not message:
@@ -473,6 +478,57 @@ async def receive_whatsapp_webhook(
         "text": history_text,
         "timestamp": datetime.now(timezone.utc).isoformat()
     })
+
+    # 0.5 Prospect document upload (supplier catalog, price list, PDF or Excel)
+    if doc_bytes and doc_name:
+        fname = doc_name.lower()
+        if fname.endswith((".xlsx", ".xls", ".csv", ".pdf")):
+            safe_name = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
+            count = 0
+            if fname.endswith((".xlsx", ".xls")):
+                count = catalog_service.load_from_excel_bytes(doc_bytes, filename=doc_name)
+            elif fname.endswith(".csv"):
+                try:
+                    csv_str = doc_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    csv_str = doc_bytes.decode("latin-1", errors="ignore")
+                count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
+            elif fname.endswith(".pdf"):
+                count = await catalog_service.load_from_pdf_bytes(doc_bytes, filename=doc_name)
+
+            if count > 0:
+                doc_reply = (
+                    f"¡Recibí tu lista *{doc_name}*, {safe_name}! 📁\n\n"
+                    f"Ya procesé y sincronicé *{count} productos* en el catálogo. "
+                    f"Ya podés consultarme precios o hacerme pedidos sobre cualquiera de estos artículos."
+                )
+                history.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+                prospect.updated_at = datetime.now(timezone.utc)
+                db.commit()
+
+                # Alert the boss (Javier)
+                if settings.WHATSAPP_ALERT_PHONE:
+                    boss_alert = (
+                        f"🔔 *Nuevo catálogo recibido de cliente*\n\n"
+                        f"• *Cliente:* {prospect.name} ({prospect.contact_name or 'Titular'})\n"
+                        f"• *Teléfono:* {prospect.phone}\n"
+                        f"• *Archivo:* `{doc_name}`\n"
+                        f"• *Artículos cargados:* {count}\n\n"
+                        f"Sofía ya actualizó el catálogo activo automáticamente."
+                    )
+                    asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=boss_alert))
+
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
+                return {"status": "success", "action": "prospect_catalog_loaded", "count": count, "reply": doc_reply}
+            else:
+                doc_reply = f"Recibí el archivo `{doc_name}`, pero no pude extraer listas de precios automáticas. Verificá que contenga texto legible o tablas de productos."
+                history.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+                prospect.updated_at = datetime.now(timezone.utc)
+                db.commit()
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
+                return {"status": "success", "action": "prospect_catalog_error", "reply": doc_reply}
 
     # 1. Check if prospect is confirming an existing pending order
     is_confirming_order = False
