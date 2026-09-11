@@ -1,5 +1,5 @@
 import pytest
-from app.services.boss_mode import is_boss_number, process_boss_message
+from app.services.boss_mode import is_boss_number, process_boss_message, LAST_ONBOARDED_CLIENT, LAST_BOSS_ORDERS
 from app.config.settings import settings
 from app.models.prospect import Prospect
 from tests.conftest import TestingSessionLocal
@@ -7,9 +7,13 @@ from tests.conftest import TestingSessionLocal
 @pytest.fixture
 def db():
     session = TestingSessionLocal()
+    LAST_ONBOARDED_CLIENT.clear()
+    LAST_BOSS_ORDERS.clear()
     try:
         yield session
     finally:
+        LAST_ONBOARDED_CLIENT.clear()
+        LAST_BOSS_ORDERS.clear()
         session.query(Prospect).delete()
         session.commit()
         session.close()
@@ -262,4 +266,86 @@ async def test_boss_enviale_este_mensaje_con_los_pedidos(db):
         assert "Ferretería Nogoyá" in reply or "ferreteria nogoyá" in reply.lower()
         mock_msg.assert_called_once()
         mock_doc.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_boss_client_onboarding_audio_text(db):
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, cargá este cliente: Ferretería Nogoyá de Ricardo, teléfono 343 4556679, rubro ferretería, calle Nogoyá 450"
+    )
+    assert handled is True
+    assert action == "client_onboarded"
+    assert "CLIENTE DADO DE ALTA CON ÉXITO" in reply
+    assert "Ferretería Nogoyá" in reply
+    assert "Ricardo" in reply
+    assert "5493434556679" in reply
+    assert "Ferretería" in reply
+
+    # Verify DB
+    p = db.query(Prospect).filter(Prospect.phone == "5493434556679").first()
+    assert p is not None
+    assert p.name == "Ferretería Nogoyá"
+    assert p.contact_name == "Ricardo"
+    assert p.business_type == "ferreteria"
+    assert p.campaign == "client_onboarding"
+
+
+@pytest.mark.asyncio
+async def test_boss_dispatch_to_onboarded_client_without_repeating_phone(db):
+    from unittest.mock import patch, AsyncMock
+    # First onboard
+    await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, cargá este cliente: Ferretería Nogoyá de Ricardo, teléfono 343 4556679, rubro ferretería"
+    )
+
+    # Now dispatch directly without dictating the phone number
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Mandale a Ricardo el pedido de 4 martillos, 2 alicates y una caja de tornillos"
+        )
+        assert handled is True
+        assert action == "kiosk_order_dispatched"
+        assert "¡Pedido despachado con éxito!" in reply
+        assert "5493434556679" in reply
+        mock_msg.assert_called_once()
+        msg_kwargs = mock_msg.call_args[1]
+        assert msg_kwargs["to_phone"] == "5493434556679"
+        mock_doc.assert_called_once()
+        doc_kwargs = mock_doc.call_args[1]
+        assert doc_kwargs["to_phone"] == "5493434556679"
+
+
+@pytest.mark.asyncio
+async def test_boss_send_price_list_to_client(db):
+    from unittest.mock import patch, AsyncMock
+    # First onboard
+    await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, cargá este cliente: Ferretería Nogoyá de Ricardo, teléfono 343 4556679, rubro ferretería"
+    )
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Mandale la lista de precios a Ricardo"
+        )
+        assert handled is True
+        assert action == "boss_price_list_sent_client"
+        assert "Lista de precios enviada con éxito" in reply
+        assert "5493434556679" in reply
+        mock_msg.assert_called_once()
+        assert mock_msg.call_args[1]["to_phone"] == "5493434556679"
+        mock_doc.assert_called_once()
+        assert mock_doc.call_args[1]["to_phone"] == "5493434556679"
+
 

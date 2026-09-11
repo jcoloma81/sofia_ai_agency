@@ -13,6 +13,53 @@ from app.services.catalog import catalog_service
 logger = logging.getLogger(__name__)
 
 LAST_BOSS_ORDERS = {}
+LAST_ONBOARDED_CLIENT = {}
+
+def normalize_argentine_phone(raw_phone: str) -> str:
+    """
+    Normalizes any Argentine phone string (with 15, area code, spaces, dashes)
+    to standard WhatsApp E.164 without plus: 549<area><number>
+    """
+    digits = "".join(filter(str.isdigit, str(raw_phone or "")))
+    if not digits:
+        return ""
+    if digits.startswith("0"):
+        digits = digits[1:]
+    if digits.startswith("549"):
+        return digits
+    if digits.startswith("54"):
+        rest = digits[2:]
+        if rest.startswith("15"):
+            rest = rest[2:]
+        if rest.startswith("9"):
+            return f"54{rest}"
+        return f"549{rest}"
+    if digits.startswith("15") and len(digits) >= 10:
+        digits = digits[2:]
+    if len(digits) >= 11 and "15" in digits:
+        digits = digits.replace("15", "", 1)
+    if len(digits) >= 8:
+        return f"549{digits}"
+    return digits
+
+def get_active_onboarded_client(db: Session) -> dict:
+    global LAST_ONBOARDED_CLIENT
+    if LAST_ONBOARDED_CLIENT.get("phone"):
+        return LAST_ONBOARDED_CLIENT
+    try:
+        recent = db.query(Prospect).filter(Prospect.campaign == "client_onboarding").order_by(Prospect.updated_at.desc()).first()
+        if recent:
+            LAST_ONBOARDED_CLIENT = {
+                "phone": recent.phone,
+                "business_name": recent.name,
+                "contact_name": recent.contact_name,
+                "business_type": recent.business_type,
+                "city": recent.city
+            }
+            return LAST_ONBOARDED_CLIENT
+    except Exception as e:
+        logger.warning(f"Error fetching recent onboarded client: {e}")
+    return {}
 
 def is_boss_number(phone: str) -> bool:
     """Verifies if the sender phone matches the configured owner/boss alert line."""
@@ -163,6 +210,130 @@ async def parse_dispatch_intent_and_entities(text: str) -> dict:
             logger.warning(f"Gemini dispatch parse error: {e}")
     return {}
 
+async def parse_client_onboarding_intent(text: str) -> dict:
+    """
+    Uses Gemini Flash Lite to detect if Javier is registering a new client/merchant
+    via audio note or text, and extracts commerce name, owner name, phone, rubro, city.
+    """
+    clean = text.strip()
+    lower = clean.lower()
+
+    # Pre-check: Don't treat commands or order dispatches as onboarding
+    if lower.startswith("rubro ") or lower.startswith("modo ") or lower.startswith("pausar") or lower.startswith("activar"):
+        return {"is_onboarding": False}
+
+    disqualifiers = [
+        "mandale el pedido", "mandar pedido", "pasar pedido", "enviar pedido",
+        "enviale este mensaje", "mandale este mensaje", "despachar", "despachale",
+        "silenciar", "reactivar", "resumen", "ventas", "como venimos", "cómo venimos",
+        "lista de precio", "lista completa", "si lo confirmo", "lo tomo yo",
+        "pedidos de", "pedido a", "pedido formal"
+    ]
+    if any(d in lower for d in disqualifiers):
+        return {"is_onboarding": False}
+
+    onboarding_verbs = [
+        "cargá al cliente", "cargar cliente", "cargá el cliente", "cargar el cliente",
+        "cargá a este cliente", "carga este cliente", "cargame este cliente", "cargá este cliente",
+        "alta de cliente", "alta cliente", "dar de alta", "anotá a este cliente", "anotar cliente",
+        "anotá este cliente", "anota este cliente", "anotá al cliente", "registrá al cliente",
+        "registrar cliente", "registrá este cliente", "nuevo cliente", "cliente nuevo",
+        "anotá este comercio", "cargá este comercio", "guardá este cliente", "guardar cliente",
+        "alta de comercio", "alta comercio", "anotá este local", "cargá este negocio", "alta negocio",
+        "anotá a", "anota a", "cargá a", "carga a", "cargar a", "alta a", "registrá a", "registra a"
+    ]
+    is_candidate = any(v in lower for v in onboarding_verbs)
+    if not is_candidate and (lower.startswith("alta ") or lower.startswith("cargar ") or lower.startswith("cargá ") or lower.startswith("anotá ") or lower.startswith("anota ")):
+        if any(k in lower for k in ["cliente", "comercio", "negocio", "ferreteria", "ferretería", "kiosco", "almacen", "almacén", "local", "titular", "telefono", "teléfono", "celular", "celu"]):
+            is_candidate = True
+
+    if not is_candidate:
+        return {"is_onboarding": False}
+
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El director general (Javier) le habla a su asistente comercial Sofía por WhatsApp para dar de alta, "
+            "cargar, anotar o registrar a un cliente minorista (comercio, ferretería, kiosco, almacén, distribuidora, etc.).\n"
+            f"Mensaje recibido:\n\"{clean}\"\n\n"
+            "Analizá si el mensaje contiene la intención de dar de alta, registrar, cargar o anotar los datos de un cliente o comercio.\n"
+            "Extraé en formato JSON con estas claves exactas:\n"
+            "- is_onboarding: true (si Javier está dando de alta, registrando, anotando o guardando un cliente/comercio nuevo) o false\n"
+            "- business_name: nombre del comercio o razón social (ej: 'Ferretería Nogoyá', 'Kiosco Central') o null\n"
+            "- contact_name: nombre del dueño, titular o encargado (ej: 'Ricardo') o null\n"
+            "- phone: número de teléfono mencionado (ej: '3434556679') o null\n"
+            "- business_type: 'ferreteria', 'kiosco', 'almacen', 'distribuidora', 'hotel', 'restaurante' o 'comercio'\n"
+            "- city: ciudad o dirección mencionada (ej: 'Paraná', 'calle Nogoyá 450') o null\n"
+            "- notes: cualquier detalle adicional mencionado o null\n"
+            "Respondé ÚNICAMENTE un JSON válido."
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=4.5) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            parsed = json.loads(parts[0].get("text", "{}"))
+                            if isinstance(parsed, dict) and parsed.get("is_onboarding"):
+                                return parsed
+        except Exception as e:
+            logger.warning(f"Gemini client onboarding parse error: {e}")
+
+    if is_candidate:
+        digits = re.findall(r'\d{8,14}', clean.replace("-", "").replace(" ", "").replace("+", ""))
+        raw_phone = digits[0] if digits else None
+
+        b_type = "comercio"
+        if any(k in lower for k in ["ferret", "herramient"]):
+            b_type = "ferreteria"
+        elif any(k in lower for k in ["kiosc", "despensa"]):
+            b_type = "kiosco"
+        elif any(k in lower for k in ["distribuidora", "mayorista"]):
+            b_type = "distribuidora"
+
+        contact_name = None
+        contact_match = re.search(r'(?:titular|dueño|de|contacto|nombre)\s+([A-ZÁÉÍÓÚa-záéíóú]+)', clean)
+        if contact_match and contact_match.group(1).lower() not in ["ferretería", "ferreteria", "kiosco", "comercio", "este", "un", "la", "el", "calle"]:
+            contact_name = contact_match.group(1).capitalize()
+
+        b_name = None
+        b_match = re.search(r'(?:cliente|comercio|negocio|local)\s*:?\s*([^,\n\r]+?)(?:\s+(?:de|titular|tel|cel|telefono|teléfono|rubro|en)\b|[,\n]|$)', clean, re.IGNORECASE)
+        if b_match:
+            cand_name = b_match.group(1).strip()
+            cand_name = re.sub(r'^(?:el|la|los|las|un|una)\s+', '', cand_name, flags=re.IGNORECASE).strip()
+            if len(cand_name) > 2 and cand_name.lower() not in ["nuevo", "este", "comercio", "cliente"]:
+                b_name = cand_name
+        if not b_name:
+            if b_type == "ferreteria":
+                b_name = "Ferretería" + (f" de {contact_name}" if contact_name else "")
+            elif b_type == "kiosco":
+                b_name = "Kiosco" + (f" de {contact_name}" if contact_name else "")
+            else:
+                b_name = "Comercio Minorista"
+
+        city = "Paraná"
+        city_match = re.search(r'(?:en|de|calle)\s+([^,\n\r]+)', clean, re.IGNORECASE)
+        if city_match:
+            city = city_match.group(1).strip()
+
+        return {
+            "is_onboarding": True,
+            "business_name": b_name,
+            "contact_name": contact_name or "Titular",
+            "phone": raw_phone,
+            "business_type": b_type,
+            "city": city,
+            "notes": clean
+        }
+
+    return {"is_onboarding": False}
+
 async def process_boss_message(
     db: Session,
     sender_phone: str,
@@ -203,6 +374,144 @@ async def process_boss_message(
                 csv_str = doc_bytes.decode("latin-1", errors="ignore")
             count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
             return True, f"✅ *¡Lista CSV cargada con éxito!*\n\nSe procesaron *{count} productos* desde `{doc_name}`.", "catalog_updated"
+
+    # 1.3 Client Onboarding on-the-fly via WhatsApp Audio or Text
+    onboarding_data = await parse_client_onboarding_intent(clean_text)
+    if onboarding_data.get("is_onboarding"):
+        raw_phone = onboarding_data.get("phone")
+        norm_phone = normalize_argentine_phone(raw_phone) if raw_phone else None
+
+        b_name = onboarding_data.get("business_name") or "Comercio Minorista"
+        c_name = onboarding_data.get("contact_name") or "Titular"
+        b_type = (onboarding_data.get("business_type") or "comercio").lower()
+        city = onboarding_data.get("city") or "Paraná, Entre Ríos"
+
+        if not norm_phone or len(norm_phone) < 8:
+            LAST_ONBOARDED_CLIENT.clear()
+            LAST_ONBOARDED_CLIENT.update({
+                "business_name": b_name,
+                "contact_name": c_name,
+                "business_type": b_type,
+                "city": city
+            })
+            return True, (
+                f"📋 *¡Alta de cliente en proceso!* 🏪\n\n"
+                f"Tengo los datos de *{b_name}* (Titular: {c_name}), pero me falta su número de WhatsApp para registrarlo.\n\n"
+                f"💡 Pasámelo diciendo por ejemplo: `el teléfono es 343 4556679`"
+            ), "onboarding_needs_phone"
+
+        # Check existing Prospect by phone
+        existing_prospect = db.query(Prospect).filter(Prospect.phone == norm_phone).first()
+        if existing_prospect:
+            existing_prospect.name = b_name
+            existing_prospect.contact_name = c_name
+            existing_prospect.business_type = b_type
+            existing_prospect.city = city
+            existing_prospect.campaign = "client_onboarding"
+            existing_prospect.status = "new"
+            existing_prospect.notes = f"Actualizado desde WhatsApp (Modo Jefe) el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            db.commit()
+        else:
+            new_prospect = Prospect(
+                name=b_name,
+                contact_name=c_name,
+                phone=norm_phone,
+                business_type=b_type,
+                city=city,
+                campaign="client_onboarding",
+                status="new",
+                notes=f"Alta rápida desde WhatsApp (Modo Jefe) el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            )
+            db.add(new_prospect)
+            db.commit()
+            db.refresh(new_prospect)
+
+        # Switch rubro automatically if recognized
+        catalog_info = ""
+        if any(k in b_type for k in ["ferret", "herramient"]):
+            trade_title, catalog_count = catalog_service.set_rubro("ferreteria")
+            catalog_info = f"🛠️ *Rubro activado:* Ferretería ({catalog_count} productos cargados con precios reales)\n"
+        elif any(k in b_type for k in ["kiosc", "despensa", "almacen", "almacén"]):
+            trade_title, catalog_count = catalog_service.set_rubro("kiosco")
+            catalog_info = f"🏪 *Rubro activado:* Kiosco ({catalog_count} artículos cargados)\n"
+        elif any(k in b_type for k in ["distribuidora", "mayorista"]):
+            trade_title, catalog_count = catalog_service.set_rubro("distribuidora")
+            catalog_info = f"🏢 *Rubro activado:* Distribuidora mayorista\n"
+
+        LAST_ONBOARDED_CLIENT.clear()
+        LAST_ONBOARDED_CLIENT.update({
+            "phone": norm_phone,
+            "business_name": b_name,
+            "contact_name": c_name,
+            "business_type": b_type,
+            "city": city
+        })
+
+        reply = (
+            f"✅ *¡CLIENTE DADO DE ALTA CON ÉXITO!* 🚀\n\n"
+            f"🏪 *Comercio:* {b_name}\n"
+            f"👤 *Titular:* {c_name}\n"
+            f"📱 *WhatsApp:* +{norm_phone}\n"
+            f"📍 *Ubicación:* {city}\n"
+            f"{catalog_info}\n"
+            f"🎯 *Pruebas en vivo listas para hacer delante de {c_name}:*\n"
+            f"1️⃣ *Enviar pedido a su número:*\n"
+            f"   _«Mandale a {c_name} el pedido de 4 martillos, 2 alicates y tornillos»_\n"
+            f"2️⃣ *Enviarle su lista de precios en Excel:*\n"
+            f"   _«Mandale la lista a {c_name}»_\n"
+            f"3️⃣ *Simular pedido a una distribuidora:*\n"
+            f"   _«Mandale a Distribuidora Alem al [tel] el pedido de {b_name}...»_"
+        )
+        return True, reply, "client_onboarded"
+
+    # Pending onboarding phone follow-up
+    if LAST_ONBOARDED_CLIENT.get("business_name") and not LAST_ONBOARDED_CLIENT.get("phone"):
+        cand_digits = re.findall(r'\d{8,14}', clean_text.replace("-", "").replace(" ", "").replace("+", ""))
+        is_phone_reply = bool(cand_digits) and (
+            len(clean_text) <= 25 or 
+            any(k in lower_text for k in ["el numero", "el número", "telefono", "teléfono", "celular", "celu", "es el"])
+        ) and not any(k in lower_text for k in ["pausar", "activar", "rubro", "modo", "pedido", "mandale", "enviale", "resumen"])
+
+        if is_phone_reply:
+            norm_phone = normalize_argentine_phone(cand_digits[0])
+            b_name = LAST_ONBOARDED_CLIENT["business_name"]
+            c_name = LAST_ONBOARDED_CLIENT["contact_name"]
+            b_type = LAST_ONBOARDED_CLIENT.get("business_type", "comercio")
+            city = LAST_ONBOARDED_CLIENT.get("city", "Paraná")
+
+            existing_p = db.query(Prospect).filter(Prospect.phone == norm_phone).first()
+            if existing_p:
+                existing_p.name = b_name
+                existing_p.contact_name = c_name
+                existing_p.business_type = b_type
+                existing_p.city = city
+                existing_p.campaign = "client_onboarding"
+                existing_p.status = "new"
+                db.commit()
+            else:
+                new_p = Prospect(
+                    name=b_name,
+                    contact_name=c_name,
+                    phone=norm_phone,
+                    business_type=b_type,
+                    city=city,
+                    campaign="client_onboarding",
+                    status="new"
+                )
+                db.add(new_p)
+                db.commit()
+                db.refresh(new_p)
+
+            LAST_ONBOARDED_CLIENT["phone"] = norm_phone
+            return True, (
+                f"✅ *¡Teléfono registrado y cliente guardado!* 🚀\n\n"
+                f"🏪 *Comercio:* {b_name}\n"
+                f"👤 *Titular:* {c_name}\n"
+                f"📱 *WhatsApp:* +{norm_phone}\n\n"
+                f"Ya podés mandar el pedido o la demo en vivo."
+            ), "client_onboarded"
+        elif any(k in lower_text for k in ["pausar", "activar", "rubro", "modo", "resumen", "mandale", "enviale"]):
+            LAST_ONBOARDED_CLIENT.clear()
 
     # 1.5 Switch Rubro (Selector de Rubro en 1 segundo: Ferretería, Kiosco, Distribuidora)
     rubro_keywords = ["rubro", "modo ferreteria", "modo ferretería", "modo kiosco", "modo distribuidora", "modo mayorista", "cambiar rubro", "cambiar a"]
@@ -286,6 +595,56 @@ async def process_boss_message(
     if any(k in lower_text for k in price_list_triggers) and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
         import asyncio
         from app.services import whatsapp
+
+        # Check if Javier wants to send the list to a third party (e.g. "mandale la lista a Ricardo")
+        send_to_third_party = any(k in lower_text for k in ["mandale la lista a", "pasale la lista a", "enviale la lista a", "mandá la lista a", "enviá la lista a", "mandale los precios a", "pasale los precios a"]) or (
+            any(k in lower_text for k in ["mandale", "pasale", "enviale", "mandá a"]) and any(k in lower_text for k in ["la lista", "los precios", "el excel", "el catalogo", "el catálogo"])
+        )
+        target_to_send = None
+        target_recipient_name = "Cliente"
+
+        if send_to_third_party:
+            active_c = get_active_onboarded_client(db)
+            cand_digits = re.findall(r'\d{8,14}', clean_text.replace("-", "").replace(" ", "").replace("+", ""))
+            if cand_digits:
+                target_to_send = normalize_argentine_phone(cand_digits[0])
+                target_recipient_name = "Cliente"
+            elif active_c.get("phone"):
+                ac_contact = (active_c.get("contact_name") or "").lower()
+                ac_bname = (active_c.get("business_name") or "").lower()
+                if not ac_contact or ac_contact in lower_text or ac_bname in lower_text or any(k in lower_text for k in ["a ricardo", "al cliente", "a este", "a el", "a él"]):
+                    target_to_send = active_c["phone"]
+                    target_recipient_name = active_c.get("contact_name") or active_c.get("business_name") or "Cliente"
+
+            if not target_to_send:
+                target_match = re.search(r'(?:a|para)\s+([A-ZÁÉÍÓÚa-záéíóú\s]+)', clean_text)
+                if target_match:
+                    cand_name = target_match.group(1).strip()
+                    p_match = db.query(Prospect).filter(
+                        (Prospect.contact_name.ilike(f"%{cand_name}%")) |
+                        (Prospect.name.ilike(f"%{cand_name}%"))
+                    ).order_by(Prospect.updated_at.desc()).first()
+                    if p_match:
+                        target_to_send = p_match.phone
+                        target_recipient_name = p_match.contact_name or p_match.name
+
+        if target_to_send and target_to_send != sender_phone:
+            third_party_msg = (
+                f"¡Hola {target_recipient_name}! ¿Cómo estás? Te escribo de parte de Javier.\n\n"
+                f"Te adjunto acá mismo nuestra lista de precios completa y actualizada en Excel "
+                f"para que la mires tranquilo en el celu o la compu.\n\n"
+                f"💡 Si querés consultar precios o pasar un pedido, podés responder directamente con un mensaje o audio a este chat."
+            )
+            excel_url = "https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx"
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=target_to_send, text=third_party_msg))
+            asyncio.create_task(whatsapp.send_whatsapp_document(
+                to_phone=target_to_send,
+                document_url=excel_url,
+                filename="Lista_Precios_Oficial.xlsx",
+                caption="📊 Lista de Precios Oficial Actualizada"
+            ))
+            return True, f"✅ *¡Lista de precios enviada con éxito!*\n\nAcabo de enviarle la lista oficial en Excel a *{target_recipient_name}* (+{target_to_send}).", "boss_price_list_sent_client"
+
         demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
 
@@ -334,6 +693,31 @@ async def process_boss_message(
         if not dist_name:
             dist_name = "la Distribuidora"
         dist_name = re.sub(r'^(?:la|el|los|las)\s+', '', dist_name, flags=re.IGNORECASE).strip()
+
+        active_client = get_active_onboarded_client(db)
+
+        # If phone is not yet found, check if recipient matches active client or db prospect
+        if not target_phone and active_client.get("phone"):
+            ac_contact = (active_client.get("contact_name") or "").lower()
+            ac_bname = (active_client.get("business_name") or "").lower()
+            req_lower = dist_name.lower()
+            if (ac_contact and (ac_contact in req_lower or req_lower in ac_contact)) or \
+               (ac_bname and (ac_bname in req_lower or req_lower in ac_bname)) or \
+               (ac_contact and ac_contact in lower_text) or (ac_bname and ac_bname in lower_text):
+                target_phone = active_client["phone"]
+                dist_name = active_client.get("contact_name") or active_client.get("business_name")
+
+        if not target_phone and dist_name and len(dist_name) > 2 and dist_name.lower() not in ["la distribuidora", "distribuidora", "proveedor"]:
+            matched_p = db.query(Prospect).filter(
+                (Prospect.contact_name.ilike(f"%{dist_name}%")) |
+                (Prospect.name.ilike(f"%{dist_name}%"))
+            ).order_by(Prospect.updated_at.desc()).first()
+            if matched_p:
+                target_phone = matched_p.phone
+                dist_name = matched_p.contact_name or matched_p.name
+
+        if target_phone:
+            target_phone = normalize_argentine_phone(target_phone)
 
         if not target_phone:
             return True, (
@@ -393,15 +777,23 @@ async def process_boss_message(
                         draft = OrderDraft(items=fallback_items, total=0.0)
 
             is_ferreteria = any(k in lower_text for k in ["ferreteria", "ferretería", "tornillo", "disco", "herramienta", "pintura", "thinner", "amoladora", "tuerca", "bazar"])
-            client_name = "Ferretería 'El Amigo'" if is_ferreteria else "Kiosco 'Lo de Juan'"
-            contact_name = "Encargado de Compras" if is_ferreteria else "Juan (Comercio Minorista)"
+            
+            if active_client.get("business_name"):
+                client_name = active_client["business_name"]
+                contact_name = active_client.get("contact_name") or ("Encargado de Compras" if is_ferreteria else "Juan (Comercio Minorista)")
+                client_city = active_client.get("city") or "Paraná, Entre Ríos"
+            else:
+                client_name = "Ferretería 'El Amigo'" if is_ferreteria else "Kiosco 'Lo de Juan'"
+                contact_name = "Encargado de Compras" if is_ferreteria else "Juan (Comercio Minorista)"
+                client_city = "Paraná, Entre Ríos"
+
             total_display = draft.formatted_total() if getattr(draft, "total", 0) > 0 else "A cotizar según lista de distribuidor"
 
             pdf_bytes = generate_order_pdf(
                 client_name=client_name,
                 contact_name=contact_name,
                 phone=sender_phone,
-                city="Paraná, Entre Ríos",
+                city=client_city,
                 order_draft=draft,
                 order_number=f"PED-{datetime.now().strftime('%d%H%M')}"
             )
@@ -411,15 +803,27 @@ async def process_boss_message(
                 for it in draft.items
             ]) if draft.items else f"• 1x {clean_order_part}"
 
-            dist_msg = (
-                f"Hola {dist_name}! Te escribo de parte del {contact_name} de *{client_name}*.\n\n"
-                f"Te paso su pedido formal para el reparto de mañana:\n"
-                f"{item_lines}\n"
-                f"Total estimado: {total_display}\n\n"
-                f"📄 Adjunto remito en PDF con el detalle formal.\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"📌 *IMPORTANTE:* Por favor envíe confirmación de pedido, remitos o listas de precios actualizadas directamente a este chat. Soy la asistente del comercio '{client_name}'. ¡Muchas gracias!"
-            )
+            is_demo_to_client = bool(active_client.get("phone") and target_phone == active_client.get("phone"))
+            if is_demo_to_client:
+                dist_msg = (
+                    f"¡Hola {dist_name}! Te escribo de parte de Javier de Sofía IA.\n\n"
+                    f"Te paso el comprobante formal de pedido de prueba para *{client_name}*:\n"
+                    f"{item_lines}\n"
+                    f"Total estimado: {total_display}\n\n"
+                    f"📄 Adjunto remito en PDF con el detalle formal.\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📌 *DEMO EN VIVO:* Este comprobante fue generado automáticamente por Sofía para la demostración en tu local. ¡Muchas gracias!"
+                )
+            else:
+                dist_msg = (
+                    f"Hola {dist_name}! Te escribo de parte del {contact_name} de *{client_name}*.\n\n"
+                    f"Te paso su pedido formal para el reparto de mañana:\n"
+                    f"{item_lines}\n"
+                    f"Total estimado: {total_display}\n\n"
+                    f"📄 Adjunto remito en PDF con el detalle formal.\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📌 *IMPORTANTE:* Por favor envíe confirmación de pedido, remitos o listas de precios actualizadas directamente a este chat. Soy la asistente del comercio '{client_name}'. ¡Muchas gracias!"
+                )
 
             asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=target_phone, text=dist_msg))
             base_url = settings.APP_BASE_URL.rstrip('/')
@@ -441,16 +845,19 @@ async def process_boss_message(
                 f"Acabo de enviarle a *{dist_name}* (+{target_phone}) el detalle formal y el remito en PDF.\n\n"
                 f"📋 *Items enviados:*\n{item_lines}\n"
                 f"💰 *Total:* {total_display}\n\n"
-                f"📍 Les dejé la instrucción de que confirmen y manden sus listas de precios a este mismo chat."
+                f"📍 Mensaje y remito PDF enviados correctamente."
             ), "kiosk_order_dispatched"
 
 
     # 3. Live Demo / Order Test or Product Inquiry by the Boss (for video demos from personal phone)
     from app.services.order_engine import (
         parse_order_or_inquiry_with_ai,
+        parse_order_text,
         format_order_summary_message,
         build_product_inquiry_reply,
-        is_order_confirmation
+        is_order_confirmation,
+        OrderItem,
+        OrderDraft
     )
 
     analysis = await parse_order_or_inquiry_with_ai(clean_text)
