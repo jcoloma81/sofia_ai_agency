@@ -1,5 +1,4 @@
 import os
-import shutil
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 FONT_BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
@@ -9,10 +8,10 @@ def get_fonts():
     return {
         "tag": ImageFont.truetype(FONT_BOLD, 26),
         "pill": ImageFont.truetype(FONT_BOLD, 22),
-        "title_xl": ImageFont.truetype(FONT_BOLD, 58),
+        "title_xl": ImageFont.truetype(FONT_BOLD, 56),
         "title": ImageFont.truetype(FONT_BOLD, 44),
         "card_title": ImageFont.truetype(FONT_BOLD, 32),
-        "subtitle": ImageFont.truetype(FONT_REGULAR, 30),
+        "subtitle": ImageFont.truetype(FONT_REGULAR, 29),
         "body_bold": ImageFont.truetype(FONT_BOLD, 26),
         "body": ImageFont.truetype(FONT_REGULAR, 25),
         "caption": ImageFont.truetype(FONT_REGULAR, 22),
@@ -42,13 +41,13 @@ def create_base_canvas():
     img = Image.alpha_composite(img, glow)
     return img
 
-def draw_story_bars(draw, active_index, total=7):
-    bar_w = int((1080 - 120 - (total - 1) * 14) / total)
+def draw_story_bars(draw, active_index, total=8):
+    bar_w = int((1080 - 120 - (total - 1) * 12) / total)
     bar_h = 8
     start_x = 60
     y = 55
     for i in range(total):
-        x = start_x + i * (bar_w + 14)
+        x = start_x + i * (bar_w + 12)
         if i == active_index:
             color = (37, 211, 102, 255)
         elif i < active_index:
@@ -104,7 +103,7 @@ def get_circular_avatar(size=260):
 def build_slide_1():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 0)
+    draw_story_bars(draw, 0, total=8)
     draw_header_badge(draw, "SOFÍA 2.0 • ASISTENTE PARA COMERCIOS")
     fonts = get_fonts()
     
@@ -148,7 +147,7 @@ def build_slide_1():
 def build_slide_2():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 1)
+    draw_story_bars(draw, 1, total=8)
     draw_header_badge(draw, "EL DOLOR DE TODO NEGOCIO", color=(248, 113, 113))
     fonts = get_fonts()
     
@@ -182,7 +181,7 @@ def build_slide_2():
 def build_slide_3():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 2)
+    draw_story_bars(draw, 2, total=8)
     draw_header_badge(draw, "CHAU HORAS DE EXCEL MANUAL", color=(52, 211, 153))
     fonts = get_fonts()
     
@@ -216,7 +215,7 @@ def build_slide_3():
 def build_slide_4():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 3)
+    draw_story_bars(draw, 3, total=8)
     draw_header_badge(draw, "ATENCIÓN AL CLIENTE 24/7", color=(56, 189, 248))
     fonts = get_fonts()
     
@@ -243,30 +242,65 @@ def build_slide_4():
     draw.text((540, 1450), "«Atiende con calidez, rapidez", fill=(37, 211, 102), font=fonts["title"], anchor="mm")
     draw.text((540, 1530), "y matemática 100% exacta»", fill=(255, 255, 255), font=fonts["title"], anchor="mm")
 
-    draw.text((540, 1750), "Mirá la novedad de compras a proveedores »", fill=(148, 163, 184), font=fonts["body_bold"], anchor="mm")
+    draw.text((540, 1750), "Mirá cómo maneja 20 proveedores a la vez »", fill=(148, 163, 184), font=fonts["body_bold"], anchor="mm")
     return img
 
 # ==============================================================================
-# SLIDE 5: CANASTAS MULTIPROVEEDOR & REMITO PDF (LA BOMBA)
+# SLIDE 5: ¿TENÉS 20 PROVEEDORES? MANEJALOS EN UN SOLO LUGAR (¡EL EFECTO WOW!)
 # ==============================================================================
-def build_slide_5():
+def build_slide_proveedores_hub():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 4)
-    draw_header_badge(draw, "COMPRAS AUTOMATIZADAS", color=(250, 204, 21))
+    draw_story_bars(draw, 4, total=8)
+    draw_header_badge(draw, "EL HUB DE TUS PROVEEDORES • CERO PAPELES", color=(251, 146, 60))
     fonts = get_fonts()
     
-    draw.text((540, 210), "Le hace los pedidos a tus\nproveedores con remito PDF", fill=(255, 255, 255), font=fonts["title_xl"], anchor="mm", align="center")
-    draw.text((540, 335), "La función estrella para ferreterías, almacenes y kioscos:", fill=(148, 163, 184), font=fonts["subtitle"], anchor="mm")
+    draw.text((540, 210), "¿Tenés 20 proveedores?\nManejá todo en un solo chat", fill=(255, 255, 255), font=fonts["title_xl"], anchor="mm", align="center")
+    draw.text((540, 335), "Una canasta inteligente en WhatsApp para cada distribuidora:", fill=(148, 163, 184), font=fonts["subtitle"], anchor="mm")
 
-    cards = [
-        ("1. ANOTÁS AL PASO", "Guardá faltantes por nota de voz", "Durante el día decís: «Sofi, anotá para la Bulonera 5 cajas de tornillos».\nElla lo acumula en la canasta de compras de ese proveedor."),
-        ("2. DESPACHO EN 1 SEGUNDO", "Despachale cuando vos decidas", "Cuando querés mandar el pedido le decís:\n«Sofi, mandale el pedido a Distribuidora Alem». Y listo."),
-        ("3. REMITO FORMAL EN PDF", "Membrete profesional de tu negocio", "Sofía arma una orden con membrete, cantidades y total,\ny se la envía por WhatsApp al proveedor en el acto.")
+    baskets = [
+        ("BULONERA LITORAL", "«Sofi, anotá 4 cajas de tornillos y 2 pinzas»", "📦 Acumulado: 6 artículos listos para pedir.", (56, 189, 248)),
+        ("DISTRIBUIDORA QUILMES", "«Sofi, sumá 10 cajones y 5 packs de agua»", "📦 Acumulado: 15 bultos para el próximo camión.", (250, 204, 21)),
+        ("PINTURAS LITORAL", "«Sofi, agregá 3 baldes de látex blanco 20L»", "📦 Acumulado: 3 artículos en espera.", (168, 85, 247))
     ]
 
     y = 405
-    for tag, title, desc in cards:
+    for tag, voice_cmd, desc, accent in baskets:
+        draw.rounded_rectangle([80, y, 1000, y + 265], radius=26, fill=(17, 24, 39, 235), outline=(accent[0], accent[1], accent[2], 160), width=2)
+        pw = draw_pill(draw, tag, 115, y + 24, bg=(accent[0], accent[1], accent[2], 30), border=accent, text_color=accent)
+        draw.text((115, y + 80), voice_cmd, fill=(255, 255, 255), font=fonts["card_title"])
+        draw.text((115, y + 142), desc, fill=(226, 232, 240), font=fonts["body"])
+        draw.text((115, y + 198), "💡 Guardado automáticamente por nota de voz", fill=accent, font=fonts["caption"])
+        y += 290
+
+    draw.rounded_rectangle([80, 1315, 1000, 1615], radius=26, fill=(15, 34, 25, 245), outline=(37, 211, 102, 220), width=2)
+    draw.text((540, 1385), "Antes de que pase el preventista:", fill=(37, 211, 102), font=fonts["title"], anchor="mm")
+    draw.text((540, 1485), "Le decís: «Sofi, ¿qué tenemos para pedirle a la Bulonera?»\ny te canta la lista completa en segundos. Cero olvidos.", fill=(255, 255, 255), font=fonts["subtitle"], anchor="mm", align="center")
+
+    draw.text((540, 1750), "Mirá cómo despacha los remitos en PDF »", fill=(37, 211, 102), font=fonts["body_bold"], anchor="mm")
+    return img
+
+# ==============================================================================
+# SLIDE 6: DESPACHO CON REMITO EN PDF AL MAYORISTA
+# ==============================================================================
+def build_slide_despacho_remito():
+    img = create_base_canvas()
+    draw = ImageDraw.Draw(img)
+    draw_story_bars(draw, 5, total=8)
+    draw_header_badge(draw, "ORDEN FORMAL CON REMITO PDF", color=(250, 204, 21))
+    fonts = get_fonts()
+    
+    draw.text((540, 210), "Despachale al mayorista\ncon una sola frase", fill=(255, 255, 255), font=fonts["title_xl"], anchor="mm", align="center")
+    draw.text((540, 335), "El proveedor recibe una orden de compra profesional:", fill=(148, 163, 184), font=fonts["subtitle"], anchor="mm")
+
+    cards = [
+        ("1. LA ORDEN", "Le hablás a Sofía por WhatsApp:", "«Sofi, mandale el pedido formal a Distribuidora Alem».\nNo tenés que redactar nada ni buscar el número.", (255, 255, 255)),
+        ("2. EL REMITO", "Genera el Remito membretado en PDF:", "Con el nombre de tu comercio, logo, detalle de bultos,\ncantidades exactas y fecha de entrega solicitada.", (56, 189, 248)),
+        ("3. EL ENVÍO", "Llega al WhatsApp del mayorista en vivo:", "Sofía se lo envía por WhatsApp al encargado del mayorista\ncon la plantilla oficial y el PDF adjunto al instante.", (37, 211, 102))
+    ]
+
+    y = 405
+    for tag, title, desc, accent in cards:
         draw.rounded_rectangle([80, y, 1000, y + 265], radius=26, fill=(17, 24, 39, 230), outline=(250, 204, 21, 150), width=2)
         pw = draw_pill(draw, tag, 120, y + 26, bg=(250, 204, 21, 30), border=(250, 204, 21, 200), text_color=(250, 204, 21))
         draw.text((120, y + 78), title, fill=(255, 255, 255), font=fonts["card_title"])
@@ -274,19 +308,19 @@ def build_slide_5():
         y += 290
 
     draw.rounded_rectangle([80, 1315, 1000, 1615], radius=26, fill=(15, 23, 42, 240), outline=(37, 211, 102, 200), width=2)
-    draw.text((540, 1385), "Tu negocio gana estatus y rapidez", fill=(37, 211, 102), font=fonts["title"], anchor="mm")
-    draw.text((540, 1485), "Tu mayorista recibe una orden impecable en PDF,\nte despacha primero y nunca más te falta mercadería.", fill=(255, 255, 255), font=fonts["subtitle"], anchor="mm", align="center")
+    draw.text((540, 1385), "Tu negocio gana estatus y prioridad", fill=(37, 211, 102), font=fonts["title"], anchor="mm")
+    draw.text((540, 1485), "Tu mayorista recibe un pedido prolijo e impecable.\nTe preparan el pedido antes y no hay confusiones.", fill=(255, 255, 255), font=fonts["subtitle"], anchor="mm", align="center")
 
     draw.text((540, 1750), "Mirá el Modo Dueño »", fill=(37, 211, 102), font=fonts["body_bold"], anchor="mm")
     return img
 
 # ==============================================================================
-# SLIDE 6: MODO DUEÑO: CONTROL TOTAL POR WHATSAPP
+# SLIDE 7: MODO DUEÑO: CONTROL TOTAL POR WHATSAPP
 # ==============================================================================
-def build_slide_6():
+def build_slide_modo_dueno():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 5)
+    draw_story_bars(draw, 6, total=8)
     draw_header_badge(draw, "MODO DUEÑO • CONTROL TOTAL", color=(168, 85, 247))
     fonts = get_fonts()
     
@@ -315,12 +349,12 @@ def build_slide_6():
     return img
 
 # ==============================================================================
-# SLIDE 7: OFERTA IRRESISTIBLE & CIERRE (CTA)
+# SLIDE 8: OFERTA IRRESISTIBLE & CIERRE (CTA)
 # ==============================================================================
-def build_slide_7():
+def build_slide_cta():
     img = create_base_canvas()
     draw = ImageDraw.Draw(img)
-    draw_story_bars(draw, 6)
+    draw_story_bars(draw, 7, total=8)
     draw_header_badge(draw, "LANZAMIENTO EXCLUSIVO COMERCIOS", color=(37, 211, 102))
     fonts = get_fonts()
     
@@ -370,9 +404,10 @@ def main():
         ("slide_2_problema.png", build_slide_2),
         ("slide_3_actualizacion_precios.png", build_slide_3),
         ("slide_4_pedidos_audio.png", build_slide_4),
-        ("slide_5_pedidos_proveedores.png", build_slide_5),
-        ("slide_6_modo_dueno.png", build_slide_6),
-        ("slide_7_cta_oferta.png", build_slide_7),
+        ("slide_5_hub_20_proveedores.png", build_slide_proveedores_hub),
+        ("slide_6_pedidos_proveedores.png", build_slide_despacho_remito),
+        ("slide_7_modo_dueno.png", build_slide_modo_dueno),
+        ("slide_8_cta_oferta.png", build_slide_cta),
     ]
     
     for filename, builder in builders:
