@@ -186,14 +186,14 @@ def build_pdf(filename="assets/machete_venta_calle.pdf"):
             Paragraph("Sofía confirma en 2 seg. Ricardo ve que su comercio ya quedó registrado sin tocar una PC.", see_style)
         ],
         [
-            Paragraph("<b>PASO 1</b><br/>Disparo Demo<br/>(Plantilla A)", body_style),
-            Paragraph("Audio a Sofía: <i>'Sofía, mandale la demo a Ricardo con 4 martillos y 2 alicates'</i>.", do_style),
-            Paragraph("Suena el celular de Ricardo con la <b>Plantilla A de Meta</b> aprobada, invitándolo a hablar.", see_style)
+            Paragraph("<b>PASO 1</b><br/>Apertura Chat<br/>(Hola Sofía)", body_style),
+            Paragraph("Le decís: <i>'Agendá a Sofía y mandale un mensaje: Hola Sofía'</i> (o le decís a Sofía: <i>'mandale la demo a Ricardo'</i>).", do_style),
+            Paragraph("Sofía responde llamándolo por su nombre (<i>'¡Hola Ricardo!'</i>). Abre ventana de 24hs gratis y sin trabas.", see_style)
         ],
         [
-            Paragraph("<b>PASO 2</b><br/>Voz a Voz<br/>(Ventana 24h)", body_style),
-            Paragraph("Le decís: <i>'Ricardo, mandale un audio a Sofía preguntando precios de esos martillos'</i>.", do_style),
-            Paragraph("Ricardo habla, se abre la ventana 24h y Sofía responde con voz cotizando ($14.500 y $11.000).", see_style)
+            Paragraph("<b>PASO 2</b><br/>Precios Base<br/>(Por Audio)", body_style),
+            Paragraph("Le decís: <i>'Ricardo, preguntale por audio a cuánto tiene los martillos y los alicates'</i>.", do_style),
+            Paragraph("Sofía escucha el audio y cotiza al instante con matemática exacta (Martillo $14.500 y Alicate $11.000).", see_style)
         ],
         [
             Paragraph("<b>PASO 3</b><br/>Aumento Vivo<br/>(Inflación)", body_style),
