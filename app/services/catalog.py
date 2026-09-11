@@ -940,6 +940,13 @@ class CatalogService:
         self.source_info = f"Preset {trade_title} ({len(items)} productos)"
         self.current_rubro = trade_title
         logger.info(f"Switched rubro to {trade_title} with {len(items)} items")
+
+        try:
+            excel_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx"))
+            self.export_to_excel(excel_path)
+        except Exception as e:
+            logger.warning(f"Could not export preset catalog to excel: {e}")
+
         return trade_title, len(items)
 
 
