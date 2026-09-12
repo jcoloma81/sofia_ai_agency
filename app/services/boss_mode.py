@@ -2,6 +2,7 @@ import os
 import re
 import json
 import logging
+import asyncio
 import httpx
 from typing import Optional, Tuple, List, Dict, Any
 from datetime import datetime, timezone
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.config.settings import settings
 from app.models.prospect import Prospect
 from app.services.catalog import catalog_service
+from app.services import brain
+from app.services import whatsapp
 
 logger = logging.getLogger(__name__)
 
@@ -419,27 +422,45 @@ async def parse_supplier_registration_intent(text: str) -> dict:
     e.g. 'Sofi, agendá al proveedor Bulonera del Litoral al 3434536447'
          'anotá al proveedor Pinturas Litoral al 3424112233'
          'guardá el proveedor Sanitarios del Centro al 343...'
+         'agendá a Carlos de Distribuidora El Progreso al 343...'
     """
     clean = text.strip()
     lower = clean.lower()
+
+    # Guard: if it's an order dispatch, it is NOT a registration
+    dispatch_words = [
+        "mandale el pedido", "mandar pedido", "pasar pedido", "enviar pedido",
+        "despachar pedido", "despachale", "hacele el pedido", "hacé el pedido", "pasale el pedido"
+    ]
+    if any(dw in lower for dw in dispatch_words):
+        return {"is_supplier_registration": False}
+
     triggers = [
         "agendá al proveedor", "agenda al proveedor", "agendar proveedor",
         "anotá al proveedor", "anota al proveedor", "anotar proveedor",
         "guardá al proveedor", "guarda al proveedor", "guardar proveedor",
-        "nuevo proveedor", "proveedor nuevo", "el proveedor es", "el proveedor de"
+        "nuevo proveedor", "proveedor nuevo", "el proveedor es", "el proveedor de",
+        "agendá a", "agenda a", "agendar a", "anotá a", "anota a", "guardá a", "guarda a",
+        "agendá al viajante", "agenda al viajante", "agendar viajante",
+        "anotá al viajante", "anota al viajante", "guardá al viajante",
+        "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora",
+        "guardar distribuidora"
     ]
-    is_candidate = any(trig in lower for trig in triggers) or ("proveedor" in lower and any(k in lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el"]))
+    is_candidate = any(trig in lower for trig in triggers) or (
+        any(w in lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "alta"])
+    )
     if not is_candidate:
         return {"is_supplier_registration": False}
 
     gemini_key = settings.GEMINI_API_KEY
     if gemini_key:
         prompt = (
-            "El dueño de un comercio minorista le habla a su asistente comercial Sofía por WhatsApp para registrar o agendar a un proveedor o distribuidora.\n"
+            "El dueño de un comercio minorista le habla a su asistente comercial Sofía por WhatsApp para registrar o agendar a un proveedor, distribuidora o viajante.\n"
             f"Mensaje: \"{clean}\"\n\n"
             "Analizá y extraé en formato JSON con estas claves:\n"
             "- is_supplier_registration: true o false\n"
-            "- supplier_name: nombre comercial del proveedor o distribuidora (ej: 'Bulonera del Litoral', 'Pinturas Paraná')\n"
+            "- supplier_name: nombre comercial de la empresa proveedora o distribuidora (ej: 'Distribuidora El Progreso', 'Bulonera del Litoral', 'Pinturas Paraná')\n"
+            "- contact_name: nombre de pila de la persona de contacto o viajante si se menciona (ej: 'Carlos', 'Martín', o null si no se menciona)\n"
             "- phone: número de teléfono extraído (solo dígitos, o null)\n"
             "- category: rubro de lo que vende si se menciona (ej: 'tornillos', 'pinturas', 'herramientas', o null)\n"
             "Respondé ÚNICAMENTE un JSON válido."
@@ -463,13 +484,31 @@ async def parse_supplier_registration_intent(text: str) -> dict:
             logger.warning(f"Gemini supplier registration parse error: {e}")
 
     # Fallback deterministic
-    phone_m = re.search(r'(?:al|el|numero|número|telefono|teléfono)?\s*([0-9\s\-+]{8,16})', clean)
+    phone_m = re.search(r'(?:al|el|numero|número|telefono|teléfono|tel|cel)?\s*([0-9\s\-+]{8,25})', clean, re.IGNORECASE)
     phone = "".join(filter(str.isdigit, phone_m.group(1))) if phone_m else None
-    name_m = re.search(r'(?:proveedor\s+|distribuidora\s+)([A-Za-z0-9\s\.\'\"]+?)(?:\s+al|\s+con|\s+el|\s*$)', clean, re.IGNORECASE)
-    name = name_m.group(1).strip() if name_m else "Proveedor"
+
+    # Strip phone from end for clean name extraction
+    clean_no_phone = clean[:phone_m.start()].strip() if phone_m else clean
+
+    # Check "agendá a Carlos de Distribuidora El Progreso"
+    c_match = re.search(r'(?:agend[áa]|anot[áa]|guard[áa])\s+(?:a\s+)?([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s+de\s+([A-Za-zÁÉÍÓÚáéíóúñÑ0-9\s\.\'\"]+)', clean_no_phone, re.IGNORECASE)
+    if c_match:
+        contact_name = c_match.group(1).strip()
+        name = c_match.group(2).strip()
+    else:
+        # e.g. "agendá al proveedor Distribuidora El Progreso"
+        name_m = re.search(r'(?:proveedor\s+|distribuidora\s+|viajante\s+)([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)', clean_no_phone, re.IGNORECASE)
+        if name_m:
+            name = name_m.group(1).strip()
+        else:
+            name_m2 = re.search(r'(?:agend[áa]|anot[áa]|guard[áa])\s+(?:a\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)', clean_no_phone, re.IGNORECASE)
+            name = name_m2.group(1).strip() if name_m2 else "Proveedor"
+        contact_name = name
+
     return {
         "is_supplier_registration": True,
         "supplier_name": name,
+        "contact_name": contact_name,
         "phone": phone,
         "category": None
     }
@@ -590,6 +629,47 @@ def parse_supplier_basket_inquiry_intent(text: str) -> dict:
         return {"is_inquiry": True, "type": "single_basket", "supplier_name": m2.group(1).strip()}
 
     return {"is_inquiry": False}
+
+
+def get_client_manual_text() -> str:
+    return (
+        "👋 *¡HOLA! SOY SOFÍA, TU CENTRAL DE COMPRAS EN WHATSAPP* 📱✨\n\n"
+        "A partir de hoy no necesitás abrir 10 planillas ni volverte loco buscando entre los mensajes de los viajantes. "
+        "Gestionás todas tus compras directamente desde este chat, como si hablaras con una persona.\n\n"
+        "---\n\n"
+        "🎯 *¿CÓMO USARME EN TU DÍA A DÍA?*\n\n"
+        "1️⃣ *Comparar precios al instante:*\n"
+        "Escribime o mandame un audio preguntando por cualquier producto.\n"
+        "👉 _«Sofi, ¿quién tiene más barato el foco LED 9W?»_\n"
+        "👉 _«¿A cuánto me deja el aceite Cañuelas cada distribuidor?»_\n"
+        "Te digo al segundo quién tiene el mejor precio para cuidar tu margen.\n\n"
+        "2️⃣ *Armar pedidos mientras caminás por el local:*\n"
+        "¿Viste un faltante en la góndola? Dictamelo por nota de voz y te lo voy anotando:\n"
+        "👉 _«Anotame 10 paquetes de harina y 5 cajas de tornillos»_\n"
+        "👉 _«¿Qué tengo anotado para pedirle al viajante de Molinos?»_\n\n"
+        "3️⃣ *Controlar aumentos de la semana:*\n"
+        "Antes de que te cobren de más, preguntame:\n"
+        "👉 _«¿Qué productos me aumentaron esta semana?»_\n"
+        "Te aviso qué artículos subieron y cuándo conviene stockearte antes de una suba.\n\n"
+        "4️⃣ *Cargar listas nuevas de tus distribuidores:*\n"
+        "¿El viajante te mandó una lista de precios por WhatsApp?\n"
+        "👉 *Solo dale a \"Reenviar\" a este chat* (en PDF o Excel).\n"
+        "Leo las tablas automáticamente y actualizo todos los precios en segundos.\n\n"
+        "5️⃣ *Revisar tus proveedores registrados:*\n"
+        "👉 _«¿Qué proveedores tengo cargados?»_\n"
+        "Te muestro cuántos distribuidores y productos tenés en memoria.\n\n"
+        "6️⃣ *Agendar proveedores nuevos en 1 toque (¡Contacto directo!):* 🆕\n"
+        "¿Querés que me comunique con un viajante o distribuidora?\n"
+        "👉 Mandame un audio o texto: _«Sofi, agendá al proveedor Carlos de Distribuidora El Progreso al 3434536447»_\n"
+        "👉 O simplemente *compartime su contacto* desde WhatsApp (icono del clip 📎 ➔ Contacto).\n"
+        "⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios vigente en PDF o Excel para que tengas los costos actualizados desde el día 1.\n\n"
+        "---\n\n"
+        "💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*\n\n"
+        "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
+        "🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«agendá al proveedor...»_.\n"
+        "📦 *Cero instalaciones:* Funciona 100% acá adentro de WhatsApp, sin descargar aplicaciones ni programas pesados en la computadora.\n\n"
+        "¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀"
+    )
 
 
 async def process_boss_message(
@@ -809,8 +889,6 @@ async def process_boss_message(
             g5 = "«¿Qué proveedores tengo registrados?»"
 
         try:
-            import asyncio
-            from app.services import whatsapp
             # 1. Attempt official Meta Template (Plantilla A: demo_comercio_v1)
             tpl_components = [
                 {
@@ -945,10 +1023,11 @@ async def process_boss_message(
         norm_p = normalize_argentine_phone(raw_p) if raw_p else None
 
         if norm_p:
+            s_contact = sup_reg_data.get("contact_name") or s_name
             existing_sup = db.query(Prospect).filter(Prospect.phone == norm_p).first()
             if existing_sup:
                 existing_sup.name = s_name
-                existing_sup.contact_name = s_name
+                existing_sup.contact_name = s_contact
                 existing_sup.business_type = "proveedor"
                 existing_sup.campaign = "supplier"
                 existing_sup.notes = f"Proveedor actualizado desde WhatsApp el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
@@ -956,7 +1035,7 @@ async def process_boss_message(
             else:
                 new_sup = Prospect(
                     name=s_name,
-                    contact_name=s_name,
+                    contact_name=s_contact,
                     phone=norm_p,
                     business_type="proveedor",
                     campaign="supplier",
@@ -965,15 +1044,69 @@ async def process_boss_message(
                 db.add(new_sup)
                 db.commit()
 
+            # Determine client / merchant details from sender_phone
+            client_prospect = None
+            if sender_phone:
+                clean_s = "".join(filter(str.isdigit, str(sender_phone)))
+                client_prospect = db.query(Prospect).filter(Prospect.phone == clean_s).first()
+                if not client_prospect:
+                    norm_s = normalize_argentine_phone(clean_s)
+                    client_prospect = db.query(Prospect).filter(Prospect.phone == norm_s).first()
+
+            if client_prospect:
+                client_biz = client_prospect.name or "el comercio"
+                client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
+            else:
+                client_biz = "tu comercio"
+                client_owner = "Javier"
+
+            # 1. Prepare presentation message for the supplier
+            supplier_intro_text = (
+                f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{client_owner} de {client_biz}*.\n\n"
+                f"Soy *Sofía*, su asistente comercial. Me pidió que me ponga en contacto con vos porque a partir de ahora "
+                f"te voy a pasar los pedidos de reposición por acá: *bien detallados, con códigos y en PDF* para facilitarte la carga y que no pierdas tiempo. 📋📦\n\n"
+                f"📌 *Por favor:*\n"
+                f"1️⃣ Agendá este contacto como *«Sofía - {client_biz}»*.\n"
+                f"2️⃣ Si tenés a mano la *última lista de precios o avisos de aumentos de esta semana*, ¿me la podés reenviar por este chat en PDF o Excel? Así ya la dejo cargada para los próximos pedidos.\n\n"
+                f"¿Me confirmás con un *«Agendado»* o *«Recibido»* que te llegó bien? ¡Muchas gracias!"
+            )
+
+            # 2. Dispatch Meta Template (presentacion_proveedor_v1)
+            components = [
+                {
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": s_contact},
+                        {"type": "text", "text": client_owner},
+                        {"type": "text", "text": client_biz}
+                    ]
+                }
+            ]
+            asyncio.create_task(whatsapp.send_whatsapp_template(
+                to_phone=norm_p,
+                template_name="presentacion_proveedor_v1",
+                language_code="es_AR",
+                components=components
+            ))
+
+            # 3. Dispatch conversational WhatsApp message
+            asyncio.create_task(whatsapp.send_whatsapp_message(
+                to_phone=norm_p,
+                text=supplier_intro_text
+            ))
+
             return True, (
-                f"✅ *¡PROVEEDOR REGISTRADO CON ÉXITO!* 📦\n\n"
-                f"🏢 *Proveedor:* {s_name}\n"
+                f"✅ *¡PROVEEDOR REGISTRADO Y CONTACTADO!* 📦✨\n\n"
+                f"🏢 *Distribuidora:* {s_name}\n"
+                f"👤 *Contacto:* {s_contact}\n"
                 f"📱 *WhatsApp:* +{norm_p}\n\n"
-                f"💡 *A partir de ahora podés:*\n"
-                f"• Anotarle ítems: _«Sofi, anotá para {s_name} 5 cajas de tornillos...»_\n"
-                f"• Consultar su canasta: _«¿Qué tengo para pedirle a {s_name}?»_\n"
-                f"• Despacharle su pedido: _«Mandale el pedido a {s_name}»_\n"
-                f"• Enviarle aumentos: me pasás su Excel y te actualizo los precios."
+                f"🚀 *Ya le envié un mensaje de presentación:*\n"
+                f"Me presenté de parte de *{client_owner} de {client_biz}*, le pedí que me agende como «Sofía - {client_biz}» y le solicité su lista de precios o aumentos vigentes en PDF o Excel.\n\n"
+                f"💡 *Apenas me responda o envíe su catálogo, te aviso automáticamente.*\n\n"
+                f"🛒 *A partir de ahora podés:*\n"
+                f"• Anotarle faltantes: _«Sofi, anotá para {s_name} 5 cajas de...»_\n"
+                f"• Ver su canasta: _«¿Qué tengo para pedirle a {s_name}?»_\n"
+                f"• Mandarle el pedido: _«Mandale el pedido a {s_name}»_"
             ), "supplier_registered"
         else:
             return True, (
@@ -1152,9 +1285,6 @@ async def process_boss_message(
         return demo_reply
 
     if any(k in lower_text for k in price_list_triggers) and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
-        import asyncio
-        from app.services import whatsapp
-
         # Check if Javier wants to send the list to a third party (e.g. "mandale la lista a Ricardo")
         send_to_third_party = any(k in lower_text for k in ["mandale la lista a", "pasale la lista a", "enviale la lista a", "mandá la lista a", "enviá la lista a", "mandale los precios a", "pasale los precios a"]) or (
             any(k in lower_text for k in ["mandale", "pasale", "enviale", "mandá a"]) and any(k in lower_text for k in ["la lista", "los precios", "el excel", "el catalogo", "el catálogo"])
@@ -1223,9 +1353,6 @@ async def process_boss_message(
     )
 
     if is_dispatch_candidate:
-        import os
-        import asyncio
-        from app.services import whatsapp
         from app.services.order_engine import parse_order_or_inquiry_with_ai, parse_order_text
         from app.services.pdf_generator import generate_remito_pdf as generate_order_pdf
         from app.services.catalog import ProductItem
@@ -1469,8 +1596,6 @@ async def process_boss_message(
 
     analysis = await parse_order_or_inquiry_with_ai(clean_text)
     if analysis.intent == "price_list_request" and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
-        import asyncio
-        from app.services import whatsapp
         demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
 
@@ -1493,9 +1618,6 @@ async def process_boss_message(
         return True, f"🧪 *[DEMO EN VIVO — CONSULTA DE PRODUCTO]*\n\n{inquiry_reply}", "boss_product_inquiry"
 
     if is_order_confirmation(clean_text):
-        import asyncio
-        from app.services import whatsapp
-
         clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
         saved_draft = LAST_BOSS_ORDERS.get(clean_sender)
         if not saved_draft or not saved_draft.items:
@@ -1691,39 +1813,7 @@ async def process_boss_message(
     # 5.3 Client Manual / User Guide (`manual`, `guia`, `instructivo`, `modo de uso`)
     manual_triggers = ["manual", "guia", "guía", "instructivo", "modo de uso", "manual de uso", "manual cliente", "guia cliente", "guía cliente"]
     if any(lower_text.strip() == k or lower_text.startswith(k + " ") for k in manual_triggers):
-        manual_text = (
-            "👋 *¡HOLA! SOY SOFÍA, TU CENTRAL DE COMPRAS EN WHATSAPP* 📱✨\n\n"
-            "A partir de hoy no necesitás abrir 10 planillas ni volverte loco buscando entre los mensajes de los viajantes. "
-            "Gestionás todas tus compras directamente desde este chat, como si hablaras con una persona.\n\n"
-            "---\n\n"
-            "🎯 *¿CÓMO USARME EN TU DÍA A DÍA?*\n\n"
-            "1️⃣ *Comparar precios al instante:*\n"
-            "Escribime o mandame un audio preguntando por cualquier producto.\n"
-            "👉 _«Sofi, ¿quién tiene más barato el foco LED 9W?»_\n"
-            "👉 _«¿A cuánto me deja el aceite cada distribuidor?»_\n"
-            "Te digo al segundo quién tiene el mejor precio para cuidar tu margen.\n\n"
-            "2️⃣ *Armar pedidos mientras caminás por el local:*\n"
-            "¿Viste un faltante en la góndola? Dictamelo por nota de voz y te lo voy anotando:\n"
-            "👉 _«Anotame 10 paquetes de harina y 5 cajas de tornillos»_\n"
-            "👉 _«¿Qué tengo anotado para pedirle al viajante de Molinos?»_\n\n"
-            "3️⃣ *Controlar aumentos de la semana:*\n"
-            "Antes de que te cobren de más, preguntame:\n"
-            "👉 _«¿Qué productos me aumentaron esta semana?»_\n"
-            "Te aviso qué artículos subieron y cuándo conviene stockearte antes de una suba.\n\n"
-            "4️⃣ *Cargar listas nuevas de tus distribuidores:*\n"
-            "¿El viajante te mandó una lista de precios por WhatsApp?\n"
-            "👉 *Solo dale a \"Reenviar\" a este chat* (en PDF o Excel).\n"
-            "Leo las tablas automáticamente y actualizo todos los precios en segundos.\n\n"
-            "5️⃣ *Revisar tus proveedores registrados:*\n"
-            "👉 _«¿Qué proveedores tengo cargados?»_\n"
-            "Te muestro cuántos distribuidores y productos tenés en memoria.\n\n"
-            "---\n\n"
-            "💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*\n\n"
-            "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
-            "🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«fijate quién tiene más barato...»_.\n"
-            "📦 *Cero instalaciones:* Funciona 100% acá adentro de WhatsApp, sin descargar aplicaciones ni programas pesados en la computadora.\n\n"
-            "¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀"
-        )
+        manual_text = get_client_manual_text()
         phone_match = re.search(r'(\d{8,15})', lower_text)
         if ("enviar" in lower_text or "mandar" in lower_text) and phone_match:
             dest_phone = phone_match.group(1)

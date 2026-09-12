@@ -188,6 +188,19 @@ async def receive_whatsapp_webhook(
                                     logger.info(f"📁 Meta document downloaded ({len(doc_bytes)} bytes): {doc_name}")
                 except Exception as doc_err:
                     logger.error(f"Error processing Meta document: {doc_err}")
+        elif msg_type == "contacts":
+            contacts_list = incoming_meta_msg.get("contacts", [])
+            if contacts_list and isinstance(contacts_list, list):
+                c_item = contacts_list[0]
+                c_name_obj = c_item.get("name", {})
+                c_name = c_name_obj.get("formatted_name") or c_name_obj.get("first_name") or "Proveedor"
+                c_phones = c_item.get("phones", [])
+                c_phone = ""
+                if c_phones and isinstance(c_phones, list):
+                    c_phone = c_phones[0].get("phone") or c_phones[0].get("wa_id") or ""
+                c_phone_digits = "".join(filter(str.isdigit, c_phone))
+                message = f"agendá al proveedor {c_name} al {c_phone_digits}"
+                logger.info(f"📇 Meta contact received: '{c_name}' -> '{c_phone_digits}'")
 
     # 1. Handle Whapi.Cloud format
     elif "messages" in body and isinstance(body["messages"], list) and len(body["messages"]) > 0:
@@ -285,6 +298,14 @@ async def receive_whatsapp_webhook(
                             logger.info(f"📁 WhatsApp document downloaded ({len(doc_bytes)} bytes): {doc_name}")
                 except Exception as doc_err:
                     logger.error(f"Error downloading WhatsApp document from {doc_link}: {doc_err}")
+        elif msg_type in ["contact", "contacts"]:
+            contact_data = first_msg.get("contact") or (first_msg.get("contacts", [{}])[0] if isinstance(first_msg.get("contacts"), list) and len(first_msg.get("contacts")) > 0 else {})
+            c_name = contact_data.get("name") or "Proveedor"
+            vcard_text = contact_data.get("vcard", "")
+            raw_phone = phone_m.group(1) if phone_m else contact_data.get("phone", "")
+            c_phone_digits = "".join(filter(str.isdigit, raw_phone))
+            message = f"agendá al proveedor {c_name} al {c_phone_digits}"
+            logger.info(f"📇 Whapi contact received: '{c_name}' -> '{c_phone_digits}'")
 
         # Text extraction (if not voice note or document)
         if not message:
@@ -541,7 +562,17 @@ async def receive_whatsapp_webhook(
         "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a",
         "anota para", "anotame para", "anotá para", "pedidos a proveedores", "pedidos pendientes"
     ]
-    is_merchant_action = any(k in clean_msg_lower for k in merchant_dispatch_triggers)
+    merchant_supplier_triggers = [
+        "agendá al proveedor", "agenda al proveedor", "agendar proveedor", "agendá a", "agenda a", "agendar a",
+        "anotá al proveedor", "anota al proveedor", "anotar proveedor", "guardá al proveedor", "guarda al proveedor",
+        "guardar proveedor", "nuevo proveedor", "proveedor nuevo", "el proveedor es", "el proveedor de",
+        "agendá al viajante", "agenda al viajante", "agendar viajante", "anotá al viajante", "anota al viajante",
+        "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora", "guardar distribuidora"
+    ]
+    is_merchant_action = (
+        any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers)
+        or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al "]))
+    )
     if is_merchant_action:
         handled_b, reply_b, action_b = await process_boss_message(
             db=db,
@@ -551,7 +582,7 @@ async def receive_whatsapp_webhook(
         )
         if handled_b and action_b in [
             "kiosk_order_dispatched", "basket_item_added", "single_basket_detail",
-            "all_baskets_summary", "supplier_registered", "dispatch_needs_phone"
+            "all_baskets_summary", "supplier_registered", "dispatch_needs_phone", "supplier_needs_phone"
         ]:
             history.append({"sender": "ai", "text": reply_b, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -731,6 +762,54 @@ async def receive_whatsapp_webhook(
             "meeting_confirmed": False
         }
 
+    # 1.93 Register Supplier Guidance (Option 6: e.g. "cómo agendo un proveedor" or "6")
+    is_sup_reg_guide = (
+        clean_msg_lower in ["6", "opcion 6", "opción 6", "6️⃣"]
+        or any(k in clean_msg_lower for k in ["como agendo un proveedor", "cómo agendo un proveedor", "como cargo un proveedor", "cómo cargo un proveedor", "agregar proveedor"])
+    )
+    if is_sup_reg_guide:
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+        greeting = f"¡Hola {safe_name}! " if safe_name else "¡Hola! "
+        reg_guide_reply = (
+            f"{greeting}🤝 *CÓMO AGENDAR PROVEEDORES NUEVOS*\n\n"
+            f"Podés registrar a cualquier viajante o distribuidora de 2 formas súper fáciles:\n\n"
+            f"1️⃣ *Dictámelo por audio o texto:*\n"
+            f"👉 _«Sofi, agendá a Carlos de Distribuidora El Progreso al 343 453-6447»_\n\n"
+            f"2️⃣ *O compartime su contacto de WhatsApp:*\n"
+            f"👉 Tocás el clip 📎 ➔ *Contacto* y me lo mandás directamente.\n\n"
+            f"⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios vigente en PDF o Excel para que tengas los costos actualizados desde el día 1."
+        )
+        history.append({"sender": "ai", "text": reg_guide_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=reg_guide_reply)
+        return {
+            "status": "success",
+            "supplier_reg_guide": True,
+            "reply": reg_guide_reply,
+            "meeting_confirmed": False
+        }
+
+    # 1.94 Client User Guide / Manual (`manual`, `guia`, `instructivo`, `modo de uso`)
+    manual_triggers = ["manual", "guia", "guía", "instructivo", "modo de uso", "manual de uso", "como se usa", "cómo se usa"]
+    if any(clean_msg_lower.strip() == k or clean_msg_lower.startswith(k + " ") for k in manual_triggers):
+        from app.services.boss_mode import get_client_manual_text
+        client_manual = get_client_manual_text()
+        history.append({"sender": "ai", "text": client_manual, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=client_manual)
+        return {
+            "status": "success",
+            "client_manual_sent": True,
+            "reply": client_manual,
+            "meeting_confirmed": False
+        }
+
     # 1.95 Guided Menu Repetition for newly onboarded client greeting
     if prospect.campaign == "client_onboarding" and clean_msg_lower in [
         "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "ayuda", "?"
@@ -747,7 +826,8 @@ async def receive_whatsapp_webhook(
                 f"2️⃣ _«Anotame 10 cajas de tornillos y 2 pinzas»_\n"
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
-                f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
+                f"6️⃣ _«Sofi, agendá a Carlos de Distribuidora El Progreso al 343...» (o compartime su contacto)_ 🆕\n\n"
                 f"¿Qué querés que revisemos primero?"
             )
         else:
@@ -759,7 +839,8 @@ async def receive_whatsapp_webhook(
                 f"2️⃣ _«Anotame un pedido de 10 paquetes de harina y 5 aceites»_\n"
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
-                f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
+                f"6️⃣ _«Sofi, agendá a Carlos de Molinos al 343...» (o compartime su contacto)_ 🆕\n\n"
                 f"¿Qué querés que revisemos primero?"
             )
         history.append({"sender": "ai", "text": menu_reply, "timestamp": datetime.now(timezone.utc).isoformat()})

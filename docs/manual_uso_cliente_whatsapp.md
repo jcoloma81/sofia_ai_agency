@@ -38,6 +38,12 @@ Leo las tablas automáticamente y actualizo todos los precios en segundos.
 👉 _«¿Qué proveedores tengo cargados?»_
 Te muestro cuántos distribuidores y productos tenés en memoria.
 
+6️⃣ *Agendar proveedores nuevos en 1 toque (¡Contacto directo!):* 🆕
+¿Querés que me comunique con un viajante o distribuidora?
+👉 Mandame un audio o texto: _«Sofi, agendá al proveedor Carlos de Distribuidora El Progreso al 3434536447»_
+👉 O simplemente *compartime su contacto* desde WhatsApp (icono del clip 📎 ➔ Contacto).
+⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios vigente en PDF o Excel para que tengas los costos actualizados desde el día 1.
+
 ---
 
 💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*

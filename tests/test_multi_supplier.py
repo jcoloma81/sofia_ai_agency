@@ -34,7 +34,7 @@ async def test_supplier_registration_and_listing(db):
     )
     assert handled is True
     assert action == "supplier_registered"
-    assert "PROVEEDOR REGISTRADO CON ÉXITO" in reply
+    assert "PROVEEDOR REGISTRADO" in reply
     assert "Bulonera del Litoral" in reply
     assert "5493434536447" in reply
 
@@ -330,5 +330,187 @@ def test_client_onboarding_5_options_and_quick_replies(db):
         assert resp.status_code == 200
         data = resp.json()
         assert data.get("action") == "opt_out"
+
+
+def test_merchant_client_register_supplier_with_auto_presentation(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    # 1. Setup Kiosco Alameda as the merchant client
+    kiosco = Prospect(
+        name="Kiosco Alameda",
+        contact_name="Marcelo",
+        phone="5493435112233",
+        city="Paraná",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    db.add(kiosco)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+
+        # Marcelo instructs Sofia by text to register Carlos from Distribuidora El Progreso
+        payload = {
+            "phone": "5493435112233",
+            "message": "Sofi, agendá al proveedor Distribuidora El Progreso al 3434536447"
+        }
+        resp = client.post("/webhook", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+
+        assert data.get("status") == "success"
+        assert data.get("action") == "supplier_registered"
+        assert "PROVEEDOR REGISTRADO Y CONTACTADO" in data["reply"]
+        assert "Distribuidora El Progreso" in data["reply"]
+        assert "5493434536447" in data["reply"]
+
+        # Check DB
+        sup_db = db.query(Prospect).filter(Prospect.phone == "5493434536447").first()
+        assert sup_db is not None
+        assert sup_db.name == "Distribuidora El Progreso"
+        assert sup_db.business_type == "proveedor"
+        assert sup_db.campaign == "supplier"
+
+        # Check Meta Template dispatch to the supplier
+        mock_tpl.assert_called_once()
+        tpl_args = mock_tpl.call_args[1]
+        assert tpl_args["to_phone"] == "5493434536447"
+        assert tpl_args["template_name"] == "presentacion_proveedor_v1"
+
+        # Check conversational message to supplier
+        dispatched_messages = [call[1] for call in mock_msg.call_args_list if call[1]["to_phone"] == "5493434536447"]
+        assert len(dispatched_messages) >= 1
+        intro_text = dispatched_messages[0]["text"]
+        assert "Marcelo de Kiosco Alameda" in intro_text
+        assert "lista de precios" in intro_text
+        assert "Agendá este contacto" in intro_text
+        assert "Agendado" in intro_text
+
+
+def test_meta_contacts_vcard_registration(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    # Setup merchant
+    ferreteria = Prospect(
+        name="Ferretería Nogoyá",
+        contact_name="Ricardo",
+        phone="5493435112233",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    db.add(ferreteria)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+
+        # Simulate Meta Cloud API incoming contact payload
+        meta_payload = {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "123456789",
+                    "changes": [
+                        {
+                            "value": {
+                                "messaging_product": "whatsapp",
+                                "contacts": [{"profile": {"name": "Ricardo"}}],
+                                "messages": [
+                                    {
+                                        "from": "5493435112233",
+                                        "id": "wamid.contact.123",
+                                        "timestamp": "1726000000",
+                                        "type": "contacts",
+                                        "contacts": [
+                                            {
+                                                "name": {
+                                                    "first_name": "Carlos",
+                                                    "formatted_name": "Carlos Molinos"
+                                                },
+                                                "phones": [
+                                                    {
+                                                        "phone": "+54 9 343 499-1122",
+                                                        "type": "CELL"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+
+        resp = client.post("/webhook", json=meta_payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("action") == "supplier_registered"
+
+        # Check DB
+        sup_db = db.query(Prospect).filter(Prospect.phone == "5493434991122").first()
+        assert sup_db is not None
+        assert sup_db.name in ["Carlos Molinos", "Molinos"]
+        assert "Carlos" in (sup_db.contact_name or "")
+        assert sup_db.business_type == "proveedor"
+
+
+def test_client_manual_and_option_6_guidance(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    kiosco = Prospect(
+        name="Kiosco Alameda",
+        contact_name="Marcelo",
+        phone="5493435112233",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    db.add(kiosco)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        # 1. Ask for manual
+        resp = client.post("/webhook", json={"phone": "5493435112233", "message": "manual"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("client_manual_sent") is True
+        assert "Agendar proveedores nuevos en 1 toque" in data["reply"]
+        assert "Sofía - Compras" in data["reply"]
+
+        # 2. Ask for option 6
+        resp = client.post("/webhook", json={"phone": "5493435112233", "message": "6"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("supplier_reg_guide") is True
+        assert "CÓMO AGENDAR PROVEEDORES NUEVOS" in data["reply"]
+        assert "Dictámelo por audio o texto" in data["reply"]
+        assert "compartime su contacto de WhatsApp" in data["reply"]
+
+        # 3. Menu greeting includes Option 6
+        resp = client.post("/webhook", json={"phone": "5493435112233", "message": "hola"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("guided_menu") is True
+        assert "6️⃣" in data["reply"]
+        assert "agendá al proveedor" in data["reply"].lower() or "agendá a" in data["reply"].lower()
+
 
 
