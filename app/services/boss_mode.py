@@ -1106,7 +1106,7 @@ async def process_boss_message(
                 f"te voy a pasar los pedidos de reposición por acá: *bien detallados, con códigos y en PDF* para facilitarte la carga y que no pierdas tiempo. 📋📦\n\n"
                 f"📌 *Por favor:*\n"
                 f"1️⃣ Agendá este contacto como *«Sofía - {client_biz}»*.\n"
-                f"2️⃣ Si tenés a mano la *última lista de precios en PDF o Excel, o si hay aumentos esta semana*, ¿me los podés reenviar por este chat (en archivo o simplemente escribiéndome qué productos suben)? Así ya los dejo cargados para los próximos pedidos.\n\n"
+                f"2️⃣ Si tenés a mano la lista de precios actualizada o los aumentos de esta semana, ¿me los reenviás por acá? Puede ser en archivo (PDF/Excel) o simplemente escribiéndome qué productos suben, así ya los dejo cargados para los próximos pedidos.\n\n"
                 f"¿Me confirmás con un *«Agendado»* o *«Recibido»* que te llegó bien? ¡Muchas gracias!"
             )
 
