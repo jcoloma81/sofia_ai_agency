@@ -730,17 +730,72 @@ async def process_boss_message(
             "city": city
         })
 
-        # Trigger instant welcome message to client's phone
-        welcome_text = (
-            f"¡Hola {c_name}! 👋 Te doy la bienvenida a *{b_name}*.\n\n"
-            f"Soy Sofía, tu asistente comercial virtual. Ya tengo activado el catálogo de tu negocio y estoy lista para atenderte, pasarte precios o tomar tus pedidos 24/7.\n\n"
-            f"💡 *Podés mandarme un audio o texto con lo que necesites:* por ejemplo _«¿A cuánto tenés los martillos?»_ o _«Pasame 3 harinas y 2 aceites»_."
-        )
+        # Build rubro-specific guided welcome message for client
+        is_ferret = any(k in b_type for k in ["ferret", "herramient"])
+        is_almac = any(k in b_type for k in ["despensa", "almacen", "almacén", "alimento", "comestible"])
+        is_kiosc = any(k in b_type for k in ["kiosc"])
+
+        if is_ferret:
+            welcome_text = (
+                f"¡Hola {c_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
+                f"Ya tengo sincronizadas las listas de tus proveedores de ferretería (Distribuidora Nogoyá, Eléctrica Paraná y Mayorista Central).\n\n"
+                f"🎯 *Para probarme ahora mismo, podés mandarme un audio o probar con cualquiera de estos mensajes:*\n\n"
+                f"1️⃣ _«Sofi, ¿quién tiene más barato el foco LED 9W?»_\n"
+                f"2️⃣ _«Anotame 10 cajas de tornillos y 2 pinzas»_\n"
+                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n\n"
+                f"¿Qué querés que revisemos primero?"
+            )
+            demo_items = "10x Tornillos autoperforantes, 2x Pinzas universales"
+            g1 = "«Sofi, ¿quién tiene más barato el foco LED 9W?»"
+            g2 = "«Anotame 10 cajas de tornillos y 2 pinzas»"
+            g3 = "«¿Qué productos me aumentaron esta semana?»"
+        elif is_almac:
+            welcome_text = (
+                f"¡Hola {c_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
+                f"Ya tengo sincronizadas las listas de tus proveedores de alimentos (Molinos Cañuelas, Distribuidora San Martín y Arcor).\n\n"
+                f"🎯 *Para probarme ahora mismo, podés mandarme un audio o probar con cualquiera de estos mensajes:*\n\n"
+                f"1️⃣ _«Sofi, ¿quién tiene más barato el aceite?»_\n"
+                f"2️⃣ _«Anotame un pedido de 10 paquetes de harina y 5 aceites»_\n"
+                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n\n"
+                f"¿Qué querés que revisemos primero?"
+            )
+            demo_items = "10x Harina 000 Cañuelas, 5x Aceite Cañuelas 1.5L"
+            g1 = "«Sofi, ¿quién tiene más barato el aceite?»"
+            g2 = "«Anotame un pedido de 10 paquetes de harina y 5 aceites»"
+            g3 = "«¿Qué productos me aumentaron esta semana?»"
+        elif is_kiosc:
+            welcome_text = (
+                f"¡Hola {c_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
+                f"Ya tengo sincronizadas las listas de tus distribuidores de golosinas, bebidas y snacks.\n\n"
+                f"🎯 *Para probarme ahora mismo, podés mandarme un audio o probar con cualquiera de estos mensajes:*\n\n"
+                f"1️⃣ _«Sofi, ¿a cuánto tenés la Coca de 1.5L y los alfajores?»_\n"
+                f"2️⃣ _«Anotame 2 cajas de Guaymallén y 1 pack de Coca 500»_\n"
+                f"3️⃣ _«¿Quién me deja más barato el chocolate Milka?»_\n\n"
+                f"¿Qué querés que revisemos primero?"
+            )
+            demo_items = "2x Cajas Guaymallén, 1x Pack Coca 500"
+            g1 = "«Sofi, ¿a cuánto tenés la Coca de 1.5L y los alfajores?»"
+            g2 = "«Anotame 2 cajas de Guaymallén y 1 pack de Coca 500»"
+            g3 = "«¿Quién me deja más barato el chocolate Milka?»"
+        else:
+            welcome_text = (
+                f"¡Hola {c_name}! 👋 Soy Sofía, tu asistente comercial en *{b_name}*.\n"
+                f"Ya tengo cargado tu catálogo y listas de precios vigentes.\n\n"
+                f"🎯 *Para probarme ahora mismo, podés mandarme un audio o probar con cualquiera de estos mensajes:*\n\n"
+                f"1️⃣ _«Sofi, pasame el precio de la harina 000 y el aceite»_\n"
+                f"2️⃣ _«Anotame 5 bolsas de harina 25kg y 3 cajas de aceite»_\n"
+                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n\n"
+                f"¿Qué querés que revisemos primero?"
+            )
+            demo_items = "5x Harina 000 25kg, 3x Aceite 12x900ml"
+            g1 = "«Sofi, pasame el precio de la harina y el aceite»"
+            g2 = "«Anotame 5 bolsas de harina y 3 de aceite»"
+            g3 = "«¿Qué productos me aumentaron esta semana?»"
+
         try:
             import asyncio
             from app.services import whatsapp
             # 1. Attempt official Meta Template (Plantilla A: demo_comercio_v1)
-            demo_items = "• 4x Martillos\n• 2x Alicates" if any(k in b_type for k in ["ferret", "herramient"]) else "• 3x Harina 000\n• 2x Aceite Cañuelas"
             tpl_components = [
                 {
                     "type": "body",
@@ -773,14 +828,13 @@ async def process_boss_message(
             f"📱 *WhatsApp:* +{norm_phone}\n"
             f"📍 *Ubicación:* {city}\n"
             f"{catalog_info}\n"
-            f"📩 *Mensaje de bienvenida enviado a su celular:* Le avisé que su catálogo ya está activo.\n\n"
-            f"🎯 *Pruebas en vivo listas para hacer delante de {c_name}:*\n"
-            f"1️⃣ *Enviar pedido a su número:*\n"
-            f"   _«Mandale a {c_name} el pedido de 4 martillos, 2 alicates y tornillos»_\n"
-            f"2️⃣ *Enviarle su lista de precios en Excel:*\n"
-            f"   _«Mandale la lista a {c_name}»_\n"
-            f"3️⃣ *Simular pedido a una distribuidora:*\n"
-            f"   _«Mandale a Distribuidora Alem al [tel] el pedido de {b_name}...»_"
+            f"📩 *Mensaje de bienvenida enviado al celular de {c_name}:*\n"
+            f"Le envié el menú guiado con las 3 opciones listas para tocar o dictar por voz.\n\n"
+            f"🎯 *Guion para la demo en vivo frente a {c_name}:*\n"
+            f"Decile: _«{c_name}, mirá tu WhatsApp. Mandale un audio a Sofía leyendo cualquiera de las 3 opciones:»_\n"
+            f"1️⃣ {g1}\n"
+            f"2️⃣ {g2}\n"
+            f"3️⃣ {g3}"
         )
         return True, reply, action_name
 
@@ -1339,13 +1393,14 @@ async def process_boss_message(
             # Dispatch payload:
             # 1. Attempt official Meta Template (essential if outside 24h window)
             template_name = "demo_comercio_v1" if is_demo_to_client else "orden_compra_v1"
+            tpl_items = ", ".join([f"{it.quantity}x {it.product.name}" for it in draft.items])[:200]
             components = [
                 {
                     "type": "body",
                     "parameters": [
                         {"type": "text", "text": dist_name},
                         {"type": "text", "text": client_name},
-                        {"type": "text", "text": item_lines[:240]},
+                        {"type": "text", "text": tpl_items},
                         {"type": "text", "text": total_display}
                     ]
                 }
@@ -1444,44 +1499,25 @@ async def process_boss_message(
             "📦 *ALERTA ENVIADA A DEPÓSITO:* En instantes entra la orden de preparación a este chat."
         ), "boss_confirm_test"
 
+    # 2.8.0 Weekly Price Fluctuations / Market Increases
+    if any(k in lower_text for k in [
+        "aumento", "aumentó", "aumentos", "aumentaron", "que aumento", "qué aumentó",
+        "que productos me aumentaron", "qué productos me aumentaron", "subieron los precios",
+        "variaciones de precio", "cambios de precio", "que subio", "qué subió"
+    ]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
+        weekly_summary = catalog_service.get_weekly_price_changes(requester_name="Javier")
+        return True, weekly_summary, "boss_price_increases"
+
     # 2.8.1 Multi-supplier Price Comparison & Cheapest Supplier Inquiry
     if any(k in lower_text for k in [
         "mas barato", "más barato", "vende mas barato", "vende más barato",
         "tiene mas barato", "tiene más barato", "quien tiene", "quién tiene",
-        "comparame", "comparar precios", "comparativa de precios", "comparar", "mejor precio"
+        "comparame", "comparar precios", "comparativa de precios", "comparar", "mejor precio",
+        "quien vende mas barato", "quién vende más barato", "quien me deja mas barato", "quién me deja más barato"
     ]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
-        comp_res = catalog_service.compare_supplier_prices(clean_text)
-        if comp_res:
-            canonical_q, matches = comp_res
-            if len(matches) > 1:
-                cheapest = matches[0]
-                expensive = matches[-1]
-                diff = expensive.price - cheapest.price
-                pct = round((diff / expensive.price) * 100) if expensive.price > 0 else 0
-
-                lines = [
-                    f"📊 *COMPARATIVA DE PRECIOS ENTRE PROVEEDORES* 💡\n",
-                    f"🔍 *Búsqueda:* _{canonical_q.title()}_\n"
-                ]
-                medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
-                for i, prod in enumerate(matches[:5]):
-                    m = medals[i] if i < len(medals) else "•"
-                    sup_name = prod.supplier or "Distribuidor Principal"
-                    lines.append(f"{m} *{sup_name}:* {prod.formatted_price()} ({prod.name})")
-
-                lines.append("")
-                if diff > 0:
-                    lines.append(f"💰 *Ahorro:* Comprándole a *{cheapest.supplier or 'la primera opción'}* ahorrás *${diff:,.0f} por unidad* ({pct}% menos) frente a {expensive.supplier or 'otro proveedor'}.")
-                lines.append(f"💡 *¿Querés que te anote un pedido para {cheapest.supplier or 'el más barato'}?*")
-                return True, "\n".join(lines), "boss_price_comparison"
-            elif len(matches) == 1:
-                p = matches[0]
-                sup_str = f" de *{p.supplier}*" if p.supplier else ""
-                return True, (
-                    f"📊 *PRECIO DE PROVEEDOR* 💡\n\n"
-                    f"Para *{canonical_q.title()}* tengo registrado el artículo *{p.name}* a *{p.formatted_price()}*{sup_str}.\n\n"
-                    f"💡 *Aviso:* Tengo cargada la lista de 1 solo proveedor para este artículo. Cuando me pases las listas de tus otros distribuidores en Excel o PDF, te hago la comparativa automática de cuál te conviene en cada compra."
-                ), "boss_price_single_supplier"
+        formatted_comp = catalog_service.format_price_comparison(clean_text, requester_name="Javier")
+        if formatted_comp:
+            return True, formatted_comp, "boss_price_comparison"
 
     if any(k in lower_text for k in ["cuanto", "cuánto", "precio", "sale", "a cuanto", "a cuánto"]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
         p = catalog_service.find_product_exact_or_best(clean_text)

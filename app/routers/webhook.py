@@ -629,6 +629,98 @@ async def receive_whatsapp_webhook(
             "meeting_confirmed": False
         }
 
+    # 1.8 Multi-supplier Price Comparison Inquiry from Client (e.g. "¿Quién tiene más barato el foco LED 9W?")
+    is_comparison_query = any(k in clean_msg_lower for k in [
+        "mas barato", "más barato", "vende mas barato", "vende más barato",
+        "tiene mas barato", "tiene más barato", "quien tiene", "quién tiene",
+        "comparame", "comparar precios", "comparativa", "mejor precio",
+        "quien me deja mas barato", "quién me deja más barato", "quien vende mas barato", "quién vende más barato"
+    ]) and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
+
+    if is_comparison_query or clean_msg_lower in ["1", "opcion 1", "opción 1", "1️⃣"]:
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+        comp_target = message
+        if clean_msg_lower in ["1", "opcion 1", "opción 1", "1️⃣"]:
+            comp_target = "foco LED 9W" if "ferret" in (catalog_service.current_rubro or "").lower() else "aceite"
+
+        formatted_comp = catalog_service.format_price_comparison(comp_target, requester_name=safe_name)
+        if formatted_comp:
+            history.append({"sender": "ai", "text": formatted_comp, "timestamp": datetime.now(timezone.utc).isoformat()})
+            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+            prospect.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=formatted_comp)
+            return {
+                "status": "success",
+                "price_comparison": True,
+                "reply": formatted_comp,
+                "meeting_confirmed": False
+            }
+
+    # 1.9 Weekly Price Increases / Market Fluctuations (e.g. "¿Qué productos me aumentaron esta semana?")
+    is_increase_query = any(k in clean_msg_lower for k in [
+        "aumento", "aumentó", "aumentos", "aumentaron", "que aumento", "qué aumentó",
+        "que productos me aumentaron", "qué productos me aumentaron", "subieron los precios",
+        "variaciones de precio", "cambios de precio", "que subio", "qué subió"
+    ]) and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
+
+    if is_increase_query or clean_msg_lower in ["3", "opcion 3", "opción 3", "3️⃣"]:
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+        weekly_summary = catalog_service.get_weekly_price_changes(requester_name=safe_name)
+        history.append({"sender": "ai", "text": weekly_summary, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=weekly_summary)
+        return {
+            "status": "success",
+            "price_increases": True,
+            "reply": weekly_summary,
+            "meeting_confirmed": False
+        }
+
+    # 1.95 Guided Menu Repetition for newly onboarded client greeting
+    if prospect.campaign == "client_onboarding" and clean_msg_lower in [
+        "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "ayuda", "?"
+    ]:
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
+        b_name = prospect.name or "tu negocio"
+        is_ferret = "ferret" in (catalog_service.current_rubro or "").lower()
+        if is_ferret:
+            menu_reply = (
+                f"¡Hola {safe_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
+                f"Ya tengo sincronizadas las listas de tus proveedores de ferretería.\n\n"
+                f"🎯 *Podés mandarme un audio o texto probando cualquiera de estas opciones:*\n\n"
+                f"1️⃣ _«Sofi, ¿quién tiene más barato el foco LED 9W?»_\n"
+                f"2️⃣ _«Anotame 10 cajas de tornillos y 2 pinzas»_\n"
+                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n\n"
+                f"¿Qué querés que revisemos?"
+            )
+        else:
+            menu_reply = (
+                f"¡Hola {safe_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
+                f"Ya tengo sincronizadas las listas de tus proveedores de alimentos y mayoristas.\n\n"
+                f"🎯 *Podés mandarme un audio o texto probando cualquiera de estas opciones:*\n\n"
+                f"1️⃣ _«Sofi, ¿quién tiene más barato el aceite?»_\n"
+                f"2️⃣ _«Anotame un pedido de 10 paquetes de harina y 5 aceites»_\n"
+                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n\n"
+                f"¿Qué querés que revisemos?"
+            )
+        history.append({"sender": "ai", "text": menu_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=menu_reply)
+        return {
+            "status": "success",
+            "guided_menu": True,
+            "reply": menu_reply,
+            "meeting_confirmed": False
+        }
+
     # 2. Check if customer wants to place a new order or consult product/stock
     analysis = await parse_order_or_inquiry_with_ai(message)
     if analysis.intent == "order":

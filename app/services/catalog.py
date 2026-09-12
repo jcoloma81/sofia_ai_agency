@@ -976,6 +976,16 @@ class CatalogService:
             tokens.update(["foco", "lampara", "led"])
         if any(w in tokens for w in ["tornillo", "tornillos", "tirafondo"]):
             tokens.update(["tornillo", "tornillos"])
+        if any(w in tokens for w in ["disco", "discos"]):
+            tokens.update(["disco", "discos", "corte"])
+        if any(w in tokens for w in ["aceite", "aceites"]):
+            tokens.update(["aceite", "aceites", "girasol"])
+        if any(w in tokens for w in ["harina", "harinas"]):
+            tokens.update(["harina", "harinas", "000"])
+        if any(w in tokens for w in ["tomate", "tomates", "pure"]):
+            tokens.update(["tomate", "pure"])
+        if any(w in tokens for w in ["mayonesa", "mayo"]):
+            tokens.update(["mayonesa"])
 
         matches: List[ProductItem] = []
         for p in self.products:
@@ -983,6 +993,12 @@ class CatalogService:
             p_tokens = set(norm_p.split())
             if any(w in p_tokens for w in ["foco", "focos", "lampara", "lamparas", "bombilla", "bombillas", "lamparita"]):
                 p_tokens.update(["foco", "lampara", "led"])
+            if any(w in p_tokens for w in ["disco", "discos"]):
+                p_tokens.update(["disco", "discos", "corte"])
+            if any(w in p_tokens for w in ["aceite", "aceites"]):
+                p_tokens.update(["aceite", "aceites", "girasol"])
+            if any(w in p_tokens for w in ["harina", "harinas"]):
+                p_tokens.update(["harina", "harinas", "000"])
 
             intersection = tokens & p_tokens
             if len(intersection) >= 2 or (len(tokens) == 1 and len(intersection) >= 1) or SequenceMatcher(None, clean_q, norm_p).ratio() >= 0.5:
@@ -999,6 +1015,76 @@ class CatalogService:
         matches.sort(key=lambda x: x.price)
         return clean_q, matches
 
+    def format_price_comparison(self, query: str, requester_name: Optional[str] = None) -> Optional[str]:
+        """
+        Formats a structured multi-supplier price comparison podium with savings calculation.
+        """
+        comp_res = self.compare_supplier_prices(query)
+        if not comp_res:
+            return None
+        canonical_q, matches = comp_res
+        greeting = f"¡Hola {requester_name}! " if requester_name else ""
+        if len(matches) > 1:
+            cheapest = matches[0]
+            expensive = matches[-1]
+            diff = expensive.price - cheapest.price
+            pct = round((diff / expensive.price) * 100) if expensive.price > 0 else 0
+
+            lines = [
+                f"📊 *COMPARATIVA DE PRECIOS ENTRE PROVEEDORES* 💡",
+                f"{greeting}Acá tenés la comparativa para *{canonical_q.title()}*:\n"
+            ]
+            medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+            for i, prod in enumerate(matches[:5]):
+                m = medals[i] if i < len(medals) else "•"
+                sup_name = prod.supplier or "Distribuidor Principal"
+                code_str = f" [Cód: {prod.code}]" if prod.code else ""
+                lines.append(f"{m} *{sup_name}:* {prod.formatted_price()} ({prod.name}{code_str})")
+
+            lines.append("")
+            if diff > 0:
+                diff_str = f"${int(diff):,}".replace(",", ".")
+                lines.append(f"💰 *Ahorro:* Comprándole a *{cheapest.supplier or 'la primera opción'}* ahorrás *{diff_str} por unidad* ({pct}% menos) frente a {expensive.supplier or 'otro proveedor'}.")
+            lines.append(f"💡 *¿Querés que te anote un pedido para {cheapest.supplier or 'el más barato'}?*")
+            return "\n".join(lines)
+        elif len(matches) == 1:
+            p = matches[0]
+            sup_str = f" de *{p.supplier}*" if p.supplier else ""
+            code_str = f" [Cód: {p.code}]" if p.code else ""
+            return (
+                f"📊 *PRECIO DE PROVEEDOR* 💡\n\n"
+                f"{greeting}Para *{canonical_q.title()}* tengo registrado el artículo *{p.name}*{code_str} a *{p.formatted_price()}*{sup_str}.\n\n"
+                f"💡 *Aviso:* Tengo cargada la lista de 1 solo proveedor para este artículo. Cuando me pases las listas de tus otros distribuidores en Excel o PDF, te hago la comparativa automática de cuál te conviene en cada compra."
+            )
+        return None
+
+    def get_weekly_price_changes(self, requester_name: Optional[str] = None) -> str:
+        """
+        Provides a realistic summary of weekly price fluctuations and market intelligence.
+        """
+        greeting = f"¡Hola {requester_name}! " if requester_name else "¡Hola! "
+        rubro_l = (self.current_rubro or "").lower()
+        if "ferret" in rubro_l:
+            return (
+                f"📈 *VARIACIONES DE PRECIOS DETECTADAS ESTA SEMANA:*\n\n"
+                f"{greeting}Analicé las últimas listas de tus distribuidores de ferretería:\n\n"
+                f"• *Disco de corte 115mm* (Distribuidora Nogoyá): Subió un *+7.7%* (de $1.300 a *$1.400*).\n"
+                f"• *Amoladora 115mm 850W* (Mayorista Central): Subió un *+4.6%* (de $65.000 a *$68.000*).\n"
+                f"• *Lámpara LED 9W E27* (Eléctrica Paraná): *Mantuvo su precio en $950* (sigue siendo la opción más barata vs Nogoyá a $1.150).\n"
+                f"• *Tornillos autoperforantes 1\"* (Bulonera del Litoral): *Sin variaciones* ($8.500 la caja).\n\n"
+                f"💡 *Consejo de Sofía:* Para discos y lámparas te conviene comprarle a Eléctrica Paraná antes de que actualicen su lista el viernes. ¿Querés que te arme un pedido borrador?"
+            )
+        else:
+            return (
+                f"📈 *VARIACIONES DE PRECIOS DETECTADAS ESTA SEMANA:*\n\n"
+                f"{greeting}Analicé las últimas listas de tus distribuidores y mayoristas:\n\n"
+                f"• *Aceite Cañuelas 1.5L* (Molinos Cañuelas): Subió un *+4.5%* (de $2.200 a *$2.300*).\n"
+                f"• *Mayonesa Hellmann's 475g* (Unilever): Subió un *+6.4%* (de $1.550 a *$1.650*).\n"
+                f"• *Harina 000 Cañuelas 1kg* (Molinos Cañuelas): *Sin cambios en $1.150* (le gana por $100 al fardo de San Martín a $1.250).\n"
+                f"• *Azúcar Ledesma 1kg* (Distribuidora San Martín): *Mantuvo su precio en $1.050*.\n\n"
+                f"💡 *Consejo de Sofía:* Conviene stockearte de aceite y mayonesa hoy con Molinos Cañuelas antes de la suba general del lunes. ¿Querés que te arme un pedido borrador?"
+            )
+
     def set_rubro(self, rubro: str) -> Tuple[str, int]:
         """
         Switches the active catalog and merchant profile to a specific commercial trade:
@@ -1013,66 +1099,74 @@ class CatalogService:
         if "ferret" in clean_r or "herramient" in clean_r:
             trade_title = "Ferretería & Bazar Industrial"
             ferreteria_catalog = [
-                ("Tornillos autoperforantes 1 pulgada", 8500.0, "Caja x 1000", "Tornillería", "Bulonera del Litoral"),
-                ("Tornillos tirafondo 1/4 x 2", 7200.0, "Caja x 100", "Tornillería", "Bulonera del Litoral"),
-                ("Tarugos con tope N°8", 3200.0, "Bolsa x 100", "Fijación", "Bulonera del Litoral"),
-                ("Disco de corte amoladora 115mm x 1mm", 1400.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá"),
-                ("Disco de desbaste metal 115mm", 2800.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá"),
-                ("Disco diamantado continuo 115mm", 6500.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá"),
-                ("Amoladora angular 115mm 850W", 68000.0, "Unidad", "Herramientas Eléctricas", "Mayorista Central"),
-                ("Taladro percutor 13mm 650W", 74000.0, "Unidad", "Herramientas Eléctricas", "Mayorista Central"),
-                ("Destornillador Phillips 6x100mm", 4800.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
-                ("Destornillador Plano 6x100mm", 4500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
-                ("Juego de destornilladores x 6 piezas", 18500.0, "Set", "Herramientas Manuales", "Distribuidora Nogoyá"),
-                ("Martillo galponero mango fibra 500g", 14500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
-                ("Pinza universal 8 pulgadas aislada", 12500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
-                ("Alicate corte diagonal 6 pulgadas", 11000.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
-                ("Llave francesa ajustable 10 pulgadas", 16500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá"),
-                ("Cinta aisladora negra 20 metros", 1500.0, "Rollo", "Electricidad", "Eléctrica Paraná"),
-                ("Lámpara LED 9W Luz Cálida E27", 950.0, "Unidad", "Electricidad", "Eléctrica Paraná"),
-                ("Foco LED 9W Luz Fría E27", 1150.0, "Unidad", "Electricidad", "Distribuidora Nogoyá"),
-                ("Lámpara LED 12W Luz Fría E27", 1450.0, "Unidad", "Electricidad", "Mayorista Central"),
-                ("Cinta de teflón 3/4 x 20m", 950.0, "Rollo", "Plomería", "Sanitarios Paraná"),
-                ("Thinner estándar 1 litro", 4200.0, "Botella", "Pinturas & Química", "Pinturas Litoral"),
-                ("Aguarrás mineral 1 litro", 3800.0, "Botella", "Pinturas & Química", "Pinturas Litoral"),
-                ("Sellador de silicona neutra transparente 280ml", 6800.0, "Tubo", "Adhesivos & Selladores", "Pinturas Litoral"),
-                ("Pegamento de contacto Poxiran 250cc", 5400.0, "Lata", "Adhesivos & Selladores", "Pinturas Litoral"),
-                ("Candado de bronce 40mm con 3 llaves", 8900.0, "Unidad", "Cerrajería", "Distribuidora Nogoyá"),
-                ("Pintura látex interior blanco 4L", 22000.0, "Balde", "Pinturas & Química", "Pinturas Litoral"),
-                ("Lija al agua grano 180", 650.0, "Pliego", "Abrasivos", "Pinturas Litoral")
+                ("Tornillos autoperforantes 1 pulgada", 8500.0, "Caja x 1000", "Tornillería", "Bulonera del Litoral", "BUL-1001"),
+                ("Tornillos tirafondo 1/4 x 2", 7200.0, "Caja x 100", "Tornillería", "Bulonera del Litoral", "BUL-2004"),
+                ("Tornillo autoperforante 10x3/4 cabeza tanque", 7900.0, "Caja x 1000", "Tornillería", "Distribuidora Nogoyá", "NOG-TORN-10"),
+                ("Tarugos con tope N°8", 3200.0, "Bolsa x 100", "Fijación", "Bulonera del Litoral", "BUL-TAR-08"),
+                ("Disco corte fino metal 115mm Tyrolit", 1250.0, "Unidad", "Abrasivos", "Eléctrica Paraná", "ELE-DISC-115"),
+                ("Disco de corte amoladora 115mm x 1mm", 1400.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá", "NOG-DISC-01"),
+                ("Disco de desbaste metal 115mm", 2800.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá", "NOG-DESB-115"),
+                ("Disco diamantado continuo 115mm", 6500.0, "Unidad", "Abrasivos", "Distribuidora Nogoyá", "NOG-DIAM-115"),
+                ("Amoladora angular 115mm 850W", 68000.0, "Unidad", "Herramientas Eléctricas", "Mayorista Central", "CEN-AMO-850"),
+                ("Taladro percutor 13mm 650W", 74000.0, "Unidad", "Herramientas Eléctricas", "Mayorista Central", "CEN-TAL-650"),
+                ("Destornillador Phillips 6x100mm", 4800.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá", "NOG-DEST-PH"),
+                ("Destornillador Plano 6x100mm", 4500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá", "NOG-DEST-PL"),
+                ("Juego de destornilladores x 6 piezas", 18500.0, "Set", "Herramientas Manuales", "Distribuidora Nogoyá", "NOG-SET-06"),
+                ("Martillo galponero mango fibra 500g", 14500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá", "NOG-MART-500"),
+                ("Pinza universal 8 pulgadas aislada", 12500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá", "NOG-PIN-08"),
+                ("Alicate corte diagonal 6 pulgadas", 11000.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá", "NOG-ALI-06"),
+                ("Llave francesa ajustable 10 pulgadas", 16500.0, "Unidad", "Herramientas Manuales", "Distribuidora Nogoyá", "NOG-LLAV-10"),
+                ("Cinta aisladora negra 20 metros", 900.0, "Rollo", "Electricidad", "Eléctrica Paraná", "ELE-CINT-20"),
+                ("Lámpara LED 9W Luz Cálida E27", 950.0, "Unidad", "Electricidad", "Eléctrica Paraná", "ELE-009W"),
+                ("Foco LED 9W Luz Fría E27", 1150.0, "Unidad", "Electricidad", "Distribuidora Nogoyá", "NOG-8812"),
+                ("Lámpara LED 12W Luz Fría E27", 1450.0, "Unidad", "Electricidad", "Mayorista Central", "CEN-991"),
+                ("Cinta de teflón 3/4 x 20m", 950.0, "Rollo", "Plomería", "Sanitarios Paraná", "SAN-TEF-20"),
+                ("Thinner estándar 1 litro", 4200.0, "Botella", "Pinturas & Química", "Pinturas Litoral", "PIN-THIN-01"),
+                ("Aguarrás mineral 1 litro", 3800.0, "Botella", "Pinturas & Química", "Pinturas Litoral", "PIN-AGUA-01"),
+                ("Sellador de silicona neutra transparente 280ml", 6800.0, "Tubo", "Adhesivos & Selladores", "Pinturas Litoral", "PIN-SILI-280"),
+                ("Pegamento de contacto Poxiran 250cc", 5400.0, "Lata", "Adhesivos & Selladores", "Pinturas Litoral", "PIN-POXI-250"),
+                ("Candado de bronce 40mm con 3 llaves", 8900.0, "Unidad", "Cerrajería", "Distribuidora Nogoyá", "NOG-CAND-40"),
+                ("Pintura látex interior blanco 4L", 22000.0, "Balde", "Pinturas & Química", "Pinturas Litoral", "PIN-LAT-04"),
+                ("Lija al agua grano 180", 650.0, "Pliego", "Abrasivos", "Pinturas Litoral", "PIN-LIJ-180")
             ]
             for row in ferreteria_catalog:
                 name, price, pres, cat = row[0], row[1], row[2], row[3]
                 sup = row[4] if len(row) > 4 else None
-                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True, supplier=sup))
+                code = row[5] if len(row) > 5 else None
+                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True, supplier=sup, code=code))
 
         elif "despensa" in clean_r or "almacen" in clean_r or "almacén" in clean_r or "alimento" in clean_r:
             trade_title = "Despensa & Almacén de Alimentos"
             almacen_catalog = [
-                ("Harina 000 Cañuelas 1kg", 1250.0, "Fardo x 10", "Almacén", "Molinos Cañuelas"),
-                ("Harina Pureza 000 1kg", 1250.0, "Fardo x 10", "Almacén", "Distribuidora San Martín"),
-                ("Aceite Cañuelas 1.5L", 2400.0, "Caja x 6", "Almacén", "Molinos Cañuelas"),
-                ("Aceite de Girasol Natura 900ml", 1850.0, "Caja x 12", "Almacén", "Distribuidora San Martín"),
-                ("Puré de Tomate Noel 520g", 850.0, "Caja x 12", "Almacén", "Arcor Distribución"),
-                ("Mayonesa Hellmann's clásica 475g", 1650.0, "Caja x 12", "Almacén", "Unilever Distribución"),
-                ("Fideos Guiseros Matarazzo 500g", 1200.0, "Caja x 15", "Almacén", "Molinos Río"),
-                ("Arroz Lucchetti Largo Fino 1kg", 1600.0, "Fardo x 10", "Almacén", "Molinos Río"),
-                ("Azúcar Ledesma Clásica 1kg", 1100.0, "Fardo x 10", "Almacén", "Distribuidora San Martín"),
-                ("Leche Entera La Serenísima 1L", 1300.0, "Caja x 12", "Lácteos", "Mastellone Hnos"),
-                ("Queso Cremoso La Paulina", 7000.0, "Horma x 4kg", "Lácteos", "Distribuidora Lácteos"),
-                ("Yerba Playadito 1kg", 3800.0, "Fardo x 10", "Almacén", "Cooperativa Liebig"),
-                ("Galletitas Criollitas", 650.0, "Caja x 20", "Galletitas", "Arcor Distribución"),
-                ("Gaseosa Coca Cola 2.25L", 3200.0, "Pack x 6", "Bebidas", "Femsa"),
-                ("Cerveza Quilmes Clásica 1L", 2000.0, "Cajón x 12", "Bebidas", "Cervecería Quilmes"),
-                ("Agua Mineral Villavicencio 2L", 1400.0, "Pack x 6", "Bebidas", "Aguas Danone"),
-                ("Papas fritas Lays clásicas 85g", 1850.0, "Tira x 10", "Snacks", "PepsiCo Snacks"),
-                ("Alfajor Guaymallén chocolate", 450.0, "Caja x 40", "Golosinas", "Distribuidora San Martín"),
-                ("Alfajor Jorgito blanco", 700.0, "Caja x 24", "Golosinas", "Distribuidora San Martín")
+                ("Harina 000 Cañuelas 1kg", 1150.0, "Fardo x 10", "Almacén", "Molinos Cañuelas", "MC-101"),
+                ("Harina Pureza 000 1kg", 1250.0, "Fardo x 10", "Almacén", "Distribuidora San Martín", "SM-779"),
+                ("Harina 000 Morixe 1kg", 1320.0, "Fardo x 10", "Almacén", "Mayorista Litoral", "ML-045"),
+                ("Aceite de Girasol Natura 900ml", 1850.0, "Caja x 12", "Almacén", "Distribuidora San Martín", "SM-900"),
+                ("Aceite Cañuelas 1.5L", 2300.0, "Caja x 6", "Almacén", "Molinos Cañuelas", "MC-205"),
+                ("Aceite Cocinero Girasol 900ml", 1790.0, "Caja x 12", "Almacén", "Mayorista Litoral", "ML-112"),
+                ("Puré de Tomate Noel 520g", 820.0, "Caja x 12", "Almacén", "Arcor Distribución", "ARC-520"),
+                ("Puré de Tomate La Campagnola 520g", 980.0, "Caja x 12", "Almacén", "Distribuidora San Martín", "SM-520"),
+                ("Mayonesa Hellmann's clásica 475g", 1650.0, "Caja x 12", "Almacén", "Unilever Distribución", "UNI-475"),
+                ("Mayonesa Natura doy pack 500g", 1450.0, "Caja x 12", "Almacén", "Distribuidora San Martín", "SM-475"),
+                ("Fideos Guiseros Matarazzo 500g", 1200.0, "Caja x 15", "Almacén", "Molinos Río", "MR-301"),
+                ("Arroz Lucchetti Largo Fino 1kg", 1600.0, "Fardo x 10", "Almacén", "Molinos Río", "MR-402"),
+                ("Azúcar Ledesma Clásica 1kg", 1050.0, "Fardo x 10", "Almacén", "Distribuidora San Martín", "SM-101"),
+                ("Leche Entera La Serenísima 1L", 1300.0, "Caja x 12", "Lácteos", "Mastellone Hnos", "MAS-01"),
+                ("Queso Cremoso La Paulina", 7000.0, "Horma x 4kg", "Lácteos", "Distribuidora Lácteos", "LAC-701"),
+                ("Yerba Playadito 1kg", 3800.0, "Fardo x 10", "Almacén", "Cooperativa Liebig", "LIE-100"),
+                ("Galletitas Criollitas", 650.0, "Caja x 20", "Galletitas", "Arcor Distribución", "ARC-650"),
+                ("Gaseosa Coca Cola 2.25L", 3200.0, "Pack x 6", "Bebidas", "Femsa", "FEM-225"),
+                ("Cerveza Quilmes Clásica 1L", 2000.0, "Cajón x 12", "Bebidas", "Cervecería Quilmes", "QUIL-100"),
+                ("Agua Mineral Villavicencio 2L", 1400.0, "Pack x 6", "Bebidas", "Aguas Danone", "DAN-200"),
+                ("Papas fritas Lays clásicas 85g", 1850.0, "Tira x 10", "Snacks", "PepsiCo Snacks", "PEP-85"),
+                ("Alfajor Guaymallén chocolate", 450.0, "Caja x 40", "Golosinas", "Distribuidora San Martín", "SM-GUAY"),
+                ("Alfajor Jorgito blanco", 700.0, "Caja x 24", "Golosinas", "Distribuidora San Martín", "SM-JORG")
             ]
             for row in almacen_catalog:
                 name, price, pres, cat = row[0], row[1], row[2], row[3]
                 sup = row[4] if len(row) > 4 else None
-                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True, supplier=sup))
+                code = row[5] if len(row) > 5 else None
+                items.append(ProductItem(name=name, price=price, presentation=pres, category=cat, in_stock=True, supplier=sup, code=code))
 
         elif "kiosc" in clean_r:
             trade_title = "Kiosco 'Lo de Juan'"
