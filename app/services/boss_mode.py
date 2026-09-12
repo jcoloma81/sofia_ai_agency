@@ -1044,21 +1044,47 @@ async def process_boss_message(
                 db.add(new_sup)
                 db.commit()
 
+            target_sup_id = existing_sup.id if existing_sup else new_sup.id
+
             # Determine client / merchant details from sender_phone
             client_prospect = None
             if sender_phone:
                 clean_s = "".join(filter(str.isdigit, str(sender_phone)))
-                client_prospect = db.query(Prospect).filter(Prospect.phone == clean_s).first()
-                if not client_prospect:
-                    norm_s = normalize_argentine_phone(clean_s)
-                    client_prospect = db.query(Prospect).filter(Prospect.phone == norm_s).first()
+                candidates = [clean_s, normalize_argentine_phone(clean_s)]
+                # Search for client merchant, strictly excluding the supplier just registered/updated
+                client_prospect = db.query(Prospect).filter(
+                    Prospect.phone.in_(candidates),
+                    Prospect.id != target_sup_id
+                ).first()
 
-            if client_prospect:
+            if is_boss_number(sender_phone):
+                # If boss/owner is testing or operating, prioritize active onboarded client context
+                active_c = get_active_onboarded_client(db)
+                if active_c and active_c.get("business_name"):
+                    client_biz = active_c.get("business_name")
+                    client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
+                elif client_prospect:
+                    client_biz = client_prospect.name or "tu comercio"
+                    client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "Javier"
+                else:
+                    client_biz = "tu comercio"
+                    client_owner = "Javier"
+            elif client_prospect:
                 client_biz = client_prospect.name or "el comercio"
                 client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
             else:
-                client_biz = "tu comercio"
-                client_owner = "Javier"
+                client_biz = "el comercio"
+                client_owner = "el titular"
+
+            # Anti-collision safety: client_biz must NEVER be the supplier's own name
+            if client_biz.strip().lower() == s_name.strip().lower():
+                active_c = get_active_onboarded_client(db)
+                if active_c and active_c.get("business_name"):
+                    client_biz = active_c.get("business_name")
+                    client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
+                else:
+                    client_biz = "tu comercio"
+                    client_owner = "Javier"
 
             # 1. Prepare presentation message for the supplier
             supplier_intro_text = (
@@ -1071,29 +1097,33 @@ async def process_boss_message(
                 f"¿Me confirmás con un *«Agendado»* o *«Recibido»* que te llegó bien? ¡Muchas gracias!"
             )
 
-            # 2. Dispatch Meta Template (presentacion_proveedor_v1)
-            components = [
-                {
-                    "type": "body",
-                    "parameters": [
-                        {"type": "text", "text": s_contact},
-                        {"type": "text", "text": client_owner},
-                        {"type": "text", "text": client_biz}
-                    ]
-                }
-            ]
-            asyncio.create_task(whatsapp.send_whatsapp_template(
-                to_phone=norm_p,
-                template_name="presentacion_proveedor_v1",
-                language_code="es_AR",
-                components=components
-            ))
+            # 2. Dispatch presentation to supplier:
+            # First attempt via approved Meta Cloud API Template; if template fails or not approved, fallback to conversational text.
+            async def _dispatch_supplier_presentation():
+                components = [
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {"type": "text", "text": s_contact},
+                            {"type": "text", "text": client_owner},
+                            {"type": "text", "text": client_biz},
+                            {"type": "text", "text": client_biz}
+                        ]
+                    }
+                ]
+                tpl_sent = await whatsapp.send_whatsapp_template(
+                    to_phone=norm_p,
+                    template_name="presentacion_proveedor_v1",
+                    language_code="es_AR",
+                    components=components
+                )
+                if not tpl_sent:
+                    await whatsapp.send_whatsapp_message(
+                        to_phone=norm_p,
+                        text=supplier_intro_text
+                    )
 
-            # 3. Dispatch conversational WhatsApp message
-            asyncio.create_task(whatsapp.send_whatsapp_message(
-                to_phone=norm_p,
-                text=supplier_intro_text
-            ))
+            asyncio.create_task(_dispatch_supplier_presentation())
 
             return True, (
                 f"✅ *¡PROVEEDOR REGISTRADO Y CONTACTADO!* 📦✨\n\n"

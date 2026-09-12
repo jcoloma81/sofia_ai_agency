@@ -26,28 +26,30 @@ def db():
 
 @pytest.mark.asyncio
 async def test_supplier_registration_and_listing(db):
-    # 1. Register supplier
-    handled, reply, action = await process_boss_message(
-        db,
-        settings.WHATSAPP_ALERT_PHONE,
-        "Sofi, agendá al proveedor Bulonera del Litoral al 3434536447 que nos vende tornillos"
-    )
-    assert handled is True
-    assert action == "supplier_registered"
-    assert "PROVEEDOR REGISTRADO" in reply
-    assert "Bulonera del Litoral" in reply
-    assert "5493434536447" in reply
+    with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock), \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock):
+        # 1. Register supplier
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, agendá al proveedor Bulonera del Litoral al 3434536447 que nos vende tornillos"
+        )
+        assert handled is True
+        assert action == "supplier_registered"
+        assert "PROVEEDOR REGISTRADO" in reply
+        assert "Bulonera del Litoral" in reply
+        assert "5493434536447" in reply
 
-    # 2. List suppliers
-    handled_l, reply_l, action_l = await process_boss_message(
-        db,
-        settings.WHATSAPP_ALERT_PHONE,
-        "Sofi, cuáles son mis proveedores?"
-    )
-    assert handled_l is True
-    assert action_l == "suppliers_list"
-    assert "Bulonera del Litoral" in reply_l
-    assert "5493434536447" in reply_l
+        # 2. List suppliers
+        handled_l, reply_l, action_l = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, cuáles son mis proveedores?"
+        )
+        assert handled_l is True
+        assert action_l == "suppliers_list"
+        assert "Bulonera del Litoral" in reply_l
+        assert "5493434536447" in reply_l
 
 
 @pytest.mark.asyncio
@@ -100,22 +102,23 @@ async def test_supplier_baskets_and_inquiries(db):
 
 @pytest.mark.asyncio
 async def test_supplier_basket_dispatch_and_clearing(db):
-    # Setup Bulonera supplier in DB
-    await process_boss_message(
-        db,
-        settings.WHATSAPP_ALERT_PHONE,
-        "Sofi, agendá al proveedor Bulonera del Litoral al 3434536447"
-    )
-    # Add items to basket
-    await process_boss_message(
-        db,
-        settings.WHATSAPP_ALERT_PHONE,
-        "Sofi, anotá para la Bulonera del Litoral 10 cajas de tornillos y 4 pinzas"
-    )
-
-    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+    with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
          patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
         
+        # Setup Bulonera supplier in DB
+        await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, agendá al proveedor Bulonera del Litoral al 3434536447"
+        )
+        # Add items to basket
+        await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, anotá para la Bulonera del Litoral 10 cajas de tornillos y 4 pinzas"
+        )
+
         # Dispatch order using the basket items
         handled, reply, action = await process_boss_message(
             db,
@@ -128,8 +131,10 @@ async def test_supplier_basket_dispatch_and_clearing(db):
         assert "vaciada y lista" in reply
         assert "5493434536447" in reply
 
-        mock_msg.assert_called_once()
-        assert mock_msg.call_args[1]["to_phone"] == "5493434536447"
+        mock_msg.assert_called()
+        # Find the order dispatch message
+        order_msgs = [c[1] for c in mock_msg.call_args_list if c[1]["to_phone"] == "5493434536447" and ("pedido formal" in c[1]["text"].lower() or "remito" in c[1]["text"].lower())]
+        assert len(order_msgs) >= 1
         mock_doc.assert_called_once()
         assert mock_doc.call_args[1]["to_phone"] == "5493434536447"
 
@@ -354,6 +359,7 @@ def test_merchant_client_register_supplier_with_auto_presentation(db):
 
     with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
          patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        mock_tpl.return_value = False
 
         # Marcelo instructs Sofia by text to register Carlos from Distribuidora El Progreso
         payload = {
