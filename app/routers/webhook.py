@@ -684,10 +684,22 @@ async def receive_whatsapp_webhook(
     # 0.8 Merchant / Boss Directives from Client (e.g. dispatching orders to suppliers or managing baskets)
     merchant_dispatch_triggers = [
         "mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a",
+        "mandale el pedido", "mandar el pedido", "mandá el pedido", "mandar pedido",
+        "enviá el pedido", "enviale el pedido", "enviar el pedido", "enviar pedido",
+        "pasale el pedido", "pasá el pedido", "pasar el pedido", "pasar pedido",
+        "despachá el pedido", "despachale el pedido", "despachar pedido", "despachar el pedido",
+        "hacé el pedido", "hacele el pedido", "hacer el pedido", "hacer pedido",
+        "cerrá el pedido", "cerrale el pedido", "cerrar el pedido", "cerrar pedido",
+        "mandale la orden", "enviá la orden", "enviar orden", "mandar orden",
+        "mandale los faltantes", "pasale los faltantes", "enviá los faltantes", "mandar faltantes",
+        "mandá lo que anotamos", "mandale lo que anotamos", "pasale lo que anotamos", "enviá lo que anotamos",
         "mandale a", "mandá a", "hacele el pedido a", "hacé el pedido a",
         "despachar pedido a", "despachale a", "pasale el pedido a", "enviá el pedido a",
         "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a",
-        "anota para", "anotame para", "anotá para", "pedidos a proveedores", "pedidos pendientes"
+        "mandale para", "enviá para", "mandá para", "despachá para", "despachale para", "pasale para",
+        "anota para", "anotame para", "anotá para", "anotale a", "anotá a", "anota a",
+        "cargale a", "cargá para", "sumale a", "sumá para", "agregale a", "agregá para",
+        "pedidos a proveedores", "pedidos pendientes", "que pedidos tengo", "qué pedidos tengo", "ver canasta"
     ]
     merchant_supplier_triggers = [
         "agendá al proveedor", "agenda al proveedor", "agendar proveedor", "agendá a", "agenda a", "agendar a",
@@ -699,6 +711,7 @@ async def receive_whatsapp_webhook(
     is_merchant_action = (
         any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers)
         or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al "]))
+        or (any(v in clean_msg_lower for v in ["mand", "envi", "pas", "despach", "cerr", "hac"]) and any(n in clean_msg_lower for n in ["pedido", "orden", "remito", "faltante"]))
     )
     if is_merchant_action:
         handled_b, reply_b, action_b = await process_boss_message(

@@ -1407,16 +1407,26 @@ async def process_boss_message(
     # 2.95 Dispatch Order to External Distributor or Live Demo to Merchant
     dispatch_triggers = [
         "mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a",
+        "mandale el pedido", "mandar el pedido", "mandá el pedido", "mandar pedido",
+        "enviá el pedido", "enviale el pedido", "enviar el pedido", "enviar pedido",
+        "pasale el pedido", "pasá el pedido", "pasar el pedido", "pasar pedido",
+        "despachá el pedido", "despachale el pedido", "despachar pedido", "despachar el pedido",
+        "hacé el pedido", "hacele el pedido", "hacer el pedido", "hacer pedido",
+        "cerrá el pedido", "cerrale el pedido", "cerrar el pedido", "cerrar pedido",
+        "mandale la orden", "enviá la orden", "enviar orden", "mandar orden",
+        "mandale los faltantes", "pasale los faltantes", "enviá los faltantes", "mandar faltantes",
+        "mandá lo que anotamos", "mandale lo que anotamos", "pasale lo que anotamos", "enviá lo que anotamos",
         "mandale a", "mandá a", "hacele el pedido a", "hacé el pedido a",
         "despachar pedido a", "despachale a", "pasale el pedido a", "enviá el pedido a",
         "enviar a la distribuidora", "mandar a la distribuidora", "pasale a", "enviale a", "envíale a",
+        "mandale para", "enviá para", "mandá para", "despachá para", "despachale para", "pasale para",
         "enviale este mensaje", "enviá este mensaje", "enviale éste mensaje", "mandale este mensaje",
         "mandale la demo a", "mandar la demo a", "mandá la demo a", "enviar la demo a", "pasale la demo a",
         "mandale demo a", "mandar demo a", "enviar demo a"
     ]
     is_dispatch_candidate = any(k in lower_text for k in dispatch_triggers) or (
-        any(k in lower_text for k in ["enviale", "envíale", "mandale", "pasale", "despachale", "mandar", "enviar"]) and
-        any(k in lower_text for k in ["demo", "pedido", "pedidos", "remito", "prueba", "martillo", "alicate", "tornillo", "disco", "caja", "bolsa", "harina", "aceite", "a ferreteria", "a ferretería", "a distribuidora", "el numero es", "el número es", "telefono es", "teléfono es"])
+        any(k in lower_text for k in ["enviale", "envíale", "mandale", "mandá", "manda", "pasale", "pasá", "despachale", "despachá", "mandar", "enviar", "cerrá", "hacé"]) and
+        any(k in lower_text for k in ["demo", "pedido", "pedidos", "orden", "remito", "prueba", "faltante", "faltantes", "lo anotado", "lo que anotamos", "martillo", "alicate", "tornillo", "disco", "caja", "bolsa", "harina", "aceite", "a ferreteria", "a ferretería", "a distribuidora", "para la distribuidora", "el numero es", "el número es", "telefono es", "teléfono es"])
     )
 
     if is_dispatch_candidate:
@@ -1442,7 +1452,7 @@ async def process_boss_message(
 
         dist_name = ai_dispatch.get("recipient_name")
         if not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]:
-            distributor_match = re.search(r'(?:pedido\s+a|la\s+demo\s+a|demo\s+a|a|para)\s+([^\n\r,]+?)(?:\s+al\s+\d+|\s+el\s+numero|\s+el\s+número|\s+con\b|$)', clean_text, re.IGNORECASE)
+            distributor_match = re.search(r'(?:pedido\s+a|pedido\s+para|orden\s+a|orden\s+para|la\s+demo\s+a|demo\s+a|a|para)\s+([^\n\r,]+?)(?:\s+al\s+\d+|\s+el\s+numero|\s+el\s+número|\s+con\b|$)', clean_text, re.IGNORECASE)
             if distributor_match:
                 dist_name = distributor_match.group(1).strip()
         if not dist_name:
@@ -1470,6 +1480,28 @@ async def process_boss_message(
             if matched_p:
                 target_phone = matched_p.phone
                 dist_name = matched_p.contact_name or matched_p.name
+
+        if not target_phone:
+            # Check if there is only 1 open basket with items
+            drafts = load_supplier_drafts()
+            active_baskets = [v for v in drafts.values() if v.get("items")]
+            if len(active_baskets) == 1:
+                cand_sup = active_baskets[0].get("supplier_name", "")
+                if cand_sup:
+                    dist_name = cand_sup
+                    matched_p = db.query(Prospect).filter(
+                        (Prospect.contact_name.ilike(f"%{cand_sup}%")) |
+                        (Prospect.name.ilike(f"%{cand_sup}%"))
+                    ).order_by(Prospect.updated_at.desc()).first()
+                    if matched_p:
+                        target_phone = matched_p.phone
+            if not target_phone:
+                sup_query = db.query(Prospect).filter(
+                    (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
+                ).all()
+                if len(sup_query) == 1:
+                    dist_name = sup_query[0].name or sup_query[0].contact_name
+                    target_phone = sup_query[0].phone
 
         if target_phone:
             target_phone = normalize_argentine_phone(target_phone)
