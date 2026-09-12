@@ -11,7 +11,10 @@ from app.services.boss_mode import (
     process_boss_message,
     load_supplier_drafts,
     clear_supplier_draft,
-    get_supplier_draft
+    get_supplier_draft,
+    get_client_faq_text,
+    get_client_manual_text,
+    parse_supplier_deletion_intent
 )
 from app.services.catalog import catalog_service, ProductItem
 
@@ -105,6 +108,9 @@ async def test_supplier_baskets_and_inquiries(db):
 
 @pytest.mark.asyncio
 async def test_supplier_basket_dispatch_and_clearing(db):
+    clear_supplier_draft("Bulonera del Litoral")
+    clear_supplier_draft("La Bulonera del Litoral")
+
     with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
          patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
          patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as mock_doc:
@@ -714,3 +720,161 @@ async def test_batch_executive_summary_and_street_language(db):
     assert action_q == "single_basket_detail"
     assert "LO QUE TENÉS ANOTADO PARA" in reply_q
     assert "canasta" not in reply_q.lower()
+
+
+@pytest.mark.asyncio
+async def test_client_faq_and_security_guide(db):
+    # 1. Check content of get_client_faq_text
+    faq = get_client_faq_text()
+    assert "GUÍA DE SEGURIDAD COMERCIAL Y PREGUNTAS FRECUENTES" in faq
+    assert "BLOQUE 1: PRECIOS, INFLACIÓN" in faq
+    assert "BLOQUE 2: PROVEEDORES, VIAJANTES" in faq
+    assert "BLOQUE 3: PRIVACIDAD, AUDIOS" in faq
+    assert "Regla de los 7 días" in faq
+    assert "viajante que viene a visitarme en persona" in faq
+    assert "eliminar o dar de baja a un proveedor" in faq
+    assert "confidencialidad es 100% estricta" in faq
+    assert "Resumen Ejecutivo" in faq
+    assert "JAMÁS!" in faq
+
+    # 2. Check get_client_manual_text references 'dudas'
+    manual = get_client_manual_text()
+    assert "«dudas»" in manual
+
+    # 3. Check boss view triggers for FAQ
+    triggers = ["dudas", "faq", "preguntas frecuentes", "que pasa si"]
+    for t in triggers:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            f"Sofi, {t}"
+        )
+        assert handled is True
+        assert action == "boss_faq_view"
+        assert "GUÍA DE PREGUNTAS FRECUENTES Y SEGURIDAD COMERCIAL" in reply
+
+    # 4. Check dispatching FAQ to client phone
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_send:
+        handled_d, reply_d, action_d = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, enviar dudas al 3434536447"
+        )
+        assert handled_d is True
+        assert action_d == "boss_faq_dispatched"
+        assert "5493434536447" in reply_d
+
+
+@pytest.mark.asyncio
+async def test_supplier_deletion_intent_and_execution(db):
+    from app.services.boss_mode import add_items_to_supplier_draft
+
+    # 1. Test intent parsing
+    del1 = parse_supplier_deletion_intent("Sofi, eliminar proveedor Distribuidora San José")
+    assert del1["is_supplier_deletion"] is True
+    assert del1["supplier_name"] == "Distribuidora San José"
+
+    del2 = parse_supplier_deletion_intent("borrar al proveedor Alem")
+    assert del2["is_supplier_deletion"] is True
+    assert del2["supplier_name"] == "Alem"
+
+    del3 = parse_supplier_deletion_intent("dar de baja distribuidora Litoral")
+    assert del3["is_supplier_deletion"] is True
+    assert del3["supplier_name"] == "Litoral"
+
+    del4 = parse_supplier_deletion_intent("Sofi, eliminar proveedor")
+    assert del4["is_supplier_deletion"] is True
+    assert del4["supplier_name"] is None
+
+    del5 = parse_supplier_deletion_intent("hola que tal")
+    assert del5["is_supplier_deletion"] is False
+
+    # 2. Register supplier in DB and open draft
+    sup_test = Prospect(
+        name="Distribuidora San José",
+        contact_name="José",
+        phone="5493434998877",
+        business_type="proveedor",
+        campaign="supplier"
+    )
+    db.add(sup_test)
+    db.commit()
+
+    add_items_to_supplier_draft("Distribuidora San José", [{"product_name": "Tornillos", "quantity": 10, "unit_price": 500}])
+    draft_before = get_supplier_draft("Distribuidora San José")
+    assert draft_before is not None
+    assert len(draft_before.get("items", [])) == 1
+
+    # 3. Delete registered supplier
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, eliminar proveedor Distribuidora San José"
+    )
+    assert handled is True
+    assert action == "supplier_deleted"
+    assert "PROVEEDOR ELIMINADO CON ÉXITO" in reply
+    assert "Distribuidora San José" in reply
+
+    # Verify supplier is gone from DB
+    deleted_in_db = db.query(Prospect).filter(Prospect.name == "Distribuidora San José").first()
+    assert deleted_in_db is None
+
+    # Verify draft is cleared
+    draft_after = get_supplier_draft("Distribuidora San José")
+    assert draft_after is None
+
+    # 4. Deleting again gives supplier_not_found
+    handled2, reply2, action2 = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, eliminar proveedor Distribuidora San José"
+    )
+    assert handled2 is True
+    assert action2 == "supplier_not_found"
+    assert "No encontré ningún proveedor" in reply2
+
+    # 5. Calling without supplier name gives supplier_delete_needs_name
+    handled3, reply3, action3 = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "eliminar proveedor"
+    )
+    assert handled3 is True
+    assert action3 == "supplier_delete_needs_name"
+    assert "¿Qué proveedor te gustaría dar de baja?" in reply3
+
+
+@pytest.mark.asyncio
+async def test_webhook_merchant_client_faq_and_deletion(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    client_lead = Prospect(
+        name="Ferretería El Tornillo",
+        contact_name="Marcos",
+        phone="5493435112233",
+        business_type="ferreteria",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    db.add(client_lead)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock):
+        # 1. Merchant asks for 'dudas'
+        res_faq = client.post("/webhook", json={"phone": "5493435112233", "message": "dudas"})
+        assert res_faq.status_code == 200
+        res_data = res_faq.json()
+        assert res_data.get("client_faq_sent") is True
+        assert "GUÍA DE SEGURIDAD COMERCIAL" in res_data.get("reply", "")
+
+        # 2. Merchant sees menu with option 7
+        res_menu = client.post("/webhook", json={"phone": "5493435112233", "message": "menu"})
+        assert res_menu.status_code == 200
+        assert "7️⃣ _Escribí «manual» para ver cómo usarme o «dudas»" in res_menu.json().get("reply", "")
+

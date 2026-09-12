@@ -83,17 +83,20 @@ def get_supplier_draft(supplier_name: str) -> Optional[dict]:
 
 def clear_supplier_draft(supplier_name: str):
     drafts = load_supplier_drafts()
-    sup_key = re.sub(r'[^\w\s]', '', supplier_name).strip().lower().replace(' ', '_')
+    target = supplier_name.strip().lower()
+    sup_key = re.sub(r'[^\w\s]', '', target).replace(' ', '_')
+    keys_to_del = set()
     if sup_key in drafts:
-        del drafts[sup_key]
-        save_supplier_drafts(drafts)
-        return
-    for k, v in list(drafts.items()):
+        keys_to_del.add(sup_key)
+    for k, v in drafts.items():
         s_title = v.get("supplier_name", "").lower()
-        if supplier_name.lower() in s_title or s_title in supplier_name.lower():
+        if target in s_title or s_title in target:
+            keys_to_del.add(k)
+    for k in keys_to_del:
+        if k in drafts:
             del drafts[k]
-            save_supplier_drafts(drafts)
-            return
+    if keys_to_del:
+        save_supplier_drafts(drafts)
 
 def normalize_argentine_phone(raw_phone: str) -> str:
     """
@@ -514,6 +517,42 @@ async def parse_supplier_registration_intent(text: str) -> dict:
     }
 
 
+def parse_supplier_deletion_intent(text: str) -> dict:
+    """
+    Detects intent to delete, remove or deregister a supplier.
+    e.g. 'eliminar proveedor Distribuidora Alem'
+         'borrar al proveedor Alem'
+         'dar de baja proveedor Alem'
+         'eliminar distribuidora Litoral'
+         'sofi, eliminar proveedor Alem'
+    """
+    clean_text = text.strip()
+    orig_no_prefix = re.sub(r'^(?:sofi|sofia|hola|buenas|che)[\s,:]*', '', clean_text, flags=re.IGNORECASE).strip()
+    lower_no_prefix = orig_no_prefix.lower()
+
+    patterns = [
+        r'(?:eliminar|borrar|dar\s+de\s+baja|remover|quitar)\s+(?:al\s+proveedor|a\s+la\s+distribuidora|al\s+viajante|el\s+proveedor|la\s+distribuidora|proveedor|distribuidora|viajante)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)',
+        r'(?:eliminar|borrar|dar\s+de\s+baja|remover|quitar)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:de\s+(?:mis\s+)?proveedores)',
+    ]
+    for pat in patterns:
+        m = re.search(pat, orig_no_prefix, re.IGNORECASE)
+        if m:
+            s_name = m.group(1).strip()
+            s_name = re.sub(r'[\?\.\!\,]+$', '', s_name).strip()
+            s_name = re.sub(r'^(?:a\s+|la\s+|el\s+)', '', s_name, flags=re.IGNORECASE).strip()
+            if s_name:
+                return {"is_supplier_deletion": True, "supplier_name": s_name}
+
+    if lower_no_prefix in [
+        "eliminar proveedor", "borrar proveedor", "dar de baja proveedor",
+        "eliminar un proveedor", "borrar un proveedor", "dar de baja un proveedor",
+        "eliminar distribuidora", "borrar distribuidora"
+    ]:
+        return {"is_supplier_deletion": True, "supplier_name": None}
+
+    return {"is_supplier_deletion": False}
+
+
 def get_supplier_price_freshness(supplier_name: str, db: Optional[Session] = None) -> dict:
     """
     Checks the freshness of a supplier's price list based on the 7-day Argentine wholesale cycle rule.
@@ -746,7 +785,48 @@ def get_client_manual_text() -> str:
         "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
         "🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«agendá al proveedor...»_.\n"
         "📦 *Cero instalaciones:* Funciona 100% acá adentro de WhatsApp, sin descargar aplicaciones ni programas pesados en la computadora.\n\n"
+        "🛡️ *¿Tenés dudas sobre aumentos, listas viejas o viajantes?*\n"
+        "Escribí *«dudas»* (o _«preguntas frecuentes»_) para ver la Guía de Seguridad Comercial y respuestas a preguntas clave.\n\n"
         "¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀"
+    )
+
+
+def get_client_faq_text() -> str:
+    return (
+        "🛡️ *GUÍA DE SEGURIDAD COMERCIAL Y PREGUNTAS FRECUENTES* ❓✨\n\n"
+        "Acá tenés respuestas claras a las dudas más comunes sobre cómo cuido tus compras, tus precios y tu tranquilidad:\n\n"
+        "---\n\n"
+        "📦 *BLOQUE 1: PRECIOS, INFLACIÓN Y LISTAS DESACTUALIZADAS*\n\n"
+        "1️⃣ *¿Qué pasa si una lista tiene más de 7 días y la otra es nueva?*\n"
+        "👉 Aplico la *Regla de los 7 días*: elijo siempre el precio más conveniente entre los proveedores con listas frescas (actualizadas en la última semana). Si un distribuidor no actualiza hace semanas, no te mando a comprar a ciegas con precios viejos: te pongo una alerta (⚠️) y le pido confirmación de precios antes de despachar.\n\n"
+        "2️⃣ *¿Qué pasa si hago un pedido y el proveedor ya aumentó esta semana?*\n"
+        "👉 Al enviar el pedido por WhatsApp, incluyo una cláusula automática exigiendo confirmación de precios vigentes antes de facturar o despachar. Si el proveedor responde avisando un aumento, te alerto a vos inmediatamente antes de que recibas o pagues la mercadería.\n\n"
+        "3️⃣ *¿Cómo actualizo los precios cuando me llega una lista nueva?*\n"
+        "👉 Es súper fácil: solo le das a *\"Reenviar\"* al PDF o Excel del viajante directo a este chat. Yo leo los códigos y actualizo tus costos en segundos. Y si el viajante me escribe por WhatsApp _«subió el aceite 5%»_, lo tomo sola automáticamente.\n\n"
+        "---\n\n"
+        "🚚 *BLOQUE 2: PROVEEDORES, VIAJANTES Y PEDIDOS*\n\n"
+        "4️⃣ *¿Qué hago con el viajante que viene a visitarme en persona al local?*\n"
+        "👉 Tenés dos opciones muy cómodas:\n"
+        "• Me preguntás: _«¿Qué le tengo anotado a Alem?»_ y se lo cantás directamente desde la pantalla de tu celular mientras tomás un café con él en el mostrador.\n"
+        "• O me decís: _«Sofi, mandale el pedido a Alem»_ y le llega la orden formal por WhatsApp a su teléfono en ese mismo segundo.\n\n"
+        "5️⃣ *¿Puedo eliminar o dar de baja a un proveedor?*\n"
+        "👉 ¡Sí, en cualquier momento! Solo decime: _«Sofi, eliminar proveedor Distribuidora Alem»_. Lo saco de tu agenda de contactos y borro cualquier borrador pendiente que tuvieras anotado para él.\n\n"
+        "6️⃣ *¿Sofía envía pedidos a los proveedores sola sin que yo me entere?*\n"
+        "👉 *¡JAMÁS!* Nunca sale un solo mensaje hacia un distribuidor sin tu orden expresa. Vos vas anotando faltantes con audios o textos durante los días previos, y el pedido *solo se despacha* cuando me decís: _«Sofi, mandale el pedido a [Proveedor]»_.\n\n"
+        "7️⃣ *¿Qué pasa si dicto 20 o 30 productos juntos?*\n"
+        "👉 Para que no leas un mensaje interminable en WhatsApp, te armo un *Resumen Ejecutivo* prolijo: te muestro cuántos artículos van para cada distribuidor, el total estimado en pesos y cuánto dinero te ahorrás en esa compra.\n\n"
+        "---\n\n"
+        "🔒 *BLOQUE 3: PRIVACIDAD, AUDIOS Y OPERATORIA*\n\n"
+        "8️⃣ *¿Mis proveedores o competidores pueden ver los precios de los demás?*\n"
+        "👉 *¡Absolutamente NO!* La confidencialidad es 100% estricta y blindada. Cuando le escribo a un proveedor, solo le paso el pedido de sus propios artículos. Ningún distribuidor sabe a quién más le comprás ni a qué precio, y ningún otro comercio tiene acceso a tus listas.\n\n"
+        "9️⃣ *¿Qué pasa si mando un audio rápido con ruido en el negocio?*\n"
+        "👉 Mi sistema limpia ruidos de fondo (murmullo de clientes, heladeras o tránsito). Si algo no se escucha nítido, te voy a preguntar amablemente para no anotar nunca un producto equivocado.\n\n"
+        "🔟 *¿Puedo dividir un pedido grande entre varios proveedores para ahorrar?*\n"
+        "👉 ¡Sí, lo hago de manera automática! Si me dictás: _«Anotame 10 cajas de alfajores, 5 de yerba y 20 de aceite»_, separo cada producto y lo asigno al proveedor que lo tenga más barato, maximizando tu margen de ganancia.\n\n"
+        "1️⃣1️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
+        "👉 Escribí *«manual»* para la guía rápida de uso diario.\n"
+        "👉 Escribí *«dudas»* (o *«preguntas frecuentes»*) para volver a ver esta guía en cualquier momento.\n\n"
+        "💡 _¡Cuidar tus costos y tu tiempo en el mostrador es mi única prioridad!_ 🤝"
     )
 
 
@@ -1236,6 +1316,73 @@ async def process_boss_message(
                 f"💡 Pasámelo diciendo por ejemplo: `el teléfono de {s_name} es 343 4556679`"
             ), "supplier_needs_phone"
 
+    # 1.63 Supplier Deletion / Removal (`eliminar proveedor <nombre>`, `borrar al proveedor <nombre>`, etc.)
+    sup_del_data = parse_supplier_deletion_intent(clean_text)
+    if sup_del_data.get("is_supplier_deletion"):
+        del_target = sup_del_data.get("supplier_name")
+        if not del_target:
+            return True, (
+                "⚠️ *¿Qué proveedor te gustaría dar de baja?*\n\n"
+                "Decime el nombre por texto o audio, por ejemplo:\n"
+                "_«Sofi, eliminar proveedor Distribuidora Alem»_"
+            ), "supplier_delete_needs_name"
+
+        target_clean = del_target.strip().lower()
+        # Find supplier in Prospect table
+        candidates = db.query(Prospect).filter(
+            (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
+        ).all() if db else []
+
+        matched_sup = None
+        for s in candidates:
+            s_name_lower = (s.name or "").lower()
+            if target_clean in s_name_lower or s_name_lower in target_clean:
+                matched_sup = s
+                break
+
+        if not matched_sup and db:
+            all_pros = db.query(Prospect).all()
+            for s in all_pros:
+                s_name_lower = (s.name or "").lower()
+                if target_clean in s_name_lower or s_name_lower in target_clean:
+                    matched_sup = s
+                    break
+
+        if matched_sup:
+            deleted_name = matched_sup.name
+            db.delete(matched_sup)
+            db.commit()
+            clear_supplier_draft(deleted_name)
+            if del_target.lower() != deleted_name.lower():
+                clear_supplier_draft(del_target)
+
+            return True, (
+                f"🗑️ *PROVEEDOR ELIMINADO CON ÉXITO*\n\n"
+                f"Se dio de baja a *{deleted_name}* de tus contactos y se eliminaron los pedidos pendientes anotados para él.\n\n"
+                f"💡 _Para ver tus proveedores activos escribí:_ `proveedores`"
+            ), "supplier_deleted"
+        else:
+            drafts = load_supplier_drafts()
+            found_draft = False
+            for k, v in list(drafts.items()):
+                s_title = v.get("supplier_name", "").lower()
+                if target_clean in s_title or s_title in target_clean:
+                    clear_supplier_draft(v.get("supplier_name", del_target))
+                    found_draft = True
+                    break
+
+            if found_draft:
+                return True, (
+                    f"🗑️ *BORRADOR ELIMINADO CON ÉXITO*\n\n"
+                    f"Se eliminaron los pedidos pendientes anotados para *{del_target.title()}*.\n\n"
+                    f"💡 _Para ver tus proveedores registrados escribí:_ `proveedores`"
+                ), "supplier_deleted"
+
+            return True, (
+                f"⚠️ No encontré ningún proveedor registrado con el nombre *\"{del_target}\"*.\n\n"
+                f"💡 Escribí `proveedores` para ver tu lista actual de distribuidores guardados."
+            ), "supplier_not_found"
+
     # 1.65 Direct Price Increase or Cost Adjustment from Merchant / Boss
     if (
         any(k in lower_text for k in ["aument", "subi", "sube", "subió", "subio", "suba", "increment", "pasa a", "se fue a", "ahora esta a", "ahora está a", "nuevo precio"])
@@ -1644,7 +1791,7 @@ async def process_boss_message(
 
         dist_name = ai_dispatch.get("recipient_name")
         if not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]:
-            distributor_match = re.search(r'(?:pedido\s+a|pedido\s+para|orden\s+a|orden\s+para|la\s+demo\s+a|demo\s+a|a|para)\s+([^\n\r,]+?)(?:\s+al\s+\d+|\s+el\s+numero|\s+el\s+número|\s+con\b|$)', clean_text, re.IGNORECASE)
+            distributor_match = re.search(r'(?:pedido\s+a|pedido\s+para|orden\s+a|orden\s+para|la\s+demo\s+a|demo\s+a|\ba\b|\bpara\b)\s+([^\n\r,]+?)(?:[,\s]+(?:al\s+\d+|el\s+n[uú]mero|el\s+tel[eé]fono|con\b)|$)', clean_text, re.IGNORECASE)
             if distributor_match:
                 dist_name = distributor_match.group(1).strip()
         if not dist_name:
@@ -1673,7 +1820,7 @@ async def process_boss_message(
                 target_phone = matched_p.phone
                 dist_name = matched_p.contact_name or matched_p.name
 
-        if not target_phone:
+        if not target_phone and (not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]):
             # Check if there is only 1 open basket with items
             drafts = load_supplier_drafts()
             active_baskets = [v for v in drafts.values() if v.get("items")]
@@ -2109,8 +2256,9 @@ async def process_boss_message(
         return True, reply, "catalog_view"
 
     # 5.3 Client Manual / User Guide (`manual`, `guia`, `instructivo`, `modo de uso`)
+    clean_lower_cmd = re.sub(r'^(?:sofi|sofia|hola|buenas|che)[\s,:]*', '', lower_text).strip()
     manual_triggers = ["manual", "guia", "guía", "instructivo", "modo de uso", "manual de uso", "manual cliente", "guia cliente", "guía cliente"]
-    if any(lower_text.strip() == k or lower_text.startswith(k + " ") for k in manual_triggers):
+    if any(clean_lower_cmd == k or clean_lower_cmd.startswith(k + " ") for k in manual_triggers) or (("enviar" in clean_lower_cmd or "mandar" in clean_lower_cmd) and any(k in clean_lower_cmd for k in manual_triggers)):
         manual_text = get_client_manual_text()
         phone_match = re.search(r'(\d{8,15})', lower_text)
         if ("enviar" in lower_text or "mandar" in lower_text) and phone_match:
@@ -2126,6 +2274,29 @@ async def process_boss_message(
             f"💡 _Tip: Si querés que se lo envíe directamente a un cliente, escribí: `enviar manual al <número>`._"
         )
         return True, boss_reply, "boss_manual_view"
+
+    # 5.4 Client FAQ & Commercial Security Guide (`dudas`, `faq`, `preguntas frecuentes`, `que pasa si`)
+    faq_triggers = [
+        "dudas", "duda", "faq", "faqs", "preguntas frecuentes", "que pasa si", "qué pasa si",
+        "como funciona", "cómo funciona", "detalles tecnicos", "detalles técnicos",
+        "seguridad comercial", "seguridad", "garantias", "garantías"
+    ]
+    if any(clean_lower_cmd == k or clean_lower_cmd.startswith(k + " ") for k in faq_triggers) or (("enviar" in clean_lower_cmd or "mandar" in clean_lower_cmd) and any(k in clean_lower_cmd for k in faq_triggers)):
+        faq_text = get_client_faq_text()
+        phone_match = re.search(r'(\d{8,15})', lower_text)
+        if ("enviar" in lower_text or "mandar" in lower_text) and phone_match:
+            dest_phone = phone_match.group(1)
+            if not dest_phone.startswith("54"):
+                dest_phone = "549" + dest_phone.lstrip("0")
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=dest_phone, text=faq_text))
+            return True, f"✅ *Guía de dudas y seguridad enviada con éxito* al número +{dest_phone}.", "boss_faq_dispatched"
+
+        boss_reply = (
+            f"🛡️ *GUÍA DE PREGUNTAS FRECUENTES Y SEGURIDAD COMERCIAL (Lista para reenviar):*\n\n"
+            f"{faq_text}\n\n"
+            f"💡 _Tip: Si querés que se la envíe directamente a un cliente, escribí: `enviar dudas al <número>`._"
+        )
+        return True, boss_reply, "boss_faq_view"
 
     # 5.5 If boss sent a voice note that couldn't be transcribed
     if clean_text.startswith("(Nota de voz") or clean_text.startswith("(Audio"):

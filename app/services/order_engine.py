@@ -265,7 +265,8 @@ def is_order_confirmation(text: str) -> bool:
     # Never treat a commercial directive or inquiry as an order confirmation
     directive_words = {
         "minimo", "mínimo", "zona", "zonas", "flete", "precio", "cuanto", "cuánto",
-        "horario", "horarios", "requisito", "requisitos", "directiva", "directivas", "regla", "reglas"
+        "horario", "horarios", "requisito", "requisitos", "directiva", "directivas", "regla", "reglas",
+        "dudas", "duda", "faq", "faqs", "manual", "guia", "guía", "que", "qué", "pasa", "como", "cómo"
     }
     if any(w in directive_words for w in words):
         return False

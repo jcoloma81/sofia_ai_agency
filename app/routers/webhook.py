@@ -706,7 +706,9 @@ async def receive_whatsapp_webhook(
         "anotá al proveedor", "anota al proveedor", "anotar proveedor", "guardá al proveedor", "guarda al proveedor",
         "guardar proveedor", "nuevo proveedor", "proveedor nuevo", "el proveedor es", "el proveedor de",
         "agendá al viajante", "agenda al viajante", "agendar viajante", "anotá al viajante", "anota al viajante",
-        "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora", "guardar distribuidora"
+        "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora", "guardar distribuidora",
+        "eliminar proveedor", "borrar proveedor", "dar de baja proveedor", "eliminar al proveedor", "borrar al proveedor",
+        "eliminar distribuidora", "borrar distribuidora"
     ]
     is_merchant_action = (
         any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers)
@@ -722,7 +724,9 @@ async def receive_whatsapp_webhook(
         )
         if handled_b and action_b in [
             "kiosk_order_dispatched", "basket_item_added", "single_basket_detail",
-            "all_baskets_summary", "supplier_registered", "dispatch_needs_phone", "supplier_needs_phone"
+            "all_baskets_summary", "supplier_registered", "supplier_deleted",
+            "supplier_not_found", "supplier_delete_needs_name",
+            "dispatch_needs_phone", "supplier_needs_phone"
         ]:
             history.append({"sender": "ai", "text": reply_b, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -950,6 +954,28 @@ async def receive_whatsapp_webhook(
             "meeting_confirmed": False
         }
 
+    # 1.945 Client FAQ & Commercial Security Guide (`dudas`, `faq`, `preguntas frecuentes`, `que pasa si`, `cómo funciona`)
+    faq_triggers = [
+        "dudas", "duda", "faq", "faqs", "preguntas frecuentes", "que pasa si", "qué pasa si",
+        "como funciona", "cómo funciona", "detalles tecnicos", "detalles técnicos", "seguridad comercial",
+        "garantias", "garantías"
+    ]
+    if any(clean_msg_lower.strip() == k or clean_msg_lower.startswith(k + " ") for k in faq_triggers):
+        from app.services.boss_mode import get_client_faq_text
+        client_faq = get_client_faq_text()
+        history.append({"sender": "ai", "text": client_faq, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=client_faq)
+        return {
+            "status": "success",
+            "client_faq_sent": True,
+            "reply": client_faq,
+            "meeting_confirmed": False
+        }
+
     # 1.95 Guided Menu Repetition for newly onboarded client greeting
     if prospect.campaign == "client_onboarding" and clean_msg_lower in [
         "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "ayuda", "?"
@@ -967,7 +993,8 @@ async def receive_whatsapp_webhook(
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
-                f"6️⃣ _«Sofi, agendá a Carlos de Distribuidora El Progreso al 343...» (o compartime su contacto)_ 🆕\n\n"
+                f"6️⃣ _«Sofi, agendá a Carlos de Distribuidora El Progreso al 343...» (o compartime su contacto)_ 🆕\n"
+                f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n\n"
                 f"¿Qué querés que revisemos primero?"
             )
         else:
@@ -980,7 +1007,8 @@ async def receive_whatsapp_webhook(
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
-                f"6️⃣ _«Sofi, agendá a Carlos de Molinos al 343...» (o compartime su contacto)_ 🆕\n\n"
+                f"6️⃣ _«Sofi, agendá a Carlos de Molinos al 343...» (o compartime su contacto)_ 🆕\n"
+                f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n\n"
                 f"¿Qué querés que revisemos primero?"
             )
         history.append({"sender": "ai", "text": menu_reply, "timestamp": datetime.now(timezone.utc).isoformat()})

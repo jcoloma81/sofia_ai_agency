@@ -3,11 +3,16 @@
     "supplier_name": "Pinturas Litoral",
     "items": [
       {
-        "product_name": "Latas de látex blanco",
+        "product_name": "Látex blanco",
         "quantity": 3,
+        "unit_price": 0.0
+      },
+      {
+        "product_name": "Alfajores",
+        "quantity": 10,
         "unit_price": 0.0
       }
     ],
-    "updated_at": "2026-09-12T18:23:08.959087+00:00"
+    "updated_at": "2026-09-12T20:44:12.102234+00:00"
   }
 }
