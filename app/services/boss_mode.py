@@ -823,7 +823,10 @@ def get_client_faq_text() -> str:
         "👉 Mi sistema limpia ruidos de fondo (murmullo de clientes, heladeras o tránsito). Si algo no se escucha nítido, te voy a preguntar amablemente para no anotar nunca un producto equivocado.\n\n"
         "🔟 *¿Puedo dividir un pedido grande entre varios proveedores para ahorrar?*\n"
         "👉 ¡Sí, lo hago de manera automática! Si me dictás: _«Anotame 10 cajas de alfajores, 5 de yerba y 20 de aceite»_, separo cada producto y lo asigno al proveedor que lo tenga más barato, maximizando tu margen de ganancia.\n\n"
-        "1️⃣1️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
+        "1️⃣1️⃣ *¿Le puedo pedir a Sofía que le mande mensajes a un conocido o colega que no es mi proveedor?*\n"
+        "👉 *No.* Por normas oficiales de seguridad de WhatsApp (Meta) y para blindar la privacidad de tu comercio, Sofía funciona en un circuito cerrado y profesional: *únicamente se comunica con vos y con los distribuidores que registres para enviar pedidos de compra*. No envía mensajes libres a contactos externos ni números que no pertenezcan a tu red comercial.\n"
+        "💡 *Si querés mostrarle el manual o recomendarle a Sofía a un colega amigo:* Podés compartirle cualquier mensaje usando la flechita de *«Reenviar»* nativa de tu propio WhatsApp.\n\n"
+        "1️⃣2️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
         "👉 Escribí *«manual»* para la guía rápida de uso diario.\n"
         "👉 Escribí *«dudas»* (o *«preguntas frecuentes»*) para volver a ver esta guía en cualquier momento.\n\n"
         "💡 _¡Cuidar tus costos y tu tiempo en el mostrador es mi única prioridad!_ 🤝"
@@ -2258,22 +2261,9 @@ async def process_boss_message(
     # 5.3 Client Manual / User Guide (`manual`, `guia`, `instructivo`, `modo de uso`)
     clean_lower_cmd = re.sub(r'^(?:sofi|sofia|hola|buenas|che)[\s,:]*', '', lower_text).strip()
     manual_triggers = ["manual", "guia", "guía", "instructivo", "modo de uso", "manual de uso", "manual cliente", "guia cliente", "guía cliente"]
-    if any(clean_lower_cmd == k or clean_lower_cmd.startswith(k + " ") for k in manual_triggers) or (("enviar" in clean_lower_cmd or "mandar" in clean_lower_cmd) and any(k in clean_lower_cmd for k in manual_triggers)):
+    if any(clean_lower_cmd == k or clean_lower_cmd.startswith(k + " ") for k in manual_triggers):
         manual_text = get_client_manual_text()
-        phone_match = re.search(r'(\d{8,15})', lower_text)
-        if ("enviar" in lower_text or "mandar" in lower_text) and phone_match:
-            dest_phone = phone_match.group(1)
-            if not dest_phone.startswith("54"):
-                dest_phone = "549" + dest_phone.lstrip("0")
-            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=dest_phone, text=manual_text))
-            return True, f"✅ *Manual de uso enviado con éxito* al número +{dest_phone}.", "boss_manual_dispatched"
-
-        boss_reply = (
-            f"📖 *MANUAL RÁPIDO DE USO PARA CLIENTES (Listo para reenviar):*\n\n"
-            f"{manual_text}\n\n"
-            f"💡 _Tip: Si querés que se lo envíe directamente a un cliente, escribí: `enviar manual al <número>`._"
-        )
-        return True, boss_reply, "boss_manual_view"
+        return True, manual_text, "boss_manual_view"
 
     # 5.4 Client FAQ & Commercial Security Guide (`dudas`, `faq`, `preguntas frecuentes`, `que pasa si`)
     faq_triggers = [
@@ -2281,22 +2271,9 @@ async def process_boss_message(
         "como funciona", "cómo funciona", "detalles tecnicos", "detalles técnicos",
         "seguridad comercial", "seguridad", "garantias", "garantías"
     ]
-    if any(clean_lower_cmd == k or clean_lower_cmd.startswith(k + " ") for k in faq_triggers) or (("enviar" in clean_lower_cmd or "mandar" in clean_lower_cmd) and any(k in clean_lower_cmd for k in faq_triggers)):
+    if any(clean_lower_cmd == k or clean_lower_cmd.startswith(k + " ") for k in faq_triggers):
         faq_text = get_client_faq_text()
-        phone_match = re.search(r'(\d{8,15})', lower_text)
-        if ("enviar" in lower_text or "mandar" in lower_text) and phone_match:
-            dest_phone = phone_match.group(1)
-            if not dest_phone.startswith("54"):
-                dest_phone = "549" + dest_phone.lstrip("0")
-            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=dest_phone, text=faq_text))
-            return True, f"✅ *Guía de dudas y seguridad enviada con éxito* al número +{dest_phone}.", "boss_faq_dispatched"
-
-        boss_reply = (
-            f"🛡️ *GUÍA DE PREGUNTAS FRECUENTES Y SEGURIDAD COMERCIAL (Lista para reenviar):*\n\n"
-            f"{faq_text}\n\n"
-            f"💡 _Tip: Si querés que se la envíe directamente a un cliente, escribí: `enviar dudas al <número>`._"
-        )
-        return True, boss_reply, "boss_faq_view"
+        return True, faq_text, "boss_faq_view"
 
     # 5.5 If boss sent a voice note that couldn't be transcribed
     if clean_text.startswith("(Nota de voz") or clean_text.startswith("(Audio"):

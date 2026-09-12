@@ -734,6 +734,8 @@ async def test_client_faq_and_security_guide(db):
     assert "viajante que viene a visitarme en persona" in faq
     assert "eliminar o dar de baja a un proveedor" in faq
     assert "confidencialidad es 100% estricta" in faq
+    assert "circuito cerrado y profesional" in faq
+    assert "únicamente se comunica con vos y con los distribuidores" in faq
     assert "Resumen Ejecutivo" in faq
     assert "JAMÁS!" in faq
 
@@ -741,7 +743,7 @@ async def test_client_faq_and_security_guide(db):
     manual = get_client_manual_text()
     assert "«dudas»" in manual
 
-    # 3. Check boss view triggers for FAQ
+    # 3. Check view triggers for FAQ (clean, without artificial headers)
     triggers = ["dudas", "faq", "preguntas frecuentes", "que pasa si"]
     for t in triggers:
         handled, reply, action = await process_boss_message(
@@ -751,18 +753,21 @@ async def test_client_faq_and_security_guide(db):
         )
         assert handled is True
         assert action == "boss_faq_view"
-        assert "GUÍA DE PREGUNTAS FRECUENTES Y SEGURIDAD COMERCIAL" in reply
+        assert "GUÍA DE SEGURIDAD COMERCIAL Y PREGUNTAS FRECUENTES" in reply
+        assert "Listo para reenviar" not in reply
+        assert "enviar dudas al" not in reply
 
-    # 4. Check dispatching FAQ to client phone
-    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_send:
-        handled_d, reply_d, action_d = await process_boss_message(
-            db,
-            settings.WHATSAPP_ALERT_PHONE,
-            "Sofi, enviar dudas al 3434536447"
-        )
-        assert handled_d is True
-        assert action_d == "boss_faq_dispatched"
-        assert "5493434536447" in reply_d
+    # 4. Check view trigger for manual (clean, without artificial headers)
+    handled_m, reply_m, action_m = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, manual"
+    )
+    assert handled_m is True
+    assert action_m == "boss_manual_view"
+    assert "TU CENTRAL DE COMPRAS EN WHATSAPP" in reply_m
+    assert "Listo para reenviar" not in reply_m
+    assert "enviar manual al" not in reply_m
 
 
 @pytest.mark.asyncio
