@@ -561,8 +561,18 @@ async def receive_whatsapp_webhook(
         or (prospect.notes and "proveedor" in str(prospect.notes).lower())
     )
     if is_supplier_sender and message:
+        # Check if supplier has an unanswered inquiry from the merchant
+        has_pending_inquiry = False
+        if prospect.notes:
+            try:
+                meta_n_check = json.loads(prospect.notes)
+                if isinstance(meta_n_check, dict) and meta_n_check.get("last_inquiry") and not meta_n_check.get("last_inquiry", {}).get("replied"):
+                    has_pending_inquiry = True
+            except Exception:
+                pass
+
         # A. Acknowledgment of presentation ("Agendado", "Recibido", "Listo", etc.)
-        if clean_msg_lower in [
+        if not has_pending_inquiry and clean_msg_lower in [
             "agendado", "recibido", "agendada", "recibida", "listo", "dale", "ok", "buenisimo", "buenísimo",
             "perfecto", "agendados", "recibidos", "ya te agende", "ya te agendé", "agendado gracias", "recibido gracias"
         ]:
@@ -721,6 +731,14 @@ async def receive_whatsapp_webhook(
         sup_ack_reply = (
             f"¡Muchas gracias, {sup_contact}! 👍 Ya le transmití tu respuesta al comercio."
         )
+
+        if last_inquiry:
+            last_inquiry["replied"] = True
+            try:
+                meta_n["last_inquiry"] = last_inquiry
+                prospect.notes = json.dumps(meta_n, ensure_ascii=False)
+            except Exception:
+                pass
 
         history.append({"sender": "ai", "text": sup_ack_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
