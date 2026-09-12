@@ -1920,7 +1920,7 @@ async def process_boss_message(
         ]
         asyncio.create_task(whatsapp.send_whatsapp_template(
             to_phone=norm_p,
-            template_name="consulta_proveedor_v1",
+            template_name="consulta_logistica_proveedor_v1",
             language_code="es_AR",
             components=tpl_components
         ))

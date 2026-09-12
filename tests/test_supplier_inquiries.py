@@ -102,7 +102,7 @@ async def test_merchant_direct_inquiry_outbound_dispatch(db, mock_whatsapp):
     # Verify Meta template dispatch
     mock_tpl.assert_awaited()
     tpl_call_kwargs = mock_tpl.call_args.kwargs
-    assert tpl_call_kwargs["template_name"] == "consulta_proveedor_v1"
+    assert tpl_call_kwargs["template_name"] == "consulta_logistica_proveedor_v1"
     assert tpl_call_kwargs["to_phone"] == sup_phone
 
     # Verify supplier direct message dispatch
@@ -241,7 +241,7 @@ def test_onboarded_client_inquiry_via_webhook(db, mock_whatsapp):
     mock_tpl.assert_awaited()
     tpl_call = mock_tpl.call_args.kwargs
     assert tpl_call["to_phone"] == sup_phone
-    assert tpl_call["template_name"] == "consulta_proveedor_v1"
+    assert tpl_call["template_name"] == "consulta_logistica_proveedor_v1"
 
 
 def test_client_manual_and_faq_inquiry_documentation():
