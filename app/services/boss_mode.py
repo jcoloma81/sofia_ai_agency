@@ -813,6 +813,98 @@ def parse_supplier_deletion_intent(text: str) -> dict:
     return {"is_supplier_deletion": False}
 
 
+async def parse_supplier_inquiry_intent(text: str) -> dict:
+    """
+    Detects if the merchant wants to send a question or direct inquiry to a registered supplier.
+    e.g. 'Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto'
+         'preguntale a Alem si abren mañana'
+         'consultale a Distribuidora Central si tienen stock de cal'
+         'decile a Bulonera del Litoral que me guarde 5 cajas de tornillos'
+         'escribile a Pedro de Distribuidora Alem: hola Pedro, a qué hora pasas?'
+    """
+    clean = text.strip()
+    lower = clean.lower()
+
+    # Guard: if it's an order dispatch, basket update, deletion, or registration, exclude it
+    if any(k in lower for k in ["mandale el pedido", "mandar pedido", "despachale", "anotá para", "anotame para", "eliminar proveedor", "agendá al"]):
+        return {"is_supplier_inquiry": False}
+
+    inquiry_keywords = [
+        "preguntale a", "pregúntale a", "preguntale al", "pregúntale al",
+        "consultale a", "consúltale a", "consultale al", "consúltale al",
+        "decile a", "dile a", "decile al", "dile al",
+        "escribile a", "escríbele a", "escribile al", "escríbele al",
+        "avisale a", "avísale a", "mandale a decir a",
+        "preguntar a", "consultar a"
+    ]
+    if not any(k in lower for k in inquiry_keywords):
+        return {"is_supplier_inquiry": False}
+
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El dueño de un comercio minorista le pide a su asistente Sofía por WhatsApp que le envíe una pregunta o consulta a uno de sus proveedores o viajantes.\n"
+            f"Mensaje: \"{clean}\"\n\n"
+            "Extraé un JSON con:\n"
+            "- 'is_supplier_inquiry': true o false\n"
+            "- 'supplier_name': nombre del proveedor o persona (ej: 'Distribuidora Alem', 'Pedro', 'Bulonera del Litoral')\n"
+            "- 'inquiry_text': la pregunta o mensaje limpio que debe enviarse (ej: '¿El lunes hacen reparto?', '¿Tienen stock de cal?'). Redactado de forma respetuosa y clara.\n"
+            "Respondé ÚNICAMENTE un JSON válido con estas claves."
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            data = json.loads(parts[0].get("text", "{}"))
+                            if data.get("is_supplier_inquiry") and data.get("supplier_name") and data.get("inquiry_text"):
+                                return data
+        except Exception as e:
+            logger.warning(f"Gemini supplier inquiry parse error: {e}")
+
+    # Deterministic regex fallback
+    clean_no_prefix = re.sub(r'^(?:sofi|sofía|che|hola|por favor)[\s,:]*', '', clean, flags=re.IGNORECASE).strip()
+    
+    # Pattern: preguntale/consultale/decile/escribile a <proveedor> [que/si/a qué/cuando/etc] <mensaje>
+    m = re.search(
+        r'(?:pregunt[áa]le|preg[úu]ntale|consult[áa]le|cons[úu]ltale|decile|dile|escribile|escr[íi]bele|avisale|av[íi]sale)\s+(?:a\s+|al\s+|a\s+la\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(si\s+.+|qu[ée]\s+.+|a\s+qu[ée]\s+.+|por\s+qu[ée]\s+.+|cu[aá]ndo\s+.+|para\s+cu[aá]ndo\s+.+|cu[aá]nto\s+.+|c[oó]mo\s+.+|d[oó]nde\s+.+|que\s+.+|:\s*.+)',
+        clean_no_prefix,
+        re.IGNORECASE
+    )
+    if m:
+        s_name = m.group(1).strip()
+        inq = m.group(2).strip()
+        inq = re.sub(r'^:\s*', '', inq).strip()
+        s_name = re.sub(r'^(?:el\s+proveedor|la\s+distribuidora|el\s+viajante)\s+', '', s_name, flags=re.IGNORECASE).strip()
+        return {
+            "is_supplier_inquiry": True,
+            "supplier_name": s_name,
+            "inquiry_text": inq
+        }
+
+    # Partial match when inquiry keyword was present but missing either supplier or question
+    m_partial = re.search(
+        r'(?:pregunt[áa]le|preg[úu]ntale|consult[áa]le|cons[úu]ltale|decile|dile|escribile|escr[íi]bele|avisale|av[íi]sale)\s+(?:a\s+|al\s+|a\s+la\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)?',
+        clean_no_prefix,
+        re.IGNORECASE
+    )
+    part_name = m_partial.group(1).strip() if (m_partial and m_partial.group(1)) else None
+    if part_name:
+        part_name = re.sub(r'^(?:el\s+proveedor|la\s+distribuidora|el\s+viajante)\s+', '', part_name, flags=re.IGNORECASE).strip()
+    return {
+        "is_supplier_inquiry": True,
+        "supplier_name": part_name if part_name else None,
+        "inquiry_text": None
+    }
+
+
 def get_supplier_price_freshness(
     supplier_name: str,
     db: Optional[Session] = None,
@@ -1056,6 +1148,10 @@ def get_client_manual_text() -> str:
         "👉 Mandame un audio o texto: _«Sofi, agendá al proveedor Carlos de Distribuidora El Progreso al 3434536447»_\n"
         "👉 O simplemente *compartime su contacto* desde WhatsApp (icono del clip 📎 ➔ Contacto).\n"
         "⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios o aumentos (en archivo o simplemente escribiéndome qué productos suben). Si el viajante me escribe _«subió el azúcar 5%»_, yo actualizo tu catálogo automáticamente y te aviso al instante para que nunca vendas desactualizado ni pierdas margen.\n\n"
+        "7️⃣ *Consultas directas a proveedores (¡Secretaria de compras!):* 🆕\n"
+        "¿Querés hacerle una pregunta o consulta a un distribuidor o viajante sin armar un pedido formal?\n"
+        "👉 Mandame un audio o texto: _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (o _«consultale a...»_, _«decile a...»_, _«escribile a...»_).\n"
+        "⚡ *¿Qué hago yo al instante?* Le escribo a su WhatsApp de parte tuya transmitiéndole tu consulta respetuosamente. Y en cuanto el viajante o distribuidor me responda, te reenvío su respuesta exacta a este chat al instante.\n\n"
         "---\n\n"
         "💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*\n\n"
         "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
@@ -1089,20 +1185,22 @@ def get_client_faq_text() -> str:
         "👉 ¡Sí, en cualquier momento! Solo decime: _«Sofi, eliminar proveedor Distribuidora Alem»_. Lo saco de tu agenda de contactos y borro cualquier borrador pendiente que tuvieras anotado para él.\n\n"
         "6️⃣ *¿Sofía envía pedidos a los proveedores sola sin que yo me entere?*\n"
         "👉 *¡JAMÁS!* Nunca sale un solo mensaje hacia un distribuidor sin tu orden expresa. Vos vas anotando faltantes con audios o textos durante los días previos, y el pedido *solo se despacha* cuando me decís: _«Sofi, mandale el pedido a [Proveedor]»_.\n\n"
-        "7️⃣ *¿Qué pasa si dicto 20 o 30 productos juntos?*\n"
+        "7️⃣ *¿Le puedo pedir a Sofía que le haga consultas o preguntas a un proveedor sin mandar un pedido?* 🆕\n"
+        "👉 *¡Sí, totalmente!* Funciono como tu secretaria ejecutiva de compras. Si querés saber si entregan un feriado, si tienen stock de un producto o cuándo pasa el camión, solo decime: _«Sofi, preguntale a [Proveedor] si el lunes reparten»_. Me comunico con él formalmente de parte de tu negocio y en cuanto me responde te copio su respuesta en este chat.\n\n"
+        "8️⃣ *¿Qué pasa si dicto 20 o 30 productos juntos?*\n"
         "👉 Para que no leas un mensaje interminable en WhatsApp, te armo un *Resumen Ejecutivo* prolijo: te muestro cuántos artículos van para cada distribuidor, el total estimado en pesos y cuánto dinero te ahorrás en esa compra.\n\n"
         "---\n\n"
         "🔒 *BLOQUE 3: PRIVACIDAD, AUDIOS Y OPERATORIA*\n\n"
-        "8️⃣ *¿Mis proveedores o competidores pueden ver los precios de los demás?*\n"
+        "9️⃣ *¿Mis proveedores o competidores pueden ver los precios de los demás?*\n"
         "👉 *¡Absolutamente NO!* La confidencialidad es 100% estricta y blindada. Cuando le escribo a un proveedor, solo le paso el pedido de sus propios artículos. Ningún distribuidor sabe a quién más le comprás ni a qué precio, y ningún otro comercio tiene acceso a tus listas.\n\n"
-        "9️⃣ *¿Qué pasa si mando un audio rápido con ruido en el negocio?*\n"
+        "🔟 *¿Qué pasa si mando un audio rápido con ruido en el negocio?*\n"
         "👉 Mi sistema limpia ruidos de fondo (murmullo de clientes, heladeras o tránsito). Si algo no se escucha nítido, te voy a preguntar amablemente para no anotar nunca un producto equivocado.\n\n"
-        "🔟 *¿Puedo dividir un pedido grande entre varios proveedores para ahorrar?*\n"
+        "1️⃣1️⃣ *¿Puedo dividir un pedido grande entre varios proveedores para ahorrar?*\n"
         "👉 ¡Sí, lo hago de manera automática! Si me dictás: _«Anotame 10 cajas de alfajores, 5 de yerba y 20 de aceite»_, separo cada producto y lo asigno al proveedor que lo tenga más barato, maximizando tu margen de ganancia.\n\n"
-        "1️⃣1️⃣ *¿Le puedo pedir a Sofía que le mande mensajes a un conocido o colega que no es mi proveedor?*\n"
-        "👉 *No.* Por normas oficiales de seguridad de WhatsApp (Meta) y para blindar la privacidad de tu comercio, Sofía funciona en un circuito cerrado y profesional: *únicamente se comunica con vos y con los distribuidores que registres para enviar pedidos de compra*. No envía mensajes libres a contactos externos ni números que no pertenezcan a tu red comercial.\n"
+        "1️⃣2️⃣ *¿Le puedo pedir a Sofía que le mande mensajes a un conocido o colega que no es mi proveedor?*\n"
+        "👉 *No.* Por normas oficiales de seguridad de WhatsApp (Meta) y para blindar la privacidad de tu comercio, Sofía funciona en un circuito cerrado y profesional: *únicamente se comunica con vos y con los distribuidores que registres para enviar pedidos de compra o consultas comerciales*. No envía mensajes libres a contactos externos ni números que no pertenezcan a tu red comercial.\n"
         "💡 *Si querés mostrarle el manual o recomendarle a Sofía a un colega amigo:* Podés compartirle cualquier mensaje usando la flechita de *«Reenviar»* nativa de tu propio WhatsApp.\n\n"
-        "1️⃣2️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
+        "1️⃣3️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
         "👉 Escribí *«manual»* para la guía rápida de uso diario.\n"
         "👉 Escribí *«dudas»* (o *«preguntas frecuentes»*) para volver a ver esta guía en cualquier momento.\n\n"
         "💡 _¡Cuidar tus costos y tu tiempo en el mostrador es mi única prioridad!_ 🤝"
@@ -1696,6 +1794,160 @@ async def process_boss_message(
                 f"⚠️ No encontré ningún proveedor registrado con el nombre *\"{del_target}\"*.\n\n"
                 f"💡 Escribí `proveedores` para ver tu lista actual de distribuidores guardados."
             ), "supplier_not_found"
+
+    # 1.64 Direct Supplier Inquiry / Question on behalf of Merchant ("preguntale a...", "consultale a...", "decile a...")
+    inq_data = await parse_supplier_inquiry_intent(clean_text)
+    if inq_data.get("is_supplier_inquiry"):
+        cand_sup_name = (inq_data.get("supplier_name") or "").strip()
+        inquiry_text = (inq_data.get("inquiry_text") or "").strip()
+
+        if not cand_sup_name or not inquiry_text:
+            return True, (
+                "⚠️ *¿A qué proveedor querés que le consulte y qué le preguntamos?*\n\n"
+                "Podés decirme por ejemplo:\n"
+                "_«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_"
+            ), "supplier_inquiry_missing_info"
+
+        # Resolve supplier in DB scoped to this merchant
+        target_clean = cand_sup_name.lower()
+        candidates = db.query(Prospect).filter(
+            ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+            (Prospect.merchant_phone == sender_phone)
+        ).all() if db else []
+
+        if not candidates and db:
+            candidates = db.query(Prospect).filter(
+                ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+                (Prospect.merchant_phone == None)
+            ).all()
+
+        matched_sup = None
+        for s in candidates:
+            s_name_lower = (s.name or "").lower()
+            s_cont_lower = (s.contact_name or "").lower()
+            if target_clean in s_name_lower or s_name_lower in target_clean or target_clean in s_cont_lower or s_cont_lower in target_clean:
+                matched_sup = s
+                break
+
+        if not matched_sup:
+            # Try splitting by 'de' or 'del' (e.g. "Pedro de Distribuidora Alem")
+            sub_parts = [p.strip().lower() for p in re.split(r'\s+(?:de|del)\s+', cand_sup_name, flags=re.IGNORECASE) if len(p.strip()) > 1]
+            for part in sub_parts:
+                for s in candidates:
+                    s_name_lower = (s.name or "").lower()
+                    s_cont_lower = (s.contact_name or "").lower()
+                    if part in s_name_lower or s_name_lower in part or part in s_cont_lower or s_cont_lower in part:
+                        matched_sup = s
+                        break
+                if matched_sup:
+                    break
+
+        if not matched_sup and db:
+            all_pros = db.query(Prospect).filter(Prospect.merchant_phone == sender_phone).all()
+            for s in all_pros:
+                s_name_lower = (s.name or "").lower()
+                s_cont_lower = (s.contact_name or "").lower()
+                if target_clean in s_name_lower or s_name_lower in target_clean or target_clean in s_cont_lower or s_cont_lower in target_clean:
+                    matched_sup = s
+                    break
+
+        if not matched_sup:
+            return True, (
+                f"⚠️ No encontré a *\"{cand_sup_name}\"* en tus proveedores registrados.\n\n"
+                f"💡 Podés agendarlo primero diciendo:\n"
+                f"_«Sofi, agendá al proveedor {cand_sup_name} al [número de WhatsApp]»_"
+            ), "supplier_not_found"
+
+        target_phone = matched_sup.phone
+        if not target_phone:
+            return True, (
+                f"⚠️ *{matched_sup.name}* está registrado pero no tengo su número de WhatsApp guardado.\n\n"
+                f"💡 Pasámelo diciendo: `el teléfono de {matched_sup.name} es [número]`"
+            ), "supplier_needs_phone"
+
+        norm_p = normalize_argentine_phone(target_phone)
+        s_name = matched_sup.name or cand_sup_name
+        s_contact = matched_sup.contact_name or s_name
+
+        # Merchant business and owner details
+        client_prospect = db.query(Prospect).filter(Prospect.phone == sender_phone).first() if db else None
+        if is_boss_number(sender_phone):
+            active_c = get_active_onboarded_client(db)
+            if active_c and active_c.get("business_name"):
+                client_biz = active_c.get("business_name")
+                client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
+            elif client_prospect:
+                client_biz = client_prospect.name or "tu comercio"
+                client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "Javier"
+            else:
+                client_biz = "tu comercio"
+                client_owner = "Javier"
+        elif client_prospect:
+            client_biz = client_prospect.name or "el comercio"
+            client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
+        else:
+            client_biz = "el comercio"
+            client_owner = "el titular"
+
+        # Format inquiry message for the supplier
+        clean_inquiry = inquiry_text.strip()
+        if re.match(r'^si\s+', clean_inquiry, flags=re.IGNORECASE):
+            body_inq = re.sub(r'^si\s+', '', clean_inquiry, flags=re.IGNORECASE).strip()
+            clean_inquiry = "¿" + body_inq[0].upper() + body_inq[1:] + ("?" if not body_inq.endswith("?") else "")
+        elif re.match(r'^que\s+', clean_inquiry, flags=re.IGNORECASE):
+            clean_inquiry = re.sub(r'^que\s+', '', clean_inquiry, flags=re.IGNORECASE).strip()
+            if clean_inquiry:
+                clean_inquiry = clean_inquiry[0].upper() + clean_inquiry[1:]
+
+        sup_msg = (
+            f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{client_owner} de {client_biz}*.\n\n"
+            f"Me pidió que te consulte lo siguiente:\n"
+            f"💬 _«{clean_inquiry}»_\n\n"
+            f"Por favor respondé por acá y se lo transmito de inmediato. ¡Muchas gracias!"
+        )
+
+        # Dispatch via Meta Template (if outside 24h window) or direct message
+        tpl_components = [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": s_contact},
+                    {"type": "text", "text": client_owner},
+                    {"type": "text", "text": client_biz},
+                    {"type": "text", "text": clean_inquiry}
+                ]
+            }
+        ]
+        asyncio.create_task(whatsapp.send_whatsapp_template(
+            to_phone=norm_p,
+            template_name="consulta_proveedor_v1",
+            language_code="es_AR",
+            components=tpl_components
+        ))
+        asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=norm_p, text=sup_msg))
+
+        # Save last inquiry in supplier notes so the reply routes back to sender_phone
+        try:
+            sup_notes = json.loads(matched_sup.notes or "{}") if matched_sup.notes and matched_sup.notes.startswith("{") else {}
+        except Exception:
+            sup_notes = {}
+        sup_notes["last_inquiry"] = {
+            "merchant_phone": sender_phone,
+            "merchant_biz": client_biz,
+            "merchant_owner": client_owner,
+            "inquiry": clean_inquiry,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        sup_notes["merchant_phone"] = sender_phone
+        matched_sup.notes = json.dumps(sup_notes, ensure_ascii=False)
+        db.commit()
+
+        return True, (
+            f"📨 *¡CONSULTA ENVIADA A {s_name.upper()}!* ✨\n\n"
+            f"Le escribí a *{s_contact}* (+{norm_p}):\n"
+            f"_«{clean_inquiry}»_\n\n"
+            f"🔔 *En cuanto me responda, te reenvío su respuesta a este chat al instante.*"
+        ), "supplier_inquiry_sent"
 
     # 1.65 Direct Price Increase or Cost Adjustment from Merchant / Boss
     if (

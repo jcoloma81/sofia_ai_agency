@@ -681,6 +681,60 @@ async def receive_whatsapp_webhook(
             await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=supplier_reply)
             return {"status": "success", "action": "supplier_price_updated", "reply": supplier_reply, "updates": updates}
 
+        # C. Conversational Reply from Supplier (e.g. answering merchant inquiry, delivery dates, or stock queries)
+        sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or prospect.name or "Proveedor"
+        sup_biz = prospect.name or "Distribuidor"
+
+        merchant_phone = prospect.merchant_phone
+        last_inquiry = None
+        if prospect.notes:
+            try:
+                meta_n = json.loads(prospect.notes)
+                if isinstance(meta_n, dict):
+                    if not merchant_phone:
+                        merchant_phone = meta_n.get("merchant_phone")
+                    last_inquiry = meta_n.get("last_inquiry")
+                    if not merchant_phone and last_inquiry:
+                        merchant_phone = last_inquiry.get("merchant_phone")
+            except Exception:
+                pass
+
+        if not merchant_phone:
+            from app.services.boss_mode import get_active_onboarded_client
+            active_c = get_active_onboarded_client(db)
+            if active_c and active_c.get("phone"):
+                merchant_phone = active_c.get("phone")
+
+        merchant_reply = (
+            f"📩 *RESPUESTA DE TU PROVEEDOR* 💬✨\n\n"
+            f"🏢 *Proveedor:* {sup_biz} ({sup_contact})\n"
+        )
+        if last_inquiry and last_inquiry.get("inquiry"):
+            merchant_reply += f"❓ *Tu consulta fue:* _«{last_inquiry['inquiry']}»_\n\n"
+        merchant_reply += (
+            f"💬 *Respondió:*\n"
+            f"_«{message.strip()}»_\n\n"
+            f"💡 *Si querés responderle o hacerle otra consulta, decime:*\n"
+            f"_«Sofi, decile a {sup_contact} que [tu mensaje]»_"
+        )
+
+        sup_ack_reply = (
+            f"¡Muchas gracias, {sup_contact}! 👍 Ya le transmití tu respuesta al comercio."
+        )
+
+        history.append({"sender": "ai", "text": sup_ack_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        if merchant_phone and merchant_phone != clean_phone:
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=merchant_phone, text=merchant_reply))
+        if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE != merchant_phone:
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=merchant_reply))
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=sup_ack_reply)
+        return {"status": "success", "action": "supplier_reply_relayed", "reply": sup_ack_reply, "merchant_phone": merchant_phone}
+
     # 0.8 Merchant / Boss Directives from Client (e.g. dispatching orders to suppliers or managing baskets)
     merchant_dispatch_triggers = [
         "mandale el pedido a", "mandar pedido a", "pasar pedido a", "enviar pedido a",
@@ -710,10 +764,21 @@ async def receive_whatsapp_webhook(
         "eliminar proveedor", "borrar proveedor", "dar de baja proveedor", "eliminar al proveedor", "borrar al proveedor",
         "eliminar distribuidora", "borrar distribuidora"
     ]
+    merchant_inquiry_triggers = [
+        "preguntale a", "preguntale al", "preguntale a la", "pregúntale a", "pregúntale al", "pregúntale a la",
+        "consultale a", "consultale al", "consultale a la", "consúltale a", "consúltale al", "consúltale a la",
+        "decile a", "decile al", "decile a la", "décile a", "dile a",
+        "escribile a", "escribile al", "escribile a la", "escríbile a", "escríbele a",
+        "avisale a", "avisale al", "avisale a la", "avísale a",
+        "preguntar a", "consultar a", "decirle a", "escribirle a", "avisarle a",
+        "mandale un mensaje a", "mandale mensaje a", "enviá un mensaje a", "enviale un mensaje a",
+        "mandale a decir a"
+    ]
     is_merchant_action = (
-        any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers)
+        any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers + merchant_inquiry_triggers)
         or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al "]))
         or (any(v in clean_msg_lower for v in ["mand", "envi", "pas", "despach", "cerr", "hac"]) and any(n in clean_msg_lower for n in ["pedido", "orden", "remito", "faltante"]))
+        or (any(q in clean_msg_lower for q in ["pregunt", "consult", "decil", "escrib", "avis"]) and any(s in clean_msg_lower for s in ["proveedor", "distribuidora", "viajante", "al ", "a la "]))
     )
     if is_merchant_action:
         handled_b, reply_b, action_b = await process_boss_message(
@@ -726,7 +791,8 @@ async def receive_whatsapp_webhook(
             "kiosk_order_dispatched", "basket_item_added", "single_basket_detail",
             "all_baskets_summary", "supplier_registered", "supplier_deleted",
             "supplier_not_found", "supplier_delete_needs_name",
-            "dispatch_needs_phone", "supplier_needs_phone"
+            "dispatch_needs_phone", "supplier_needs_phone",
+            "supplier_inquiry_sent", "supplier_inquiry_missing_info"
         ]:
             history.append({"sender": "ai", "text": reply_b, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
