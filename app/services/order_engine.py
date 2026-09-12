@@ -74,9 +74,13 @@ def is_conversational_filler(text: str) -> bool:
     return len(non_fillers) == 0
 
 
-def build_order_draft_from_entities(items_data: List[Dict[str, Any]]) -> OrderDraft:
+def build_order_draft_from_entities(
+    items_data: List[dict],
+    merchant_phone: Optional[str] = None,
+    db: Optional[Any] = None
+) -> OrderDraft:
     """
-    Given structured entity items from Gemini NLU, resolves each product in catalog
+    Constructs an OrderDraft from AI-extracted product entities
     and computes exact math subtotals and grand totals in Python.
     """
     items: List[OrderItem] = []
@@ -94,7 +98,7 @@ def build_order_draft_from_entities(items_data: List[Dict[str, Any]]) -> OrderDr
         except (ValueError, TypeError):
             qty = 1
 
-        product = catalog_service.find_product_exact_or_best(raw_name)
+        product = catalog_service.find_product_exact_or_best(raw_name, merchant_phone=merchant_phone, db=db)
         if product:
             subtotal = product.price * qty if product.in_stock else 0.0
             if not product.in_stock:
@@ -119,7 +123,11 @@ def build_order_draft_from_entities(items_data: List[Dict[str, Any]]) -> OrderDr
     )
 
 
-def parse_order_text(text: str) -> OrderDraft:
+def parse_order_text(
+    text: str,
+    merchant_phone: Optional[str] = None,
+    db: Optional[Any] = None
+) -> OrderDraft:
     """
     Parses natural language order text into structured OrderDraft with exact calculations.
     Supports numbers (digits or words) and flexible product search.
@@ -176,7 +184,7 @@ def parse_order_text(text: str) -> OrderDraft:
             continue
 
         # Look up product in catalog
-        product = catalog_service.find_product_exact_or_best(product_query)
+        product = catalog_service.find_product_exact_or_best(product_query, merchant_phone=merchant_phone, db=db)
         if product:
             subtotal = product.price * qty if product.in_stock else 0.0
             if not product.in_stock:
@@ -287,7 +295,12 @@ def is_order_confirmation(text: str) -> bool:
     return any(p in joined for p in phrases)
 
 
-def build_product_inquiry_reply(inquired_products: List[str], contact_name: Optional[str] = None) -> str:
+def build_product_inquiry_reply(
+    inquired_products: List[str],
+    contact_name: Optional[str] = None,
+    merchant_phone: Optional[str] = None,
+    db: Optional[Any] = None
+) -> str:
     """
     Generates warm, human response when a customer inquires about stock/prices of products.
     """
@@ -299,7 +312,7 @@ def build_product_inquiry_reply(inquired_products: List[str], contact_name: Opti
     missing_queries: List[str] = []
 
     for q in inquired_products:
-        p = catalog_service.find_product_exact_or_best(q)
+        p = catalog_service.find_product_exact_or_best(q, merchant_phone=merchant_phone, db=db)
         if p:
             found_products.append(p)
         else:
@@ -318,7 +331,8 @@ def build_product_inquiry_reply(inquired_products: List[str], contact_name: Opti
         lines.append("\n🚚 Si querés que te anote alguna cantidad para el reparto de mañana, avisame y te lo cargo al pedido.")
     else:
         clean_missing = ", ".join(f"*{m}*" for m in missing_queries) if missing_queries else "esos artículos"
-        categories = sorted(list({p.category for p in catalog_service.products if p.category}))
+        products_pool = catalog_service.get_merchant_products(merchant_phone, db) if (merchant_phone and db) else catalog_service.products
+        categories = sorted(list({p.category for p in products_pool if p.category}))
         cat_str = ", ".join(categories) if categories else "alimentos, bebidas, lácteos y artículos de almacén"
         lines.append(
             f"{saludo} Disculpá, pero actualmente no trabajamos {clean_missing} en nuestro catálogo de distribución "
@@ -330,7 +344,11 @@ def build_product_inquiry_reply(inquired_products: List[str], contact_name: Opti
     return "\n".join(lines)
 
 
-async def parse_order_or_inquiry_with_ai(text: str) -> OrderAnalysis:
+async def parse_order_or_inquiry_with_ai(
+    text: str,
+    merchant_phone: Optional[str] = None,
+    db: Optional[Any] = None
+) -> OrderAnalysis:
     """
     Intelligently analyzes customer message with Gemini NLU to understand intent,
     filter out voice stutters/preambles, and extract structured order items or inquiries.
@@ -352,7 +370,7 @@ async def parse_order_or_inquiry_with_ai(text: str) -> OrderAnalysis:
         "mandame la lista", "pasanos la lista", "ver la lista", "catalogo", "catálogo", 
         "tienen lista", "tenes lista", "tenés lista", "mandame los precios", "pasame los precios",
         "precios actualizados", "que precios tenes", "qué precios tenés", "el excel", "mandame el excel",
-        "pasame el excel", "tu excel", "la planilla", "manda a tabela", "tabela de precos", "tabela de preços",
+        "pasame el excel", "tu excel", "la planilla", "manda a tabela", "tabela de precos", "tabela de precos",
         "lista completa", "lista de precios completa", "mandame la lista completa", "pasame la lista completa",
         "catalogo completo", "catálogo completo", "el catalogo", "el catálogo", "la lista", "lista entera",
         "todos los precios", "enviame la lista", "enviar la lista", "pasar la lista", "mandame el catalogo",
@@ -413,7 +431,7 @@ async def parse_order_or_inquiry_with_ai(text: str) -> OrderAnalysis:
                             meaning = parsed.get("cleaned_meaning")
 
                             if intent == "order" and items:
-                                draft = build_order_draft_from_entities(items)
+                                draft = build_order_draft_from_entities(items, merchant_phone=merchant_phone, db=db)
                                 return OrderAnalysis(
                                     intent="order",
                                     draft=draft,
@@ -440,7 +458,7 @@ async def parse_order_or_inquiry_with_ai(text: str) -> OrderAnalysis:
             logger.warning(f"Error in parse_order_or_inquiry_with_ai via Gemini: {e}")
 
     # Fallback to improved regex parser
-    draft = parse_order_text(text_clean)
+    draft = parse_order_text(text_clean, merchant_phone=merchant_phone, db=db)
     if draft.items:
         if detect_order_intent(text_clean) or any(w in lower_text for w in ["caja", "cajas", "fardo", "fardos", "pack", "packs", "anotame", "mandame", "traeme", "cargame"]):
             return OrderAnalysis(intent="order", draft=draft)

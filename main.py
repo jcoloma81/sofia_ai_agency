@@ -7,7 +7,7 @@ import os
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.database import Base, engine
+from app.database import Base, engine, run_auto_migrations
 from app.routers.webhook import router as webhook_router
 from app.routers.outreach import router as outreach_router
 from app.routers.dashboard import router as dashboard_router, verify_admin_credentials
@@ -22,6 +22,8 @@ logger = logging.getLogger("sofia_ai_agency")
 
 # Create database tables automatically
 Base.metadata.create_all(bind=engine)
+run_auto_migrations(engine)
+
 
 app = FastAPI(
     title="Sofía AI Agency — Autonomous B2B SDR Platform",

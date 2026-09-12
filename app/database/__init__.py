@@ -15,6 +15,28 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+def run_auto_migrations(db_engine):
+    """
+    Ensures that existing databases (e.g. SQLite sofia.db) seamlessly upgrade schema:
+    - Adds merchant_phone column to prospects if missing.
+    - Drops unique constraint on prospects.phone so multiple merchants can share suppliers.
+    """
+    try:
+        from sqlalchemy import text
+        with db_engine.connect() as conn:
+            if str(db_engine.url).startswith("sqlite"):
+                res = conn.execute(text("PRAGMA table_info(prospects)")).fetchall()
+                col_names = [r[1] for r in res]
+                if col_names and "merchant_phone" not in col_names:
+                    conn.execute(text("ALTER TABLE prospects ADD COLUMN merchant_phone VARCHAR"))
+                    conn.commit()
+                conn.execute(text("DROP INDEX IF EXISTS ix_prospects_phone"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone)"))
+                conn.commit()
+    except Exception:
+        pass
+
 def get_db():
     db = SessionLocal()
     try:
@@ -22,4 +44,5 @@ def get_db():
     finally:
         db.close()
 
-__all__ = ["engine", "SessionLocal", "Base", "get_db"]
+__all__ = ["engine", "SessionLocal", "Base", "get_db", "run_auto_migrations"]
+

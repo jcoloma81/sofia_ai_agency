@@ -342,6 +342,84 @@ class CatalogService:
         self.source_info: str = "Empty"
         self.current_rubro: str = "Distribuidora Mayorista San Martín"
 
+    def get_merchant_products(self, merchant_phone: Optional[str] = None, db: Optional[Any] = None) -> List[ProductItem]:
+        """
+        Retrieves products associated with a specific merchant tenant.
+        If the merchant has custom products in DB, returns them as ProductItem instances.
+        Otherwise falls back to the in-memory demo base catalog (self.products).
+        """
+        if db and merchant_phone:
+            try:
+                from app.models.prospect import MerchantProduct
+                mps = db.query(MerchantProduct).filter(MerchantProduct.merchant_phone == merchant_phone).all()
+                if mps:
+                    return [
+                        ProductItem(
+                            name=p.name,
+                            price=p.price,
+                            presentation=p.presentation or "Unidad",
+                            category=p.category or "General",
+                            in_stock=p.in_stock,
+                            code=p.code,
+                            supplier=p.supplier_name,
+                            cost_price=p.cost_price
+                        )
+                        for p in mps
+                    ]
+            except Exception as e:
+                logger.debug(f"Error fetching merchant products for {merchant_phone}: {e}")
+        return self.products
+
+    def save_merchant_products(
+        self,
+        products: List[ProductItem],
+        merchant_phone: Optional[str] = None,
+        supplier_name: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> int:
+        """
+        Persists a list of products under a merchant's tenant scope.
+        """
+        if not db or not merchant_phone:
+            return 0
+        count = 0
+        try:
+            from app.models.prospect import MerchantProduct
+            for it in products:
+                s_name = it.supplier or supplier_name or "Proveedor"
+                existing = db.query(MerchantProduct).filter(
+                    MerchantProduct.merchant_phone == merchant_phone,
+                    MerchantProduct.supplier_name == s_name,
+                    MerchantProduct.name == it.name
+                ).first()
+                if existing:
+                    existing.price = it.price
+                    existing.presentation = it.presentation or existing.presentation
+                    existing.category = it.category or existing.category
+                    existing.in_stock = it.in_stock
+                    existing.code = it.code or existing.code
+                    existing.cost_price = it.cost_price or existing.cost_price
+                    existing.updated_at = datetime.now(timezone.utc)
+                else:
+                    new_mp = MerchantProduct(
+                        merchant_phone=merchant_phone,
+                        supplier_name=s_name,
+                        name=it.name,
+                        price=it.price,
+                        presentation=it.presentation or "Unidad",
+                        category=it.category or "General",
+                        in_stock=it.in_stock,
+                        code=it.code,
+                        cost_price=it.cost_price
+                    )
+                    db.add(new_mp)
+                count += 1
+            db.commit()
+        except Exception as e:
+            logger.error(f"Error saving merchant products for {merchant_phone}: {e}")
+        return count
+
+
     def load_from_csv(self, csv_content: str, source_name: str = "CSV") -> int:
         """Parses CSV text into product catalog, ignoring banners and headers."""
         if not csv_content or not csv_content.strip():
@@ -422,7 +500,13 @@ class CatalogService:
         logger.info(f"Loaded {len(items)} products from {source_name}")
         return len(items)
 
-    def load_from_excel_bytes(self, content: bytes, filename: str = "Excel") -> int:
+    def load_from_excel_bytes(
+        self,
+        content: bytes,
+        filename: str = "Excel",
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> int:
         """Parses Excel workbook bytes into product catalog, scanning all visible sheets."""
         try:
             wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
@@ -497,6 +581,9 @@ class CatalogService:
                         code=code
                     ))
 
+            if db and merchant_phone:
+                self.save_merchant_products(items, merchant_phone=merchant_phone, db=db)
+
             self.products = items
             self.last_updated = datetime.now(timezone.utc)
             self.source_info = f"{filename} ({len(items)} productos)"
@@ -505,6 +592,7 @@ class CatalogService:
         except Exception as e:
             logger.error(f"Error reading Excel bytes: {e}")
             return 0
+
 
     async def load_from_pdf_bytes(self, content: bytes, filename: str = "Catalogo.pdf") -> int:
         """
@@ -644,8 +732,11 @@ class CatalogService:
         content: bytes,
         filename: str = "proveedor.xlsx",
         export_path: Optional[str] = None,
-        supplier_name: Optional[str] = None
+        supplier_name: Optional[str] = None,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
     ) -> Dict[str, Any]:
+
         """
         Cross-references an incoming supplier Excel sheet with the active product catalog.
         Matches by SKU code or fuzzy semantic description, updates catalog prices in-place,
@@ -772,7 +863,12 @@ class CatalogService:
                     new_items.append(sup)
                     self.products.append(sup)
 
+            if db and merchant_phone and supplier_items:
+                self.save_merchant_products(supplier_items, merchant_phone=merchant_phone, supplier_name=supplier_name, db=db)
+
             self.last_updated = datetime.now(timezone.utc)
+
+
 
             # Export updated catalog Excel
             if export_path is None:
@@ -867,10 +963,17 @@ class CatalogService:
             logger.error(f"Error fetching Google Sheets: {e}")
             return 0
 
-    def search_products(self, query: str, limit: int = 5) -> List[ProductItem]:
+    def search_products(
+        self,
+        query: str,
+        limit: int = 5,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> List[ProductItem]:
         """Performs case-insensitive keyword search in product names and categories."""
+        products_pool = self.get_merchant_products(merchant_phone, db)
         if not query or not query.strip():
-            return self.products[:limit]
+            return products_pool[:limit]
 
         stopwords = {
             "de", "del", "la", "el", "los", "las", "un", "una", "unos", "unas", "y", "o",
@@ -884,7 +987,7 @@ class CatalogService:
             return []
 
         matches = []
-        for p in self.products:
+        for p in products_pool:
             name_lower = p.name.lower()
             category_lower = (p.category or "").lower()
             if all(re.search(rf'\b{re.escape(t)}', name_lower) or re.search(rf'\b{re.escape(t)}', category_lower) for t in tokens):
@@ -902,48 +1005,65 @@ class CatalogService:
         matches.sort(key=score_match)
         return matches[:limit]
 
-    def find_product_exact_or_best(self, name_or_code: str) -> Optional[ProductItem]:
+    def find_product_exact_or_best(
+        self,
+        name_or_code: str,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> Optional[ProductItem]:
         """Finds closest product match by code or name."""
         if not name_or_code:
             return None
+        products_pool = self.get_merchant_products(merchant_phone, db)
         clean_target = re.sub(r'[^\w\s]', '', name_or_code).strip().lower()
 
-        for p in self.products:
+        for p in products_pool:
             if p.code and re.sub(r'[^\w\s]', '', p.code).strip().lower() == clean_target:
                 return p
 
-        for p in self.products:
+        for p in products_pool:
             if re.sub(r'[^\w\s]', '', p.name).strip().lower() == clean_target:
                 return p
 
-        candidates = self.search_products(name_or_code, limit=1)
+        candidates = self.search_products(name_or_code, limit=1, merchant_phone=merchant_phone, db=db)
         if candidates:
             return candidates[0]
 
         return None
 
-    def get_summary_prompt(self, max_items: int = 40) -> str:
+    def get_summary_prompt(
+        self,
+        max_items: int = 40,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> str:
         """Returns concise text for Gemini prompt injection."""
-        if not self.products:
+        products_pool = self.get_merchant_products(merchant_phone, db)
+        if not products_pool:
             return "Catálogo: No hay productos cargados actualmente."
 
-        lines = [f"CATÁLOGO DE PRODUCTOS DISPONIBLES (Total: {len(self.products)}):"]
-        for p in self.products[:max_items]:
+        lines = [f"CATÁLOGO DE PRODUCTOS DISPONIBLES (Total: {len(products_pool)}):"]
+        for p in products_pool[:max_items]:
             stock_str = "Disponible" if p.in_stock else "SIN STOCK"
             lines.append(f"- {p.name} [{p.presentation}]: {p.formatted_price()} ({stock_str})")
         
-        if len(self.products) > max_items:
-            lines.append(f"... y {len(self.products) - max_items} productos más.")
+        if len(products_pool) > max_items:
+            lines.append(f"... y {len(products_pool) - max_items} productos más.")
 
         return "\n".join(lines)
 
-    def format_price_list(self) -> str:
+    def format_price_list(
+        self,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> str:
         """Formats customer-facing WhatsApp price list message."""
-        if not self.products:
+        products_pool = self.get_merchant_products(merchant_phone, db)
+        if not products_pool:
             return "📋 *Lista de Precios:* Actualmente estamos actualizando la lista de productos."
 
         categories: Dict[str, List[ProductItem]] = {}
-        for p in self.products:
+        for p in products_pool:
             cat = p.category or "General"
             if cat not in categories:
                 categories[cat] = []
@@ -957,13 +1077,19 @@ class CatalogService:
                 blocks.append(f"• {p.name} ({p.presentation}): *{p.formatted_price()}*{status}")
             blocks.append("")
 
-    def compare_supplier_prices(self, query: str) -> Optional[Tuple[str, List[ProductItem]]]:
+    def compare_supplier_prices(
+        self,
+        query: str,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> Optional[Tuple[str, List[ProductItem]]]:
         """
         Finds matching products across the catalog / suppliers,
         normalizing text (e.g. foco == lámpara == bombilla, led, watts),
         and returns the canonical title and matched products sorted by price ascending.
         """
-        if not self.products:
+        products_pool = self.get_merchant_products(merchant_phone, db)
+        if not products_pool:
             return None
 
         clean_q = normalize_product_text(query)
@@ -989,7 +1115,7 @@ class CatalogService:
             tokens.update(["mayonesa"])
 
         matches: List[ProductItem] = []
-        for p in self.products:
+        for p in products_pool:
             norm_p = normalize_product_text(p.name)
             p_tokens = set(norm_p.split())
             if any(w in p_tokens for w in ["foco", "focos", "lampara", "lamparas", "bombilla", "bombillas", "lamparita"]):
@@ -1006,7 +1132,7 @@ class CatalogService:
                 matches.append(p)
 
         if not matches:
-            best = self.find_product_exact_or_best(query)
+            best = self.find_product_exact_or_best(query, merchant_phone=merchant_phone, db=db)
             if best:
                 matches = [best]
 
@@ -1016,11 +1142,18 @@ class CatalogService:
         matches.sort(key=lambda x: x.price)
         return clean_q, matches
 
-    def format_price_comparison(self, query: str, requester_name: Optional[str] = None) -> Optional[str]:
+    def format_price_comparison(
+        self,
+        query: str,
+        requester_name: Optional[str] = None,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> Optional[str]:
         """
         Formats a structured multi-supplier price comparison podium with savings calculation.
         """
-        comp_res = self.compare_supplier_prices(query)
+        comp_res = self.compare_supplier_prices(query, merchant_phone=merchant_phone, db=db)
+
         if not comp_res:
             return None
         canonical_q, matches = comp_res
@@ -1059,7 +1192,7 @@ class CatalogService:
             )
         return None
 
-    def get_weekly_price_changes(self, requester_name: Optional[str] = None) -> str:
+    def get_weekly_price_changes(self, requester_name: Optional[str] = None, merchant_phone: Optional[str] = None, db: Optional[Any] = None) -> str:
         """
         Provides a realistic summary of weekly price fluctuations and market intelligence.
         """
@@ -1086,22 +1219,23 @@ class CatalogService:
                 f"💡 *Consejo de Sofía:* Conviene stockearte de aceite y mayonesa hoy con Molinos Cañuelas antes de la suba general del lunes. ¿Querés que te arme un pedido borrador?"
             )
 
-    def get_registered_suppliers_summary(self, requester_name: Optional[str] = None) -> str:
+    def get_registered_suppliers_summary(self, requester_name: Optional[str] = None, merchant_phone: Optional[str] = None, db: Optional[Any] = None) -> str:
         """
         Summarizes registered suppliers, product counts, and active catalog state.
         """
         greeting = f"¡Hola {requester_name}! " if requester_name else "¡Hola! "
-        if not self.products:
+        products = self.get_merchant_products(merchant_phone, db) if (merchant_phone and db) else self.products
+        if not products:
             return f"{greeting}Actualmente no tengo listas de proveedores cargadas en el catálogo."
 
         sup_counts: Dict[str, int] = {}
-        for p in self.products:
+        for p in products:
             s = p.supplier or "Distribuidor Principal"
             sup_counts[s] = sup_counts.get(s, 0) + 1
 
         lines = [
             f"📋 *PROVEEDORES Y LISTAS REGISTRADAS* 🏢\n",
-            f"{greeting}Actualmente tengo sincronizados *{len(sup_counts)} distribuidores* con un total de *{len(self.products)} productos* cargados:\n"
+            f"{greeting}Actualmente tengo sincronizados *{len(sup_counts)} distribuidores* con un total de *{len(products)} productos* cargados:\n"
         ]
         for s, count in sorted(sup_counts.items(), key=lambda x: x[1], reverse=True):
             lines.append(f"• *{s}:* {count} artículos cargados")
@@ -1251,7 +1385,9 @@ class CatalogService:
         self,
         keyword: str,
         percentage: float,
-        supplier_name: Optional[str] = None
+        supplier_name: Optional[str] = None,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
     ) -> List[Dict[str, Any]]:
         """
         Applies a percentage increase to products matching a keyword, brand, category,
@@ -1261,7 +1397,8 @@ class CatalogService:
         is_all = clean_kw in ["todo", "todos", "general", "todos los productos", "catalogo", "catálogo", "total", "completo"]
         
         updated_records = []
-        for p in self.products:
+        products_pool = self.get_merchant_products(merchant_phone, db)
+        for p in products_pool:
             # Supplier filter
             if supplier_name and p.supplier:
                 s_lower = supplier_name.strip().lower()
@@ -1298,6 +1435,21 @@ class CatalogService:
                 }
                 updated_records.append(rec)
 
+        if db and merchant_phone:
+            try:
+                from app.models.prospect import MerchantProduct
+                q = db.query(MerchantProduct).filter(MerchantProduct.merchant_phone == merchant_phone)
+                if supplier_name:
+                    q = q.filter(MerchantProduct.supplier_name.ilike(f"%{supplier_name.strip()}%"))
+                mps = q.all()
+                for mp in mps:
+                    if is_all or (clean_kw in mp.name.lower()) or (clean_kw in (mp.category or "").lower()):
+                        mp.price = round(mp.price * (1.0 + float(percentage) / 100.0), 2)
+                        mp.updated_at = datetime.now(timezone.utc)
+                db.commit()
+            except Exception as e:
+                logger.error(f"Error updating MerchantProduct percentages for {merchant_phone}: {e}")
+
         if updated_records:
             self.last_updated = datetime.now(timezone.utc)
             try:
@@ -1312,12 +1464,14 @@ class CatalogService:
         self,
         product_query: str,
         new_price: float,
-        supplier_name: Optional[str] = None
+        supplier_name: Optional[str] = None,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Updates the specific price of a single product matched by name or code.
         """
-        p = self.find_product_exact_or_best(product_query)
+        p = self.find_product_exact_or_best(product_query, merchant_phone=merchant_phone, db=db)
         if p:
             old_price = p.price
             p.price = float(new_price)
@@ -1326,6 +1480,21 @@ class CatalogService:
             if supplier_name and not p.supplier:
                 p.supplier = supplier_name
             self.last_updated = datetime.now(timezone.utc)
+
+            if db and merchant_phone:
+                try:
+                    from app.models.prospect import MerchantProduct
+                    mp = db.query(MerchantProduct).filter(
+                        MerchantProduct.merchant_phone == merchant_phone,
+                        MerchantProduct.name.ilike(f"%{p.name.strip()}%")
+                    ).first()
+                    if mp:
+                        mp.price = float(new_price)
+                        mp.updated_at = datetime.now(timezone.utc)
+                        db.commit()
+                except Exception as e:
+                    logger.error(f"Error updating MerchantProduct in db: {e}")
+
             try:
                 excel_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx"))
                 self.export_to_excel(excel_path)
@@ -1351,6 +1520,24 @@ class CatalogService:
             )
             self.products.append(new_item)
             self.last_updated = datetime.now(timezone.utc)
+
+            if db and merchant_phone:
+                try:
+                    from app.models.prospect import MerchantProduct
+                    new_mp = MerchantProduct(
+                        merchant_phone=merchant_phone,
+                        supplier_name=supplier_name,
+                        name=new_item.name,
+                        price=float(new_price),
+                        presentation="Unidad",
+                        category="General",
+                        in_stock=True
+                    )
+                    db.add(new_mp)
+                    db.commit()
+                except Exception as e:
+                    logger.error(f"Error adding new MerchantProduct in db: {e}")
+
             return {
                 "product": new_item.name,
                 "old_price": 0.0,
@@ -1365,7 +1552,9 @@ class CatalogService:
     def process_supplier_price_updates(
         self,
         updates: List[Dict[str, Any]],
-        supplier_name: Optional[str] = None
+        supplier_name: Optional[str] = None,
+        merchant_phone: Optional[str] = None,
+        db: Optional[Any] = None
     ) -> List[Dict[str, Any]]:
         """
         Executes a batch of extracted price updates (percentages and fixed unit prices),
@@ -1380,14 +1569,27 @@ class CatalogService:
                 continue
 
             if u_type == "percentage":
-                mods = self.apply_percentage_increase(keyword=u_item, percentage=u_val, supplier_name=supplier_name)
+                mods = self.apply_percentage_increase(
+                    keyword=u_item,
+                    percentage=u_val,
+                    supplier_name=supplier_name,
+                    merchant_phone=merchant_phone,
+                    db=db
+                )
                 all_modified.extend(mods)
             elif u_type == "fixed_price":
-                mod = self.update_single_product_price(product_query=u_item, new_price=u_val, supplier_name=supplier_name)
+                mod = self.update_single_product_price(
+                    product_query=u_item,
+                    new_price=u_val,
+                    supplier_name=supplier_name,
+                    merchant_phone=merchant_phone,
+                    db=db
+                )
                 if mod:
                     all_modified.append(mod)
 
         return all_modified
+
 
 
 def clean_extracted_item(raw_item: str) -> str:

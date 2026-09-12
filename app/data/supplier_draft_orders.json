@@ -1,4 +1,60 @@
 {
+  "5493434536447": {
+    "pinturas_litoral": {
+      "supplier_name": "Pinturas Litoral",
+      "items": [
+        {
+          "product_name": "Látex blanco",
+          "quantity": 3,
+          "unit_price": 0.0
+        }
+      ],
+      "updated_at": "2026-09-12T22:05:30.175376+00:00"
+    },
+    "distribuidora_alem": {
+      "supplier_name": "Distribuidora Alem",
+      "items": [
+        {
+          "product_name": "Harina Pureza 000 1kg",
+          "quantity": 5,
+          "unit_price": 12500.0
+        },
+        {
+          "product_name": "Aceite Cañuelas 1.5L",
+          "quantity": 5,
+          "unit_price": 14400.0
+        },
+        {
+          "product_name": "Alfajores",
+          "quantity": 10,
+          "unit_price": 0.0
+        },
+        {
+          "product_name": "Gaseosa Coca Cola 2.25L",
+          "quantity": 5,
+          "unit_price": 19200.0
+        },
+        {
+          "product_name": "Fideos Matarazzo Guiseros 500g",
+          "quantity": 4,
+          "unit_price": 18000.0
+        },
+        {
+          "product_name": "Puré de Tomate De Cecco 520g",
+          "quantity": 6,
+          "unit_price": 9800.0
+        },
+        {
+          "product_name": "Mayonesa Hellmanns Doypack 475g",
+          "quantity": 3,
+          "unit_price": 17500.0
+        }
+      ],
+      "updated_at": "2026-09-12T22:05:37.744516+00:00"
+    }
+  },
+  "5493435111111": {},
+  "5493435222222": {},
   "pinturas_litoral": {
     "supplier_name": "Pinturas Litoral",
     "items": [
@@ -6,18 +62,28 @@
         "product_name": "Látex blanco",
         "quantity": 3,
         "unit_price": 0.0
+      }
+    ],
+    "updated_at": "2026-09-12T22:05:30.175376+00:00"
+  },
+  "distribuidora_alem": {
+    "supplier_name": "Distribuidora Alem",
+    "items": [
+      {
+        "product_name": "Harina Pureza 000 1kg",
+        "quantity": 5,
+        "unit_price": 12500.0
+      },
+      {
+        "product_name": "Aceite Cañuelas 1.5L",
+        "quantity": 5,
+        "unit_price": 14400.0
       },
       {
         "product_name": "Alfajores",
         "quantity": 10,
         "unit_price": 0.0
-      }
-    ],
-    "updated_at": "2026-09-12T21:05:47.080807+00:00"
-  },
-  "distribuidora_alem": {
-    "supplier_name": "Distribuidora Alem",
-    "items": [
+      },
       {
         "product_name": "Gaseosa Coca Cola 2.25L",
         "quantity": 5,
@@ -27,11 +93,6 @@
         "product_name": "Fideos Matarazzo Guiseros 500g",
         "quantity": 4,
         "unit_price": 18000.0
-      },
-      {
-        "product_name": "Aceite Cañuelas 1.5L",
-        "quantity": 2,
-        "unit_price": 14400.0
       },
       {
         "product_name": "Puré de Tomate De Cecco 520g",
@@ -44,6 +105,6 @@
         "unit_price": 17500.0
       }
     ],
-    "updated_at": "2026-09-12T21:05:47.081477+00:00"
+    "updated_at": "2026-09-12T22:05:37.744516+00:00"
   }
 }

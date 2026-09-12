@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.config.settings import settings
-from app.models.prospect import Prospect
+from app.models.prospect import Prospect, SupplierDraftOrder, MerchantProduct
 from app.services.catalog import catalog_service, parse_supplier_price_update_text
 from app.services import brain
 from app.services import whatsapp
@@ -21,26 +21,182 @@ LAST_ONBOARDED_CLIENT = {}
 
 SUPPLIER_DRAFTS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "supplier_draft_orders.json")
 
-def load_supplier_drafts() -> dict:
+def load_supplier_drafts(merchant_phone: Optional[str] = None, db: Optional[Session] = None) -> dict:
+    """
+    Loads open draft orders.
+    Multi-tenant:
+    If db and merchant_phone are provided, queries SupplierDraftOrder from database.
+    Falls back gracefully to JSON storage.
+    """
+    if db and merchant_phone:
+        try:
+            records = db.query(SupplierDraftOrder).filter(
+                SupplierDraftOrder.merchant_phone == merchant_phone
+            ).all()
+            if records:
+                result = {}
+                for r in records:
+                    try:
+                        it_list = json.loads(r.items) if r.items else []
+                    except Exception:
+                        it_list = []
+                    result[r.supplier_key] = {
+                        "supplier_name": r.supplier_name,
+                        "items": it_list,
+                        "updated_at": r.updated_at.isoformat() if r.updated_at else datetime.now(timezone.utc).isoformat()
+                    }
+                return result
+        except Exception as e:
+            logger.warning(f"Error reading drafts from DB for {merchant_phone}: {e}")
+
     if os.path.exists(SUPPLIER_DRAFTS_FILE):
         try:
             with open(SUPPLIER_DRAFTS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                all_file_drafts = json.load(f)
+                clean_m = "".join(filter(str.isdigit, str(merchant_phone or "")))
+                if clean_m and isinstance(all_file_drafts, dict) and clean_m in all_file_drafts:
+                    return all_file_drafts[clean_m]
+                
+                # If merchant_phone was specified but has no dedicated drafts,
+                # if it's boss or WHATSAPP_ALERT_PHONE or not specified, fallback to root drafts:
+                if not clean_m or is_boss_number(clean_m) or clean_m == settings.WHATSAPP_ALERT_PHONE:
+                    root_drafts = {}
+                    if isinstance(all_file_drafts, dict):
+                        for k, v in all_file_drafts.items():
+                            if isinstance(v, dict) and ("items" in v or "supplier_name" in v):
+                                root_drafts[k] = v
+                    return root_drafts
+                return {}
         except Exception as e:
             logger.warning(f"Error reading supplier drafts: {e}")
     return {}
 
-def save_supplier_drafts(drafts: dict):
+def save_supplier_drafts(drafts: dict, merchant_phone: Optional[str] = None, db: Optional[Session] = None):
+    """
+    Saves open draft orders to database (if db & merchant_phone provided) and JSON fallback.
+    """
+    if db and merchant_phone:
+        try:
+            for sup_key, data in drafts.items():
+                s_name = data.get("supplier_name") or sup_key.replace("_", " ").title()
+                items_json = json.dumps(data.get("items", []), ensure_ascii=False)
+                rec = db.query(SupplierDraftOrder).filter(
+                    SupplierDraftOrder.merchant_phone == merchant_phone,
+                    SupplierDraftOrder.supplier_key == sup_key
+                ).first()
+                if rec:
+                    rec.items = items_json
+                    rec.supplier_name = s_name
+                    rec.updated_at = datetime.now(timezone.utc)
+                else:
+                    rec = SupplierDraftOrder(
+                        merchant_phone=merchant_phone,
+                        supplier_key=sup_key,
+                        supplier_name=s_name,
+                        items=items_json
+                    )
+                    db.add(rec)
+            db.commit()
+        except Exception as e:
+            logger.error(f"Error saving supplier drafts to db: {e}")
+
     try:
         os.makedirs(os.path.dirname(SUPPLIER_DRAFTS_FILE), exist_ok=True)
+        all_file_drafts = {}
+        if os.path.exists(SUPPLIER_DRAFTS_FILE):
+            try:
+                with open(SUPPLIER_DRAFTS_FILE, "r", encoding="utf-8") as f:
+                    all_file_drafts = json.load(f)
+            except Exception:
+                all_file_drafts = {}
+
+        clean_m = "".join(filter(str.isdigit, str(merchant_phone or "")))
+        if clean_m:
+            all_file_drafts[clean_m] = drafts
+            if is_boss_number(clean_m) or clean_m == settings.WHATSAPP_ALERT_PHONE:
+                all_file_drafts.update(drafts)
+        else:
+            all_file_drafts.update(drafts)
+
         with open(SUPPLIER_DRAFTS_FILE, "w", encoding="utf-8") as f:
-            json.dump(drafts, f, ensure_ascii=False, indent=2)
+            json.dump(all_file_drafts, f, ensure_ascii=False, indent=2)
     except Exception as e:
         logger.error(f"Error saving supplier drafts: {e}")
 
-def add_items_to_supplier_draft(supplier_name: str, items: List[dict]) -> dict:
-    drafts = load_supplier_drafts()
+def add_items_to_supplier_draft(
+    supplier_name: str,
+    items: List[dict],
+    merchant_phone: Optional[str] = None,
+    db: Optional[Session] = None
+) -> dict:
     sup_key = re.sub(r'[^\w\s]', '', supplier_name).strip().lower().replace(' ', '_')
+
+    # If DB and merchant_phone are available, manage via database for ACID isolation
+    if db and merchant_phone:
+        rec = db.query(SupplierDraftOrder).filter(
+            SupplierDraftOrder.merchant_phone == merchant_phone,
+            SupplierDraftOrder.supplier_key == sup_key
+        ).first()
+        current_items = []
+        if rec and rec.items:
+            try:
+                current_items = json.loads(rec.items)
+            except Exception:
+                current_items = []
+
+        for it in items:
+            p_name = str(it.get("product_name") or "").strip()
+            p_qty = int(it.get("quantity") or 1)
+            p_price = float(it.get("unit_price") or 0.0)
+            found = False
+            for ex in current_items:
+                if ex["product_name"].lower() == p_name.lower():
+                    ex["quantity"] += p_qty
+                    if p_price > 0:
+                        ex["unit_price"] = p_price
+                    found = True
+                    break
+            if not found:
+                current_items.append({
+                    "product_name": p_name,
+                    "quantity": p_qty,
+                    "unit_price": p_price
+                })
+
+        if rec:
+            rec.items = json.dumps(current_items, ensure_ascii=False)
+            rec.supplier_name = supplier_name
+            rec.updated_at = datetime.now(timezone.utc)
+        else:
+            rec = SupplierDraftOrder(
+                merchant_phone=merchant_phone,
+                supplier_key=sup_key,
+                supplier_name=supplier_name,
+                items=json.dumps(current_items, ensure_ascii=False)
+            )
+            db.add(rec)
+        db.commit()
+
+        # Keep JSON fallback in sync
+        try:
+            drafts = load_supplier_drafts(merchant_phone=merchant_phone)
+            drafts[sup_key] = {
+                "supplier_name": supplier_name,
+                "items": current_items,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            save_supplier_drafts(drafts, merchant_phone=merchant_phone)
+        except Exception:
+            pass
+
+        return {
+            "supplier_name": supplier_name,
+            "items": current_items,
+            "updated_at": rec.updated_at.isoformat() if rec.updated_at else datetime.now(timezone.utc).isoformat()
+        }
+
+    # Fallback to file-based drafts
+    drafts = load_supplier_drafts(merchant_phone=merchant_phone)
     if sup_key not in drafts:
         drafts[sup_key] = {
             "supplier_name": supplier_name,
@@ -67,36 +223,131 @@ def add_items_to_supplier_draft(supplier_name: str, items: List[dict]) -> dict:
                 "unit_price": p_price
             })
     drafts[sup_key]["updated_at"] = datetime.now(timezone.utc).isoformat()
-    save_supplier_drafts(drafts)
+    save_supplier_drafts(drafts, merchant_phone=merchant_phone)
     return drafts[sup_key]
 
-def get_supplier_draft(supplier_name: str) -> Optional[dict]:
-    drafts = load_supplier_drafts()
-    sup_key = re.sub(r'[^\w\s]', '', supplier_name).strip().lower().replace(' ', '_')
+def get_supplier_draft(
+    supplier_name: str,
+    merchant_phone: Optional[str] = None,
+    db: Optional[Session] = None
+) -> Optional[dict]:
+    target = supplier_name.strip().lower()
+    sup_key = re.sub(r'[^\w\s]', '', target).replace(' ', '_')
+    clean_m = "".join(filter(str.isdigit, str(merchant_phone or "")))
+    if db:
+        if clean_m:
+            rec = db.query(SupplierDraftOrder).filter(
+                SupplierDraftOrder.merchant_phone == clean_m,
+                SupplierDraftOrder.supplier_key == sup_key
+            ).first()
+            if not rec:
+                rec = db.query(SupplierDraftOrder).filter(
+                    SupplierDraftOrder.merchant_phone == clean_m,
+                    SupplierDraftOrder.supplier_name.ilike(f"%{supplier_name.strip()}%")
+                ).first()
+            if not rec and (is_boss_number(clean_m) or clean_m == settings.WHATSAPP_ALERT_PHONE):
+                rec = db.query(SupplierDraftOrder).filter(
+                    SupplierDraftOrder.merchant_phone == None,
+                    SupplierDraftOrder.supplier_key == sup_key
+                ).first()
+        else:
+            rec = db.query(SupplierDraftOrder).filter(
+                SupplierDraftOrder.supplier_key == sup_key
+            ).first()
+
+        if rec:
+            try:
+                it_list = json.loads(rec.items) if rec.items else []
+            except Exception:
+                it_list = []
+            return {
+                "supplier_name": rec.supplier_name,
+                "items": it_list,
+                "updated_at": rec.updated_at.isoformat() if rec.updated_at else datetime.now(timezone.utc).isoformat()
+            }
+
+    drafts = load_supplier_drafts(merchant_phone=merchant_phone, db=db)
     if sup_key in drafts:
         return drafts[sup_key]
     for k, v in drafts.items():
-        s_title = v.get("supplier_name", "").lower()
-        if supplier_name.lower() in s_title or s_title in supplier_name.lower():
-            return v
+        if isinstance(v, dict):
+            s_title = v.get("supplier_name", "").strip().lower()
+            if s_title and (target in s_title or s_title in target):
+                return v
     return None
 
-def clear_supplier_draft(supplier_name: str):
-    drafts = load_supplier_drafts()
+def clear_supplier_draft(
+    supplier_name: str,
+    merchant_phone: Optional[str] = None,
+    db: Optional[Session] = None
+):
     target = supplier_name.strip().lower()
     sup_key = re.sub(r'[^\w\s]', '', target).replace(' ', '_')
-    keys_to_del = set()
-    if sup_key in drafts:
-        keys_to_del.add(sup_key)
-    for k, v in drafts.items():
-        s_title = v.get("supplier_name", "").lower()
-        if target in s_title or s_title in target:
-            keys_to_del.add(k)
-    for k in keys_to_del:
-        if k in drafts:
-            del drafts[k]
-    if keys_to_del:
-        save_supplier_drafts(drafts)
+    clean_m = "".join(filter(str.isdigit, str(merchant_phone or "")))
+
+    # 1. Database removal
+    if db:
+        if clean_m:
+            recs = db.query(SupplierDraftOrder).filter(
+                (SupplierDraftOrder.merchant_phone == clean_m) |
+                (SupplierDraftOrder.merchant_phone == None)
+            ).all()
+        else:
+            recs = db.query(SupplierDraftOrder).all()
+        for r in recs:
+            r_title = (r.supplier_name or "").strip().lower()
+            if r.supplier_key == sup_key or (target and r_title and (target in r_title or r_title in target)):
+                db.delete(r)
+        db.commit()
+
+    # 2. JSON file removal
+    if os.path.exists(SUPPLIER_DRAFTS_FILE):
+        try:
+            with open(SUPPLIER_DRAFTS_FILE, "r", encoding="utf-8") as f:
+                all_file_drafts = json.load(f)
+            changed = False
+
+            # Delete from root if present
+            if sup_key in all_file_drafts:
+                del all_file_drafts[sup_key]
+                changed = True
+            for k, v in list(all_file_drafts.items()):
+                if isinstance(v, dict) and ("items" in v or "supplier_name" in v):
+                    s_title = v.get("supplier_name", "").strip().lower()
+                    if s_title and (target in s_title or s_title in target):
+                        del all_file_drafts[k]
+                        changed = True
+
+            # If clean_m specified, delete within that merchant's namespace
+            if clean_m and clean_m in all_file_drafts and isinstance(all_file_drafts[clean_m], dict):
+                m_drafts = all_file_drafts[clean_m]
+                if sup_key in m_drafts:
+                    del m_drafts[sup_key]
+                    changed = True
+                for k, v in list(m_drafts.items()):
+                    if isinstance(v, dict):
+                        s_title = v.get("supplier_name", "").strip().lower()
+                        if s_title and (target in s_title or s_title in target):
+                            del m_drafts[k]
+                            changed = True
+
+            # If boss or no clean_m, remove across all namespaces
+            if not clean_m or is_boss_number(clean_m) or clean_m == settings.WHATSAPP_ALERT_PHONE:
+                for sub_k, sub_dict in list(all_file_drafts.items()):
+                    if isinstance(sub_dict, dict) and "items" not in sub_dict and "supplier_name" not in sub_dict:
+                        for k, v in list(sub_dict.items()):
+                            if isinstance(v, dict):
+                                s_title = v.get("supplier_name", "").strip().lower()
+                                if s_title and (target in s_title or s_title in target):
+                                    del sub_dict[k]
+                                    changed = True
+
+            if changed:
+                with open(SUPPLIER_DRAFTS_FILE, "w", encoding="utf-8") as f:
+                    json.dump(all_file_drafts, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error clearing supplier draft: {e}")
+
 
 def normalize_argentine_phone(raw_phone: str) -> str:
     """
@@ -438,6 +689,15 @@ async def parse_supplier_registration_intent(text: str) -> dict:
     if any(dw in lower for dw in dispatch_words):
         return {"is_supplier_registration": False}
 
+    # Guard: if it's adding items or querying a supplier basket, it is NOT registration
+    basket_words = [
+        "anotá para", "anota para", "anotame para", "anótame para",
+        "guardá para", "guarda para", "sumale a", "sumale para", "sumá para", "suma para",
+        "tengo anotado", "hay anotado", "que tengo", "qué tengo", "anotado para", "canasta"
+    ]
+    if any(bw in lower for bw in basket_words):
+        return {"is_supplier_registration": False}
+
     triggers = [
         "agendá al proveedor", "agenda al proveedor", "agendar proveedor",
         "anotá al proveedor", "anota al proveedor", "anotar proveedor",
@@ -553,7 +813,11 @@ def parse_supplier_deletion_intent(text: str) -> dict:
     return {"is_supplier_deletion": False}
 
 
-def get_supplier_price_freshness(supplier_name: str, db: Optional[Session] = None) -> dict:
+def get_supplier_price_freshness(
+    supplier_name: str,
+    db: Optional[Session] = None,
+    merchant_phone: Optional[str] = None
+) -> dict:
     """
     Checks the freshness of a supplier's price list based on the 7-day Argentine wholesale cycle rule.
     Returns dict:
@@ -567,11 +831,23 @@ def get_supplier_price_freshness(supplier_name: str, db: Optional[Session] = Non
 
     if db:
         try:
-            cand = db.query(Prospect).filter(
-                (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
-            ).filter(
-                (Prospect.name.ilike(f"%{clean_sup}%")) | (Prospect.contact_name.ilike(f"%{clean_sup}%"))
-            ).first()
+            cand = None
+            if merchant_phone:
+                cand = db.query(Prospect).filter(
+                    (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
+                ).filter(
+                    Prospect.merchant_phone == merchant_phone
+                ).filter(
+                    (Prospect.name.ilike(f"%{clean_sup}%")) | (Prospect.contact_name.ilike(f"%{clean_sup}%"))
+                ).first()
+
+            if not cand:
+                cand = db.query(Prospect).filter(
+                    (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
+                ).filter(
+                    (Prospect.name.ilike(f"%{clean_sup}%")) | (Prospect.contact_name.ilike(f"%{clean_sup}%"))
+                ).first()
+
             if cand:
                 ref_dt = cand.updated_at or cand.created_at
                 if cand.notes:
@@ -863,11 +1139,23 @@ async def process_boss_message(
             if is_supplier_update and len(catalog_service.products) > 0:
                 sup_match = re.search(r'(?:de|para|del proveedor|de la distribuidora)\s+([A-Za-z0-9\s]+?)(?:\s+con|\s+para|\s*$)', clean_text, re.IGNORECASE)
                 sup_name_hint = sup_match.group(1).strip() if sup_match else None
-                result = catalog_service.update_from_supplier_excel(doc_bytes, filename=doc_name, supplier_name=sup_name_hint)
+                result = catalog_service.update_from_supplier_excel(
+                    doc_bytes,
+                    filename=doc_name,
+                    supplier_name=sup_name_hint,
+                    merchant_phone=sender_phone,
+                    db=db
+                )
                 return True, result.get("whatsapp_message", "✅ Lista de proveedor procesada."), "supplier_update"
             else:
-                count = catalog_service.load_from_excel_bytes(doc_bytes, filename=doc_name)
+                count = catalog_service.load_from_excel_bytes(
+                    doc_bytes,
+                    filename=doc_name,
+                    merchant_phone=sender_phone,
+                    db=db
+                )
                 return True, f"✅ *¡Lista de precios cargada con éxito!*\n\nSe procesaron *{count} productos* desde el archivo `{doc_name}`. Sofía ya está lista para cotizar y tomar pedidos con estos nuevos precios.", "catalog_updated"
+
         elif fname.endswith(".csv"):
             try:
                 csv_str = doc_bytes.decode("utf-8")
@@ -1185,16 +1473,28 @@ async def process_boss_message(
 
         if norm_p:
             s_contact = sup_reg_data.get("contact_name") or s_name
-            existing_sup = db.query(Prospect).filter(Prospect.phone == norm_p).first()
+            existing_sup = db.query(Prospect).filter(
+                Prospect.merchant_phone == sender_phone,
+                Prospect.phone == norm_p
+            ).first() if db else None
+
+            if not existing_sup and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
+                existing_sup = db.query(Prospect).filter(
+                    Prospect.phone == norm_p,
+                    (Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None)
+                ).first()
+
             if existing_sup:
                 existing_sup.name = s_name
                 existing_sup.contact_name = s_contact
+                existing_sup.merchant_phone = sender_phone
                 existing_sup.business_type = "proveedor"
                 existing_sup.campaign = "supplier"
                 existing_sup.notes = f"Proveedor actualizado desde WhatsApp el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
                 db.commit()
             else:
                 new_sup = Prospect(
+                    merchant_phone=sender_phone,
                     name=s_name,
                     contact_name=s_contact,
                     phone=norm_p,
@@ -1204,6 +1504,7 @@ async def process_boss_message(
                 )
                 db.add(new_sup)
                 db.commit()
+
 
             target_sup_id = existing_sup.id if existing_sup else new_sup.id
 
@@ -1331,10 +1632,17 @@ async def process_boss_message(
             ), "supplier_delete_needs_name"
 
         target_clean = del_target.strip().lower()
-        # Find supplier in Prospect table
+        # Find supplier in Prospect table - multi-tenant scoped to sender_phone
         candidates = db.query(Prospect).filter(
-            (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
+            ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+            (Prospect.merchant_phone == sender_phone)
         ).all() if db else []
+
+        if not candidates and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
+            candidates = db.query(Prospect).filter(
+                ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+                ((Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None))
+            ).all()
 
         matched_sup = None
         for s in candidates:
@@ -1344,7 +1652,9 @@ async def process_boss_message(
                 break
 
         if not matched_sup and db:
-            all_pros = db.query(Prospect).all()
+            all_pros = db.query(Prospect).filter(Prospect.merchant_phone == sender_phone).all()
+            if not all_pros and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
+                all_pros = db.query(Prospect).all()
             for s in all_pros:
                 s_name_lower = (s.name or "").lower()
                 if target_clean in s_name_lower or s_name_lower in target_clean:
@@ -1355,9 +1665,9 @@ async def process_boss_message(
             deleted_name = matched_sup.name
             db.delete(matched_sup)
             db.commit()
-            clear_supplier_draft(deleted_name)
+            clear_supplier_draft(deleted_name, merchant_phone=sender_phone, db=db)
             if del_target.lower() != deleted_name.lower():
-                clear_supplier_draft(del_target)
+                clear_supplier_draft(del_target, merchant_phone=sender_phone, db=db)
 
             return True, (
                 f"🗑️ *PROVEEDOR ELIMINADO CON ÉXITO*\n\n"
@@ -1365,17 +1675,18 @@ async def process_boss_message(
                 f"💡 _Para ver tus proveedores activos escribí:_ `proveedores`"
             ), "supplier_deleted"
         else:
-            drafts = load_supplier_drafts()
+            drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
             found_draft = False
             for k, v in list(drafts.items()):
                 s_title = v.get("supplier_name", "").lower()
                 if target_clean in s_title or s_title in target_clean:
-                    clear_supplier_draft(v.get("supplier_name", del_target))
+                    clear_supplier_draft(v.get("supplier_name", del_target), merchant_phone=sender_phone, db=db)
                     found_draft = True
                     break
 
             if found_draft:
                 return True, (
+
                     f"🗑️ *BORRADOR ELIMINADO CON ÉXITO*\n\n"
                     f"Se eliminaron los pedidos pendientes anotados para *{del_target.title()}*.\n\n"
                     f"💡 _Para ver tus proveedores registrados escribí:_ `proveedores`"
@@ -1393,7 +1704,11 @@ async def process_boss_message(
     ):
         price_upd_data = await parse_supplier_price_update_text(clean_text)
         if price_upd_data.get("is_price_update") and price_upd_data.get("updates"):
-            modified = catalog_service.process_supplier_price_updates(price_upd_data["updates"])
+            modified = catalog_service.process_supplier_price_updates(
+                price_upd_data["updates"],
+                merchant_phone=sender_phone,
+                db=db
+            )
             if modified:
                 mod_lines = []
                 for m in modified:
@@ -1443,8 +1758,16 @@ async def process_boss_message(
 
         elif inq_type == "list_suppliers":
             sups = db.query(Prospect).filter(
-                (Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier")
-            ).all()
+                ((Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier")),
+                (Prospect.merchant_phone == sender_phone)
+            ).order_by(Prospect.name.asc()).all() if db else []
+
+            if not sups and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
+                sups = db.query(Prospect).filter(
+                    ((Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier")),
+                    ((Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None))
+                ).order_by(Prospect.name.asc()).all()
+
             if not sups:
                 return True, (
                     "📋 *No tenés proveedores agendados todavía.*\n\n"
@@ -1459,7 +1782,7 @@ async def process_boss_message(
             return True, "\n".join(lines), "suppliers_list"
 
         elif inq_type == "all_baskets":
-            drafts = load_supplier_drafts()
+            drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
             active_baskets = {k: v for k, v in drafts.items() if v.get("items")}
             if not active_baskets:
                 return True, (
@@ -1474,7 +1797,7 @@ async def process_boss_message(
                 items_cnt = sum(it.get("quantity", 1) for it in b.get("items", []))
                 subtotal = sum(it.get("quantity", 1) * float(it.get("unit_price", 0)) for it in b.get("items", []))
                 sub_str = f" — ${int(subtotal):,} est." if subtotal > 0 else ""
-                fr = get_supplier_price_freshness(s_name, db)
+                fr = get_supplier_price_freshness(s_name, db, merchant_phone=sender_phone)
                 lines.append(f"🏢 *{s_name}* ({len(b.get('items', []))} productos, {items_cnt} unidades{sub_str}) {fr['badge']}:")
                 for it in b.get("items", [])[:3]:
                     lines.append(f"  • {it.get('quantity')}x {it.get('product_name')}")
@@ -1485,7 +1808,7 @@ async def process_boss_message(
 
         elif inq_type == "single_basket":
             target_sup = inquiry_data.get("supplier_name", "")
-            basket = get_supplier_draft(target_sup)
+            basket = get_supplier_draft(target_sup, merchant_phone=sender_phone, db=db)
             if not basket or not basket.get("items"):
                 return True, (
                     f"📋 *No tenés nada anotado para {target_sup} todavía.*\n\n"
@@ -1495,7 +1818,7 @@ async def process_boss_message(
 
             items = basket.get("items", [])
             s_title = basket.get("supplier_name", target_sup)
-            fr = get_supplier_price_freshness(s_title, db)
+            fr = get_supplier_price_freshness(s_title, db, merchant_phone=sender_phone)
             lines = [f"📋 *LO QUE TENÉS ANOTADO PARA {s_title.upper()}* ({len(items)} artículos) {fr['badge']}:\n"]
             total_est = sum(it.get("quantity", 1) * float(it.get("unit_price", 0)) for it in items)
             for idx, it in enumerate(items, 1):
@@ -1510,6 +1833,7 @@ async def process_boss_message(
             lines.append(f"_«Sofi, mandale el pedido a {s_title}»_")
             return True, "\n".join(lines), "single_basket_detail"
 
+
     # 1.8 Add items to Supplier Basket (Smart Multi-Supplier Routing & 7-Day Freshness Rule)
     basket_add_data = await parse_supplier_basket_add_intent(clean_text)
     if basket_add_data.get("is_basket_add") and basket_add_data.get("items"):
@@ -1518,8 +1842,16 @@ async def process_boss_message(
 
         # Default fallback supplier from registered DB prospects or open drafts
         registered_sups = db.query(Prospect).filter(
-            (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
+            ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+            (Prospect.merchant_phone == sender_phone)
         ).all() if db else []
+
+        if not registered_sups and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
+            registered_sups = db.query(Prospect).filter(
+                ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+                ((Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None))
+            ).all()
+
         default_sup_name = registered_sups[0].name if registered_sups else "Distribuidora Alem"
 
         assigned_by_sup = {}
@@ -1536,13 +1868,13 @@ async def process_boss_message(
 
             if target_sup and target_sup.lower() not in ["proveedor", "distribuidora", "auto", "null", "none", ""]:
                 # Explicit supplier indicated by merchant (e.g. 'anotá para Litoral')
-                prod = catalog_service.find_product_exact_or_best(p_name)
+                prod = catalog_service.find_product_exact_or_best(p_name, merchant_phone=sender_phone, db=db)
                 if prod:
                     unit_price = prod.price
                     chosen_name = prod.name
             else:
                 # Automatic best price routing using 7-day rule
-                comp_res = catalog_service.compare_supplier_prices(p_name)
+                comp_res = catalog_service.compare_supplier_prices(p_name, merchant_phone=sender_phone, db=db)
                 if comp_res:
                     canonical_q, matches = comp_res
                     if matches:
@@ -1551,7 +1883,7 @@ async def process_boss_message(
                         stale_matches = []
                         for m in matches:
                             s_cand = m.supplier or default_sup_name
-                            fr = get_supplier_price_freshness(s_cand, db)
+                            fr = get_supplier_price_freshness(s_cand, db, merchant_phone=sender_phone)
                             if fr["is_fresh"]:
                                 fresh_matches.append(m)
                             else:
@@ -1577,7 +1909,7 @@ async def process_boss_message(
 
                 if not target_sup:
                     # Fallback to single open basket if exists, or default supplier
-                    drafts = load_supplier_drafts()
+                    drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
                     active_baskets = [v for v in drafts.values() if v.get("items")]
                     if len(active_baskets) == 1:
                         target_sup = active_baskets[0].get("supplier_name", default_sup_name)
@@ -1598,7 +1930,7 @@ async def process_boss_message(
 
         # Persist into draft baskets
         for s_name, s_items in assigned_by_sup.items():
-            add_items_to_supplier_draft(s_name, s_items)
+            add_items_to_supplier_draft(s_name, s_items, merchant_phone=sender_phone, db=db)
 
         total_items_count = len(raw_items)
 
@@ -1606,12 +1938,13 @@ async def process_boss_message(
         if total_items_count <= 3:
             lines = ["🧺 *¡Anotado!* 📝\n"]
             for sup, items in assigned_by_sup.items():
-                fr = get_supplier_price_freshness(sup, db)
+                fr = get_supplier_price_freshness(sup, db, merchant_phone=sender_phone)
                 badge = fr["badge"]
                 flabel = fr["label"]
                 for it in items:
                     p_str = f" (${int(it['unit_price']):,} c/u)" if it['unit_price'] > 0 else ""
                     lines.append(f"• *{it['quantity']}x {it['product_name']}* ➔ *{sup}*{p_str} {badge} _{flabel}_")
+
 
             if total_savings > 0:
                 lines.append(f"\n💰 *Ahorro estimado:* ${int(total_savings):,} frente a otras opciones.")
@@ -1816,31 +2149,59 @@ async def process_boss_message(
 
         if not target_phone and dist_name and len(dist_name) > 2 and dist_name.lower() not in ["la distribuidora", "distribuidora", "proveedor"]:
             matched_p = db.query(Prospect).filter(
+                Prospect.merchant_phone == sender_phone
+            ).filter(
                 (Prospect.contact_name.ilike(f"%{dist_name}%")) |
                 (Prospect.name.ilike(f"%{dist_name}%"))
-            ).order_by(Prospect.updated_at.desc()).first()
+            ).order_by(Prospect.updated_at.desc()).first() if db else None
+
+            if not matched_p and db:
+                matched_p = db.query(Prospect).filter(
+                    Prospect.merchant_phone == None
+                ).filter(
+                    (Prospect.contact_name.ilike(f"%{dist_name}%")) |
+                    (Prospect.name.ilike(f"%{dist_name}%"))
+                ).order_by(Prospect.updated_at.desc()).first()
+
             if matched_p:
                 target_phone = matched_p.phone
                 dist_name = matched_p.contact_name or matched_p.name
 
         if not target_phone and (not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]):
             # Check if there is only 1 open basket with items
-            drafts = load_supplier_drafts()
+            drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
             active_baskets = [v for v in drafts.values() if v.get("items")]
             if len(active_baskets) == 1:
                 cand_sup = active_baskets[0].get("supplier_name", "")
                 if cand_sup:
                     dist_name = cand_sup
                     matched_p = db.query(Prospect).filter(
+                        Prospect.merchant_phone == sender_phone
+                    ).filter(
                         (Prospect.contact_name.ilike(f"%{cand_sup}%")) |
                         (Prospect.name.ilike(f"%{cand_sup}%"))
-                    ).order_by(Prospect.updated_at.desc()).first()
+                    ).order_by(Prospect.updated_at.desc()).first() if db else None
+
+                    if not matched_p and db:
+                        matched_p = db.query(Prospect).filter(
+                            Prospect.merchant_phone == None
+                        ).filter(
+                            (Prospect.contact_name.ilike(f"%{cand_sup}%")) |
+                            (Prospect.name.ilike(f"%{cand_sup}%"))
+                        ).order_by(Prospect.updated_at.desc()).first()
+
                     if matched_p:
                         target_phone = matched_p.phone
-            if not target_phone:
+            if not target_phone and db:
                 sup_query = db.query(Prospect).filter(
-                    (Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")
+                    ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+                    (Prospect.merchant_phone == sender_phone)
                 ).all()
+                if not sup_query:
+                    sup_query = db.query(Prospect).filter(
+                        ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+                        (Prospect.merchant_phone == None)
+                    ).all()
                 if len(sup_query) == 1:
                     dist_name = sup_query[0].name or sup_query[0].contact_name
                     target_phone = sup_query[0].phone
@@ -1857,7 +2218,7 @@ async def process_boss_message(
 
         if target_phone:
             # Check if there is an open supplier basket for dist_name
-            sup_basket = get_supplier_draft(dist_name)
+            sup_basket = get_supplier_draft(dist_name, merchant_phone=sender_phone, db=db)
             has_basket = bool(sup_basket and sup_basket.get("items"))
 
             ai_items = ai_dispatch.get("items", [])
@@ -1871,12 +2232,13 @@ async def process_boss_message(
                     p_qty = int(it.get("quantity") or 1)
                     p_price = float(it.get("unit_price") or 0.0)
                     if p_name:
-                        prod = catalog_service.find_product_exact_or_best(p_name)
+                        prod = catalog_service.find_product_exact_or_best(p_name, merchant_phone=sender_phone, db=db)
                         if prod:
                             fallback_items.append(OrderItem(product=prod, quantity=p_qty, unit_price=prod.price, subtotal=prod.price * p_qty))
                         else:
                             dyn_prod = ProductItem(name=p_name.capitalize(), price=p_price, presentation="Bulto/Unidad")
                             fallback_items.append(OrderItem(product=dyn_prod, quantity=p_qty, unit_price=p_price, subtotal=p_price * p_qty))
+
 
             if fallback_items:
                 draft = OrderDraft(items=fallback_items, total=sum(it.subtotal for it in fallback_items))
@@ -2015,7 +2377,7 @@ async def process_boss_message(
             ))
 
             if has_basket:
-                clear_supplier_draft(dist_name)
+                clear_supplier_draft(dist_name, merchant_phone=sender_phone, db=db)
 
             basket_note = f"\n\n✨ *Los faltantes anotados para {dist_name} quedaron pasados en limpio para la próxima reposición.*" if has_basket else ""
             fresh_warn = f"\n\n⚠️ *Aviso de precios:* La lista de {dist_name} tiene más de 7 días. Ya le incluí un aviso para que confirme si hubo variaciones al facturar." if not dist_freshness["is_fresh"] else ""
@@ -2042,7 +2404,7 @@ async def process_boss_message(
         OrderDraft
     )
 
-    analysis = await parse_order_or_inquiry_with_ai(clean_text)
+    analysis = await parse_order_or_inquiry_with_ai(clean_text, merchant_phone=sender_phone, db=db)
     if analysis.intent == "price_list_request" and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
         demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
@@ -2062,7 +2424,7 @@ async def process_boss_message(
                 f"💡 Podés pedirme la lista de precios o consultarme por productos como aceite, harina, arroz o bebidas."
             ), "boss_order_unmatched"
     elif analysis.intent == "product_inquiry":
-        inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name="Javier")
+        inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name="Javier", merchant_phone=sender_phone, db=db)
         return True, f"🧪 *[DEMO EN VIVO — CONSULTA DE PRODUCTO]*\n\n{inquiry_reply}", "boss_product_inquiry"
 
     if is_order_confirmation(clean_text):
@@ -2093,7 +2455,7 @@ async def process_boss_message(
         "que productos me aumentaron", "qué productos me aumentaron", "subieron los precios",
         "variaciones de precio", "cambios de precio", "que subio", "qué subió"
     ]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
-        weekly_summary = catalog_service.get_weekly_price_changes(requester_name="Javier")
+        weekly_summary = catalog_service.get_weekly_price_changes(requester_name="Javier", merchant_phone=sender_phone, db=db)
         return True, weekly_summary, "boss_price_increases"
 
     # 2.8.1 Multi-supplier Price Comparison & Cheapest Supplier Inquiry
@@ -2103,12 +2465,12 @@ async def process_boss_message(
         "comparame", "comparar precios", "comparativa de precios", "comparar", "mejor precio",
         "quien vende mas barato", "quién vende más barato", "quien me deja mas barato", "quién me deja más barato"
     ]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
-        formatted_comp = catalog_service.format_price_comparison(clean_text, requester_name="Javier")
+        formatted_comp = catalog_service.format_price_comparison(clean_text, requester_name="Javier", merchant_phone=sender_phone, db=db)
         if formatted_comp:
             return True, formatted_comp, "boss_price_comparison"
 
     if any(k in lower_text for k in ["cuanto", "cuánto", "precio", "sale", "a cuanto", "a cuánto"]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
-        p = catalog_service.find_product_exact_or_best(clean_text)
+        p = catalog_service.find_product_exact_or_best(clean_text, merchant_phone=sender_phone, db=db)
         if p:
             stock_info = "tenemos stock disponible" if p.in_stock else "actualmente figura sin stock"
             return True, (
