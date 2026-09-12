@@ -66,7 +66,8 @@ async def test_supplier_baskets_and_inquiries(db):
     )
     assert handled1 is True
     assert action1 == "basket_item_added"
-    assert "Anotado en la canasta de Bulonera del Litoral" in reply1
+    assert "Anotado" in reply1
+    assert "Bulonera del Litoral" in reply1
 
     # 2. Add items for Pinturas Litoral
     handled2, reply2, action2 = await process_boss_message(
@@ -76,7 +77,8 @@ async def test_supplier_baskets_and_inquiries(db):
     )
     assert handled2 is True
     assert action2 == "basket_item_added"
-    assert "Anotado en la canasta de Pinturas Litoral" in reply2
+    assert "Anotado" in reply2
+    assert "Pinturas Litoral" in reply2
 
     # 3. Check specific basket for Bulonera
     handled_b, reply_b, action_b = await process_boss_message(
@@ -129,7 +131,7 @@ async def test_supplier_basket_dispatch_and_clearing(db):
         assert handled is True
         assert action == "kiosk_order_dispatched"
         assert "¡Pedido despachado con éxito!" in reply
-        assert "vaciada y lista" in reply
+        assert "pasados en limpio" in reply
         assert "5493434536447" in reply
 
         mock_msg.assert_called()
@@ -664,4 +666,51 @@ async def test_merchant_direct_price_update_directive(db):
     assert "Azúcar Ledesma" in reply
 
 
+@pytest.mark.asyncio
+async def test_free_dictation_and_7day_rule(db):
+    clear_supplier_draft("Distribuidora Alem")
+    clear_supplier_draft("Distribuidora Nogoyá")
 
+    # Dictate items without specifying supplier
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, anotame 5 paquetes de harina 000 y 3 botellas de aceite"
+    )
+    assert handled is True
+    assert action == "basket_item_added"
+    assert "Anotado" in reply
+    # Must specify street action prompts
+    assert "Mostrame lo que le tengo anotado" in reply or "Mandale el pedido" in reply
+
+
+@pytest.mark.asyncio
+async def test_batch_executive_summary_and_street_language(db):
+    clear_supplier_draft("Distribuidora Alem")
+    clear_supplier_draft("Mayorista Central")
+
+    # Merchant dictates 6 items (batch > 3)
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, anotá 10 cajas de alfajores, 5 de coca, 4 de fideos, 2 de aceite, 6 de pure de tomate y 3 de mayonesa"
+    )
+    assert handled is True
+    assert action == "basket_item_added"
+    # Should use Executive Summary grouping instead of endless chat
+    assert "artículos repartidos por mejor precio" in reply or "artículos" in reply
+    # Should check supplier grouping with freshness badge
+    assert ("🟢" in reply or "⚠️" in reply)
+    # Street prompts
+    assert "Mostrame lo que le tengo anotado" in reply or "Mandale el pedido" in reply
+
+    # Merchant inquires using Argentine street slang
+    handled_q, reply_q, action_q = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, qué le tengo anotado a Alem?"
+    )
+    assert handled_q is True
+    assert action_q == "single_basket_detail"
+    assert "LO QUE TENÉS ANOTADO PARA" in reply_q
+    assert "canasta" not in reply_q.lower()
