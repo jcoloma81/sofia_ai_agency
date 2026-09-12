@@ -448,7 +448,10 @@ async def receive_whatsapp_webhook(
 
     # 0. Opt-out / BAJA handling (compliant with footer "Respondé BAJA...")
     clean_msg_lower = message.strip().lower().strip('"').strip("'")
-    if clean_msg_lower in ["baja", "cancelar", "stop", "desuscribir", "no me interesa", "dar de baja"]:
+    if clean_msg_lower in [
+        "baja", "cancelar", "stop", "desuscribir", "no me interesa", "dar de baja",
+        "ahora no, gracias", "ahora no gracias", "ahora no", "no gracias", "no, gracias"
+    ]:
         prospect.status = "unsubscribed"
         history.append({
             "sender": "prospect",
@@ -681,6 +684,53 @@ async def receive_whatsapp_webhook(
             "meeting_confirmed": False
         }
 
+    # 1.91 Instructions on loading/forwarding supplier catalogs (Option 4)
+    if clean_msg_lower in ["4", "opcion 4", "opción 4", "4️⃣"] or (
+        any(k in clean_msg_lower for k in ["cargar lista", "como cargo", "cómo cargo", "mandar lista", "enviar lista", "subir lista"])
+        and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
+    ):
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+        greeting = f"¡Hola {safe_name}! " if safe_name else "¡Hola! "
+        catalog_instructions = (
+            f"{greeting}📁 *CÓMO CARGAR LISTAS DE PROVEEDORES*\n\n"
+            f"Para sincronizar tus proveedores en mi memoria, solo tenés que reenviarme por este mismo chat de WhatsApp cualquier archivo en *PDF o Excel (.xlsx / .csv)* que te manden tus viajantes o distribuidores.\n\n"
+            f"⚡ *En segundos:* leo las tablas, extraigo los precios actualizados y los comparo automáticamente contra tus otros distribuidores para avisarte siempre quién te deja cada artículo más barato."
+        )
+        history.append({"sender": "ai", "text": catalog_instructions, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=catalog_instructions)
+        return {
+            "status": "success",
+            "catalog_instructions": True,
+            "reply": catalog_instructions,
+            "meeting_confirmed": False
+        }
+
+    # 1.92 Registered Suppliers Inquiry (Option 5: e.g. "¿Qué proveedores tengo registrados?")
+    is_suppliers_query = any(k in clean_msg_lower for k in [
+        "que proveedores", "qué proveedores", "mis proveedores", "cuales proveedores", "cuáles proveedores",
+        "proveedores registrados", "lista de proveedores", "distribuidores registrados"
+    ]) and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
+
+    if is_suppliers_query or clean_msg_lower in ["5", "opcion 5", "opción 5", "5️⃣"]:
+        safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
+        sup_summary = catalog_service.get_registered_suppliers_summary(requester_name=safe_name)
+        history.append({"sender": "ai", "text": sup_summary, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=sup_summary)
+        return {
+            "status": "success",
+            "suppliers_summary": True,
+            "reply": sup_summary,
+            "meeting_confirmed": False
+        }
+
     # 1.95 Guided Menu Repetition for newly onboarded client greeting
     if prospect.campaign == "client_onboarding" and clean_msg_lower in [
         "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "ayuda", "?"
@@ -691,22 +741,26 @@ async def receive_whatsapp_webhook(
         if is_ferret:
             menu_reply = (
                 f"¡Hola {safe_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
-                f"Ya tengo sincronizadas las listas de tus proveedores de ferretería.\n\n"
+                f"Activé un catálogo de demostración con distribuidores de ferretería para que hagamos una prueba en vivo juntos.\n\n"
                 f"🎯 *Podés mandarme un audio o texto probando cualquiera de estas opciones:*\n\n"
                 f"1️⃣ _«Sofi, ¿quién tiene más barato el foco LED 9W?»_\n"
                 f"2️⃣ _«Anotame 10 cajas de tornillos y 2 pinzas»_\n"
-                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n\n"
-                f"¿Qué querés que revisemos?"
+                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
+                f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
+                f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"¿Qué querés que revisemos primero?"
             )
         else:
             menu_reply = (
                 f"¡Hola {safe_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
-                f"Ya tengo sincronizadas las listas de tus proveedores de alimentos y mayoristas.\n\n"
+                f"Activé un catálogo de demostración con distribuidores mayoristas de alimentos para que hagamos una prueba en vivo juntos.\n\n"
                 f"🎯 *Podés mandarme un audio o texto probando cualquiera de estas opciones:*\n\n"
                 f"1️⃣ _«Sofi, ¿quién tiene más barato el aceite?»_\n"
                 f"2️⃣ _«Anotame un pedido de 10 paquetes de harina y 5 aceites»_\n"
-                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n\n"
-                f"¿Qué querés que revisemos?"
+                f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
+                f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
+                f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"¿Qué querés que revisemos primero?"
             )
         history.append({"sender": "ai", "text": menu_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -890,12 +944,15 @@ async def receive_whatsapp_webhook(
     if clean_lower in [
         "demo", "la demo", "ver demo", "quiero demo", "quiero la demo",
         "video", "video demo", "el video", "mandame el video", "mandá el video",
-        "pasame el video", "pasanos el video", "pasame la demo", "mandame la demo"
-    ] or "video demo" in clean_lower:
+        "pasame el video", "pasanos el video", "pasame la demo", "mandame la demo",
+        "ver demostración", "ver demostracion", "demostración", "demostracion",
+        "ver la demostración", "ver la demostracion", "quiero ver una demostración",
+        "quiero ver una demostracion", "me gustaría ver una demostración", "me gustaria ver una demostracion"
+    ] or "video demo" in clean_lower or "ver demo" in clean_lower or "ver demostra" in clean_lower:
         is_demo_intent = True
     elif any(phrase in clean_lower for phrase in [
         "mandame el video", "mandá el video", "pasame el video", "pasanos el video",
-        "mandame la demo", "pasame la demo"
+        "mandame la demo", "pasame la demo", "ver demostración", "ver demostracion"
     ]):
         is_demo_intent = True
 

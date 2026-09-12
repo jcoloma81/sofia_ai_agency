@@ -1085,6 +1085,30 @@ class CatalogService:
                 f"💡 *Consejo de Sofía:* Conviene stockearte de aceite y mayonesa hoy con Molinos Cañuelas antes de la suba general del lunes. ¿Querés que te arme un pedido borrador?"
             )
 
+    def get_registered_suppliers_summary(self, requester_name: Optional[str] = None) -> str:
+        """
+        Summarizes registered suppliers, product counts, and active catalog state.
+        """
+        greeting = f"¡Hola {requester_name}! " if requester_name else "¡Hola! "
+        if not self.products:
+            return f"{greeting}Actualmente no tengo listas de proveedores cargadas en el catálogo."
+
+        sup_counts: Dict[str, int] = {}
+        for p in self.products:
+            s = p.supplier or "Distribuidor Principal"
+            sup_counts[s] = sup_counts.get(s, 0) + 1
+
+        lines = [
+            f"📋 *PROVEEDORES Y LISTAS REGISTRADAS* 🏢\n",
+            f"{greeting}Actualmente tengo sincronizados *{len(sup_counts)} distribuidores* con un total de *{len(self.products)} productos* cargados:\n"
+        ]
+        for s, count in sorted(sup_counts.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"• *{s}:* {count} artículos cargados")
+
+        lines.append("")
+        lines.append("💡 *¿Querés sumar más proveedores?* Reenviame su lista de precios en PDF o Excel y la proceso al instante.")
+        return "\n".join(lines)
+
     def set_rubro(self, rubro: str) -> Tuple[str, int]:
         """
         Switches the active catalog and merchant profile to a specific commercial trade:

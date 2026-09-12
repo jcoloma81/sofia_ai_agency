@@ -242,9 +242,93 @@ def test_merchant_client_dispatch_to_distribuidora_alem_simulation(db):
         assert "Distribuidora Alem" in res["reply"]
         assert "5493434536447" in res["reply"]
 
-        # Verify dispatch reached Javier's phone (representing Distribuidora Alem)
         mock_msg.assert_called()
         dispatched_to_phones = [call[1]["to_phone"] for call in mock_msg.call_args_list]
         assert "5493434536447" in dispatched_to_phones
         assert "5493435112233" in dispatched_to_phones
+
+
+def test_client_onboarding_5_options_and_quick_replies(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    client = TestClient(app)
+
+    # 1. Setup client onboarding merchant
+    merchant = Prospect(
+        name="Ferretería El Triángulo",
+        contact_name="Carlos",
+        phone="5493436001122",
+        city="Paraná",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    db.add(merchant)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.notify_owner_demo_requested", new_callable=AsyncMock) as mock_demo_notify:
+
+        # Test A: Menu repetition with 5 options
+        resp = client.post("/webhook", json={
+            "phone": "5493436001122",
+            "message": "Hola Sofi"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("guided_menu") is True
+        assert "catálogo de demostración" in data["reply"]
+        assert "1️⃣" in data["reply"]
+        assert "5️⃣" in data["reply"]
+        assert "proveedores tengo registrados" in data["reply"]
+
+        # Test B: Option 4 - How to upload / forward lists
+        resp = client.post("/webhook", json={
+            "phone": "5493436001122",
+            "message": "4"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("catalog_instructions") is True
+        assert "PDF o Excel" in data["reply"]
+
+        # Test C: Option 5 - Registered suppliers query
+        resp = client.post("/webhook", json={
+            "phone": "5493436001122",
+            "message": "¿Qué proveedores tengo registrados?"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("suppliers_summary") is True
+        assert "PROVEEDORES Y LISTAS REGISTRADAS" in data["reply"]
+
+        # Test D: Cold outreach quick reply - 'Ver demostración'
+        lead = Prospect(
+            name="Comercio Prospecto",
+            contact_name="Martín",
+            phone="5493436998877",
+            city="Paraná",
+            campaign="ai_agency",
+            status="contacted"
+        )
+        db.add(lead)
+        db.commit()
+
+        resp = client.post("/webhook", json={
+            "phone": "5493436998877",
+            "message": "Ver demostración"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("demo_requested") is True
+        mock_demo_notify.assert_called_once()
+
+        # Test E: Cold outreach quick reply - 'Ahora no, gracias'
+        resp = client.post("/webhook", json={
+            "phone": "5493436998877",
+            "message": "Ahora no, gracias"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("action") == "opt_out"
+
 
