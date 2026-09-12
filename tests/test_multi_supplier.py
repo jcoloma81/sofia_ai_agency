@@ -1,6 +1,7 @@
 import pytest
 import io
 import os
+import json
 import openpyxl
 from unittest.mock import patch, AsyncMock
 from app.config.settings import settings
@@ -517,6 +518,150 @@ def test_client_manual_and_option_6_guidance(db):
         assert data.get("guided_menu") is True
         assert "6️⃣" in data["reply"]
         assert "agendá al proveedor" in data["reply"].lower() or "agendá a" in data["reply"].lower()
+
+
+@pytest.mark.asyncio
+async def test_parse_and_apply_supplier_price_updates():
+    from app.services.catalog import parse_supplier_price_update_text, catalog_service
+    catalog_service.set_rubro("distribuidora")
+
+    # Find initial price of Azúcar
+    azucar = catalog_service.find_product_exact_or_best("Azúcar Ledesma")
+    assert azucar is not None
+    initial_p = azucar.price
+
+    # 1. Test parsing of percentage and fixed price in single text
+    msg = "Hola gente, aumentó el azúcar Ledesma un 5% y el aceite Cañuelas pasa a $2400"
+    data = await parse_supplier_price_update_text(msg)
+    assert data["is_price_update"] is True
+    assert len(data["updates"]) == 2
+
+    # 2. Process updates in catalog
+    modified = catalog_service.process_supplier_price_updates(data["updates"])
+    assert len(modified) >= 1
+
+    # Verify Azúcar price was updated by 5%
+    azucar_after = catalog_service.find_product_exact_or_best("Azúcar Ledesma")
+    expected_new = round(initial_p * 1.05, 2)
+    assert azucar_after.price == expected_new
+
+
+def test_webhook_incoming_supplier_price_update_and_merchant_alert(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    # 1. Setup store merchant
+    kiosco = Prospect(
+        name="Kiosco Alameda",
+        contact_name="Marcelo",
+        phone="5493435112233",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    db.add(kiosco)
+    db.commit()
+
+    # 2. Setup supplier linked to merchant
+    sup_meta = {"merchant_phone": "5493435112233", "merchant_biz": "Kiosco Alameda"}
+    distribuidora = Prospect(
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone="5493434556677",
+        business_type="proveedor",
+        campaign="supplier",
+        notes=json.dumps(sup_meta)
+    )
+    db.add(distribuidora)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        # Supplier sends price increase via WhatsApp
+        payload = {
+            "phone": "5493434556677",
+            "message": "Hola Sofía, a partir del lunes el azúcar Ledesma sube un 5%"
+        }
+        resp = client.post("/webhook", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("status") == "success"
+        assert data.get("action") == "supplier_price_updated"
+        assert "Ya registré los aumentos" in data["reply"]
+        assert "Azúcar Ledesma" in data["reply"]
+
+        # Check that merchant received alert
+        merchant_alerts = [c[1] for c in mock_msg.call_args_list if c[1]["to_phone"] == "5493435112233"]
+        assert len(merchant_alerts) >= 1
+        assert "AVISO DE AUMENTO DE TU PROVEEDOR" in merchant_alerts[0]["text"]
+        assert "Distribuidora El Progreso" in merchant_alerts[0]["text"]
+        assert "Azúcar Ledesma" in merchant_alerts[0]["text"]
+
+
+def test_webhook_incoming_supplier_acknowledgment(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    # Setup merchant and supplier
+    kiosco = Prospect(
+        name="Kiosco Alameda",
+        contact_name="Marcelo",
+        phone="5493435112233",
+        campaign="client_onboarding"
+    )
+    db.add(kiosco)
+    db.commit()
+
+    distribuidora = Prospect(
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone="5493434556677",
+        business_type="proveedor",
+        campaign="supplier",
+        notes=json.dumps({"merchant_phone": "5493435112233"})
+    )
+    db.add(distribuidora)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        # Supplier confirms with "Agendado"
+        payload = {
+            "phone": "5493434556677",
+            "message": "Agendado"
+        }
+        resp = client.post("/webhook", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("action") == "supplier_acknowledged"
+        assert "Muchas gracias" in data["reply"]
+
+        # Merchant gets notification that supplier confirmed
+        merchant_alerts = [c[1] for c in mock_msg.call_args_list if c[1]["to_phone"] == "5493435112233"]
+        assert len(merchant_alerts) >= 1
+        assert "PROVEEDOR CONFIRMÓ RECEPCIÓN" in merchant_alerts[0]["text"]
+
+
+@pytest.mark.asyncio
+async def test_merchant_direct_price_update_directive(db):
+    from app.services.catalog import catalog_service
+    catalog_service.set_rubro("distribuidora")
+
+    # Store merchant says: "Sofi, aumentó el azúcar Ledesma un 5%"
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "Sofi, aumentó el azúcar Ledesma un 5%"
+    )
+    assert handled is True
+    assert action == "merchant_price_update_applied"
+    assert "CATÁLOGO ACTUALIZADO" in reply
+    assert "Azúcar Ledesma" in reply
 
 
 

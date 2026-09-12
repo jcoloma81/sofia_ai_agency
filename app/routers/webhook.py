@@ -16,7 +16,7 @@ from app.models.prospect import Prospect, WebhookEvent
 from app.services import brain, whatsapp
 from app.config.settings import settings
 from app.services.boss_mode import is_boss_number, process_boss_message
-from app.services.catalog import catalog_service
+from app.services.catalog import catalog_service, parse_supplier_price_update_text
 from app.services.order_engine import (
     parse_order_text,
     format_order_summary_message,
@@ -553,6 +553,133 @@ async def receive_whatsapp_webhook(
                 db.commit()
                 await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
                 return {"status": "success", "action": "prospect_catalog_error", "reply": doc_reply}
+
+    # 0.6 Incoming Supplier Messages: Price Updates or Registration Acknowledgments
+    is_supplier_sender = (
+        prospect.business_type == "proveedor"
+        or prospect.campaign == "supplier"
+        or (prospect.notes and "proveedor" in str(prospect.notes).lower())
+    )
+    if is_supplier_sender and message:
+        # A. Acknowledgment of presentation ("Agendado", "Recibido", "Listo", etc.)
+        if clean_msg_lower in [
+            "agendado", "recibido", "agendada", "recibida", "listo", "dale", "ok", "buenisimo", "buenísimo",
+            "perfecto", "agendados", "recibidos", "ya te agende", "ya te agendé", "agendado gracias", "recibido gracias"
+        ]:
+            sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
+            ack_reply = (
+                f"¡Muchas gracias, {sup_contact}! 🙌✨\n\n"
+                f"Apenas el comercio tenga lista su reposición, te paso el pedido por acá detallado con códigos y en PDF para facilitarte la carga.\n\n"
+                f"💡 Si tenés aumentos o cambios de lista vigentes, podés enviármelos por acá en cualquier momento (en archivo o simplemente escribiéndome qué sube). ¡Que tengas una excelente jornada! 📦"
+            )
+            history.append({"sender": "ai", "text": ack_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+            prospect.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
+            # Alert merchant and boss that supplier confirmed registration
+            merchant_phone = None
+            if prospect.notes:
+                try:
+                    meta_n = json.loads(prospect.notes)
+                    if isinstance(meta_n, dict):
+                        merchant_phone = meta_n.get("merchant_phone")
+                except Exception:
+                    pass
+
+            if not merchant_phone:
+                from app.services.boss_mode import get_active_onboarded_client
+                active_c = get_active_onboarded_client(db)
+                if active_c and active_c.get("phone"):
+                    merchant_phone = active_c.get("phone")
+
+            sup_biz = prospect.name or "Proveedor"
+            alert_ack = (
+                f"✅ *¡PROVEEDOR CONFIRMÓ RECEPCIÓN!* 📦\n\n"
+                f"• *Proveedor:* {sup_biz}\n"
+                f"• *Contacto:* {prospect.contact_name or 'Titular'}\n"
+                f"• *Respuesta:* _«{message.strip()}»_\n\n"
+                f"Sofía ya quedó agendada en su WhatsApp para pasarle los pedidos de tu comercio."
+            )
+            if merchant_phone and merchant_phone != clean_phone:
+                asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=merchant_phone, text=alert_ack))
+            if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE != merchant_phone:
+                asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=alert_ack))
+
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=ack_reply)
+            return {"status": "success", "action": "supplier_acknowledged", "reply": ack_reply}
+
+        # B. Informal Free-Text Price Update from Supplier
+        price_upd_data = await parse_supplier_price_update_text(message)
+        if price_upd_data.get("is_price_update") and price_upd_data.get("updates"):
+            updates = price_upd_data["updates"]
+            modified = catalog_service.process_supplier_price_updates(updates, supplier_name=prospect.name)
+            sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
+
+            sup_bullets = []
+            for u in updates:
+                p_brand = u.get("product_or_brand", "").title()
+                if u.get("type") == "percentage":
+                    sup_bullets.append(f"• *{p_brand}:* +{u.get('value')}%")
+                else:
+                    v = u.get("value", 0)
+                    v_str = f"${int(v):,}".replace(",", ".") if float(v).is_integer() else f"${v:,.2f}"
+                    sup_bullets.append(f"• *{p_brand}:* {v_str}")
+
+            bullet_text = "\n".join(sup_bullets)
+            supplier_reply = (
+                f"¡Entendido, {sup_contact}! 👍 Ya registré los aumentos informados:\n\n"
+                f"{bullet_text}\n\n"
+                f"Muchas gracias por el aviso. Ya quedó actualizado en el catálogo para los próximos pedidos de reposición. 📋📦"
+            )
+
+            history.append({"sender": "ai", "text": supplier_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+            prospect.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
+            # Now alert the merchant
+            merchant_lines = []
+            if modified:
+                for m in modified:
+                    m_name = m["product"]
+                    m_old = f"${int(m['old_price']):,}".replace(",", ".") if m['old_price'] > 0 else "Nuevo"
+                    m_new = f"${int(m['new_price']):,}".replace(",", ".")
+                    pct_str = f" (+{m['percentage']}%)" if m.get('percentage') else ""
+                    merchant_lines.append(f"• *{m_name}:* {m_old} ➔ *{m_new}*{pct_str}")
+            else:
+                merchant_lines = sup_bullets
+
+            merchant_phone = None
+            if prospect.notes:
+                try:
+                    meta_n = json.loads(prospect.notes)
+                    if isinstance(meta_n, dict):
+                        merchant_phone = meta_n.get("merchant_phone")
+                except Exception:
+                    pass
+
+            if not merchant_phone:
+                from app.services.boss_mode import get_active_onboarded_client
+                active_c = get_active_onboarded_client(db)
+                if active_c and active_c.get("phone"):
+                    merchant_phone = active_c.get("phone")
+
+            merchant_alert = (
+                f"🔔 *AVISO DE AUMENTO DE TU PROVEEDOR* 📈\n\n"
+                f"🏢 *Proveedor:* {prospect.name} (+{clean_phone})\n"
+                f"Acaba de informar actualizaciones de precios por WhatsApp:\n\n"
+                f"{chr(10).join(merchant_lines)}\n\n"
+                f"💡 *Sofía ya actualizó los costos en tu catálogo para que no pierdas margen en tus próximas ventas y pedidos de reposición.*"
+            )
+
+            if merchant_phone and merchant_phone != clean_phone:
+                asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=merchant_phone, text=merchant_alert))
+            if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE != merchant_phone:
+                asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=merchant_alert))
+
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=supplier_reply)
+            return {"status": "success", "action": "supplier_price_updated", "reply": supplier_reply, "updates": updates}
 
     # 0.8 Merchant / Boss Directives from Client (e.g. dispatching orders to suppliers or managing baskets)
     merchant_dispatch_triggers = [

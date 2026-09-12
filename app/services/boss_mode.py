@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.config.settings import settings
 from app.models.prospect import Prospect
-from app.services.catalog import catalog_service
+from app.services.catalog import catalog_service, parse_supplier_price_update_text
 from app.services import brain
 from app.services import whatsapp
 
@@ -662,7 +662,7 @@ def get_client_manual_text() -> str:
         "¿Querés que me comunique con un viajante o distribuidora?\n"
         "👉 Mandame un audio o texto: _«Sofi, agendá al proveedor Carlos de Distribuidora El Progreso al 3434536447»_\n"
         "👉 O simplemente *compartime su contacto* desde WhatsApp (icono del clip 📎 ➔ Contacto).\n"
-        "⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios vigente en PDF o Excel para que tengas los costos actualizados desde el día 1.\n\n"
+        "⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios o aumentos (en archivo o simplemente escribiéndome qué productos suben). Si el viajante me escribe _«subió el azúcar 5%»_, yo actualizo tu catálogo automáticamente y te aviso al instante para que nunca vendas desactualizado ni pierdas margen.\n\n"
         "---\n\n"
         "💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*\n\n"
         "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
@@ -1086,6 +1086,19 @@ async def process_boss_message(
                     client_biz = "tu comercio"
                     client_owner = "Javier"
 
+            # Save merchant metadata in supplier record so incoming updates from supplier alert this merchant
+            sup_meta = {
+                "merchant_phone": sender_phone,
+                "merchant_biz": client_biz,
+                "merchant_owner": client_owner,
+                "registered_at": datetime.now(timezone.utc).isoformat()
+            }
+            if existing_sup:
+                existing_sup.notes = json.dumps(sup_meta, ensure_ascii=False)
+            else:
+                new_sup.notes = json.dumps(sup_meta, ensure_ascii=False)
+            db.commit()
+
             # 1. Prepare presentation message for the supplier
             supplier_intro_text = (
                 f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{client_owner} de {client_biz}*.\n\n"
@@ -1093,7 +1106,7 @@ async def process_boss_message(
                 f"te voy a pasar los pedidos de reposición por acá: *bien detallados, con códigos y en PDF* para facilitarte la carga y que no pierdas tiempo. 📋📦\n\n"
                 f"📌 *Por favor:*\n"
                 f"1️⃣ Agendá este contacto como *«Sofía - {client_biz}»*.\n"
-                f"2️⃣ Si tenés a mano la *última lista de precios o avisos de aumentos de esta semana*, ¿me la podés reenviar por este chat en PDF o Excel? Así ya la dejo cargada para los próximos pedidos.\n\n"
+                f"2️⃣ Si tenés a mano la *última lista de precios en PDF o Excel, o si hay aumentos esta semana*, ¿me los podés reenviar por este chat (en archivo o simplemente escribiéndome qué productos suben)? Así ya los dejo cargados para los próximos pedidos.\n\n"
                 f"¿Me confirmás con un *«Agendado»* o *«Recibido»* que te llegó bien? ¡Muchas gracias!"
             )
 
@@ -1144,6 +1157,30 @@ async def process_boss_message(
                 f"Tengo el nombre *{s_name}*, pero me falta su número de WhatsApp.\n\n"
                 f"💡 Pasámelo diciendo por ejemplo: `el teléfono de {s_name} es 343 4556679`"
             ), "supplier_needs_phone"
+
+    # 1.65 Direct Price Increase or Cost Adjustment from Merchant / Boss
+    if (
+        any(k in lower_text for k in ["aument", "subi", "sube", "subió", "subio", "suba", "increment", "pasa a", "se fue a", "ahora esta a", "ahora está a", "nuevo precio"])
+        and not any(q in lower_text for q in ["que aumento", "qué aumentó", "que subio", "qué subió", "que productos me aumentaron", "qué productos me aumentaron", "cuales aumentaron", "cuáles aumentaron", "variaciones"])
+    ):
+        price_upd_data = await parse_supplier_price_update_text(clean_text)
+        if price_upd_data.get("is_price_update") and price_upd_data.get("updates"):
+            modified = catalog_service.process_supplier_price_updates(price_upd_data["updates"])
+            if modified:
+                mod_lines = []
+                for m in modified:
+                    m_name = m["product"]
+                    m_old = f"${int(m['old_price']):,}".replace(",", ".") if m['old_price'] > 0 else "Nuevo"
+                    m_new = f"${int(m['new_price']):,}".replace(",", ".")
+                    pct_str = f" (+{m['percentage']}%)" if m.get('percentage') else ""
+                    mod_lines.append(f"• *{m_name}:* de {m_old} pasa a *{m_new}*{pct_str}")
+
+                return True, (
+                    f"✅ *¡CATÁLOGO ACTUALIZADO!* 📈✨\n\n"
+                    f"Apliqué las siguientes actualizaciones de precios:\n"
+                    f"{chr(10).join(mod_lines)}\n\n"
+                    f"💡 *Tus próximas consultas de precios, canastas y pedidos a proveedores ya toman estos nuevos valores.*"
+                ), "merchant_price_update_applied"
 
     # 1.7 Supplier Baskets and Supplier Listing Inquiries
     inquiry_data = parse_supplier_basket_inquiry_intent(clean_text)

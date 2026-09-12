@@ -1,6 +1,7 @@
 import io
 import re
 import csv
+import json
 import logging
 from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
@@ -1245,6 +1246,319 @@ class CatalogService:
             logger.warning(f"Could not export preset catalog to excel: {e}")
 
         return trade_title, len(items)
+
+    def apply_percentage_increase(
+        self,
+        keyword: str,
+        percentage: float,
+        supplier_name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Applies a percentage increase to products matching a keyword, brand, category,
+        or across all products if keyword indicates a general increase.
+        """
+        clean_kw = keyword.strip().lower()
+        is_all = clean_kw in ["todo", "todos", "general", "todos los productos", "catalogo", "catálogo", "total", "completo"]
+        
+        updated_records = []
+        for p in self.products:
+            # Supplier filter
+            if supplier_name and p.supplier:
+                s_lower = supplier_name.strip().lower()
+                ps_lower = p.supplier.strip().lower()
+                if s_lower not in ps_lower and ps_lower not in s_lower:
+                    continue
+
+            name_l = p.name.lower()
+            cat_l = (p.category or "").lower()
+
+            matches = is_all or (clean_kw in name_l) or (clean_kw in cat_l)
+            if not matches and not is_all and len(clean_kw.split()) > 1:
+                kw_tokens = [t for t in clean_kw.split() if len(t) >= 3]
+                if kw_tokens and all(t in name_l or t in cat_l for t in kw_tokens):
+                    matches = True
+
+            if matches:
+                old_price = p.price
+                new_price = round(old_price * (1.0 + float(percentage) / 100.0), 2)
+                p.price = new_price
+                if p.cost_price:
+                    p.cost_price = round(p.cost_price * (1.0 + float(percentage) / 100.0), 2)
+                if supplier_name and not p.supplier:
+                    p.supplier = supplier_name
+
+                rec = {
+                    "product": p.name,
+                    "old_price": old_price,
+                    "new_price": new_price,
+                    "percentage": percentage,
+                    "presentation": p.presentation,
+                    "supplier": p.supplier or supplier_name or "Distribuidor",
+                    "code": p.code
+                }
+                updated_records.append(rec)
+
+        if updated_records:
+            self.last_updated = datetime.now(timezone.utc)
+            try:
+                excel_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx"))
+                self.export_to_excel(excel_path)
+            except Exception as e:
+                logger.warning(f"Could not export updated excel after percentage increase: {e}")
+
+        return updated_records
+
+    def update_single_product_price(
+        self,
+        product_query: str,
+        new_price: float,
+        supplier_name: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Updates the specific price of a single product matched by name or code.
+        """
+        p = self.find_product_exact_or_best(product_query)
+        if p:
+            old_price = p.price
+            p.price = float(new_price)
+            if p.cost_price:
+                p.cost_price = float(new_price)
+            if supplier_name and not p.supplier:
+                p.supplier = supplier_name
+            self.last_updated = datetime.now(timezone.utc)
+            try:
+                excel_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "catalogo_actualizado.xlsx"))
+                self.export_to_excel(excel_path)
+            except Exception as e:
+                logger.warning(f"Could not export updated excel after single price update: {e}")
+            return {
+                "product": p.name,
+                "old_price": old_price,
+                "new_price": float(new_price),
+                "percentage": round(((float(new_price) - old_price) / old_price) * 100.0, 1) if old_price > 0 else 0.0,
+                "presentation": p.presentation,
+                "supplier": p.supplier or supplier_name or "Distribuidor",
+                "code": p.code
+            }
+        elif supplier_name:
+            new_item = ProductItem(
+                name=product_query.strip().title(),
+                price=float(new_price),
+                presentation="Unidad",
+                category="General",
+                in_stock=True,
+                supplier=supplier_name
+            )
+            self.products.append(new_item)
+            self.last_updated = datetime.now(timezone.utc)
+            return {
+                "product": new_item.name,
+                "old_price": 0.0,
+                "new_price": float(new_price),
+                "percentage": 0.0,
+                "presentation": "Unidad",
+                "supplier": supplier_name,
+                "code": None
+            }
+        return None
+
+    def process_supplier_price_updates(
+        self,
+        updates: List[Dict[str, Any]],
+        supplier_name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Executes a batch of extracted price updates (percentages and fixed unit prices),
+        returning the list of affected products.
+        """
+        all_modified = []
+        for upd in updates:
+            u_type = upd.get("type", "percentage")
+            u_item = upd.get("product_or_brand", "")
+            u_val = float(upd.get("value", 0.0))
+            if not u_item or u_val <= 0:
+                continue
+
+            if u_type == "percentage":
+                mods = self.apply_percentage_increase(keyword=u_item, percentage=u_val, supplier_name=supplier_name)
+                all_modified.extend(mods)
+            elif u_type == "fixed_price":
+                mod = self.update_single_product_price(product_query=u_item, new_price=u_val, supplier_name=supplier_name)
+                if mod:
+                    all_modified.append(mod)
+
+        return all_modified
+
+
+def clean_extracted_item(raw_item: str) -> str:
+    s = raw_item.strip()
+    s = re.sub(r'^(?:hola[^\w\s]*\s*[\w\s]*|buenas|buen d[ií]a|buenos d[ií]as|estimados|chicos|gente)[^,]*,\s*', '', s, flags=re.IGNORECASE)
+    s = re.sub(r'^(?:hola|buenas tardes|buen d[ií]a|buenos d[ií]as|estimados|chicos|gente)\b\s*', '', s, flags=re.IGNORECASE)
+    s = re.sub(r'^(?:a partir del?|desde el?|a contar del?)\s+[a-zA-Z0-9áéíóúñ]+\s*', '', s, flags=re.IGNORECASE)
+    s = re.sub(r'^(?:que|de|del|el|la|los|las|en|un|una|unos|unas|al)\s+', '', s, flags=re.IGNORECASE)
+    return s.strip()
+
+
+def parse_price_update_heuristic(text: str) -> dict:
+    """
+    Deterministic regex-based parser for Argentine informal supplier price updates.
+    """
+    t = text.strip()
+    t_lower = t.lower()
+    
+    triggers = [
+        "aument", "subi", "sube", "subió", "subio", "suba", "increment",
+        "pasa a", "se fue a", "ahora esta a", "ahora está a", "nuevo precio", "lista nueva"
+    ]
+    if not any(tr in t_lower for tr in triggers) and not re.search(r'\+\s*\d+\s*%', t_lower):
+        return {"is_price_update": False, "updates": []}
+
+    updates = []
+    stopwords = {"un", "uno", "una", "el", "la", "los", "las", "de", "del", "al", "a", "en", "por", "que", "se"}
+    
+    # General percentage increase (e.g. "aumento general del 10%", "aumenta todo un 5%")
+    gen_m = re.search(r'(?:aumento|suba|incremento)?\s*(?:general|todo|todos los productos)\s*(?:aument[oó]|sube|subi[oó])?\s*(?:de|del|en|un)?\s*(\d+(?:[.,]\d+)?)\s*%', t_lower)
+    if not gen_m:
+        gen_m = re.search(r'(?:aument[oó]|sube|subi[oó]|increment[oó])\s+(?:de\s+)?todo\s+(?:un\s+)?(\d+(?:[.,]\d+)?)\s*%', t_lower)
+    if gen_m:
+        pct = float(gen_m.group(1).replace(",", "."))
+        return {
+            "is_price_update": True,
+            "updates": [{"product_or_brand": "todo", "type": "percentage", "value": pct, "note": f"+{pct}% general"}]
+        }
+
+    # Split into segments by newlines, semicolons, commas or "y"
+    segments = re.split(r'[;\n,]|\by\b', t)
+    
+    for seg in segments:
+        seg_clean = seg.strip()
+        if not seg_clean:
+            continue
+
+        # Check pattern: "<item> sube/aumentó [un] <pct>%" (Subject first)
+        m_pct_sub = re.search(
+            r'(?P<item>[a-zA-Z0-9\sáéíóúñÁÉÍÓÚÑ./-]+?)\s+(?:aument[oó]|subi[oó]|sube|increment[oó]|se fue un)\s+(?:un\s+|el\s+)?(?P<pct>\d+(?:[.,]\d+)?)\s*%',
+            seg_clean, re.IGNORECASE
+        )
+        if m_pct_sub:
+            item = clean_extracted_item(m_pct_sub.group("item"))
+            pct = float(m_pct_sub.group("pct").replace(",", "."))
+            if item and item.lower() not in stopwords and len(item) >= 2:
+                updates.append({"product_or_brand": item, "type": "percentage", "value": pct, "note": f"+{pct}%"})
+                continue
+
+        # Check pattern: "aumentó/subió <item> [un] <pct>%" (Verb first)
+        m_pct_verb = re.search(
+            r'(?:aument[oó]|subi[oó]|sube|increment[oó]|suba de|aumento de)\s+(?:el\s+|la\s+|los\s+|las\s+)?(?P<item>[a-zA-Z0-9\sáéíóúñÁÉÍÓÚÑ./-]+?)\s+(?:un\s+|el\s+)?(?P<pct>\d+(?:[.,]\d+)?)\s*%',
+            seg_clean, re.IGNORECASE
+        )
+        if m_pct_verb:
+            item = clean_extracted_item(m_pct_verb.group("item"))
+            pct = float(m_pct_verb.group("pct").replace(",", "."))
+            if item and item.lower() not in stopwords and len(item) >= 2:
+                updates.append({"product_or_brand": item, "type": "percentage", "value": pct, "note": f"+{pct}%"})
+                continue
+
+        # Check pattern: "aumentó/subió [un] <pct>% <item>" (Verb + Pct + Item)
+        m_pct_inv = re.search(
+            r'(?:aument[oó]|subi[oó]|sube|increment[oó])\s+(?:un\s+)?(?P<pct>\d+(?:[.,]\d+)?)\s*%\s+(?:el\s+|la\s+|los\s+|las\s+|en\s+)?(?P<item>[a-zA-Z0-9\sáéíóúñÁÉÍÓÚÑ./-]+)',
+            seg_clean, re.IGNORECASE
+        )
+        if m_pct_inv:
+            item = clean_extracted_item(m_pct_inv.group("item"))
+            pct = float(m_pct_inv.group("pct").replace(",", "."))
+            if item and item.lower() not in stopwords and len(item) >= 2:
+                updates.append({"product_or_brand": item, "type": "percentage", "value": pct, "note": f"+{pct}%"})
+                continue
+
+        # Check pattern: "<item>: +<pct>%" or "<item> +<pct>%"
+        m_pct_plus = re.search(
+            r'(?P<item>[a-zA-Z0-9\sáéíóúñÁÉÍÓÚÑ./-]+?)\s*[:=]?\s*\+\s*(?P<pct>\d+(?:[.,]\d+)?)\s*%',
+            seg_clean, re.IGNORECASE
+        )
+        if m_pct_plus:
+            item = clean_extracted_item(m_pct_plus.group("item"))
+            pct = float(m_pct_plus.group("pct").replace(",", "."))
+            if item and item.lower() not in stopwords and len(item) >= 2:
+                updates.append({"product_or_brand": item, "type": "percentage", "value": pct, "note": f"+{pct}%"})
+                continue
+
+        # Fixed price pattern 1: "<item> pasa a / se fue a $2.400"
+        m_fix1 = re.search(
+            r'(?P<item>[a-zA-Z0-9\sáéíóúñÁÉÍÓÚÑ./-]+?)\s+(?:pasa a|se fue a|ahora est[aá] a|queda en|nuevo precio:?)\s*\$?\s*(?P<price>\d[\d.,]*)',
+            seg_clean, re.IGNORECASE
+        )
+        if m_fix1:
+            item = clean_extracted_item(m_fix1.group("item"))
+            price_val = clean_price(m_fix1.group("price"))
+            if item and item.lower() not in stopwords and price_val > 0 and len(item) >= 2:
+                updates.append({"product_or_brand": item, "type": "fixed_price", "value": price_val, "note": f"${int(price_val):,}".replace(",", ".")})
+                continue
+
+        # Fixed price pattern 2: "<item>: $2400" / "<item> a $2400"
+        m_fix2 = re.search(
+            r'(?P<item>[a-zA-Z0-9\sáéíóúñÁÉÍÓÚÑ./-]+?)\s*[:=]\s*\$\s*(?P<price>\d[\d.,]*)',
+            seg_clean, re.IGNORECASE
+        )
+        if m_fix2:
+            item = clean_extracted_item(m_fix2.group("item"))
+            price_val = clean_price(m_fix2.group("price"))
+            if item and item.lower() not in stopwords and price_val > 0 and len(item) >= 2:
+                updates.append({"product_or_brand": item, "type": "fixed_price", "value": price_val, "note": f"${int(price_val):,}".replace(",", ".")})
+                continue
+
+    return {
+        "is_price_update": len(updates) > 0,
+        "updates": updates
+    }
+
+
+async def parse_supplier_price_update_text(text: str) -> dict:
+    """
+    Parses unstructured text or messages from suppliers (or store owners) announcing
+    product price increases, percentage hikes, or specific unit prices.
+    Uses Gemini LLM when available, backed by comprehensive heuristic regex parsing.
+    """
+    clean_text = text.strip()
+    if not clean_text:
+        return {"is_price_update": False, "updates": []}
+
+    gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+    if gemini_key:
+        try:
+            prompt = (
+                "Sos el motor de procesamiento de listas y aumentos de precios de Sofía IA para comercios en Argentina.\n"
+                "Un proveedor, distribuidor o comerciante envió este mensaje de WhatsApp informando cambios de precios:\n"
+                f'"{clean_text}"\n\n'
+                "Tu tarea es analizar el texto y extraer los aumentos o cambios de precio:\n"
+                "1. is_price_update: true si el mensaje informa aumentos, subas de precio, o nuevos precios de productos; false si es solo un saludo o no tiene nada que ver con precios.\n"
+                "2. updates: lista de objetos con:\n"
+                "   - product_or_brand: nombre del producto, marca o 'todo' si es aumento general (ej: 'azúcar ledesma', 'yerba playadito', 'aceite cañuelas', 'arcor', 'todo').\n"
+                "   - type: 'percentage' si es un porcentaje (ej: 5%, 8%) o 'fixed_price' si es un valor monetario unitario exacto (ej: 2400, $2.400).\n"
+                "   - value: número flotante (ej: 5.0 para 5%, o 2400.0 para $2.400).\n"
+                "   - note: breve detalle (ej: '+5%').\n\n"
+                "Respondé ÚNICAMENTE un JSON válido con este formato:\n"
+                '{"is_price_update": true, "updates": [{"product_or_brand": "azúcar ledesma", "type": "percentage", "value": 5.0, "note": "+5%"}]}'
+            )
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    cands = data.get("candidates", [])
+                    if cands and "content" in cands[0]:
+                        parts = cands[0]["content"].get("parts", [])
+                        if parts:
+                            parsed = json.loads(parts[0].get("text", "{}"))
+                            if isinstance(parsed, dict) and parsed.get("is_price_update") and parsed.get("updates"):
+                                return parsed
+        except Exception as e:
+            logger.warning(f"Gemini price update parser fallback: {e}")
+
+    return parse_price_update_heuristic(clean_text)
 
 
 catalog_service = CatalogService()
