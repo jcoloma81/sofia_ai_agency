@@ -1688,6 +1688,57 @@ async def process_boss_message(
         )
         return True, reply, "catalog_view"
 
+    # 5.3 Client Manual / User Guide (`manual`, `guia`, `instructivo`, `modo de uso`)
+    manual_triggers = ["manual", "guia", "guía", "instructivo", "modo de uso", "manual de uso", "manual cliente", "guia cliente", "guía cliente"]
+    if any(lower_text.strip() == k or lower_text.startswith(k + " ") for k in manual_triggers):
+        manual_text = (
+            "👋 *¡HOLA! SOY SOFÍA, TU CENTRAL DE COMPRAS EN WHATSAPP* 📱✨\n\n"
+            "A partir de hoy no necesitás abrir 10 planillas ni volverte loco buscando entre los mensajes de los viajantes. "
+            "Gestionás todas tus compras directamente desde este chat, como si hablaras con una persona.\n\n"
+            "---\n\n"
+            "🎯 *¿CÓMO USARME EN TU DÍA A DÍA?*\n\n"
+            "1️⃣ *Comparar precios al instante:*\n"
+            "Escribime o mandame un audio preguntando por cualquier producto.\n"
+            "👉 _«Sofi, ¿quién tiene más barato el foco LED 9W?»_\n"
+            "👉 _«¿A cuánto me deja el aceite cada distribuidor?»_\n"
+            "Te digo al segundo quién tiene el mejor precio para cuidar tu margen.\n\n"
+            "2️⃣ *Armar pedidos mientras caminás por el local:*\n"
+            "¿Viste un faltante en la góndola? Dictamelo por nota de voz y te lo voy anotando:\n"
+            "👉 _«Anotame 10 paquetes de harina y 5 cajas de tornillos»_\n"
+            "👉 _«¿Qué tengo anotado para pedirle al viajante de Molinos?»_\n\n"
+            "3️⃣ *Controlar aumentos de la semana:*\n"
+            "Antes de que te cobren de más, preguntame:\n"
+            "👉 _«¿Qué productos me aumentaron esta semana?»_\n"
+            "Te aviso qué artículos subieron y cuándo conviene stockearte antes de una suba.\n\n"
+            "4️⃣ *Cargar listas nuevas de tus distribuidores:*\n"
+            "¿El viajante te mandó una lista de precios por WhatsApp?\n"
+            "👉 *Solo dale a \"Reenviar\" a este chat* (en PDF o Excel).\n"
+            "Leo las tablas automáticamente y actualizo todos los precios en segundos.\n\n"
+            "5️⃣ *Revisar tus proveedores registrados:*\n"
+            "👉 _«¿Qué proveedores tengo cargados?»_\n"
+            "Te muestro cuántos distribuidores y productos tenés en memoria.\n\n"
+            "---\n\n"
+            "💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*\n\n"
+            "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
+            "🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«fijate quién tiene más barato...»_.\n"
+            "📦 *Cero instalaciones:* Funciona 100% acá adentro de WhatsApp, sin descargar aplicaciones ni programas pesados en la computadora.\n\n"
+            "¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀"
+        )
+        phone_match = re.search(r'(\d{8,15})', lower_text)
+        if ("enviar" in lower_text or "mandar" in lower_text) and phone_match:
+            dest_phone = phone_match.group(1)
+            if not dest_phone.startswith("54"):
+                dest_phone = "549" + dest_phone.lstrip("0")
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=dest_phone, text=manual_text))
+            return True, f"✅ *Manual de uso enviado con éxito* al número +{dest_phone}.", "boss_manual_dispatched"
+
+        boss_reply = (
+            f"📖 *MANUAL RÁPIDO DE USO PARA CLIENTES (Listo para reenviar):*\n\n"
+            f"{manual_text}\n\n"
+            f"💡 _Tip: Si querés que se lo envíe directamente a un cliente, escribí: `enviar manual al <número>`._"
+        )
+        return True, boss_reply, "boss_manual_view"
+
     # 5.5 If boss sent a voice note that couldn't be transcribed
     if clean_text.startswith("(Nota de voz") or clean_text.startswith("(Audio"):
         return True, (
