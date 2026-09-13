@@ -808,14 +808,7 @@ async def receive_whatsapp_webhook(
             text=message,
             conversation_history=history
         )
-        if handled_b and action_b in [
-            "kiosk_order_dispatched", "basket_item_added", "single_basket_detail",
-            "all_baskets_summary", "supplier_registered", "supplier_deleted",
-            "supplier_not_found", "supplier_delete_needs_name",
-            "dispatch_needs_phone", "supplier_needs_phone",
-            "supplier_inquiry_sent", "supplier_inquiry_missing_info",
-            "no_suppliers", "suppliers_list", "no_active_baskets", "basket_cleared"
-        ]:
+        if handled_b and not (action_b or "").startswith("boss_"):
             history.append({"sender": "ai", "text": reply_b, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
             prospect.updated_at = datetime.now(timezone.utc)

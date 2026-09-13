@@ -383,13 +383,14 @@ def get_active_onboarded_client(db: Session) -> dict:
     try:
         recent = db.query(Prospect).filter(Prospect.campaign == "client_onboarding").order_by(Prospect.updated_at.desc()).first()
         if recent:
-            LAST_ONBOARDED_CLIENT = {
+            LAST_ONBOARDED_CLIENT.clear()
+            LAST_ONBOARDED_CLIENT.update({
                 "phone": recent.phone,
                 "business_name": recent.name,
                 "contact_name": recent.contact_name,
                 "business_type": recent.business_type,
                 "city": recent.city
-            }
+            })
             return LAST_ONBOARDED_CLIENT
     except Exception as e:
         logger.warning(f"Error fetching recent onboarded client: {e}")
@@ -430,7 +431,13 @@ def resolve_merchant_identity(sender_phone: str, db: Session, target_sup_name: s
     active_c = get_active_onboarded_client(db) if db else {}
 
     if is_boss:
-        if active_c and active_c.get("business_name"):
+        boss_record = client_prospect if (client_prospect and is_boss_number(client_prospect.phone)) else None
+        if boss_record and boss_record.status == "director":
+            client_owner = "Javier"
+            client_biz = "Compras"
+            sender_intro = "Javier Coloma"
+            biz_tag = "Javier Coloma"
+        elif active_c and active_c.get("business_name"):
             client_biz = active_c.get("business_name").strip()
             client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
             sender_intro = f"{client_owner} de {client_biz}"

@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.database import Base, run_auto_migrations
-from app.models.prospect import Prospect
+from app.models.prospect import Prospect, SupplierDraftOrder, MerchantProduct, WebhookEvent
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 

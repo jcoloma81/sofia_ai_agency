@@ -7,7 +7,7 @@ import os
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.database import Base, engine, run_auto_migrations
+from app.database import Base, engine, run_auto_migrations, verify_database_health
 from app.routers.webhook import router as webhook_router
 from app.routers.outreach import router as outreach_router
 from app.routers.dashboard import router as dashboard_router, verify_admin_credentials
@@ -48,8 +48,10 @@ if os.path.exists(assets_dir):
 # Health endpoint
 @app.get("/health")
 def health_check():
+    db_ok = verify_database_health(engine)
     return {
-        "status": "healthy",
+        "status": "healthy" if db_ok else "degraded",
+        "database": "connected" if db_ok else "unreachable",
         "platform": "sofia_ai_agency",
         "version": "1.0.0",
         "meta_configured": bool(settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID),
