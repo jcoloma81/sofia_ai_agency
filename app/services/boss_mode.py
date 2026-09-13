@@ -1200,7 +1200,7 @@ def get_client_manual_text() -> str:
         "Escribime o mandame un audio preguntando por cualquier producto.\n"
         "👉 _«Sofi, ¿quién tiene más barato el foco LED 9W?»_\n"
         "👉 _«¿A cuánto me deja el aceite Cañuelas cada distribuidor?»_\n"
-        "Te digo al segundo quién tiene el mejor precio para cuidar tu margen.\n\n"
+        "Te digo al segundo quién tiene el mejor precio para mejorar tu ganancia.\n\n"
         "2️⃣ *Armar pedidos mientras caminás por el local:*\n"
         "¿Viste un faltante en la góndola? Dictamelo por nota de voz y te lo voy anotando:\n"
         "👉 _«Anotame 10 paquetes de harina y 5 cajas de tornillos»_\n"

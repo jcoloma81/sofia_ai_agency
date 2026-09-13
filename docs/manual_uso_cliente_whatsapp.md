@@ -17,7 +17,7 @@ A partir de hoy no necesitás abrir 10 planillas ni volverte loco buscando entre
 Escribime o mandame un audio preguntando por cualquier producto.
 👉 _«Sofi, ¿quién tiene más barato el foco LED 9W?»_
 👉 _«¿A cuánto me deja el aceite Cañuelas cada distribuidor?»_
-Te digo al segundo quién tiene el mejor precio para cuidar tu margen.
+Te digo al segundo quién tiene el mejor precio para mejorar tu ganancia.
 
 2️⃣ *Armar pedidos mientras caminás por el local:*
 ¿Viste un faltante en la góndola? Dictamelo por nota de voz y te lo voy anotando:
