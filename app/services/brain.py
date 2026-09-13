@@ -428,6 +428,8 @@ async def transcribe_audio_gemini(audio_b64: str, audio_mime_type: Optional[str]
 
     candidate_models = [
         "gemini-3.5-transcribe",
+        "gemini-3.5-flash",
+        "gemini-flash-latest",
         "gemini-flash-lite-latest",
         "gemini-3.5-flash-lite",
         "gemini-3.6-flash"

@@ -676,23 +676,24 @@ async def parse_client_onboarding_intent(text: str) -> dict:
             "- notes: cualquier detalle adicional mencionado o null\n"
             "Respondé ÚNICAMENTE un JSON válido."
         )
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
-        try:
-            async with httpx.AsyncClient(timeout=4.5) as client:
-                res = await client.post(
-                    url,
-                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
-                )
-                if res.status_code == 200:
-                    cand = res.json().get("candidates", [])
-                    if cand and "content" in cand[0]:
-                        parts = cand[0]["content"].get("parts", [])
-                        if parts:
-                            parsed = json.loads(parts[0].get("text", "{}"))
-                            if isinstance(parsed, dict) and parsed.get("is_onboarding"):
-                                return parsed
-        except Exception as e:
-            logger.warning(f"Gemini client onboarding parse error: {e}")
+        for m_name in ["gemini-3.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={gemini_key}"
+            try:
+                async with httpx.AsyncClient(timeout=4.5) as client:
+                    res = await client.post(
+                        url,
+                        json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                    )
+                    if res.status_code == 200:
+                        cand = res.json().get("candidates", [])
+                        if cand and "content" in cand[0]:
+                            parts = cand[0]["content"].get("parts", [])
+                            if parts:
+                                parsed = json.loads(parts[0].get("text", "{}"))
+                                if isinstance(parsed, dict) and parsed.get("is_onboarding"):
+                                    return parsed
+            except Exception as e:
+                logger.warning(f"Gemini client onboarding parse error with {m_name}: {e}")
 
     if is_candidate:
         digits = re.findall(r'\d{8,14}', clean.replace("-", "").replace(" ", "").replace("+", ""))
