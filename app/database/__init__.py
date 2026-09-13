@@ -17,7 +17,7 @@ Base = declarative_base()
 
 def run_auto_migrations(db_engine):
     """
-    Ensures that existing databases (e.g. SQLite sofia.db) seamlessly upgrade schema:
+    Ensures that existing databases (PostgreSQL and SQLite) seamlessly upgrade schema:
     - Adds merchant_phone column to prospects if missing.
     - Drops unique constraint on prospects.phone so multiple merchants can share suppliers.
     """
@@ -34,8 +34,15 @@ def run_auto_migrations(db_engine):
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone)"))
                 conn.commit()
-    except Exception:
-        pass
+            else:
+                conn.execute(text("ALTER TABLE prospects ADD COLUMN IF NOT EXISTS merchant_phone VARCHAR;"))
+                conn.execute(text("DROP INDEX IF EXISTS ix_prospects_phone;"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone);"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone);"))
+                conn.commit()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Error in run_auto_migrations: {e}")
 
 def get_db():
     db = SessionLocal()
