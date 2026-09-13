@@ -771,7 +771,9 @@ async def receive_whatsapp_webhook(
         "mandale para", "enviá para", "mandá para", "despachá para", "despachale para", "pasale para",
         "anota para", "anotame para", "anotá para", "anotale a", "anotá a", "anota a",
         "cargale a", "cargá para", "sumale a", "sumá para", "agregale a", "agregá para",
-        "pedidos a proveedores", "pedidos pendientes", "que pedidos tengo", "qué pedidos tengo", "ver canasta"
+        "pedidos a proveedores", "pedidos pendientes", "que pedidos tengo", "qué pedidos tengo", "ver canasta",
+        "que tengo para pedir", "qué tengo para pedir", "que le tengo anotado", "qué le tengo anotado",
+        "que tengo anotado", "qué tengo anotado", "que falta", "qué falta", "canasta", "canastas"
     ]
     merchant_supplier_triggers = [
         "agendá al proveedor", "agenda al proveedor", "agendar proveedor", "agendá a", "agenda a", "agendar a",
@@ -780,7 +782,8 @@ async def receive_whatsapp_webhook(
         "agendá al viajante", "agenda al viajante", "agendar viajante", "anotá al viajante", "anota al viajante",
         "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora", "guardar distribuidora",
         "eliminar proveedor", "borrar proveedor", "dar de baja proveedor", "eliminar al proveedor", "borrar al proveedor",
-        "eliminar distribuidora", "borrar distribuidora"
+        "eliminar distribuidora", "borrar distribuidora", "proveedores", "mis proveedores", "ver proveedores",
+        "lista de proveedores", "quienes son mis proveedores"
     ]
     merchant_inquiry_triggers = [
         "preguntale a", "preguntale al", "preguntale a la", "pregúntale a", "pregúntale al", "pregúntale a la",
@@ -810,7 +813,8 @@ async def receive_whatsapp_webhook(
             "all_baskets_summary", "supplier_registered", "supplier_deleted",
             "supplier_not_found", "supplier_delete_needs_name",
             "dispatch_needs_phone", "supplier_needs_phone",
-            "supplier_inquiry_sent", "supplier_inquiry_missing_info"
+            "supplier_inquiry_sent", "supplier_inquiry_missing_info",
+            "no_suppliers", "suppliers_list", "no_active_baskets", "basket_cleared"
         ]:
             history.append({"sender": "ai", "text": reply_b, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -905,7 +909,7 @@ async def receive_whatsapp_webhook(
         if clean_msg_lower in ["1", "opcion 1", "opción 1", "1️⃣"]:
             comp_target = "foco LED 9W" if "ferret" in (catalog_service.current_rubro or "").lower() else "aceite"
 
-        formatted_comp = catalog_service.format_price_comparison(comp_target, requester_name=safe_name)
+        formatted_comp = catalog_service.format_price_comparison(comp_target, requester_name=safe_name, merchant_phone=clean_phone, db=db)
         if formatted_comp:
             history.append({"sender": "ai", "text": formatted_comp, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -929,7 +933,7 @@ async def receive_whatsapp_webhook(
 
     if is_increase_query or clean_msg_lower in ["3", "opcion 3", "opción 3", "3️⃣"]:
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
-        weekly_summary = catalog_service.get_weekly_price_changes(requester_name=safe_name)
+        weekly_summary = catalog_service.get_weekly_price_changes(requester_name=safe_name, merchant_phone=clean_phone, db=db)
         history.append({"sender": "ai", "text": weekly_summary, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
         prospect.updated_at = datetime.now(timezone.utc)
@@ -971,12 +975,12 @@ async def receive_whatsapp_webhook(
     # 1.92 Registered Suppliers Inquiry (Option 5: e.g. "¿Qué proveedores tengo registrados?")
     is_suppliers_query = any(k in clean_msg_lower for k in [
         "que proveedores", "qué proveedores", "mis proveedores", "cuales proveedores", "cuáles proveedores",
-        "proveedores registrados", "lista de proveedores", "distribuidores registrados"
+        "proveedores registrados", "lista de proveedores", "distribuidores registrados", "proveedores"
     ]) and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
 
     if is_suppliers_query or clean_msg_lower in ["5", "opcion 5", "opción 5", "5️⃣"]:
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
-        sup_summary = catalog_service.get_registered_suppliers_summary(requester_name=safe_name)
+        sup_summary = catalog_service.get_registered_suppliers_summary(requester_name=safe_name, merchant_phone=clean_phone, db=db)
         history.append({"sender": "ai", "text": sup_summary, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
         prospect.updated_at = datetime.now(timezone.utc)
