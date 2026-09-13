@@ -28,13 +28,53 @@ def get_phone_candidates(phone: str) -> List[str]:
         candidates.append(stripped[:2] + "9" + stripped[2:])
     return candidates
 
-async def send_whatsapp_message(to_phone: str, text: str) -> bool:
+def split_whatsapp_message(text: str, max_chars: int = 3800) -> List[str]:
     """
-    Sends a WhatsApp message via Official Meta WhatsApp Cloud API (Primary Enterprise Gateway),
+    Splits long messages so they do not exceed Meta WhatsApp Cloud API limit (4096 chars).
+    Splits cleanly on paragraph breaks ('\n\n'), line breaks ('\n'), or spaces.
+    """
+    if not text or len(text) <= max_chars:
+        return [text] if text else []
+
+    chunks = []
+    paragraphs = text.split("\n\n")
+    current_chunk = ""
+
+    for p in paragraphs:
+        if not p.strip():
+            continue
+        if current_chunk and (len(current_chunk) + len(p) + 2 > max_chars):
+            chunks.append(current_chunk.strip())
+            current_chunk = p
+        elif len(p) > max_chars:
+            lines = p.split("\n")
+            for line in lines:
+                if current_chunk and (len(current_chunk) + len(line) + 1 > max_chars):
+                    chunks.append(current_chunk.strip())
+                    current_chunk = line
+                elif len(line) > max_chars:
+                    words = line.split(" ")
+                    for word in words:
+                        if current_chunk and (len(current_chunk) + len(word) + 1 > max_chars):
+                            chunks.append(current_chunk.strip())
+                            current_chunk = word
+                        else:
+                            current_chunk = f"{current_chunk} {word}" if current_chunk else word
+                else:
+                    current_chunk = f"{current_chunk}\n{line}" if current_chunk else line
+        else:
+            current_chunk = f"{current_chunk}\n\n{p}" if current_chunk else p
+
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
+
+    return chunks
+
+async def _send_single_whatsapp_message(clean_phone: str, text: str) -> bool:
+    """
+    Sends a single chunk via Official Meta WhatsApp Cloud API (Primary Enterprise Gateway),
     or falls back to Whapi.Cloud, or simulation log.
     """
-    clean_phone = "".join(filter(str.isdigit, to_phone))
-
     # 1. Official Meta WhatsApp Cloud API (Primary Enterprise Gateway)
     if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
         meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
@@ -101,6 +141,29 @@ async def send_whatsapp_message(to_phone: str, text: str) -> bool:
     except Exception as e:
         logger.error(f"Error sending WhatsApp message to {clean_phone}: {e}")
         return False
+
+async def send_whatsapp_message(to_phone: str, text: str) -> bool:
+    """
+    Sends a WhatsApp message via Official Meta WhatsApp Cloud API (Primary Enterprise Gateway),
+    or falls back to Whapi.Cloud, or simulation log.
+    Automatically splits long messages (>3800 chars) to adhere to Meta Cloud API limits.
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+    if not clean_phone or not text:
+        return False
+
+    chunks = split_whatsapp_message(text, max_chars=3800)
+    all_success = True
+
+    for i, chunk in enumerate(chunks):
+        if i > 0:
+            await asyncio.sleep(0.4)
+
+        chunk_sent = await _send_single_whatsapp_message(clean_phone, chunk)
+        if not chunk_sent:
+            all_success = False
+
+    return all_success
 
 async def send_whatsapp_template(
     to_phone: str,

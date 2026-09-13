@@ -45,7 +45,7 @@ def prevent_real_external_whatsapp_calls(monkeypatch):
     Guarantees that no test execution can EVER send real WhatsApp messages or templates to Meta or users.
     """
     from unittest.mock import AsyncMock
-    monkeypatch.setattr("app.services.whatsapp.send_whatsapp_message", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.services.whatsapp._send_single_whatsapp_message", AsyncMock(return_value=True))
     monkeypatch.setattr("app.services.whatsapp.send_whatsapp_template", AsyncMock(return_value=True))
     monkeypatch.setattr("app.services.whatsapp.send_whatsapp_document", AsyncMock(return_value=True))
     monkeypatch.setattr("app.services.whatsapp.send_whatsapp_audio", AsyncMock(return_value=True))

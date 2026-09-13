@@ -726,6 +726,7 @@ async def test_batch_executive_summary_and_street_language(db):
 async def test_client_faq_and_security_guide(db):
     # 1. Check content of get_client_faq_text
     faq = get_client_faq_text()
+    assert len(faq) < 4000, f"FAQ text too long ({len(faq)} chars) for Meta 4096 character limit"
     assert "GUÍA DE SEGURIDAD COMERCIAL Y PREGUNTAS FRECUENTES" in faq
     assert "BLOQUE 1: PRECIOS, INFLACIÓN" in faq
     assert "BLOQUE 2: PROVEEDORES, VIAJANTES" in faq
@@ -882,4 +883,35 @@ async def test_webhook_merchant_client_faq_and_deletion(db):
         res_menu = client.post("/webhook", json={"phone": "5493435112233", "message": "menu"})
         assert res_menu.status_code == 200
         assert "7️⃣ _Escribí «manual» para ver cómo usarme o «dudas»" in res_menu.json().get("reply", "")
+
+
+@pytest.mark.asyncio
+async def test_whatsapp_message_chunking_for_meta_limits():
+    from app.services.whatsapp import split_whatsapp_message, send_whatsapp_message
+    from unittest.mock import AsyncMock, patch
+
+    # 1. Message under 3800 chars remains 1 chunk
+    short_text = "Hola, este es un mensaje corto de prueba."
+    chunks_short = split_whatsapp_message(short_text, max_chars=3800)
+    assert len(chunks_short) == 1
+    assert chunks_short[0] == short_text
+
+    # 2. Huge message over 4000 chars is split cleanly
+    para1 = "Párrafo 1 con información relevante. " * 50  # ~1900 chars
+    para2 = "Párrafo 2 con más datos comerciales. " * 50   # ~1900 chars
+    para3 = "Párrafo 3 con las conclusiones finales. " * 30  # ~1200 chars
+    huge_text = f"{para1}\n\n{para2}\n\n{para3}"  # ~5000 chars
+
+    chunks_huge = split_whatsapp_message(huge_text, max_chars=3800)
+    assert len(chunks_huge) >= 2
+    for c in chunks_huge:
+        assert len(c) <= 3800
+
+    # 3. send_whatsapp_message dispatches all chunks
+    with patch("app.services.whatsapp._send_single_whatsapp_message", new_callable=AsyncMock) as mock_single:
+        mock_single.return_value = True
+        success = await send_whatsapp_message("5493434536447", huge_text)
+        assert success is True
+        assert mock_single.call_count == len(chunks_huge)
+
 
