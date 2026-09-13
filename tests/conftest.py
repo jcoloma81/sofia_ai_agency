@@ -37,6 +37,20 @@ def reset_catalog_to_base():
             catalog_service.load_from_csv(f.read(), source_name="Catálogo Base")
     yield
 
+
+@pytest.fixture(autouse=True)
+def prevent_real_external_whatsapp_calls(monkeypatch):
+    """
+    Air-gap safety shield for tests:
+    Guarantees that no test execution can EVER send real WhatsApp messages or templates to Meta or users.
+    """
+    from unittest.mock import AsyncMock
+    monkeypatch.setattr("app.services.whatsapp.send_whatsapp_message", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.services.whatsapp.send_whatsapp_template", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.services.whatsapp.send_whatsapp_document", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.services.whatsapp.send_whatsapp_audio", AsyncMock(return_value=True))
+    yield
+
 @pytest.fixture
 def db():
     from app.models.prospect import SupplierDraftOrder, MerchantProduct
