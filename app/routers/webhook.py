@@ -773,7 +773,8 @@ async def receive_whatsapp_webhook(
         "cargale a", "cargá para", "sumale a", "sumá para", "agregale a", "agregá para",
         "pedidos a proveedores", "pedidos pendientes", "que pedidos tengo", "qué pedidos tengo", "ver canasta",
         "que tengo para pedir", "qué tengo para pedir", "que le tengo anotado", "qué le tengo anotado",
-        "que tengo anotado", "qué tengo anotado", "que falta", "qué falta", "canasta", "canastas"
+        "que tengo anotado", "qué tengo anotado", "que falta", "qué falta", "canasta", "canastas",
+        "resumen", "mi resumen", "resumen de pedidos", "resumen pedidos", "ver resumen"
     ]
     merchant_supplier_triggers = [
         "agendá al proveedor", "agenda al proveedor", "agendar proveedor", "agendá a", "agenda a", "agendar a",
@@ -1018,7 +1019,11 @@ async def receive_whatsapp_webhook(
         }
 
     # 1.94 Client User Guide / Manual (`manual`, `guia`, `instructivo`, `modo de uso`)
-    manual_triggers = ["manual", "guia", "guía", "instructivo", "modo de uso", "manual de uso", "como se usa", "cómo se usa"]
+    manual_triggers = [
+        "manual", "guia", "guía", "instructivo", "modo de uso", "manual de uso",
+        "como se usa", "cómo se usa", "ayuda", "comandos", "opciones",
+        "que podes hacer", "qué podés hacer", "que podés hacer", "que hace sofia", "qué hace sofía"
+    ]
     if any(clean_msg_lower.strip() == k or clean_msg_lower.startswith(k + " ") for k in manual_triggers):
         from app.services.boss_mode import get_client_manual_text
         client_manual = get_client_manual_text()
@@ -1059,11 +1064,18 @@ async def receive_whatsapp_webhook(
 
     # 1.95 Guided Menu Repetition for newly onboarded client greeting
     if prospect.campaign == "client_onboarding" and clean_msg_lower in [
-        "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "ayuda", "?"
+        "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "?"
     ]:
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
         b_name = prospect.name or "tu negocio"
         is_ferret = "ferret" in (catalog_service.current_rubro or "").lower()
+        commands_block = (
+            "📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
+            "📖 *manual* ➔ Te muestro la guía de uso completa y ejemplos de cómo pedirme cosas por audio o texto.\n"
+            "🛡️ *dudas* ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.\n"
+            "📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.\n"
+            "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n\n"
+        )
         if is_ferret:
             menu_reply = (
                 f"¡Hola {safe_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
@@ -1075,7 +1087,9 @@ async def receive_whatsapp_webhook(
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
                 f"6️⃣ _«Sofi, agendá a Carlos de Distribuidora El Progreso al 343...» (o compartime su contacto)_ 🆕\n"
-                f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n\n"
+                f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n"
+                f"8️⃣ _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (¡Secretaria de compras!) 🆕\n\n"
+                f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )
         else:
@@ -1089,7 +1103,9 @@ async def receive_whatsapp_webhook(
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
                 f"6️⃣ _«Sofi, agendá a Carlos de Molinos al 343...» (o compartime su contacto)_ 🆕\n"
-                f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n\n"
+                f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n"
+                f"8️⃣ _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (¡Secretaria de compras!) 🆕\n\n"
+                f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )
         history.append({"sender": "ai", "text": menu_reply, "timestamp": datetime.now(timezone.utc).isoformat()})

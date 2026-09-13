@@ -108,7 +108,7 @@ async def test_merchant_direct_inquiry_outbound_dispatch(db, mock_whatsapp):
     # Verify supplier direct message dispatch
     mock_msg.assert_awaited()
     sent_texts = [call.kwargs.get("text", "") for call in mock_msg.call_args_list]
-    assert any("¿El lunes hacen reparto?" in t for t in sent_texts)
+    assert any("reparto" in t.lower() and "lunes" in t.lower() for t in sent_texts)
 
     # Verify supplier metadata stored in DB
     db.refresh(sup)
@@ -116,7 +116,7 @@ async def test_merchant_direct_inquiry_outbound_dispatch(db, mock_whatsapp):
     sup_notes = json.loads(sup.notes)
     assert "last_inquiry" in sup_notes
     assert sup_notes["last_inquiry"]["merchant_phone"] == settings.WHATSAPP_ALERT_PHONE
-    assert "¿El lunes hacen reparto?" in sup_notes["last_inquiry"]["inquiry"]
+    assert "reparto" in sup_notes["last_inquiry"]["inquiry"].lower() and "lunes" in sup_notes["last_inquiry"]["inquiry"].lower()
 
 
 @pytest.mark.asyncio

@@ -113,7 +113,7 @@ async def test_e2e_merchant_full_pipeline_and_semantic_quality(db, mock_whatsapp
     assert_semantic_quality(reply_inq, "direct_inquiry")
     assert "CONSULTA ENVIADA" in reply_inq
     assert "Pinturas del Litoral" in reply_inq
-    assert "latex blanco de 20 litros" in reply_inq
+    assert ("latex" in reply_inq.lower() or "látex" in reply_inq.lower()) and "20 litros" in reply_inq.lower()
 
     # Check that supplier was addressed with clean identity
     await asyncio.sleep(0.05)

@@ -1169,7 +1169,8 @@ def parse_supplier_basket_inquiry_intent(text: str) -> dict:
     if any(clean_no_prefix == q for q in [
         "pedidos a proveedores", "pedidos pendientes a proveedores", "canastas",
         "canastas abiertas", "que tengo para pedir", "pedidos por proveedor", "canastas de proveedores",
-        "que pedidos tengo", "qué pedidos tengo", "pedidos pendientes"
+        "que pedidos tengo", "qué pedidos tengo", "pedidos pendientes",
+        "resumen", "mi resumen", "resumen de pedidos", "resumen pedidos", "ver canasta", "canasta", "ver resumen"
     ]) or ("pedidos" in clean_no_prefix and "proveedor" in clean_no_prefix):
         return {"is_inquiry": True, "type": "all_baskets"}
 
@@ -1205,7 +1206,9 @@ def get_client_manual_text() -> str:
         "2️⃣ *Armar pedidos mientras caminás por el local:*\n"
         "¿Viste un faltante en la góndola? Dictamelo por nota de voz y te lo voy anotando:\n"
         "👉 _«Anotame 10 paquetes de harina y 5 cajas de tornillos»_\n"
-        "👉 _«¿Qué tengo anotado para pedirle al viajante de Molinos?»_\n\n"
+        "👉 _«¿Qué tengo anotado para pedirle al viajante de Molinos?»_\n"
+        "💰 *Ahorro inteligente:* Si me dictás varios productos surtidos, divido el pedido asignando cada artículo al proveedor más barato para que ahorres plata en cada compra.\n"
+        "🚀 *Despacho directo:* Y cuando quieras mandarlo, solo decime: _«Sofi, mandale el pedido a Molinos»_ (o _«mandáselo a todos»_) y le llega formalmente por WhatsApp en el acto.\n\n"
         "3️⃣ *Controlar aumentos de la semana:*\n"
         "Antes de que te cobren de más, preguntame:\n"
         "👉 _«¿Qué productos me aumentaron esta semana?»_\n"
@@ -1231,8 +1234,12 @@ def get_client_manual_text() -> str:
         "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
         "🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«agendá al proveedor...»_.\n"
         "📦 *Cero instalaciones:* Funciona 100% acá adentro de WhatsApp, sin descargar aplicaciones ni programas pesados en la computadora.\n\n"
-        "🛡️ *¿Tenés dudas sobre aumentos, listas viejas o viajantes?*\n"
-        "Escribí *«dudas»* (o _«preguntas frecuentes»_) para ver la Guía de Seguridad Comercial y respuestas a preguntas clave.\n\n"
+        "---\n\n"
+        "📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n\n"
+        "📖 *manual* (o _«ayuda»_) ➔ Te muestro esta guía completa con ejemplos de uso.\n"
+        "🛡️ *dudas* (o _«dudas»_ / _«preguntas frecuentes»_) ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.\n"
+        "📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.\n"
+        "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n\n"
         "¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀"
     )
 
@@ -1432,6 +1439,14 @@ async def process_boss_message(
         is_almac = any(k in b_type for k in ["despensa", "almacen", "almacén", "alimento", "comestible"])
         is_kiosc = any(k in b_type for k in ["kiosc"])
 
+        commands_block = (
+            "📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
+            "📖 *manual* ➔ Te muestro la guía de uso completa y ejemplos de cómo pedirme cosas por audio o texto.\n"
+            "🛡️ *dudas* ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.\n"
+            "📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.\n"
+            "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n\n"
+        )
+
         if is_ferret:
             welcome_text = (
                 f"¡Hola {c_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
@@ -1442,6 +1457,7 @@ async def process_boss_message(
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )
             demo_items = "10x Tornillos autoperforantes, 2x Pinzas universales"
@@ -1460,6 +1476,7 @@ async def process_boss_message(
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )
             demo_items = "10x Harina 000 Cañuelas, 5x Aceite Cañuelas 1.5L"
@@ -1478,6 +1495,7 @@ async def process_boss_message(
                 f"3️⃣ _«¿Quién me deja más barato el chocolate Milka?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )
             demo_items = "2x Cajas Guaymallén, 1x Pack Coca 500"
@@ -1496,6 +1514,7 @@ async def process_boss_message(
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n\n"
+                f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )
             demo_items = "5x Harina 000 25kg, 3x Aceite 12x900ml"
@@ -2004,7 +2023,12 @@ async def process_boss_message(
     inquiry_data = parse_supplier_basket_inquiry_intent(clean_text)
     if inquiry_data.get("is_inquiry"):
         inq_type = inquiry_data.get("type")
-        if inq_type == "list_clients":
+        is_boss_sender = is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE
+        is_boss_metric_query = any(clean_text.lower().strip() == k for k in ["resumen", "estado", "ventas", "como venimos", "cómo venimos", "metricas", "métricas"])
+        if inq_type == "all_baskets" and is_boss_sender and is_boss_metric_query:
+            # Let it pass through to Boss Metrics at section 3
+            pass
+        elif inq_type == "list_clients":
             clients = db.query(Prospect).filter(
                 (Prospect.business_type != "proveedor") & (Prospect.campaign != "supplier")
             ).filter(Prospect.phone != sender_phone).order_by(Prospect.updated_at.desc()).all()

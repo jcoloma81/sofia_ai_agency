@@ -23,6 +23,8 @@ Te digo al segundo quién tiene el mejor precio para mejorar tu ganancia.
 ¿Viste un faltante en la góndola? Dictamelo por nota de voz y te lo voy anotando:
 👉 _«Anotame 10 paquetes de harina y 5 cajas de tornillos»_
 👉 _«¿Qué tengo anotado para pedirle al viajante de Molinos?»_
+💰 *Ahorro inteligente:* Si me dictás varios productos surtidos, divido el pedido asignando cada artículo al proveedor más barato para que ahorres plata en cada compra.
+🚀 *Despacho directo:* Y cuando quieras mandarlo, solo decime: _«Sofi, mandale el pedido a Molinos»_ (o _«mandáselo a todos»_) y le llega formalmente por WhatsApp en el acto.
 
 3️⃣ *Controlar aumentos de la semana:*
 Antes de que te cobren de más, preguntame:
@@ -42,15 +44,29 @@ Te muestro cuántos distribuidores y productos tenés en memoria.
 ¿Querés que me comunique con un viajante o distribuidora?
 👉 Mandame un audio o texto: _«Sofi, agendá al proveedor Carlos de Distribuidora El Progreso al 3434536447»_
 👉 O simplemente *compartime su contacto* desde WhatsApp (icono del clip 📎 ➔ Contacto).
-⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios vigente en PDF o Excel para que tengas los costos actualizados desde el día 1.
+⚡ *¿Qué hago yo al instante?* Le escribo un WhatsApp presentándome de parte tuya, le pido que me agende y le solicito su lista de precios o aumentos (en archivo o simplemente escribiéndome qué productos suben). Si el viajante me escribe _«subió el azúcar 5%»_, yo actualizo tu catálogo automáticamente y te aviso al instante para que nunca vendas desactualizado ni pierdas margen.
+
+7️⃣ *Consultas directas a proveedores (¡Secretaria de compras!):* 🆕
+¿Querés hacerle una pregunta o consulta a un distribuidor o viajante sin armar un pedido formal?
+👉 Mandame un audio o texto: _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (o _«consultale a...»_, _«decile a...»_, _«escribile a...»_).
+⚡ *¿Qué hago yo al instante?* Le escribo a su WhatsApp de parte tuya transmitiéndole tu consulta respetuosamente. Y en cuanto el viajante o distribuidor me responda, te reenvío su respuesta exacta a este chat al instante.
 
 ---
 
 💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*
 
 🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.
-🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«fijate quién tiene más barato...»_.
+🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«agendá al proveedor...»_.
 📦 *Cero instalaciones:* Funciona 100% acá adentro de WhatsApp, sin descargar aplicaciones ni programas pesados en la computadora.
+
+---
+
+📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*
+
+📖 *manual* (o _«ayuda»_) ➔ Te muestro esta guía completa con ejemplos de uso.
+🛡️ *dudas* (o _«preguntas frecuentes»_) ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.
+📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.
+🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.
 
 ¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀
 ```

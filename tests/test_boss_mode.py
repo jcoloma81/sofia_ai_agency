@@ -349,3 +349,64 @@ async def test_boss_send_price_list_to_client(db):
         assert mock_doc.call_args[1]["to_phone"] == "5493434556679"
 
 
+@pytest.mark.asyncio
+async def test_manual_features_and_keywords_content():
+    from app.services.boss_mode import get_client_manual_text
+    manual = get_client_manual_text()
+    assert "Ahorro inteligente" in manual
+    assert "Despacho directo" in manual
+    assert "4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS" in manual
+    assert "manual" in manual
+    assert "dudas" in manual
+    assert "resumen" in manual
+    assert "proveedores" in manual
+
+
+@pytest.mark.asyncio
+async def test_client_onboarding_welcome_message_includes_keywords(db):
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl:
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, cargá este cliente: Kiosco Belgrano de Laura, teléfono 343 4112233, rubro kiosco"
+        )
+        assert handled is True
+        assert action == "client_onboarded"
+        # Check welcome text sent to merchant
+        mock_msg.assert_called()
+        welcome_call = [c for c in mock_msg.call_args_list if c[1].get("to_phone") == "5493434112233"]
+        assert len(welcome_call) > 0
+        welcome_text = welcome_call[0][1]["text"]
+        assert "4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS" in welcome_text
+        assert "manual" in welcome_text
+        assert "dudas" in welcome_text
+        assert "resumen" in welcome_text
+        assert "proveedores" in welcome_text
+
+
+@pytest.mark.asyncio
+async def test_merchant_resumen_command(db):
+    merchant_phone = "5493434998877"
+    # When merchant asks for resumen with empty baskets
+    handled, reply, action = await process_boss_message(
+        db,
+        merchant_phone,
+        "resumen"
+    )
+    assert handled is True
+    assert action == "no_active_baskets"
+    assert "No tenés pedidos pendientes" in reply
+
+    # Boss asks for resumen -> receives boss metrics
+    handled_b, reply_b, action_b = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "resumen"
+    )
+    assert handled_b is True
+    assert action_b == "boss_metrics"
+    assert "REPORTE EJECUTIVO EN TIEMPO REAL" in reply_b
+
+
