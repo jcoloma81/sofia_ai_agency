@@ -408,6 +408,72 @@ def is_boss_number(phone: str) -> bool:
         return True
     return False
 
+def resolve_merchant_identity(sender_phone: str, db: Session, target_sup_name: str = "") -> dict:
+    """
+    Resolves a clean, natural identity for the merchant contacting suppliers.
+    Avoids awkward redundant phrasing like 'Javier de Javier Coloma (Director)'.
+    Returns:
+        {
+            "client_owner": "Javier" or "Mariana",
+            "client_biz": "Compras" or "Kiosco Avenida",
+            "sender_intro": "Javier Coloma" or "Mariana de Kiosco Avenida",
+            "biz_tag": "Javier Coloma" or "Kiosco Avenida"
+        }
+    """
+    client_prospect = None
+    if sender_phone and db:
+        clean_s = "".join(filter(str.isdigit, str(sender_phone)))
+        candidates = [clean_s, normalize_argentine_phone(clean_s)]
+        client_prospect = db.query(Prospect).filter(Prospect.phone.in_(candidates)).first()
+
+    is_boss = is_boss_number(sender_phone)
+    active_c = get_active_onboarded_client(db) if db else {}
+
+    if is_boss:
+        if active_c and active_c.get("business_name"):
+            client_biz = active_c.get("business_name").strip()
+            client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
+            sender_intro = f"{client_owner} de {client_biz}"
+            biz_tag = client_biz
+        else:
+            client_owner = "Javier"
+            client_biz = "Compras"
+            sender_intro = "Javier Coloma"
+            biz_tag = "Javier Coloma"
+    elif client_prospect:
+        raw_biz = (client_prospect.name or "tu comercio").strip()
+        raw_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
+        clean_biz = re.sub(r'\s*\(.*?\)', '', raw_biz).strip() or "tu comercio"
+
+        if raw_owner.lower() in clean_biz.lower():
+            client_owner = raw_owner
+            client_biz = "su comercio"
+            sender_intro = clean_biz
+            biz_tag = clean_biz
+        else:
+            client_owner = raw_owner
+            client_biz = clean_biz
+            sender_intro = f"{client_owner} de {client_biz}"
+            biz_tag = clean_biz
+    else:
+        client_owner = "el titular"
+        client_biz = "el comercio"
+        sender_intro = "el comercio"
+        biz_tag = "Compras"
+
+    # Anti-collision safety: client_biz must NEVER be the supplier's own name
+    if target_sup_name and client_biz.strip().lower() == target_sup_name.strip().lower():
+        client_biz = "tu comercio"
+        sender_intro = f"{client_owner} de {client_biz}"
+        biz_tag = "Compras"
+
+    return {
+        "client_owner": client_owner,
+        "client_biz": client_biz,
+        "sender_intro": sender_intro,
+        "biz_tag": biz_tag
+    }
+
 async def generate_boss_ai_response(
     db: Session,
     incoming_text: str,
@@ -1607,44 +1673,11 @@ async def process_boss_message(
             target_sup_id = existing_sup.id if existing_sup else new_sup.id
 
             # Determine client / merchant details from sender_phone
-            client_prospect = None
-            if sender_phone:
-                clean_s = "".join(filter(str.isdigit, str(sender_phone)))
-                candidates = [clean_s, normalize_argentine_phone(clean_s)]
-                # Search for client merchant, strictly excluding the supplier just registered/updated
-                client_prospect = db.query(Prospect).filter(
-                    Prospect.phone.in_(candidates),
-                    Prospect.id != target_sup_id
-                ).first()
-
-            if is_boss_number(sender_phone):
-                # If boss/owner is testing or operating, prioritize active onboarded client context
-                active_c = get_active_onboarded_client(db)
-                if active_c and active_c.get("business_name"):
-                    client_biz = active_c.get("business_name")
-                    client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
-                elif client_prospect:
-                    client_biz = client_prospect.name or "tu comercio"
-                    client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "Javier"
-                else:
-                    client_biz = "tu comercio"
-                    client_owner = "Javier"
-            elif client_prospect:
-                client_biz = client_prospect.name or "el comercio"
-                client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
-            else:
-                client_biz = "el comercio"
-                client_owner = "el titular"
-
-            # Anti-collision safety: client_biz must NEVER be the supplier's own name
-            if client_biz.strip().lower() == s_name.strip().lower():
-                active_c = get_active_onboarded_client(db)
-                if active_c and active_c.get("business_name"):
-                    client_biz = active_c.get("business_name")
-                    client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
-                else:
-                    client_biz = "tu comercio"
-                    client_owner = "Javier"
+            ident = resolve_merchant_identity(sender_phone, db, target_sup_name=s_name)
+            client_biz = ident["client_biz"]
+            client_owner = ident["client_owner"]
+            sender_intro = ident["sender_intro"]
+            biz_tag = ident["biz_tag"]
 
             # Save merchant metadata in supplier record so incoming updates from supplier alert this merchant
             sup_meta = {
@@ -1661,11 +1694,11 @@ async def process_boss_message(
 
             # 1. Prepare presentation message for the supplier
             supplier_intro_text = (
-                f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{client_owner} de {client_biz}*.\n\n"
+                f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{sender_intro}*.\n\n"
                 f"Soy *Sofía*, su asistente comercial. Me pidió que me ponga en contacto con vos porque a partir de ahora "
                 f"te voy a pasar los pedidos de reposición por acá: *bien detallados, con códigos y en PDF* para facilitarte la carga y que no pierdas tiempo. 📋📦\n\n"
                 f"📌 *Por favor:*\n"
-                f"1️⃣ Agendá este contacto como *«Sofía - {client_biz}»*.\n"
+                f"1️⃣ Agendá este contacto como *«Sofía - {biz_tag}»*.\n"
                 f"2️⃣ Si tenés a mano la lista de precios actualizada o los aumentos de esta semana, ¿me los reenviás por acá? Puede ser en archivo (PDF/Excel) o simplemente escribiéndome qué productos suben, así ya los dejo cargados para los próximos pedidos.\n\n"
                 f"¿Me confirmás con un *«Agendado»* o *«Recibido»* que te llegó bien? ¡Muchas gracias!"
             )
@@ -1680,7 +1713,7 @@ async def process_boss_message(
                             {"type": "text", "text": s_contact},
                             {"type": "text", "text": client_owner},
                             {"type": "text", "text": client_biz},
-                            {"type": "text", "text": client_biz}
+                            {"type": "text", "text": biz_tag}
                         ]
                     }
                 ]
@@ -1704,7 +1737,7 @@ async def process_boss_message(
                 f"👤 *Contacto:* {s_contact}\n"
                 f"📱 *WhatsApp:* +{norm_p}\n\n"
                 f"🚀 *Ya le envié un mensaje de presentación:*\n"
-                f"Me presenté de parte de *{client_owner} de {client_biz}*, le pedí que me agende como «Sofía - {client_biz}» y le solicité su lista de precios o aumentos vigentes en PDF o Excel.\n\n"
+                f"Me presenté de parte de *{sender_intro}*, le pedí que me agende como «Sofía - {biz_tag}» y le solicité su lista de precios o aumentos vigentes en PDF o Excel.\n\n"
                 f"💡 *Apenas me responda o envíe su catálogo, te aviso automáticamente.*\n\n"
                 f"🛒 *A partir de ahora podés:*\n"
                 f"• Anotarle faltantes: _«Sofi, anotá para {s_name} 5 cajas de...»_\n"
@@ -1870,24 +1903,10 @@ async def process_boss_message(
         s_contact = matched_sup.contact_name or s_name
 
         # Merchant business and owner details
-        client_prospect = db.query(Prospect).filter(Prospect.phone == sender_phone).first() if db else None
-        if is_boss_number(sender_phone):
-            active_c = get_active_onboarded_client(db)
-            if active_c and active_c.get("business_name"):
-                client_biz = active_c.get("business_name")
-                client_owner = brain.sanitize_contact_first_name(active_c.get("contact_name")) or "Javier"
-            elif client_prospect:
-                client_biz = client_prospect.name or "tu comercio"
-                client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "Javier"
-            else:
-                client_biz = "tu comercio"
-                client_owner = "Javier"
-        elif client_prospect:
-            client_biz = client_prospect.name or "el comercio"
-            client_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
-        else:
-            client_biz = "el comercio"
-            client_owner = "el titular"
+        ident = resolve_merchant_identity(sender_phone, db, target_sup_name=s_name)
+        client_biz = ident["client_biz"]
+        client_owner = ident["client_owner"]
+        sender_intro = ident["sender_intro"]
 
         # Format inquiry message for the supplier
         clean_inquiry = inquiry_text.strip()
@@ -1900,7 +1919,7 @@ async def process_boss_message(
                 clean_inquiry = clean_inquiry[0].upper() + clean_inquiry[1:]
 
         sup_msg = (
-            f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{client_owner} de {client_biz}*.\n\n"
+            f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{sender_intro}*.\n\n"
             f"Me pidió que te consulte lo siguiente:\n"
             f"💬 _«{clean_inquiry}»_\n\n"
             f"Por favor respondé por acá y se lo transmito de inmediato. ¡Muchas gracias!"
