@@ -453,7 +453,7 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
     # Final Guarantee Note
     final_note = (
         "<b>📞 SOPORTE & ASISTENCIA AL COMERCIO:</b> Desarrollado por <b>Agencia Sofía IA</b> • "
-        "Director General: <b>Javier Coloma</b>. "
+        "Atención personalizada: <b>Javier Coloma</b>. "
         "Línea oficial WhatsApp: <b>+54 9 343 572-0312</b>."
     )
     t_final = Table([[Paragraph(final_note, ParagraphStyle('Final', parent=body_style, fontSize=7.5, leading=10, textColor=colors.HexColor('#1E3A8A')))]], colWidths=[18.6*cm])
