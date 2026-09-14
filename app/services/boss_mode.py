@@ -2735,7 +2735,7 @@ async def process_boss_message(
             f"¡Hola *{s_contact}*! 👋 Te escribo de parte de *{sender_intro}*.\n\n"
             f"Me pidió que te consulte lo siguiente:\n"
             f"💬 _«{clean_inquiry}»_\n\n"
-            f"Por favor respondé por acá y se lo transmito de inmediato. ¡Muchas gracias!"
+            f"👉 _(Podés responder deslizando y citando este mensaje, o nombrando al comercio en tu respuesta)._ ¡Muchas gracias!"
         )
 
         # Dispatch via Meta Template (if outside 24h window) or direct message

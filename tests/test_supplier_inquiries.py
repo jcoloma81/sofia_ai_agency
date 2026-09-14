@@ -253,3 +253,229 @@ def test_client_manual_and_faq_inquiry_documentation():
     faq = get_client_faq_text()
     assert "consultas o preguntas a un proveedor" in faq.lower()
     assert "secretaria ejecutiva de compras" in faq.lower()
+
+
+def test_supplier_reply_layer1_quoted_swipe(db, mock_whatsapp):
+    mock_msg, mock_tpl, _ = mock_whatsapp
+
+    sup_phone = "5493434555444"
+    m1_phone = "5493434111222"
+    m2_phone = "5493434999888"
+
+    # Carlos supplies both Merchant 1 (Alem) and Merchant 2 (San Martín)
+    sup_m1 = Prospect(
+        phone=sup_phone,
+        name="Distribuidora Carlos",
+        contact_name="Carlos",
+        business_type="proveedor",
+        campaign="supplier",
+        merchant_phone=m1_phone,
+        notes=json.dumps({
+            "merchant_phone": m1_phone,
+            "last_inquiry": {
+                "merchant_phone": m1_phone,
+                "merchant_biz": "Ferretería Alem",
+                "merchant_owner": "Javier",
+                "inquiry": "¿Tenés stock de martillos?",
+                "timestamp": "2026-09-14T10:00:00",
+                "replied": False
+            }
+        })
+    )
+    sup_m2 = Prospect(
+        phone=sup_phone,
+        name="Distribuidora Carlos",
+        contact_name="Carlos",
+        business_type="proveedor",
+        campaign="supplier",
+        merchant_phone=m2_phone,
+        notes=json.dumps({
+            "merchant_phone": m2_phone,
+            "last_inquiry": {
+                "merchant_phone": m2_phone,
+                "merchant_biz": "Corralón San Martín",
+                "merchant_owner": "Martín",
+                "inquiry": "¿A qué hora pasa el reparto hoy?",
+                "timestamp": "2026-09-14T10:05:00",
+                "replied": False
+            }
+        })
+    )
+    db.add_all([sup_m1, sup_m2])
+    db.commit()
+
+    # Carlos replies quoting Alem's inquiry
+    payload = {
+        "phone": sup_phone,
+        "message": "Sí, me quedan 10 cajas a $5.000",
+        "quoted": "¿Tenés stock de martillos?"
+    }
+    res = client.post("/webhook", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert data["action"] == "supplier_reply_relayed"
+    assert data["merchant_phone"] == m1_phone
+
+    # Verify Alem's inquiry is marked replied, but San Martín is STILL unreplied
+    db.refresh(sup_m1)
+    db.refresh(sup_m2)
+    m1_notes = json.loads(sup_m1.notes)
+    m2_notes = json.loads(sup_m2.notes)
+    assert m1_notes["last_inquiry"]["replied"] is True
+    assert m2_notes["last_inquiry"]["replied"] is False
+
+
+def test_supplier_reply_layer2_mention_merchant_name(db, mock_whatsapp):
+    mock_msg, mock_tpl, _ = mock_whatsapp
+
+    sup_phone = "5493434555333"
+    m1_phone = "5493434111333"
+    m2_phone = "5493434999777"
+
+    sup_m1 = Prospect(
+        phone=sup_phone,
+        name="Distribuidora Carlos",
+        contact_name="Carlos",
+        business_type="proveedor",
+        campaign="supplier",
+        merchant_phone=m1_phone,
+        notes=json.dumps({
+            "merchant_phone": m1_phone,
+            "last_inquiry": {
+                "merchant_phone": m1_phone,
+                "merchant_biz": "Ferretería Alem",
+                "merchant_owner": "Javier",
+                "inquiry": "¿Tenés stock de martillos?",
+                "timestamp": "2026-09-14T10:00:00",
+                "replied": False
+            }
+        })
+    )
+    sup_m2 = Prospect(
+        phone=sup_phone,
+        name="Distribuidora Carlos",
+        contact_name="Carlos",
+        business_type="proveedor",
+        campaign="supplier",
+        merchant_phone=m2_phone,
+        notes=json.dumps({
+            "merchant_phone": m2_phone,
+            "last_inquiry": {
+                "merchant_phone": m2_phone,
+                "merchant_biz": "Corralón San Martín",
+                "merchant_owner": "Martín",
+                "inquiry": "¿A qué hora pasa el camión?",
+                "timestamp": "2026-09-14T10:05:00",
+                "replied": False
+            }
+        })
+    )
+    db.add_all([sup_m1, sup_m2])
+    db.commit()
+
+    # Carlos writes without quote, but mentions Alem explicitly
+    payload = {
+        "phone": sup_phone,
+        "message": "Para los de Alem: sí, me quedan 10 cajas disponibles."
+    }
+    res = client.post("/webhook", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert data["action"] == "supplier_reply_relayed"
+    assert data["merchant_phone"] == m1_phone
+
+    db.refresh(sup_m1)
+    db.refresh(sup_m2)
+    assert json.loads(sup_m1.notes)["last_inquiry"]["replied"] is True
+    assert json.loads(sup_m2.notes)["last_inquiry"]["replied"] is False
+
+
+def test_supplier_reply_layer3_collision_disambiguation_flow(db, mock_whatsapp):
+    mock_msg, mock_tpl, _ = mock_whatsapp
+
+    sup_phone = "5493434555222"
+    m1_phone = "5493434111444"
+    m2_phone = "5493434999666"
+
+    sup_m1 = Prospect(
+        phone=sup_phone,
+        name="Distribuidora Carlos",
+        contact_name="Carlos",
+        business_type="proveedor",
+        campaign="supplier",
+        merchant_phone=m1_phone,
+        notes=json.dumps({
+            "merchant_phone": m1_phone,
+            "last_inquiry": {
+                "merchant_phone": m1_phone,
+                "merchant_biz": "Ferretería Alem",
+                "merchant_owner": "Javier",
+                "inquiry": "¿Tenés stock de martillos?",
+                "timestamp": "2026-09-14T10:00:00",
+                "replied": False
+            }
+        })
+    )
+    sup_m2 = Prospect(
+        phone=sup_phone,
+        name="Distribuidora Carlos",
+        contact_name="Carlos",
+        business_type="proveedor",
+        campaign="supplier",
+        merchant_phone=m2_phone,
+        notes=json.dumps({
+            "merchant_phone": m2_phone,
+            "last_inquiry": {
+                "merchant_phone": m2_phone,
+                "merchant_biz": "Corralón San Martín",
+                "merchant_owner": "Martín",
+                "inquiry": "¿A qué hora pasa el camión?",
+                "timestamp": "2026-09-14T10:05:00",
+                "replied": False
+            }
+        })
+    )
+    db.add_all([sup_m1, sup_m2])
+    db.commit()
+
+    # Step 1: Carlos writes ambiguous message ("Sí, tenemos stock") without quote or name
+    payload1 = {
+        "phone": sup_phone,
+        "message": "Sí, tenemos stock de sobra"
+    }
+    res1 = client.post("/webhook", json=payload1)
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert data1["status"] == "success"
+    assert data1["action"] == "supplier_disambiguation_requested"
+    assert "Ferretería Alem" in data1["reply"]
+    assert "Corralón San Martín" in data1["reply"]
+
+    # Inquiries are still unreplied
+    db.refresh(sup_m1)
+    db.refresh(sup_m2)
+    assert json.loads(sup_m1.notes)["last_inquiry"]["replied"] is False
+    assert json.loads(sup_m2.notes)["last_inquiry"]["replied"] is False
+
+    # Step 2: Carlos replies "1"
+    payload2 = {
+        "phone": sup_phone,
+        "message": "1"
+    }
+    res2 = client.post("/webhook", json=payload2)
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert data2["status"] == "success"
+    assert data2["action"] == "supplier_reply_relayed"
+    assert data2["merchant_phone"] == m1_phone
+    assert data2.get("disambiguated") is True
+
+    # Now Alem is replied, and San Martín is still waiting
+    db.refresh(sup_m1)
+    db.refresh(sup_m2)
+    assert json.loads(sup_m1.notes)["last_inquiry"]["replied"] is True
+    assert json.loads(sup_m2.notes)["last_inquiry"]["replied"] is False
+    assert "pending_disambiguation" not in json.loads(sup_m1.notes)
+

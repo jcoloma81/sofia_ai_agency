@@ -88,6 +88,7 @@ async def receive_whatsapp_webhook(
     phone = ""
     message = ""
     contact_name = None
+    quoted_context = ""
     audio_b64 = None
     audio_mime = None
     doc_bytes = None
@@ -315,15 +316,34 @@ async def receive_whatsapp_webhook(
                 message = first_msg.get("body", "") or first_msg.get("text", "")
 
         # Incorporate quoted context if present
-        quoted = first_msg.get("context", {}).get("quoted_content", {}).get("body")
-        if quoted and quoted.strip() and quoted not in message:
-            message = f"{message} [En respuesta a: \"{quoted.strip()}\"]"
+        context_data = first_msg.get("context", {}) if isinstance(first_msg.get("context"), dict) else {}
+        quoted = (
+            context_data.get("quoted_content", {}).get("body")
+            or context_data.get("body")
+            or context_data.get("text")
+            or ""
+        )
+        if quoted and str(quoted).strip():
+            quoted_context = str(quoted).strip()
+            if quoted_context not in message:
+                message = f"{message} [En respuesta a: \"{quoted_context}\"]"
 
     # 2. Handle nested Baileys/Evolution API format
     elif not message and isinstance(body.get("data"), dict):
         data = body["data"]
         phone = data.get("key", {}).get("remoteJid", "").split("@")[0] or phone
         message = data.get("message", {}).get("conversation", "") or ""
+        ctx_info = data.get("message", {}).get("extendedTextMessage", {}).get("contextInfo", {})
+        if ctx_info:
+            quoted_b = (
+                ctx_info.get("quotedMessage", {}).get("conversation")
+                or ctx_info.get("quotedMessage", {}).get("extendedTextMessage", {}).get("text")
+                or ""
+            )
+            if quoted_b and str(quoted_b).strip():
+                quoted_context = str(quoted_b).strip()
+                if quoted_context not in message:
+                    message = f"{message} [En respuesta a: \"{quoted_context}\"]"
 
     # 3. Direct/standard test format
     if not message:
@@ -336,6 +356,13 @@ async def receive_whatsapp_webhook(
             doc_name = body.get("doc_name", "catalogo.xlsx")
             if not message:
                 message = f"(Documento adjunto recibido: {doc_name})"
+
+    if not quoted_context:
+        cand_q = body.get("quoted") or body.get("quoted_text") or (body.get("context") if isinstance(body.get("context"), str) else "") or ""
+        if cand_q and str(cand_q).strip():
+            quoted_context = str(cand_q).strip()
+            if quoted_context not in message:
+                message = f"{message} [En respuesta a: \"{quoted_context}\"]"
 
     clean_phone = "".join(filter(str.isdigit, str(phone)))
     if not clean_phone or not message:
@@ -690,15 +717,16 @@ async def receive_whatsapp_webhook(
 
     # 0.6 Incoming Supplier Messages: Price Updates or Registration Acknowledgments
     if is_supplier_sender and message:
-        # Check if supplier has an unanswered inquiry from any merchant
+        # Check if supplier has an unanswered inquiry or active disambiguation from any merchant
         has_pending_inquiry = False
         for s_rec in (supplier_records or [prospect]):
             if s_rec.notes:
                 try:
                     meta_n_check = json.loads(s_rec.notes)
-                    if isinstance(meta_n_check, dict) and meta_n_check.get("last_inquiry") and not meta_n_check.get("last_inquiry", {}).get("replied"):
-                        has_pending_inquiry = True
-                        break
+                    if isinstance(meta_n_check, dict):
+                        if (meta_n_check.get("last_inquiry") and not meta_n_check.get("last_inquiry", {}).get("replied")) or meta_n_check.get("pending_disambiguation"):
+                            has_pending_inquiry = True
+                            break
                 except Exception:
                     pass
 
@@ -744,7 +772,15 @@ async def receive_whatsapp_webhook(
             return {"status": "success", "action": "supplier_acknowledged", "reply": ack_reply}
 
         # B. Informal Free-Text Price Update from Supplier
-        price_upd_data = await parse_supplier_price_update_text(message)
+        is_general_price_broadcast = any(k in clean_msg_lower for k in [
+            "aumento general", "sube todo", "aumenta todo", "aumento de", "suba de", "nueva lista",
+            "nuevos precios para todos", "aumentaron todos", "lista de precios actualizada",
+            "cambio de precios", "cambio de lista", "aumentos"
+        ])
+        if not has_pending_inquiry or is_general_price_broadcast:
+            price_upd_data = await parse_supplier_price_update_text(message)
+        else:
+            price_upd_data = {"is_price_update": False}
         if price_upd_data.get("is_price_update") and price_upd_data.get("updates"):
             updates = price_upd_data["updates"]
             sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
@@ -818,10 +854,125 @@ async def receive_whatsapp_webhook(
         sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or prospect.name or "Proveedor"
         sup_biz = prospect.name or "Distribuidor"
 
-        inquiry_merchant = None
-        target_s_rec = None
-        last_inquiry = None
+        # -------------------------------------------------------------------------
+        # SUB-CASE C0: Supplier is answering an active disambiguation prompt
+        # -------------------------------------------------------------------------
+        active_disam = None
+        for s_rec in (supplier_records or [prospect]):
+            if s_rec.notes:
+                try:
+                    m_dict = json.loads(s_rec.notes)
+                    if isinstance(m_dict, dict) and m_dict.get("pending_disambiguation"):
+                        active_disam = m_dict.get("pending_disambiguation")
+                        break
+                except Exception:
+                    pass
 
+        if active_disam and isinstance(active_disam, dict) and active_disam.get("options"):
+            options = active_disam.get("options", [])
+            selected_option = None
+            clean_ans = clean_msg_lower.strip()
+
+            # 1. Match by numeric choice (e.g. "1", "el 1", "opcion 1", "1, si tenemos...")
+            num_match = re.search(r'\b([1-9])\b', clean_ans)
+            if num_match:
+                idx = int(num_match.group(1))
+                for opt in options:
+                    if opt.get("num") == idx:
+                        selected_option = opt
+                        break
+
+            # 2. Match by business name or owner keyword
+            if not selected_option:
+                for opt in options:
+                    b_words = [w for w in re.split(r'[\s\-_\/]+', opt.get("merchant_biz", "").lower())
+                               if len(w) >= 4 and w not in ["ferreteria", "ferretería", "distribuidora", "corralon", "corralón", "almacen", "almacén", "kiosco", "comercio", "supermercado"]]
+                    owner_word = (opt.get("merchant_owner") or "").lower().strip()
+                    if (owner_word and len(owner_word) >= 3 and owner_word in clean_ans) or any(w in clean_ans for w in b_words):
+                        selected_option = opt
+                        break
+
+            if selected_option:
+                target_merchant_phone = selected_option.get("merchant_phone")
+                target_biz_name = selected_option.get("merchant_biz", "tu comercio")
+                target_inquiry_text = selected_option.get("inquiry", "")
+
+                stored_msg = active_disam.get("supplier_message", "")
+                extra_msg = re.sub(r'^(?:opci[oó]n\s+|el\s+)?\b[1-9]\b[:,\-\s]*', '', message.strip(), flags=re.IGNORECASE).strip()
+                if len(extra_msg) >= 4 and extra_msg.lower() not in [o.get("merchant_biz", "").lower() for o in options]:
+                    relayed_content = extra_msg
+                else:
+                    relayed_content = stored_msg or message.strip()
+
+                relayed_content = re.sub(r'\[En respuesta a:[^\]]+\]', '', relayed_content).strip()
+
+                # Mark inquiry as replied and clear pending_disambiguation in all supplier records
+                for s_rec in (supplier_records or [prospect]):
+                    if s_rec.notes:
+                        try:
+                            n_dict = json.loads(s_rec.notes)
+                            if isinstance(n_dict, dict):
+                                if "pending_disambiguation" in n_dict:
+                                    del n_dict["pending_disambiguation"]
+                                inq = n_dict.get("last_inquiry")
+                                if inq and (s_rec.merchant_phone == target_merchant_phone or inq.get("merchant_phone") == target_merchant_phone):
+                                    inq["replied"] = True
+                                    n_dict["last_inquiry"] = inq
+                                s_rec.notes = json.dumps(n_dict, ensure_ascii=False)
+                                s_rec.updated_at = datetime.now(timezone.utc)
+                        except Exception:
+                            pass
+                db.commit()
+
+                merchant_reply = (
+                    f"📩 *RESPUESTA DE TU PROVEEDOR* 💬✨\n\n"
+                    f"🏢 *Proveedor:* {sup_biz} ({sup_contact})\n"
+                )
+                if target_inquiry_text:
+                    merchant_reply += f"❓ *Tu consulta fue:* _«{target_inquiry_text}»_\n\n"
+                merchant_reply += (
+                    f"💬 *Respondió:*\n"
+                    f"_«{relayed_content}»_\n\n"
+                    f"💡 *Si querés responderle o hacerle otra consulta, decime:*\n"
+                    f"_«Sofi, decile a {sup_contact} que [tu mensaje]»_"
+                )
+
+                sup_ack_reply = (
+                    f"¡Muchas gracias, {sup_contact}! 👍 Ya le transmití tu respuesta al comercio (*{target_biz_name}*)."
+                )
+
+                if target_merchant_phone and target_merchant_phone != clean_phone:
+                    asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=target_merchant_phone, text=merchant_reply))
+                if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE != target_merchant_phone:
+                    asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=merchant_reply))
+
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=sup_ack_reply)
+                return {
+                    "status": "success",
+                    "action": "supplier_reply_relayed",
+                    "reply": sup_ack_reply,
+                    "merchant_phone": target_merchant_phone,
+                    "disambiguated": True
+                }
+            else:
+                opt_preview = "\n".join([f"{o['num']}️⃣ *{o['merchant_biz']}*" for o in options])
+                desempate_remind = (
+                    f"¡Hola {sup_contact}! Para no confundir los comercios, por favor indicame el número de opción:\n\n"
+                    f"{opt_preview}\n\n"
+                    f"👉 Respondé simplemente *1* o *2* (o el nombre del negocio)."
+                )
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=desempate_remind)
+                return {
+                    "status": "success",
+                    "action": "supplier_disambiguation_reminded",
+                    "reply": desempate_remind
+                }
+
+        # -------------------------------------------------------------------------
+        # SUB-CASE C1: Normal Incoming Supplier Response (Triple Blindaje en Cascada)
+        # -------------------------------------------------------------------------
+        # Collect all active unanswered inquiries
+        pending_inquiries = []
         for s_rec in (supplier_records or [prospect]):
             if s_rec.notes:
                 try:
@@ -829,12 +980,113 @@ async def receive_whatsapp_webhook(
                     if isinstance(meta_n, dict):
                         inq = meta_n.get("last_inquiry")
                         if inq and not inq.get("replied"):
-                            last_inquiry = inq
-                            inquiry_merchant = s_rec.merchant_phone or inq.get("merchant_phone")
-                            target_s_rec = s_rec
-                            break
+                            pending_inquiries.append({
+                                "s_rec": s_rec,
+                                "meta_n": meta_n,
+                                "inquiry": inq,
+                                "merchant_phone": s_rec.merchant_phone or inq.get("merchant_phone"),
+                                "merchant_biz": inq.get("merchant_biz") or s_rec.name or "Comercio",
+                                "merchant_owner": inq.get("merchant_owner") or ""
+                            })
                 except Exception:
                     pass
+
+        target_inquiry = None
+
+        # 🛡️ CAPA 1: Detección por Contexto Citado (Swipe / Reply)
+        quoted_candidate = quoted_context or ""
+        if not quoted_candidate and "[En respuesta a:" in message:
+            m_q = re.search(r'\[En respuesta a:\s*"([^"]+)"\]', message)
+            if m_q:
+                quoted_candidate = m_q.group(1)
+
+        if quoted_candidate and pending_inquiries:
+            q_lower = quoted_candidate.lower().strip()
+            for p_inq in pending_inquiries:
+                inq_body = (p_inq["inquiry"].get("inquiry") or "").lower()
+                b_name = p_inq["merchant_biz"].lower()
+                o_name = p_inq["merchant_owner"].lower()
+                if (inq_body and (inq_body in q_lower or q_lower in inq_body)) or \
+                   (b_name and b_name in q_lower) or \
+                   (o_name and len(o_name) >= 3 and o_name in q_lower):
+                    target_inquiry = p_inq
+                    break
+                inq_words = [w for w in re.split(r'\W+', inq_body) if len(w) >= 4]
+                if inq_words and sum(1 for w in inq_words if w in q_lower) >= max(1, len(inq_words) // 2):
+                    target_inquiry = p_inq
+                    break
+
+        # 🛡️ CAPA 2: Detección por mención explícita del comercio o dueño en el texto / audio
+        if not target_inquiry and pending_inquiries:
+            matched_by_mention = []
+            for p_inq in pending_inquiries:
+                b_tokens = [w for w in re.split(r'[\s\-_\/]+', p_inq["merchant_biz"].lower())
+                            if len(w) >= 4 and w not in ["ferreteria", "ferretería", "distribuidora", "corralon", "corralón", "almacen", "almacén", "kiosco", "comercio", "supermercado"]]
+                o_name = (p_inq["merchant_owner"] or "").lower().strip()
+                if any(t in clean_msg_lower for t in b_tokens) or (o_name and len(o_name) >= 3 and o_name in clean_msg_lower):
+                    matched_by_mention.append(p_inq)
+            if len(matched_by_mention) == 1:
+                target_inquiry = matched_by_mention[0]
+
+        # 🛡️ CAPA 3: Desempate Preventivo Anti-Colisión
+        if not target_inquiry:
+            if len(pending_inquiries) == 1:
+                # Sin colisión: hay exactamente una consulta abierta
+                target_inquiry = pending_inquiries[0]
+            elif len(pending_inquiries) >= 2:
+                # 🛑 ¡FRENO PREVENTIVO! Hay 2 o más consultas abiertas y no citó ni nombró a nadie
+                options = []
+                opt_lines = []
+                for idx, p_inq in enumerate(pending_inquiries[:5], 1):
+                    b_name = p_inq["merchant_biz"]
+                    q_text = p_inq["inquiry"].get("inquiry", "")
+                    if len(q_text) > 60:
+                        q_text = q_text[:57] + "..."
+                    options.append({
+                        "num": idx,
+                        "merchant_phone": p_inq["merchant_phone"],
+                        "merchant_biz": b_name,
+                        "inquiry": q_text,
+                        "s_rec_id": p_inq["s_rec"].id
+                    })
+                    num_emoji = f"{idx}️⃣"
+                    opt_lines.append(f"{num_emoji} *{b_name}:* _«{q_text}»_")
+
+                clean_user_msg = re.sub(r'\[En respuesta a:[^\]]+\]', '', message).strip()
+                disam_payload = {
+                    "supplier_message": clean_user_msg,
+                    "options": options,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                for s_rec in (supplier_records or [prospect]):
+                    try:
+                        n_dict = json.loads(s_rec.notes or "{}") if s_rec.notes and s_rec.notes.startswith("{") else {}
+                        n_dict["pending_disambiguation"] = disam_payload
+                        s_rec.notes = json.dumps(n_dict, ensure_ascii=False)
+                    except Exception:
+                        pass
+                db.commit()
+
+                desempate_reply = (
+                    f"🤔 *¡Hola {sup_contact}!* Tengo consultas pendientes de distintos comercios:\n\n"
+                    + "\n\n".join(opt_lines) + "\n\n"
+                    f"👉 *¿Para cuál de ellos es tu respuesta?*\n"
+                    f"Respondé con el número (*1* o *2*) o el nombre del negocio así se la paso en el acto."
+                )
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=desempate_reply)
+                return {
+                    "status": "success",
+                    "action": "supplier_disambiguation_requested",
+                    "reply": desempate_reply,
+                    "options_count": len(options)
+                }
+
+        # Resolution for target_inquiry (or fallback if 0 pending inquiries)
+        inquiry_merchant = target_inquiry["merchant_phone"] if target_inquiry else None
+        target_s_rec = target_inquiry["s_rec"] if target_inquiry else None
+        last_inquiry = target_inquiry["inquiry"] if target_inquiry else None
+
+        clean_relayed_text = re.sub(r'\[En respuesta a:[^\]]+\]', '', message).strip()
 
         merchant_reply = (
             f"📩 *RESPUESTA DE TU PROVEEDOR* 💬✨\n\n"
@@ -844,14 +1096,16 @@ async def receive_whatsapp_webhook(
             merchant_reply += f"❓ *Tu consulta fue:* _«{last_inquiry['inquiry']}»_\n\n"
         merchant_reply += (
             f"💬 *Respondió:*\n"
-            f"_«{message.strip()}»_\n\n"
+            f"_«{clean_relayed_text}»_\n\n"
             f"💡 *Si querés responderle o hacerle otra consulta, decime:*\n"
             f"_«Sofi, decile a {sup_contact} que [tu mensaje]»_"
         )
 
-        sup_ack_reply = (
-            f"¡Muchas gracias, {sup_contact}! 👍 Ya le transmití tu respuesta al comercio."
-        )
+        sup_ack_biz = (target_inquiry.get("merchant_biz") if target_inquiry else None)
+        if sup_ack_biz:
+            sup_ack_reply = f"¡Muchas gracias, {sup_contact}! 👍 Ya le transmití tu respuesta al comercio (*{sup_ack_biz}*)."
+        else:
+            sup_ack_reply = f"¡Muchas gracias, {sup_contact}! 👍 Ya le transmití tu respuesta al comercio."
 
         if last_inquiry and target_s_rec:
             last_inquiry["replied"] = True
