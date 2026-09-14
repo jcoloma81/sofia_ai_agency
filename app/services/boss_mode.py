@@ -1430,11 +1430,11 @@ def get_client_faq_text() -> str:
         "---\n\n"
         "📦 *BLOQUE 1: PRECIOS, INFLACIÓN Y LISTAS DESACTUALIZADAS*\n\n"
         "1️⃣ *¿Qué pasa si una lista tiene más de 7 días y la otra es nueva?*\n"
-        "👉 Aplico la *Regla de los 7 días*: elijo el mejor precio de listas actualizadas en la última semana. Si no actualiza hace semanas, te pongo una alerta (⚠️) y pido confirmación antes de despachar.\n\n"
+        "👉 Aplico la *Regla de los 7 días*: elijo el mejor precio de listas actualizadas en la última semana. Si no actualiza hace semanas, te pongo alerta (⚠️) y pido confirmación antes de despachar.\n\n"
         "2️⃣ *¿Qué pasa si hago un pedido y el proveedor ya aumentó esta semana?*\n"
-        "👉 Al enviar el pedido por WhatsApp, exijo confirmación de precios vigentes antes de facturar. Si avisan una suba, te alerto en el acto.\n\n"
+        "👉 Al enviar el pedido por WhatsApp, pido confirmación de precios vigentes antes de facturar. Si avisan una suba, te alerto en el acto.\n\n"
         "3️⃣ *¿Cómo actualizo los precios cuando me llega una lista nueva?*\n"
-        "👉 Reenviá el PDF o Excel del viajante a este chat. Leo los datos y actualizo tus costos en segundos. Y si el viajante avisa _«subió el aceite 5%»_, lo tomo sola automáticamente.\n\n"
+        "👉 Reenviá el PDF o Excel del viajante acá. Leo los datos y actualizo tus costos en segundos. Y si tu viajante le manda sus listas o aumentos a este chat, con un solo mensaje nos actualiza a todos los comercios que usamos Sofía a la vez, sin tener que escribirnos uno por uno.\n\n"
         "---\n\n"
         "🚚 *BLOQUE 2: PROVEEDORES, VIAJANTES Y PEDIDOS*\n\n"
         "4️⃣ *¿Qué hago con el viajante que viene a visitarme en persona al local?*\n"
@@ -1446,23 +1446,23 @@ def get_client_faq_text() -> str:
         "7️⃣ *¿Le puedo pedir a Sofía consultas o preguntas a un proveedor sin mandar un pedido?* 🆕\n"
         "👉 *¡Totalmente!* Funciono como tu secretaria ejecutiva de compras. Decime: _«Sofi, preguntale a [Proveedor] si el lunes reparten»_. Le escribo formalmente de tu parte y te reenvío su respuesta exacta al instante.\n\n"
         "8️⃣ *¿Qué pasa si dicto 20 o 30 productos juntos?*\n"
-        "👉 Te armo un *Resumen Ejecutivo*: artículos para cada distribuidor, total estimado y cuánto dinero te ahorrás en la compra.\n\n"
+        "👉 Te armo un *Resumen Ejecutivo*: artículos por distribuidor, total estimado y cuánto dinero ahorrás en la compra.\n\n"
         "---\n\n"
         "🔒 *BLOQUE 3: PRIVACIDAD, AUDIOS Y OPERATORIA*\n\n"
         "9️⃣ *¿Mis proveedores o competidores pueden ver los precios de los demás?*\n"
-        "👉 *¡NO!* La *confidencialidad es 100% estricta* y blindada. Cada proveedor solo ve sus artículos y nadie más accede a tus listas.\n\n"
+        "👉 *¡NO!* La *confidencialidad es 100% estricta*. Cada proveedor solo ve sus artículos y nadie más accede a tus listas ni a tus números.\n\n"
         "🔟 *¿Qué pasa si mando un audio rápido con ruido en el negocio?*\n"
         "👉 Limpio ruidos de fondo (heladeras, clientes). Si algo no se escucha nítido, te repregunto para no anotar nunca un producto equivocado.\n\n"
         "1️⃣1️⃣ *¿Puedo dividir un pedido entre varios proveedores para ahorrar?*\n"
         "👉 ¡Totalmente automático! Asigno cada producto al proveedor con mejor precio para maximizar tu ganancia.\n\n"
         "1️⃣2️⃣ *¿Le puedo pedir a Sofía que le mande mensajes a un conocido que no es mi proveedor?*\n"
-        "👉 *No.* Sofía opera en un *circuito cerrado y profesional: únicamente se comunica con vos y con los distribuidores* para pedidos o consultas. Para mostrarle Sofía a un colega, podés reenviarle cualquier mensaje desde WhatsApp.\n\n"
+        "👉 *No.* Sofía opera en un circuito cerrado y profesional: únicamente se comunica con vos y con los distribuidores para pedidos o consultas. Para mostrarle Sofía a un colega, podés reenviarle cualquier mensaje desde WhatsApp.\n\n"
         "1️⃣3️⃣ *¿Mis empleados pueden usar a Sofía desde sus propios celulares?* 👥🆕\n"
-        "👉 *¡Sí!* Sumalos diciendo: _«Sofi, agregá a Lucas como empleado al 343...»_. Comparten catálogo y canasta. Por defecto son *Repositores* (consultan y anotan). Si querés que un encargado despache, decime: _«Sofi, autorizá a Lucas a despachar pedidos»_. Cada vez que despache, recibirás copia acá con remito y total.\n\n"
+        "👉 *¡Sí!* Sumalos diciendo: _«Sofi, agregá a Lucas como empleado al 343...»_. Comparten catálogo y canasta. Por defecto son *Repositores*. Si querés que un encargado despache, decime: _«Sofi, autorizá a Lucas a despachar pedidos»_. Recibirás copia acá con remito y total.\n\n"
         "1️⃣4️⃣ *¿Qué pasa si el equipo anota productos de varios distribuidores?* 👥🆕\n"
-        "👉 Clasifico cada artículo en la canasta de su distribuidor (alimentos, bebidas, limpieza). Con _«resumen»_ ves todo ordenado y despachás cada pedido por separado sin mezclar nada.\n\n"
+        "👉 Clasifico cada artículo en la canasta de su distribuidor (alimentos, bebidas). Con _«resumen»_ ves todo ordenado y despachás cada pedido por separado.\n\n"
         "1️⃣5️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
-        "👉 Escribí *«manual»* para la guía de uso o *«dudas»* (o *«preguntas frecuentes»*) para volver a ver esta guía.\n\n"
+        "👉 Escribí *«manual»* para la guía de uso o *«dudas»* para volver a ver esta guía.\n\n"
         "💡 _¡Cuidar tus costos y tu tiempo en el mostrador es mi única prioridad!_ 🤝"
     )
 
@@ -2219,7 +2219,8 @@ async def process_boss_message(
                 f"📱 *WhatsApp:* +{norm_p}\n\n"
                 f"🚀 *Ya le envié un mensaje de presentación:*\n"
                 f"Me presenté de parte de *{sender_intro}*, le pedí que me agende como «Sofía - {biz_tag}» y le solicité su lista de precios o aumentos vigentes en PDF o Excel.\n\n"
-                f"💡 *Apenas me responda o envíe su catálogo, te aviso automáticamente.*\n\n"
+                f"💡 *Tip clave para decirle a {s_contact}:*\n"
+                f"_«{s_contact}, agendate este WhatsApp de Sofía. Cuando tengas listas nuevas o aumentos, mandáselos directo a ella: con mandarlo una sola vez nos actualiza los costos a todos los comercios que usamos Sofía al mismo tiempo, sin tener que escribirnos uno por uno.»_\n\n"
                 f"🛒 *A partir de ahora podés:*\n"
                 f"• Anotarle faltantes: _«Sofi, anotá para {s_name} 5 cajas de...»_\n"
                 f"• Ver su canasta: _«¿Qué tengo para pedirle a {s_name}?»_\n"
@@ -2535,7 +2536,8 @@ async def process_boss_message(
             lines = [f"📋 *TUS PROVEEDORES AGENDADOS ({len(sups)}):*\n"]
             for idx, s in enumerate(sups, 1):
                 lines.append(f"{idx}. *{s.name}* (📱 +{s.phone})")
-            lines.append("\n💡 Podés dictarme pedidos diciendo: _«Anotá para [Proveedor] [artículos]»_")
+            lines.append("\n💡 *Tip:* Si tus distribuidores le mandan sus listas o aumentos a este chat, se actualizan los costos de todos sus clientes que usamos Sofía de una sola vez.")
+            lines.append("💡 Podés dictarme pedidos diciendo: _«Anotá para [Proveedor] [artículos]»_")
             return True, "\n".join(lines), "suppliers_list"
 
         elif inq_type == "all_baskets":

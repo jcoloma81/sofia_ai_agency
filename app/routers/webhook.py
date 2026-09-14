@@ -596,7 +596,7 @@ async def receive_whatsapp_webhook(
                 if count > 0:
                     doc_reply = (
                         f"¡Recibí tu lista *{doc_name}*, {safe_name}! 📁\n\n"
-                        f"Ya procesé y actualicé *{count} productos* en el sistema. "
+                        f"Ya procesé y actualicé *{count} productos* en los catálogos de tus comercios clientes que gestionan sus compras conmigo. "
                         f"Muchas gracias por mantenernos al día para los próximos pedidos de reposición. 🙌📦"
                     )
                     for s_rec in (supplier_records or [prospect]):
@@ -710,8 +710,8 @@ async def receive_whatsapp_webhook(
             sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
             ack_reply = (
                 f"¡Muchas gracias, {sup_contact}! 🙌✨\n\n"
-                f"Apenas el comercio tenga lista su reposición, te paso el pedido por acá detallado con códigos y en PDF para facilitarte la carga.\n\n"
-                f"💡 Si tenés aumentos o cambios de lista vigentes, podés enviármelos por acá en cualquier momento (en archivo o simplemente escribiéndome qué sube). ¡Que tengas una excelente jornada! 📦"
+                f"Apenas tus comercios clientes tengan lista su reposición, te paso los pedidos por acá detallados con códigos y en PDF para facilitarte la carga.\n\n"
+                f"💡 Si tenés aumentos o cambios de lista vigentes, podés enviármelos por acá en cualquier momento (en archivo o simplemente escribiéndome qué sube). Se actualizarán automáticamente para todos tus clientes que usan Sofía. ¡Que tengas una excelente jornada! 📦"
             )
 
             # Record in all supplier records
@@ -763,7 +763,7 @@ async def receive_whatsapp_webhook(
             supplier_reply = (
                 f"¡Entendido, {sup_contact}! 👍 Ya registré los aumentos informados:\n\n"
                 f"{bullet_text}\n\n"
-                f"Muchas gracias por el aviso. Ya quedó actualizado en el catálogo para los próximos pedidos de reposición. 📋📦"
+                f"Muchas gracias por el aviso. Ya quedó actualizado en los catálogos de tus comercios clientes que gestionan sus compras conmigo para sus próximos pedidos de reposición. 📋📦"
             )
 
             for s_rec in (supplier_records or [prospect]):
