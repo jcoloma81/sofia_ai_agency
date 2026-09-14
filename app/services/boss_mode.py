@@ -1430,7 +1430,7 @@ def get_client_faq_text() -> str:
         "---\n\n"
         "📦 *BLOQUE 1: PRECIOS, INFLACIÓN Y LISTAS DESACTUALIZADAS*\n\n"
         "1️⃣ *¿Qué pasa si una lista tiene más de 7 días y la otra es nueva?*\n"
-        "👉 Aplico la *Regla de los 7 días*: elijo el mejor precio entre listas actualizadas en la última semana. Si un proveedor no actualiza hace semanas, te pongo una alerta (⚠️) y pido confirmación antes de despachar.\n\n"
+        "👉 Aplico la *Regla de los 7 días*: elijo el mejor precio de listas actualizadas en la última semana. Si no actualiza hace semanas, te pongo una alerta (⚠️) y pido confirmación antes de despachar.\n\n"
         "2️⃣ *¿Qué pasa si hago un pedido y el proveedor ya aumentó esta semana?*\n"
         "👉 Al enviar el pedido por WhatsApp, exijo confirmación de precios vigentes antes de facturar. Si avisan una suba, te alerto en el acto.\n\n"
         "3️⃣ *¿Cómo actualizo los precios cuando me llega una lista nueva?*\n"
@@ -1442,7 +1442,7 @@ def get_client_faq_text() -> str:
         "5️⃣ *¿Puedo eliminar o dar de baja a un proveedor?*\n"
         "👉 ¡Sí! Decime: _«Sofi, eliminar o dar de baja a un proveedor Distribuidora Alem»_. Lo saco de tu agenda y borro su borrador pendiente.\n\n"
         "6️⃣ *¿Sofía envía pedidos a los proveedores sola sin que yo me entere?*\n"
-        "👉 *¡JAMÁS!* Nunca sale un mensaje a un distribuidor sin tu orden expresa. Vos anotás faltantes y el pedido *solo se despacha* cuando me decís: _«Sofi, mandale el pedido a [Proveedor]»_.\n\n"
+        "👉 *¡JAMÁS!* Nunca sale un mensaje a un distribuidor sin tu orden expresa. Vos anotás y el pedido *solo se despacha* cuando me decís: _«Sofi, mandale el pedido a [Proveedor]»_.\n\n"
         "7️⃣ *¿Le puedo pedir a Sofía consultas o preguntas a un proveedor sin mandar un pedido?* 🆕\n"
         "👉 *¡Totalmente!* Funciono como tu secretaria ejecutiva de compras. Decime: _«Sofi, preguntale a [Proveedor] si el lunes reparten»_. Le escribo formalmente de tu parte y te reenvío su respuesta exacta al instante.\n\n"
         "8️⃣ *¿Qué pasa si dicto 20 o 30 productos juntos?*\n"
@@ -1458,8 +1458,10 @@ def get_client_faq_text() -> str:
         "1️⃣2️⃣ *¿Le puedo pedir a Sofía que le mande mensajes a un conocido que no es mi proveedor?*\n"
         "👉 *No.* Sofía opera en un *circuito cerrado y profesional: únicamente se comunica con vos y con los distribuidores* para pedidos o consultas. Para mostrarle Sofía a un colega, podés reenviarle cualquier mensaje desde WhatsApp.\n\n"
         "1️⃣3️⃣ *¿Mis empleados pueden usar a Sofía desde sus propios celulares?* 👥🆕\n"
-        "👉 *¡Sí!* Sumalos diciendo: _«Sofi, agregá a Lucas como empleado al 3434536447»_. Comparten tu catálogo y canasta. Por defecto son *Repositores* (consultan y anotan). Si querés que un encargado despache pedidos, decime: _«Sofi, autorizá a Lucas a despachar pedidos»_. Cada vez que despache, recibirás una copia en este chat con remito y total.\n\n"
-        "1️⃣4️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
+        "👉 *¡Sí!* Sumalos diciendo: _«Sofi, agregá a Lucas como empleado al 343...»_. Comparten catálogo y canasta. Por defecto son *Repositores* (consultan y anotan). Si querés que un encargado despache, decime: _«Sofi, autorizá a Lucas a despachar pedidos»_. Cada vez que despache, recibirás copia acá con remito y total.\n\n"
+        "1️⃣4️⃣ *¿Qué pasa si el equipo anota productos de varios distribuidores?* 👥🆕\n"
+        "👉 Clasifico cada artículo en la canasta de su distribuidor (alimentos, bebidas, limpieza). Con _«resumen»_ ves todo ordenado y despachás cada pedido por separado sin mezclar nada.\n\n"
+        "1️⃣5️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
         "👉 Escribí *«manual»* para la guía de uso o *«dudas»* (o *«preguntas frecuentes»*) para volver a ver esta guía.\n\n"
         "💡 _¡Cuidar tus costos y tu tiempo en el mostrador es mi única prioridad!_ 🤝"
     )
@@ -1933,18 +1935,52 @@ async def process_boss_message(
                 db.commit()
 
             # WhatsApp welcome to employee
-            perm_desc = "🚀 *Encargado de Compras:* tenés permiso para despachar pedidos directos a proveedores." if emp_can_dispatch else "🔒 *Nivel Repositor:* podés consultar precios, aumentos y cargar faltantes a la canasta compartida del comercio."
+            perm_desc = (
+                "🚀 *Encargado de Compras:* tenés permiso para despachar pedidos directos a proveedores."
+                if emp_can_dispatch
+                else "🔒 *Nivel Repositor:* podés consultar precios, aumentos y cargar faltantes a la canasta compartida del comercio."
+            )
             emp_welcome = (
                 f"👋 *¡Hola {emp_name}!* Te doy la bienvenida a *Sofía*.\n\n"
                 f"El titular de *{owner_biz_name}* te dio de alta en el equipo de WhatsApp del comercio.\n\n"
                 f"📌 *Tu perfil actual:*\n{perm_desc}\n\n"
-                f"💡 *¿Qué podés hacer desde este chat?*\n"
-                f"1️⃣ *Consultar precios:* _«¿Quién tiene más barato el azúcar?»_\n"
-                f"2️⃣ *Ver aumentos:* _«¿Qué aumentó esta semana?»_\n"
-                f"3️⃣ *Anotar faltantes:* _«Anotame 5 fardos de gaseosa para Distribuidora Alem»_ (se guardan en la canasta compartida del local).\n\n"
-                f"¡Cualquier consulta estoy a tu disposición para ayudarte en el día a día! 📦✨"
+                f"🎯 *Podés mandarme un audio o texto probando cualquiera de estas opciones:*\n\n"
+                f"1️⃣ _«Sofi, ¿quién tiene más barato el aceite de girasol?»_\n"
+                f"2️⃣ _«Anotame 10 paquetes de harina y 5 cajas de galletitas»_ (se guarda en la canasta compartida)\n"
+                f"3️⃣ _«¿Qué productos aumentaron esta semana?»_\n"
+                f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor_\n"
+                f"5️⃣ _«¿Qué proveedores tenemos registrados?»_\n"
+                f"6️⃣ _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (¡Secretaria de compras!) 🆕\n\n"
+                f"📌 *5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
+                f"📖 *manual* ➔ Guía completa y ejemplos de uso.\n"
+                f"🛡️ *dudas* ➔ Preguntas frecuentes y seguridad comercial.\n"
+                f"📊 *resumen* ➔ Todo lo anotado para cada distribuidor y ahorro estimado.\n"
+                f"🏢 *proveedores* ➔ Lista de distribuidores agendados en memoria.\n"
+                f"👥 *empleados* ➔ Miembros del equipo y permisos de compra.\n\n"
+                f"¡Guardame en tus contactos como *«Sofía - Compras»* y probame mandándome un audio! 🚀"
             )
-            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=norm_p, text=emp_welcome))
+
+            # 1. Attempt official Meta Template (outside 24h window)
+            try:
+                await whatsapp.send_whatsapp_template(
+                    to_phone=norm_p,
+                    template_name="alta_empleado_v1",
+                    language_code="es_AR",
+                    components=[
+                        {
+                            "type": "body",
+                            "parameters": [
+                                {"type": "text", "text": emp_name},
+                                {"type": "text", "text": owner_biz_name}
+                            ]
+                        }
+                    ]
+                )
+            except Exception as e:
+                logger.warning(f"Could not send alta_empleado_v1 template: {e}")
+
+            # 2. Conversational welcome message
+            await whatsapp.send_whatsapp_message(to_phone=norm_p, text=emp_welcome)
 
             role_title = "Encargado / Comprador Autorizado" if emp_can_dispatch else "Anotador / Repositor"
             perm_title = "✅ Habilitado para enviar pedidos directos" if emp_can_dispatch else "🔒 Bloqueado (solo anota en canasta compartida)"

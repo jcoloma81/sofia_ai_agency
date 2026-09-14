@@ -1074,12 +1074,23 @@ async def receive_whatsapp_webhook(
             "meeting_confirmed": False
         }
 
-    # 1.95 Guided Menu Repetition for newly onboarded client greeting
-    if prospect.campaign == "client_onboarding" and clean_msg_lower in [
+    # 1.95 Guided Menu Repetition for newly onboarded client or employee greeting
+    is_client_or_emp = (
+        prospect.campaign in ["client_onboarding", "client_employee"]
+        or bool(prospect.parent_merchant_phone)
+    )
+    if is_client_or_emp and clean_msg_lower in [
         "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "?"
     ]:
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
         b_name = prospect.name or "tu negocio"
+        if prospect.parent_merchant_phone and db:
+            owner_rec = db.query(Prospect).filter(
+                (Prospect.phone == prospect.parent_merchant_phone) |
+                (Prospect.phone == normalize_argentine_phone(prospect.parent_merchant_phone))
+            ).first()
+            if owner_rec and owner_rec.name:
+                b_name = owner_rec.name
         is_ferret = "ferret" in (catalog_service.current_rubro or "").lower()
         commands_block = (
             "📌 *5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
