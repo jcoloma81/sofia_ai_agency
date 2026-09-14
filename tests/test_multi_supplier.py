@@ -915,3 +915,232 @@ async def test_whatsapp_message_chunking_for_meta_limits():
         assert mock_single.call_count == len(chunks_huge)
 
 
+@pytest.mark.asyncio
+async def test_supplier_price_update_broadcasts_to_all_linked_merchants(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    m1_phone = "5493435111111"
+    m2_phone = "5493435222222"
+    supplier_phone = "5493435333333"
+
+    # 1. Setup Merchant 1 and Merchant 2
+    merchant_1 = Prospect(
+        name="Ferretería Marcos",
+        contact_name="Marcos",
+        phone=m1_phone,
+        business_type="ferreteria",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    merchant_2 = Prospect(
+        name="Almacén Laura",
+        contact_name="Laura",
+        phone=m2_phone,
+        business_type="almacen",
+        campaign="client_onboarding",
+        status="in_conversation"
+    )
+    # 2. Both merchants register Carlos (same supplier phone)
+    sup_m1 = Prospect(
+        merchant_phone=m1_phone,
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone=supplier_phone,
+        business_type="proveedor",
+        campaign="supplier",
+        notes=json.dumps({"merchant_phone": m1_phone})
+    )
+    sup_m2 = Prospect(
+        merchant_phone=m2_phone,
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone=supplier_phone,
+        business_type="proveedor",
+        campaign="supplier",
+        notes=json.dumps({"merchant_phone": m2_phone})
+    )
+    db.add_all([merchant_1, merchant_2, sup_m1, sup_m2])
+    db.commit()
+
+    sent_messages = []
+
+    async def mock_send(to_phone, text):
+        sent_messages.append({"to_phone": to_phone, "text": text})
+        return True
+
+    with patch("app.services.whatsapp.send_whatsapp_message", side_effect=mock_send):
+        # Carlos sends a price increase message
+        res = client.post("/webhook", json={
+            "phone": supplier_phone,
+            "message": "Hola Sofía, a partir de mañana el aceite Cañuelas sube un 8% y la harina Pureza sube 5%"
+        })
+        assert res.status_code == 200
+        res_data = res.json()
+        assert res_data.get("action") == "supplier_price_updated"
+
+        # Give background tasks a brief moment to run
+        import asyncio
+        await asyncio.sleep(0.05)
+
+        # Assert Carlos received confirmation
+        carlos_msgs = [m for m in sent_messages if m["to_phone"] == supplier_phone]
+        assert len(carlos_msgs) >= 1
+        assert "aumentos informados" in carlos_msgs[0]["text"].lower() or "registré" in carlos_msgs[0]["text"].lower()
+
+        # Assert Merchant 1 received price alert
+        m1_msgs = [m for m in sent_messages if m["to_phone"] == m1_phone]
+        assert len(m1_msgs) >= 1
+        assert "AVISO DE AUMENTO DE TU PROVEEDOR" in m1_msgs[0]["text"]
+        assert "Distribuidora El Progreso" in m1_msgs[0]["text"]
+
+        # Assert Merchant 2 ALSO received price alert (multi-merchant broadcast!)
+        m2_msgs = [m for m in sent_messages if m["to_phone"] == m2_phone]
+        assert len(m2_msgs) >= 1
+        assert "AVISO DE AUMENTO DE TU PROVEEDOR" in m2_msgs[0]["text"]
+        assert "Distribuidora El Progreso" in m2_msgs[0]["text"]
+
+
+@pytest.mark.asyncio
+async def test_supplier_ack_broadcasts_to_all_linked_merchants(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    m1_phone = "5493435111111"
+    m2_phone = "5493435222222"
+    supplier_phone = "5493435333333"
+
+    sup_m1 = Prospect(
+        merchant_phone=m1_phone,
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone=supplier_phone,
+        business_type="proveedor",
+        campaign="supplier"
+    )
+    sup_m2 = Prospect(
+        merchant_phone=m2_phone,
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone=supplier_phone,
+        business_type="proveedor",
+        campaign="supplier"
+    )
+    db.add_all([sup_m1, sup_m2])
+    db.commit()
+
+    sent_messages = []
+
+    async def mock_send(to_phone, text):
+        sent_messages.append({"to_phone": to_phone, "text": text})
+        return True
+
+    with patch("app.services.whatsapp.send_whatsapp_message", side_effect=mock_send):
+        res = client.post("/webhook", json={
+            "phone": supplier_phone,
+            "message": "Agendado gracias"
+        })
+        assert res.status_code == 200
+        assert res.json().get("action") == "supplier_acknowledged"
+
+        import asyncio
+        await asyncio.sleep(0.05)
+
+        # Both merchants received acknowledgment alert
+        m1_msgs = [m for m in sent_messages if m["to_phone"] == m1_phone]
+        m2_msgs = [m for m in sent_messages if m["to_phone"] == m2_phone]
+        assert len(m1_msgs) >= 1
+        assert "PROVEEDOR CONFIRMÓ RECEPCIÓN" in m1_msgs[0]["text"]
+        assert len(m2_msgs) >= 1
+        assert "PROVEEDOR CONFIRMÓ RECEPCIÓN" in m2_msgs[0]["text"]
+
+
+@pytest.mark.asyncio
+async def test_supplier_excel_upload_broadcasts_to_all_linked_merchants(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+    from app.models.prospect import MerchantProduct
+    import base64
+
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    m1_phone = "5493435111111"
+    m2_phone = "5493435222222"
+    supplier_phone = "5493435333333"
+
+    sup_m1 = Prospect(
+        merchant_phone=m1_phone,
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone=supplier_phone,
+        business_type="proveedor",
+        campaign="supplier"
+    )
+    sup_m2 = Prospect(
+        merchant_phone=m2_phone,
+        name="Distribuidora El Progreso",
+        contact_name="Carlos",
+        phone=supplier_phone,
+        business_type="proveedor",
+        campaign="supplier"
+    )
+    db.add_all([sup_m1, sup_m2])
+    db.commit()
+
+    # Build a test Excel workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Precios"
+    ws.append(["Código", "Descripción", "Presentación", "Precio"])
+    ws.append(["ACE-01", "Aceite Cañuelas 1.5L", "Botella", 1800])
+    ws.append(["HAR-02", "Harina Pureza 1kg", "Paquete", 950])
+    buf = io.BytesIO()
+    wb.save(buf)
+    excel_bytes = buf.getvalue()
+    excel_b64 = base64.b64encode(excel_bytes).decode("utf-8")
+
+    sent_messages = []
+
+    async def mock_send(to_phone, text):
+        sent_messages.append({"to_phone": to_phone, "text": text})
+        return True
+
+    with patch("app.services.whatsapp.send_whatsapp_message", side_effect=mock_send):
+        res = client.post("/webhook", json={
+            "phone": supplier_phone,
+            "doc_bytes_b64": excel_b64,
+            "doc_name": "Lista_Distribuidora_El_Progreso.xlsx"
+        })
+        assert res.status_code == 200
+        assert res.json().get("action") == "supplier_catalog_loaded"
+        assert res.json().get("count") >= 2
+
+        import asyncio
+        await asyncio.sleep(0.05)
+
+        # Both merchants received catalog alert
+        m1_msgs = [m for m in sent_messages if m["to_phone"] == m1_phone]
+        m2_msgs = [m for m in sent_messages if m["to_phone"] == m2_phone]
+        assert len(m1_msgs) >= 1
+        assert "NUEVA LISTA DE PRECIOS DE TU PROVEEDOR" in m1_msgs[0]["text"]
+        assert len(m2_msgs) >= 1
+        assert "NUEVA LISTA DE PRECIOS DE TU PROVEEDOR" in m2_msgs[0]["text"]
+
+        # Both merchants have products persisted in MerchantProduct
+        m1_prods = db.query(MerchantProduct).filter(MerchantProduct.merchant_phone == m1_phone).all()
+        m2_prods = db.query(MerchantProduct).filter(MerchantProduct.merchant_phone == m2_phone).all()
+        assert len(m1_prods) >= 2
+        assert len(m2_prods) >= 2
+
+
+

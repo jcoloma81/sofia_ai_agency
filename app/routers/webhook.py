@@ -330,8 +330,9 @@ async def receive_whatsapp_webhook(
         phone = phone or body.get("phone") or body.get("from") or body.get("sender") or ""
         message = body.get("message") or body.get("text") or body.get("body") or ""
         contact_name = contact_name or body.get("contact_name")
-        if not doc_bytes and body.get("doc_base64"):
-            doc_bytes = base64.b64decode(body["doc_base64"])
+        doc_b64_raw = body.get("doc_base64") or body.get("doc_bytes_b64")
+        if not doc_bytes and doc_b64_raw:
+            doc_bytes = base64.b64decode(doc_b64_raw)
             doc_name = body.get("doc_name", "catalogo.xlsx")
             if not message:
                 message = f"(Documento adjunto recibido: {doc_name})"
@@ -414,8 +415,25 @@ async def receive_whatsapp_webhook(
 
                 return {"status": "success", "action": boss_action, "reply": boss_reply}
 
-    # Find or create prospect
-    prospect = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
+    # Find or create prospect (supporting multi-merchant shared suppliers)
+    from app.services.boss_mode import normalize_argentine_phone
+
+    norm_clean_phone = normalize_argentine_phone(clean_phone)
+    cand_phones = [clean_phone]
+    if norm_clean_phone != clean_phone:
+        cand_phones.append(norm_clean_phone)
+
+    # Check for all supplier records matching this sender phone
+    supplier_records = db.query(Prospect).filter(
+        Prospect.phone.in_(cand_phones),
+        ((Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier") | (Prospect.notes.like("%proveedor%")))
+    ).all()
+
+    if supplier_records:
+        prospect = supplier_records[0]
+    else:
+        prospect = db.query(Prospect).filter(Prospect.phone.in_(cand_phones)).first()
+
     if not prospect:
         default_city = "Feira de Santana / Bahia (Brasil)" if clean_phone.startswith("55") else "Entre Ríos / Santa Fe"
         prospect = Prospect(
@@ -430,6 +448,44 @@ async def receive_whatsapp_webhook(
         db.add(prospect)
         db.commit()
         db.refresh(prospect)
+
+    # Determine if sender is a supplier and resolve all linked merchants
+    is_supplier_sender = (
+        len(supplier_records) > 0
+        or (prospect and (
+            prospect.business_type == "proveedor"
+            or prospect.campaign == "supplier"
+            or (prospect.notes and "proveedor" in str(prospect.notes).lower())
+        ))
+    )
+
+    linked_merchants = set()
+    for s_rec in supplier_records:
+        if s_rec.merchant_phone:
+            linked_merchants.add(s_rec.merchant_phone)
+        if s_rec.notes:
+            try:
+                m_data = json.loads(s_rec.notes)
+                if isinstance(m_data, dict) and m_data.get("merchant_phone"):
+                    linked_merchants.add(m_data["merchant_phone"])
+            except Exception:
+                pass
+
+    if prospect and prospect.merchant_phone:
+        linked_merchants.add(prospect.merchant_phone)
+    if prospect and prospect.notes:
+        try:
+            m_data = json.loads(prospect.notes)
+            if isinstance(m_data, dict) and m_data.get("merchant_phone"):
+                linked_merchants.add(m_data["merchant_phone"])
+        except Exception:
+            pass
+
+    if not linked_merchants and is_supplier_sender:
+        from app.services.boss_mode import get_active_onboarded_client
+        active_c = get_active_onboarded_client(db)
+        if active_c and active_c.get("phone"):
+            linked_merchants.add(active_c.get("phone"))
 
     # If this specific prospect is in human_takeover, check if 6 hours have passed
     if prospect.status == "human_takeover":
@@ -503,73 +559,148 @@ async def receive_whatsapp_webhook(
         "timestamp": datetime.now(timezone.utc).isoformat()
     })
 
-    # 0.5 Prospect document upload (supplier catalog, price list, PDF or Excel)
+    # 0.5 Document upload (supplier catalog, price list, PDF or Excel)
     if doc_bytes and doc_name:
         fname = doc_name.lower()
         if fname.endswith((".xlsx", ".xls", ".csv", ".pdf")):
             safe_name = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
             count = 0
-            if fname.endswith((".xlsx", ".xls")):
-                count = catalog_service.load_from_excel_bytes(doc_bytes, filename=doc_name)
-            elif fname.endswith(".csv"):
-                try:
-                    csv_str = doc_bytes.decode("utf-8")
-                except UnicodeDecodeError:
-                    csv_str = doc_bytes.decode("latin-1", errors="ignore")
-                count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
-            elif fname.endswith(".pdf"):
-                count = await catalog_service.load_from_pdf_bytes(doc_bytes, filename=doc_name)
-
-            if count > 0:
-                doc_reply = (
-                    f"¡Recibí tu lista *{doc_name}*, {safe_name}! 📁\n\n"
-                    f"Ya procesé y sincronicé *{count} productos* en el catálogo. "
-                    f"Ya podés consultarme precios o hacerme pedidos sobre cualquiera de estos artículos."
-                )
-                history.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
-                prospect.conversation_history = json.dumps(history, ensure_ascii=False)
-                prospect.updated_at = datetime.now(timezone.utc)
-                db.commit()
-
-                # Alert the boss (Javier)
-                if settings.WHATSAPP_ALERT_PHONE:
-                    boss_alert = (
-                        f"🔔 *Nuevo catálogo recibido de cliente*\n\n"
-                        f"• *Cliente:* {prospect.name} ({prospect.contact_name or 'Titular'})\n"
-                        f"• *Teléfono:* {prospect.phone}\n"
-                        f"• *Archivo:* `{doc_name}`\n"
-                        f"• *Artículos cargados:* {count}\n\n"
-                        f"Sofía ya actualizó el catálogo activo automáticamente."
+            if is_supplier_sender:
+                # Multi-merchant broadcast: Update catalog for all linked merchants
+                if fname.endswith((".xlsx", ".xls")):
+                    count = catalog_service.load_from_excel_bytes(
+                        doc_bytes,
+                        filename=doc_name,
+                        merchant_phone=linked_merchants,
+                        supplier_name=prospect.name,
+                        db=db
                     )
-                    asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=boss_alert))
+                elif fname.endswith(".csv"):
+                    try:
+                        csv_str = doc_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_str = doc_bytes.decode("latin-1", errors="ignore")
+                    count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
+                    if db and linked_merchants and catalog_service.products:
+                        for m_p in linked_merchants:
+                            catalog_service.save_merchant_products(catalog_service.products, merchant_phone=m_p, supplier_name=prospect.name, db=db)
+                elif fname.endswith(".pdf"):
+                    count = await catalog_service.load_from_pdf_bytes(
+                        doc_bytes,
+                        filename=doc_name,
+                        merchant_phone=linked_merchants,
+                        supplier_name=prospect.name,
+                        db=db
+                    )
 
-                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
-                return {"status": "success", "action": "prospect_catalog_loaded", "count": count, "reply": doc_reply}
+                if count > 0:
+                    doc_reply = (
+                        f"¡Recibí tu lista *{doc_name}*, {safe_name}! 📁\n\n"
+                        f"Ya procesé y actualicé *{count} productos* en el sistema. "
+                        f"Muchas gracias por mantenernos al día para los próximos pedidos de reposición. 🙌📦"
+                    )
+                    for s_rec in (supplier_records or [prospect]):
+                        try:
+                            h = json.loads(s_rec.conversation_history or "[]")
+                        except Exception:
+                            h = []
+                        h.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                        s_rec.conversation_history = json.dumps(h, ensure_ascii=False)
+                        s_rec.updated_at = datetime.now(timezone.utc)
+                    db.commit()
+
+                    # Alert every linked merchant about their supplier's new price list
+                    sup_biz = prospect.name or "Proveedor"
+                    merchant_alert = (
+                        f"📁 *NUEVA LISTA DE PRECIOS DE TU PROVEEDOR* 📈\n\n"
+                        f"🏢 *Proveedor:* {sup_biz} (+{clean_phone})\n"
+                        f"Acaba de enviar su catálogo actualizado: `{doc_name}`\n"
+                        f"• *Artículos cargados:* {count}\n\n"
+                        f"💡 *Sofía ya actualizó los costos de {sup_biz} en tu catálogo para tus próximas consultas y pedidos.*"
+                    )
+                    for m_phone in linked_merchants:
+                        if m_phone and m_phone != clean_phone:
+                            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=m_phone, text=merchant_alert))
+
+                    if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE not in linked_merchants:
+                        asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=merchant_alert))
+
+                    await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
+                    return {"status": "success", "action": "supplier_catalog_loaded", "count": count, "reply": doc_reply}
+                else:
+                    doc_reply = f"Recibí el archivo `{doc_name}`, pero no pude extraer listas de precios automáticas. Verificá que contenga texto legible o tablas de productos."
+                    for s_rec in (supplier_records or [prospect]):
+                        try:
+                            h = json.loads(s_rec.conversation_history or "[]")
+                        except Exception:
+                            h = []
+                        h.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                        s_rec.conversation_history = json.dumps(h, ensure_ascii=False)
+                        s_rec.updated_at = datetime.now(timezone.utc)
+                    db.commit()
+                    await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
+                    return {"status": "success", "action": "supplier_catalog_error", "reply": doc_reply}
+
             else:
-                doc_reply = f"Recibí el archivo `{doc_name}`, pero no pude extraer listas de precios automáticas. Verificá que contenga texto legible o tablas de productos."
-                history.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
-                prospect.conversation_history = json.dumps(history, ensure_ascii=False)
-                prospect.updated_at = datetime.now(timezone.utc)
-                db.commit()
-                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
-                return {"status": "success", "action": "prospect_catalog_error", "reply": doc_reply}
+                # Normal client / merchant document upload
+                if fname.endswith((".xlsx", ".xls")):
+                    count = catalog_service.load_from_excel_bytes(doc_bytes, filename=doc_name)
+                elif fname.endswith(".csv"):
+                    try:
+                        csv_str = doc_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        csv_str = doc_bytes.decode("latin-1", errors="ignore")
+                    count = catalog_service.load_from_csv(csv_str, source_name=doc_name)
+                elif fname.endswith(".pdf"):
+                    count = await catalog_service.load_from_pdf_bytes(doc_bytes, filename=doc_name)
+
+                if count > 0:
+                    doc_reply = (
+                        f"¡Recibí tu lista *{doc_name}*, {safe_name}! 📁\n\n"
+                        f"Ya procesé y sincronicé *{count} productos* en el catálogo. "
+                        f"Ya podés consultarme precios o hacerme pedidos sobre cualquiera de estos artículos."
+                    )
+                    history.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                    prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+                    prospect.updated_at = datetime.now(timezone.utc)
+                    db.commit()
+
+                    # Alert the boss (Javier)
+                    if settings.WHATSAPP_ALERT_PHONE:
+                        boss_alert = (
+                            f"🔔 *Nuevo catálogo recibido de cliente*\n\n"
+                            f"• *Cliente:* {prospect.name} ({prospect.contact_name or 'Titular'})\n"
+                            f"• *Teléfono:* {prospect.phone}\n"
+                            f"• *Archivo:* `{doc_name}`\n"
+                            f"• *Artículos cargados:* {count}\n\n"
+                            f"Sofía ya actualizó el catálogo activo automáticamente."
+                        )
+                        asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=boss_alert))
+
+                    await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
+                    return {"status": "success", "action": "prospect_catalog_loaded", "count": count, "reply": doc_reply}
+                else:
+                    doc_reply = f"Recibí el archivo `{doc_name}`, pero no pude extraer listas de precios automáticas. Verificá que contenga texto legible o tablas de productos."
+                    history.append({"sender": "ai", "text": doc_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                    prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+                    prospect.updated_at = datetime.now(timezone.utc)
+                    db.commit()
+                    await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=doc_reply)
+                    return {"status": "success", "action": "prospect_catalog_error", "reply": doc_reply}
 
     # 0.6 Incoming Supplier Messages: Price Updates or Registration Acknowledgments
-    is_supplier_sender = (
-        prospect.business_type == "proveedor"
-        or prospect.campaign == "supplier"
-        or (prospect.notes and "proveedor" in str(prospect.notes).lower())
-    )
     if is_supplier_sender and message:
-        # Check if supplier has an unanswered inquiry from the merchant
+        # Check if supplier has an unanswered inquiry from any merchant
         has_pending_inquiry = False
-        if prospect.notes:
-            try:
-                meta_n_check = json.loads(prospect.notes)
-                if isinstance(meta_n_check, dict) and meta_n_check.get("last_inquiry") and not meta_n_check.get("last_inquiry", {}).get("replied"):
-                    has_pending_inquiry = True
-            except Exception:
-                pass
+        for s_rec in (supplier_records or [prospect]):
+            if s_rec.notes:
+                try:
+                    meta_n_check = json.loads(s_rec.notes)
+                    if isinstance(meta_n_check, dict) and meta_n_check.get("last_inquiry") and not meta_n_check.get("last_inquiry", {}).get("replied"):
+                        has_pending_inquiry = True
+                        break
+                except Exception:
+                    pass
 
         # A. Acknowledgment of presentation ("Agendado", "Recibido", "Listo", etc.)
         if not has_pending_inquiry and clean_msg_lower in [
@@ -582,27 +713,19 @@ async def receive_whatsapp_webhook(
                 f"Apenas el comercio tenga lista su reposición, te paso el pedido por acá detallado con códigos y en PDF para facilitarte la carga.\n\n"
                 f"💡 Si tenés aumentos o cambios de lista vigentes, podés enviármelos por acá en cualquier momento (en archivo o simplemente escribiéndome qué sube). ¡Que tengas una excelente jornada! 📦"
             )
-            history.append({"sender": "ai", "text": ack_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
-            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
-            prospect.updated_at = datetime.now(timezone.utc)
+
+            # Record in all supplier records
+            for s_rec in (supplier_records or [prospect]):
+                try:
+                    h = json.loads(s_rec.conversation_history or "[]")
+                except Exception:
+                    h = []
+                h.append({"sender": "ai", "text": ack_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                s_rec.conversation_history = json.dumps(h, ensure_ascii=False)
+                s_rec.updated_at = datetime.now(timezone.utc)
             db.commit()
 
-            # Alert merchant and boss that supplier confirmed registration
-            merchant_phone = None
-            if prospect.notes:
-                try:
-                    meta_n = json.loads(prospect.notes)
-                    if isinstance(meta_n, dict):
-                        merchant_phone = meta_n.get("merchant_phone")
-                except Exception:
-                    pass
-
-            if not merchant_phone:
-                from app.services.boss_mode import get_active_onboarded_client
-                active_c = get_active_onboarded_client(db)
-                if active_c and active_c.get("phone"):
-                    merchant_phone = active_c.get("phone")
-
+            # Alert ALL linked merchants and boss that supplier confirmed registration
             sup_biz = prospect.name or "Proveedor"
             alert_ack = (
                 f"✅ *¡PROVEEDOR CONFIRMÓ RECEPCIÓN!* 📦\n\n"
@@ -611,9 +734,10 @@ async def receive_whatsapp_webhook(
                 f"• *Respuesta:* _«{message.strip()}»_\n\n"
                 f"Sofía ya quedó agendada en su WhatsApp para pasarle los pedidos de tu comercio."
             )
-            if merchant_phone and merchant_phone != clean_phone:
-                asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=merchant_phone, text=alert_ack))
-            if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE != merchant_phone:
+            for m_phone in linked_merchants:
+                if m_phone and m_phone != clean_phone:
+                    asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=m_phone, text=alert_ack))
+            if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE not in linked_merchants:
                 asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=alert_ack))
 
             await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=ack_reply)
@@ -623,7 +747,6 @@ async def receive_whatsapp_webhook(
         price_upd_data = await parse_supplier_price_update_text(message)
         if price_upd_data.get("is_price_update") and price_upd_data.get("updates"):
             updates = price_upd_data["updates"]
-            modified = catalog_service.process_supplier_price_updates(updates, supplier_name=prospect.name)
             sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
 
             sup_bullets = []
@@ -643,49 +766,49 @@ async def receive_whatsapp_webhook(
                 f"Muchas gracias por el aviso. Ya quedó actualizado en el catálogo para los próximos pedidos de reposición. 📋📦"
             )
 
-            history.append({"sender": "ai", "text": supplier_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
-            prospect.conversation_history = json.dumps(history, ensure_ascii=False)
-            prospect.updated_at = datetime.now(timezone.utc)
+            for s_rec in (supplier_records or [prospect]):
+                try:
+                    h = json.loads(s_rec.conversation_history or "[]")
+                except Exception:
+                    h = []
+                h.append({"sender": "ai", "text": supplier_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+                s_rec.conversation_history = json.dumps(h, ensure_ascii=False)
+                s_rec.updated_at = datetime.now(timezone.utc)
             db.commit()
 
-            # Now alert the merchant
-            merchant_lines = []
-            if modified:
-                for m in modified:
-                    m_name = m["product"]
-                    m_old = f"${int(m['old_price']):,}".replace(",", ".") if m['old_price'] > 0 else "Nuevo"
-                    m_new = f"${int(m['new_price']):,}".replace(",", ".")
-                    pct_str = f" (+{m['percentage']}%)" if m.get('percentage') else ""
-                    merchant_lines.append(f"• *{m_name}:* {m_old} ➔ *{m_new}*{pct_str}")
-            else:
-                merchant_lines = sup_bullets
+            # Broadcast updates to ALL linked merchants
+            target_merchants = list(linked_merchants) if linked_merchants else [None]
+            for m_phone in target_merchants:
+                modified = catalog_service.process_supplier_price_updates(
+                    updates,
+                    supplier_name=prospect.name,
+                    merchant_phone=m_phone,
+                    db=db
+                )
 
-            merchant_phone = None
-            if prospect.notes:
-                try:
-                    meta_n = json.loads(prospect.notes)
-                    if isinstance(meta_n, dict):
-                        merchant_phone = meta_n.get("merchant_phone")
-                except Exception:
-                    pass
+                merchant_lines = []
+                if modified:
+                    for m in modified:
+                        m_name = m["product"]
+                        m_old = f"${int(m['old_price']):,}".replace(",", ".") if m['old_price'] > 0 else "Nuevo"
+                        m_new = f"${int(m['new_price']):,}".replace(",", ".")
+                        pct_str = f" (+{m['percentage']}%)" if m.get('percentage') else ""
+                        merchant_lines.append(f"• *{m_name}:* {m_old} ➔ *{m_new}*{pct_str}")
+                else:
+                    merchant_lines = sup_bullets
 
-            if not merchant_phone:
-                from app.services.boss_mode import get_active_onboarded_client
-                active_c = get_active_onboarded_client(db)
-                if active_c and active_c.get("phone"):
-                    merchant_phone = active_c.get("phone")
+                merchant_alert = (
+                    f"🔔 *AVISO DE AUMENTO DE TU PROVEEDOR* 📈\n\n"
+                    f"🏢 *Proveedor:* {prospect.name} (+{clean_phone})\n"
+                    f"Acaba de informar actualizaciones de precios por WhatsApp:\n\n"
+                    f"{chr(10).join(merchant_lines)}\n\n"
+                    f"💡 *Sofía ya actualizó los costos en tu catálogo para que no pierdas margen en tus próximas ventas y pedidos de reposición.*"
+                )
 
-            merchant_alert = (
-                f"🔔 *AVISO DE AUMENTO DE TU PROVEEDOR* 📈\n\n"
-                f"🏢 *Proveedor:* {prospect.name} (+{clean_phone})\n"
-                f"Acaba de informar actualizaciones de precios por WhatsApp:\n\n"
-                f"{chr(10).join(merchant_lines)}\n\n"
-                f"💡 *Sofía ya actualizó los costos en tu catálogo para que no pierdas margen en tus próximas ventas y pedidos de reposición.*"
-            )
+                if m_phone and m_phone != clean_phone:
+                    asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=m_phone, text=merchant_alert))
 
-            if merchant_phone and merchant_phone != clean_phone:
-                asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=merchant_phone, text=merchant_alert))
-            if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE != merchant_phone:
+            if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE not in target_merchants:
                 asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=merchant_alert))
 
             await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=supplier_reply)
@@ -695,25 +818,23 @@ async def receive_whatsapp_webhook(
         sup_contact = brain.sanitize_contact_first_name(prospect.contact_name) or prospect.name or "Proveedor"
         sup_biz = prospect.name or "Distribuidor"
 
-        merchant_phone = prospect.merchant_phone
+        inquiry_merchant = None
+        target_s_rec = None
         last_inquiry = None
-        if prospect.notes:
-            try:
-                meta_n = json.loads(prospect.notes)
-                if isinstance(meta_n, dict):
-                    if not merchant_phone:
-                        merchant_phone = meta_n.get("merchant_phone")
-                    last_inquiry = meta_n.get("last_inquiry")
-                    if not merchant_phone and last_inquiry:
-                        merchant_phone = last_inquiry.get("merchant_phone")
-            except Exception:
-                pass
 
-        if not merchant_phone:
-            from app.services.boss_mode import get_active_onboarded_client
-            active_c = get_active_onboarded_client(db)
-            if active_c and active_c.get("phone"):
-                merchant_phone = active_c.get("phone")
+        for s_rec in (supplier_records or [prospect]):
+            if s_rec.notes:
+                try:
+                    meta_n = json.loads(s_rec.notes)
+                    if isinstance(meta_n, dict):
+                        inq = meta_n.get("last_inquiry")
+                        if inq and not inq.get("replied"):
+                            last_inquiry = inq
+                            inquiry_merchant = s_rec.merchant_phone or inq.get("merchant_phone")
+                            target_s_rec = s_rec
+                            break
+                except Exception:
+                    pass
 
         merchant_reply = (
             f"📩 *RESPUESTA DE TU PROVEEDOR* 💬✨\n\n"
@@ -732,26 +853,37 @@ async def receive_whatsapp_webhook(
             f"¡Muchas gracias, {sup_contact}! 👍 Ya le transmití tu respuesta al comercio."
         )
 
-        if last_inquiry:
+        if last_inquiry and target_s_rec:
             last_inquiry["replied"] = True
             try:
+                meta_n = json.loads(target_s_rec.notes)
                 meta_n["last_inquiry"] = last_inquiry
-                prospect.notes = json.dumps(meta_n, ensure_ascii=False)
+                target_s_rec.notes = json.dumps(meta_n, ensure_ascii=False)
+                target_s_rec.updated_at = datetime.now(timezone.utc)
+                db.commit()
             except Exception:
                 pass
 
-        history.append({"sender": "ai", "text": sup_ack_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
-        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
-        prospect.updated_at = datetime.now(timezone.utc)
+        for s_rec in (supplier_records or [prospect]):
+            try:
+                h = json.loads(s_rec.conversation_history or "[]")
+            except Exception:
+                h = []
+            h.append({"sender": "ai", "text": sup_ack_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+            s_rec.conversation_history = json.dumps(h, ensure_ascii=False)
+            s_rec.updated_at = datetime.now(timezone.utc)
         db.commit()
 
-        if merchant_phone and merchant_phone != clean_phone:
-            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=merchant_phone, text=merchant_reply))
-        if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE != merchant_phone:
+        recipients = [inquiry_merchant] if inquiry_merchant else list(linked_merchants)
+        for r_phone in recipients:
+            if r_phone and r_phone != clean_phone:
+                asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=r_phone, text=merchant_reply))
+
+        if settings.WHATSAPP_ALERT_PHONE and settings.WHATSAPP_ALERT_PHONE != clean_phone and settings.WHATSAPP_ALERT_PHONE not in recipients:
             asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=merchant_reply))
 
         await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=sup_ack_reply)
-        return {"status": "success", "action": "supplier_reply_relayed", "reply": sup_ack_reply, "merchant_phone": merchant_phone}
+        return {"status": "success", "action": "supplier_reply_relayed", "reply": sup_ack_reply, "merchant_phone": inquiry_merchant}
 
     # 0.8 Merchant / Boss Directives from Client (e.g. dispatching orders to suppliers or managing baskets)
     merchant_dispatch_triggers = [

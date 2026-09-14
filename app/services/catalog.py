@@ -3,7 +3,7 @@ import re
 import csv
 import json
 import logging
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple, Union, Set
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import httpx
@@ -504,7 +504,8 @@ class CatalogService:
         self,
         content: bytes,
         filename: str = "Excel",
-        merchant_phone: Optional[str] = None,
+        merchant_phone: Optional[Union[str, List[str], Set[str]]] = None,
+        supplier_name: Optional[str] = None,
         db: Optional[Any] = None
     ) -> int:
         """Parses Excel workbook bytes into product catalog, scanning all visible sheets."""
@@ -578,11 +579,17 @@ class CatalogService:
                         presentation=presentation,
                         category=category,
                         in_stock=in_stock,
-                        code=code
+                        code=code,
+                        supplier=supplier_name
                     ))
 
             if db and merchant_phone:
-                self.save_merchant_products(items, merchant_phone=merchant_phone, db=db)
+                if isinstance(merchant_phone, (list, set)):
+                    for m_p in merchant_phone:
+                        if m_p:
+                            self.save_merchant_products(items, merchant_phone=m_p, supplier_name=supplier_name, db=db)
+                else:
+                    self.save_merchant_products(items, merchant_phone=merchant_phone, supplier_name=supplier_name, db=db)
 
             self.products = items
             self.last_updated = datetime.now(timezone.utc)
@@ -594,7 +601,14 @@ class CatalogService:
             return 0
 
 
-    async def load_from_pdf_bytes(self, content: bytes, filename: str = "Catalogo.pdf") -> int:
+    async def load_from_pdf_bytes(
+        self,
+        content: bytes,
+        filename: str = "Catalogo.pdf",
+        merchant_phone: Optional[Union[str, List[str], Set[str]]] = None,
+        supplier_name: Optional[str] = None,
+        db: Optional[Any] = None
+    ) -> int:
         """
         Uses Gemini Multimodal to extract products and prices from a supplier PDF catalog,
         handling multi-page documents, columns, tables, codes and prices.
@@ -651,9 +665,17 @@ class CatalogService:
                                         code=p.get("code"),
                                         presentation=p.get("presentation") or "Unidad",
                                         category=p.get("category") or "General",
-                                        in_stock=True
+                                        in_stock=True,
+                                        supplier=supplier_name
                                     ))
                             if items:
+                                if db and merchant_phone:
+                                    if isinstance(merchant_phone, (list, set)):
+                                        for m_p in merchant_phone:
+                                            if m_p:
+                                                self.save_merchant_products(items, merchant_phone=m_p, supplier_name=supplier_name, db=db)
+                                    else:
+                                        self.save_merchant_products(items, merchant_phone=merchant_phone, supplier_name=supplier_name, db=db)
                                 self.products = items
                                 self.last_updated = datetime.now(timezone.utc)
                                 self.source_info = f"{filename} ({len(items)} productos)"
@@ -733,7 +755,7 @@ class CatalogService:
         filename: str = "proveedor.xlsx",
         export_path: Optional[str] = None,
         supplier_name: Optional[str] = None,
-        merchant_phone: Optional[str] = None,
+        merchant_phone: Optional[Union[str, List[str], Set[str]]] = None,
         db: Optional[Any] = None
     ) -> Dict[str, Any]:
 
@@ -864,7 +886,12 @@ class CatalogService:
                     self.products.append(sup)
 
             if db and merchant_phone and supplier_items:
-                self.save_merchant_products(supplier_items, merchant_phone=merchant_phone, supplier_name=supplier_name, db=db)
+                if isinstance(merchant_phone, (list, set)):
+                    for m_p in merchant_phone:
+                        if m_p:
+                            self.save_merchant_products(supplier_items, merchant_phone=m_p, supplier_name=supplier_name, db=db)
+                else:
+                    self.save_merchant_products(supplier_items, merchant_phone=merchant_phone, supplier_name=supplier_name, db=db)
 
             self.last_updated = datetime.now(timezone.utc)
 
@@ -1397,43 +1424,7 @@ class CatalogService:
         is_all = clean_kw in ["todo", "todos", "general", "todos los productos", "catalogo", "catálogo", "total", "completo"]
         
         updated_records = []
-        products_pool = self.get_merchant_products(merchant_phone, db)
-        for p in products_pool:
-            # Supplier filter
-            if supplier_name and p.supplier:
-                s_lower = supplier_name.strip().lower()
-                ps_lower = p.supplier.strip().lower()
-                if s_lower not in ps_lower and ps_lower not in s_lower:
-                    continue
-
-            name_l = p.name.lower()
-            cat_l = (p.category or "").lower()
-
-            matches = is_all or (clean_kw in name_l) or (clean_kw in cat_l)
-            if not matches and not is_all and len(clean_kw.split()) > 1:
-                kw_tokens = [t for t in clean_kw.split() if len(t) >= 3]
-                if kw_tokens and all(t in name_l or t in cat_l for t in kw_tokens):
-                    matches = True
-
-            if matches:
-                old_price = p.price
-                new_price = round(old_price * (1.0 + float(percentage) / 100.0), 2)
-                p.price = new_price
-                if p.cost_price:
-                    p.cost_price = round(p.cost_price * (1.0 + float(percentage) / 100.0), 2)
-                if supplier_name and not p.supplier:
-                    p.supplier = supplier_name
-
-                rec = {
-                    "product": p.name,
-                    "old_price": old_price,
-                    "new_price": new_price,
-                    "percentage": percentage,
-                    "presentation": p.presentation,
-                    "supplier": p.supplier or supplier_name or "Distribuidor",
-                    "code": p.code
-                }
-                updated_records.append(rec)
+        has_db_mps = False
 
         if db and merchant_phone:
             try:
@@ -1442,13 +1433,73 @@ class CatalogService:
                 if supplier_name:
                     q = q.filter(MerchantProduct.supplier_name.ilike(f"%{supplier_name.strip()}%"))
                 mps = q.all()
-                for mp in mps:
-                    if is_all or (clean_kw in mp.name.lower()) or (clean_kw in (mp.category or "").lower()):
-                        mp.price = round(mp.price * (1.0 + float(percentage) / 100.0), 2)
-                        mp.updated_at = datetime.now(timezone.utc)
-                db.commit()
+                if mps:
+                    has_db_mps = True
+                    for mp in mps:
+                        name_l = mp.name.lower()
+                        cat_l = (mp.category or "").lower()
+                        matches = is_all or (clean_kw in name_l) or (clean_kw in cat_l)
+                        if not matches and not is_all and len(clean_kw.split()) > 1:
+                            kw_tokens = [t for t in clean_kw.split() if len(t) >= 3]
+                            if kw_tokens and all(t in name_l or t in cat_l for t in kw_tokens):
+                                matches = True
+
+                        if matches:
+                            old_p = mp.price
+                            new_p = round(old_p * (1.0 + float(percentage) / 100.0), 2)
+                            mp.price = new_p
+                            mp.updated_at = datetime.now(timezone.utc)
+                            updated_records.append({
+                                "product": mp.name,
+                                "old_price": old_p,
+                                "new_price": new_p,
+                                "percentage": percentage,
+                                "presentation": mp.presentation,
+                                "supplier": mp.supplier_name or supplier_name or "Distribuidor",
+                                "code": mp.code
+                            })
+                    db.commit()
             except Exception as e:
                 logger.error(f"Error updating MerchantProduct percentages for {merchant_phone}: {e}")
+
+        if not has_db_mps:
+            products_pool = self.get_merchant_products(merchant_phone, db)
+            for p in products_pool:
+                # Supplier filter
+                if supplier_name and p.supplier:
+                    s_lower = supplier_name.strip().lower()
+                    ps_lower = p.supplier.strip().lower()
+                    if s_lower not in ps_lower and ps_lower not in s_lower:
+                        continue
+
+                name_l = p.name.lower()
+                cat_l = (p.category or "").lower()
+
+                matches = is_all or (clean_kw in name_l) or (clean_kw in cat_l)
+                if not matches and not is_all and len(clean_kw.split()) > 1:
+                    kw_tokens = [t for t in clean_kw.split() if len(t) >= 3]
+                    if kw_tokens and all(t in name_l or t in cat_l for t in kw_tokens):
+                        matches = True
+
+                if matches:
+                    old_price = p.price
+                    new_price = round(old_price * (1.0 + float(percentage) / 100.0), 2)
+                    p.price = new_price
+                    if p.cost_price:
+                        p.cost_price = round(p.cost_price * (1.0 + float(percentage) / 100.0), 2)
+                    if supplier_name and not p.supplier:
+                        p.supplier = supplier_name
+
+                    rec = {
+                        "product": p.name,
+                        "old_price": old_price,
+                        "new_price": new_price,
+                        "percentage": percentage,
+                        "presentation": p.presentation,
+                        "supplier": p.supplier or supplier_name or "Distribuidor",
+                        "code": p.code
+                    }
+                    updated_records.append(rec)
 
         if updated_records:
             self.last_updated = datetime.now(timezone.utc)
