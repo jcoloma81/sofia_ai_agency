@@ -796,11 +796,16 @@ async def parse_supplier_registration_intent(text: str) -> dict:
         "agendá a", "agenda a", "agendar a", "anotá a", "anota a", "guardá a", "guarda a",
         "agendá al viajante", "agenda al viajante", "agendar viajante",
         "anotá al viajante", "anota al viajante", "guardá al viajante",
+        "agendá al preventista", "agenda al preventista", "agendar preventista",
+        "anotá al preventista", "anota al preventista", "guardá al preventista",
+        "agendá al corredor", "agenda al corredor", "agendar corredor",
+        "anotá al corredor", "anota al corredor", "guardá al corredor",
+        "agendá al distribuidor", "agenda al distribuidor", "agendar distribuidor",
         "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora",
         "guardar distribuidora"
     ]
     is_candidate = any(trig in lower for trig in triggers) or (
-        any(w in lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "alta"])
+        any(w in lower for w in ["proveedor", "distribuidora", "distribuidor", "viajante", "preventista", "corredor"]) and any(k in lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "alta"])
     )
     if not is_candidate:
         return {"is_supplier_registration": False}
@@ -808,14 +813,14 @@ async def parse_supplier_registration_intent(text: str) -> dict:
     gemini_key = settings.GEMINI_API_KEY
     if gemini_key:
         prompt = (
-            "El dueño de un comercio minorista le habla a su asistente comercial Sofía por WhatsApp para registrar o agendar a un proveedor, distribuidora o viajante.\n"
+            "El dueño de un comercio minorista le habla a su asistente comercial Sofía por WhatsApp para registrar o agendar a un proveedor, distribuidora, preventista, viajante o corredor.\n"
             f"Mensaje: \"{clean}\"\n\n"
             "Analizá y extraé en formato JSON con estas claves:\n"
             "- is_supplier_registration: true o false\n"
-            "- supplier_name: nombre comercial de la empresa proveedora o distribuidora (ej: 'Distribuidora El Progreso', 'Bulonera del Litoral', 'Pinturas Paraná')\n"
-            "- contact_name: nombre de pila de la persona de contacto o viajante si se menciona (ej: 'Carlos', 'Martín', o null si no se menciona)\n"
+            "- supplier_name: nombre comercial de la empresa proveedora o distribuidora (ej: 'Distribuidora El Progreso', 'Bulonera del Litoral', 'Pinturas Paraná', 'Arcor')\n"
+            "- contact_name: nombre de pila de la persona de contacto, preventista o viajante si se menciona (ej: 'Carlos', 'Martín', o null si no se menciona)\n"
             "- phone: número de teléfono extraído (solo dígitos, o null)\n"
-            "- category: rubro de lo que vende si se menciona (ej: 'tornillos', 'pinturas', 'herramientas', o null)\n"
+            "- category: rubro de lo que vende si se menciona (ej: 'tornillos', 'pinturas', 'herramientas', 'golosinas', o null)\n"
             "Respondé ÚNICAMENTE un JSON válido."
         )
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
@@ -850,7 +855,7 @@ async def parse_supplier_registration_intent(text: str) -> dict:
         name = c_match.group(2).strip()
     else:
         # e.g. "agendá al proveedor Distribuidora El Progreso"
-        name_m = re.search(r'(?:proveedor\s+|distribuidora\s+|viajante\s+)([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)', clean_no_phone, re.IGNORECASE)
+        name_m = re.search(r'(?:proveedor\s+|distribuidora\s+|distribuidor\s+|viajante\s+|preventista\s+|corredor\s+)([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)', clean_no_phone, re.IGNORECASE)
         if name_m:
             name = name_m.group(1).strip()
         else:
@@ -881,8 +886,8 @@ def parse_supplier_deletion_intent(text: str) -> dict:
     lower_no_prefix = orig_no_prefix.lower()
 
     patterns = [
-        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+(?:al\s+proveedor|a\s+la\s+distribuidora|al\s+viajante|el\s+proveedor|la\s+distribuidora|proveedor|distribuidora|viajante)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)',
-        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:de\s+(?:mis\s+)?proveedores)',
+        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+(?:al\s+proveedor|a\s+la\s+distribuidora|al\s+distribuidor|al\s+viajante|al\s+preventista|al\s+corredor|el\s+proveedor|la\s+distribuidora|el\s+distribuidor|el\s+viajante|el\s+preventista|el\s+corredor|proveedor|distribuidora|distribuidor|viajante|preventista|corredor)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)',
+        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:de\s+(?:mis\s+)?(?:proveedores|distribuidores|preventistas|viajantes))',
     ]
     for pat in patterns:
         m = re.search(pat, orig_no_prefix, re.IGNORECASE)
@@ -896,7 +901,8 @@ def parse_supplier_deletion_intent(text: str) -> dict:
     if lower_no_prefix in [
         "eliminar proveedor", "borrar proveedor", "dar de baja proveedor",
         "eliminar un proveedor", "borrar un proveedor", "dar de baja un proveedor",
-        "eliminar distribuidora", "borrar distribuidora"
+        "eliminar distribuidora", "borrar distribuidora", "eliminar preventista",
+        "borrar preventista", "dar de baja preventista", "eliminar viajante", "borrar viajante"
     ]:
         return {"is_supplier_deletion": True, "supplier_name": None}
 
@@ -918,7 +924,7 @@ def parse_client_deletion_intent(text: str) -> dict:
     lower_no_prefix = orig_no_prefix.lower()
 
     # Guard against supplier, employee or product deletion
-    if any(k in lower_no_prefix for k in ["proveedor", "distribuidora", "viajante", "empleado", "repositor", "encargado", "producto", "item", "articulo", "artículo"]):
+    if any(k in lower_no_prefix for k in ["proveedor", "distribuidora", "distribuidor", "viajante", "preventista", "corredor", "empleado", "repositor", "encargado", "producto", "item", "articulo", "artículo"]):
         return {"is_client_deletion": False}
 
     if lower_no_prefix in [
@@ -984,7 +990,7 @@ async def parse_supplier_phone_update_intent(text: str) -> dict:
         "actualizar whatsapp"
     ]
     is_candidate = any(trig in lower for trig in update_triggers) or (
-        any(w in lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in lower for k in ["cambi", "nuevo", "actualiz"]) and any(p in lower for p in ["numero", "número", "telefono", "teléfono", "whatsapp", "celu"])
+        any(w in lower for w in ["proveedor", "distribuidora", "distribuidor", "viajante", "preventista", "corredor"]) and any(k in lower for k in ["cambi", "nuevo", "actualiz"]) and any(p in lower for p in ["numero", "número", "telefono", "teléfono", "whatsapp", "celu"])
     )
     if not is_candidate:
         return {"is_supplier_phone_update": False}
@@ -992,11 +998,11 @@ async def parse_supplier_phone_update_intent(text: str) -> dict:
     gemini_key = settings.GEMINI_API_KEY
     if gemini_key:
         prompt = (
-            "El dueño de un comercio le habla a su asistente comercial Sofía por WhatsApp para avisar que un proveedor, distribuidora o viajante cambió de número de teléfono o para actualizar su WhatsApp.\n"
+            "El dueño de un comercio le habla a su asistente comercial Sofía por WhatsApp para avisar que un proveedor, distribuidora, preventista, viajante o corredor cambió de número de teléfono o para actualizar su WhatsApp.\n"
             f"Mensaje: \"{clean}\"\n\n"
             "Analizá y extraé en formato JSON con estas claves:\n"
             "- is_supplier_phone_update: true o false\n"
-            "- supplier_name: nombre comercial de la empresa proveedora o distribuidora (ej: 'Distribuidora Alem', 'Distribuidora Central', o null si solo se dice el nombre del viajante)\n"
+            "- supplier_name: nombre comercial de la empresa proveedora o distribuidora (ej: 'Distribuidora Alem', 'Distribuidora Central', 'Arcor', o null si solo se dice el nombre del viajante o preventista)\n"
             "- contact_name: nombre de pila de la persona si se menciona (ej: 'Carlos', 'Pedro', o null)\n"
             "- new_phone: nuevo número de teléfono extraído (solo dígitos, o null)\n"
             "Respondé ÚNICAMENTE un JSON válido."
@@ -1032,7 +1038,7 @@ async def parse_supplier_phone_update_intent(text: str) -> dict:
         contact_name = c_m.group(1).strip()
         supplier_name = c_m.group(2).strip()
     else:
-        s_m = re.search(r'(?:actualiz[áa](?:r)?\s+(?:el\s+)?(?:número|numero|teléfono|telefono|whatsapp)\s+de\s+|al\s+proveedor\s+|a\s+la\s+distribuidora\s+|proveedor\s+|distribuidora\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:cambi[óo]|tiene|es\s+el|al\s+[0-9]|$)', clean_no_prefix, re.IGNORECASE)
+        s_m = re.search(r'(?:actualiz[áa](?:r)?\s+(?:el\s+)?(?:número|numero|teléfono|telefono|whatsapp)\s+de\s+|al\s+proveedor\s+|a\s+la\s+distribuidora\s+|al\s+distribuidor\s+|al\s+viajante\s+|al\s+preventista\s+|al\s+corredor\s+|proveedor\s+|distribuidora\s+|distribuidor\s+|viajante\s+|preventista\s+|corredor\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:cambi[óo]|tiene|es\s+el|al\s+[0-9]|$)', clean_no_prefix, re.IGNORECASE)
         supplier_name = s_m.group(1).strip() if s_m else "Proveedor"
         supplier_name = re.sub(r'^(?:el|la|al|a)\s+', '', supplier_name, flags=re.IGNORECASE).strip()
         contact_name = supplier_name
@@ -1076,11 +1082,11 @@ async def parse_supplier_inquiry_intent(text: str) -> dict:
     gemini_key = settings.GEMINI_API_KEY
     if gemini_key:
         prompt = (
-            "El dueño de un comercio minorista le pide a su asistente Sofía por WhatsApp que le envíe una pregunta o consulta a uno de sus proveedores o viajantes.\n"
+            "El dueño de un comercio minorista le pide a su asistente Sofía por WhatsApp que le envíe una pregunta o consulta a uno de sus proveedores, preventistas, viajantes o distribuidores.\n"
             f"Mensaje: \"{clean}\"\n\n"
             "Extraé un JSON con:\n"
             "- 'is_supplier_inquiry': true o false\n"
-            "- 'supplier_name': nombre del proveedor o persona (ej: 'Distribuidora Alem', 'Pedro', 'Bulonera del Litoral')\n"
+            "- 'supplier_name': nombre del proveedor o persona (ej: 'Distribuidora Alem', 'Pedro', 'Bulonera del Litoral', 'Arcor')\n"
             "- 'inquiry_text': la pregunta o mensaje limpio que debe enviarse (ej: '¿El lunes hacen reparto?', '¿Tienen stock de cal?'). Redactado de forma respetuosa y clara.\n"
             "Respondé ÚNICAMENTE un JSON válido con estas claves."
         )
@@ -1115,7 +1121,7 @@ async def parse_supplier_inquiry_intent(text: str) -> dict:
         s_name = m.group(1).strip()
         inq = m.group(2).strip()
         inq = re.sub(r'^:\s*', '', inq).strip()
-        s_name = re.sub(r'^(?:el\s+proveedor|la\s+distribuidora|el\s+viajante)\s+', '', s_name, flags=re.IGNORECASE).strip()
+        s_name = re.sub(r'^(?:el\s+proveedor|al\s+proveedor|la\s+distribuidora|a\s+la\s+distribuidora|el\s+distribuidor|al\s+distribuidor|el\s+viajante|al\s+viajante|el\s+preventista|al\s+preventista|el\s+corredor|al\s+corredor|viajante|preventista|corredor)\s+', '', s_name, flags=re.IGNORECASE).strip()
         return {
             "is_supplier_inquiry": True,
             "supplier_name": s_name,
@@ -1130,7 +1136,7 @@ async def parse_supplier_inquiry_intent(text: str) -> dict:
     )
     part_name = m_partial.group(1).strip() if (m_partial and m_partial.group(1)) else None
     if part_name:
-        part_name = re.sub(r'^(?:el\s+proveedor|la\s+distribuidora|el\s+viajante)\s+', '', part_name, flags=re.IGNORECASE).strip()
+        part_name = re.sub(r'^(?:el\s+proveedor|al\s+proveedor|la\s+distribuidora|a\s+la\s+distribuidora|el\s+distribuidor|al\s+distribuidor|el\s+viajante|al\s+viajante|el\s+preventista|al\s+preventista|el\s+corredor|al\s+corredor|viajante|preventista|corredor)\s+', '', part_name, flags=re.IGNORECASE).strip()
     return {
         "is_supplier_inquiry": True,
         "supplier_name": part_name if part_name else None,
@@ -3218,13 +3224,13 @@ async def process_boss_message(
                         target_phone = candidate
 
         dist_name = ai_dispatch.get("recipient_name")
-        if not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]:
+        if not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor", "el proveedor", "viajante", "el viajante", "preventista", "el preventista", "corredor", "el corredor"]:
             distributor_match = re.search(r'(?:pedido\s+a|pedido\s+para|orden\s+a|orden\s+para|la\s+demo\s+a|demo\s+a|\ba\b|\bpara\b)\s+([^\n\r,]+?)(?:[,\s]+(?:al\s+\d+|el\s+n[uú]mero|el\s+tel[eé]fono|con\b)|$)', clean_text, re.IGNORECASE)
             if distributor_match:
                 dist_name = distributor_match.group(1).strip()
         if not dist_name:
             dist_name = "la Distribuidora"
-        dist_name = re.sub(r'^(?:la|el|los|las)\s+', '', dist_name, flags=re.IGNORECASE).strip()
+        dist_name = re.sub(r'^(?:el\s+proveedor|al\s+proveedor|la\s+distribuidora|a\s+la\s+distribuidora|el\s+distribuidor|al\s+distribuidor|el\s+viajante|al\s+viajante|el\s+preventista|al\s+preventista|el\s+corredor|al\s+corredor|viajante|preventista|corredor|la|el|los|las)\s+', '', dist_name, flags=re.IGNORECASE).strip()
 
         active_client = get_active_onboarded_client(db)
 

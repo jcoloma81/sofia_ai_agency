@@ -1167,9 +1167,13 @@ async def receive_whatsapp_webhook(
         "anotá al proveedor", "anota al proveedor", "anotar proveedor", "guardá al proveedor", "guarda al proveedor",
         "guardar proveedor", "nuevo proveedor", "proveedor nuevo", "el proveedor es", "el proveedor de",
         "agendá al viajante", "agenda al viajante", "agendar viajante", "anotá al viajante", "anota al viajante",
+        "agendá al preventista", "agenda al preventista", "agendar preventista", "anotá al preventista", "anota al preventista", "guardá al preventista",
+        "agendá al corredor", "agenda al corredor", "agendar corredor", "anotá al corredor", "anota al corredor", "guardá al corredor",
+        "agendá al distribuidor", "agenda al distribuidor", "agendar distribuidor",
         "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora", "guardar distribuidora",
         "eliminar proveedor", "borrar proveedor", "dar de baja proveedor", "eliminar al proveedor", "borrar al proveedor",
-        "eliminar distribuidora", "borrar distribuidora", "proveedores", "mis proveedores", "ver proveedores",
+        "eliminar distribuidora", "borrar distribuidora", "eliminar preventista", "borrar preventista", "dar de baja preventista",
+        "eliminar viajante", "borrar viajante", "proveedores", "mis proveedores", "ver proveedores",
         "lista de proveedores", "quienes son mis proveedores",
         "cambió de número", "cambio de numero", "cambió el número", "cambio el numero", "cambió de número al",
         "cambió de teléfono", "cambio de telefono", "cambió de whatsapp", "cambio de whatsapp",
@@ -1201,9 +1205,9 @@ async def receive_whatsapp_webhook(
     ]
     is_merchant_action = (
         any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers + merchant_client_triggers + merchant_inquiry_triggers + merchant_employee_triggers)
-        or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al ", "cambi", "nuevo", "actualiz"]))
+        or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "distribuidor", "viajante", "preventista", "corredor"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al ", "cambi", "nuevo", "actualiz"]))
         or (any(v in clean_msg_lower for v in ["mand", "envi", "pas", "despach", "cerr", "hac"]) and any(n in clean_msg_lower for n in ["pedido", "orden", "remito", "faltante"]))
-        or (any(q in clean_msg_lower for q in ["pregunt", "consult", "decil", "escrib", "avis"]) and any(s in clean_msg_lower for s in ["proveedor", "distribuidora", "viajante", "al ", "a la "]))
+        or (any(q in clean_msg_lower for q in ["pregunt", "consult", "decil", "escrib", "avis"]) and any(s in clean_msg_lower for s in ["proveedor", "distribuidora", "distribuidor", "viajante", "preventista", "corredor", "al ", "a la "]))
         or (any(e in clean_msg_lower for e in ["emplead", "repositor", "encargad"]) and any(a in clean_msg_lower for a in ["agreg", "alt", "autoriz", "habilit", "permis", "quit", "borr", "elimin"]))
         or (any(c in clean_msg_lower for c in ["comercio", "cliente", "negocio"]) and any(b in clean_msg_lower for b in ["elimin", "borr", "baja"]))
     )

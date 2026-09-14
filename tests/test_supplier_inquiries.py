@@ -13,7 +13,10 @@ from app.services.boss_mode import (
     process_boss_message,
     get_client_faq_text,
     get_client_manual_text,
-    parse_supplier_inquiry_intent
+    parse_supplier_inquiry_intent,
+    parse_supplier_registration_intent,
+    parse_supplier_deletion_intent,
+    parse_supplier_phone_update_intent
 )
 
 Base.metadata.create_all(bind=test_engine)
@@ -65,6 +68,17 @@ async def test_parse_supplier_inquiry_intent():
     r5 = await parse_supplier_inquiry_intent("Sofi, preguntale a")
     assert r5.get("is_supplier_inquiry") is True
     assert r5.get("inquiry_text") is None
+
+    # 6. Preventista inquiry
+    r6 = await parse_supplier_inquiry_intent("Sofi, preguntale al preventista Carlos si tienen stock de alfajores")
+    assert r6.get("is_supplier_inquiry") is True
+    assert "Carlos" in r6.get("supplier_name", "")
+    assert "stock" in r6.get("inquiry_text", "").lower()
+
+    # 7. Corredor inquiry
+    r7 = await parse_supplier_inquiry_intent("Sofi, consultale al corredor Martín si el lunes hay reparto")
+    assert r7.get("is_supplier_inquiry") is True
+    assert "Martín" in r7.get("supplier_name", "") or "Martin" in r7.get("supplier_name", "")
 
 
 @pytest.mark.asyncio
@@ -478,4 +492,28 @@ def test_supplier_reply_layer3_collision_disambiguation_flow(db, mock_whatsapp):
     assert json.loads(sup_m1.notes)["last_inquiry"]["replied"] is True
     assert json.loads(sup_m2.notes)["last_inquiry"]["replied"] is False
     assert "pending_disambiguation" not in json.loads(sup_m1.notes)
+
+
+@pytest.mark.asyncio
+async def test_preventista_and_corredor_synonyms():
+    # 1. Registration with "preventista"
+    r_prev = await parse_supplier_registration_intent("Sofi, agendá al preventista Carlos de Arcor al 3434556677")
+    assert r_prev.get("is_supplier_registration") is True
+    assert "Carlos" in (r_prev.get("contact_name") or "") or "Carlos" in (r_prev.get("supplier_name") or "")
+    assert "3434556677" in (r_prev.get("phone") or "")
+
+    # 2. Registration with "corredor"
+    r_corr = await parse_supplier_registration_intent("Sofi, anotá al corredor Martín de Molinos al 3434112233")
+    assert r_corr.get("is_supplier_registration") is True
+    assert "3434112233" in (r_corr.get("phone") or "")
+
+    # 3. Deletion with "preventista"
+    r_del = parse_supplier_deletion_intent("Sofi, dar de baja al preventista Carlos")
+    assert r_del.get("is_supplier_deletion") is True
+    assert "Carlos" in (r_del.get("supplier_name") or "")
+
+    # 4. Phone change with "preventista"
+    r_chg = await parse_supplier_phone_update_intent("Sofi, el preventista Carlos de Arcor cambió de número al 3434998877")
+    assert r_chg.get("is_supplier_phone_update") is True
+    assert "3434998877" in (r_chg.get("new_phone") or "")
 
