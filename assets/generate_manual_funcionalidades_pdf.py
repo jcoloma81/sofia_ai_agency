@@ -5,7 +5,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, HRFlowable, PageBreak, Image
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, HRFlowable, Image
 )
 from reportlab.pdfgen import canvas
 
@@ -36,8 +36,8 @@ class NumberedCanvas(canvas.Canvas):
         self.setFillColor(colors.HexColor('#64748B'))
         
         # Footer
-        footer_text = f"Manual de Funcionalidades & Machete Operativo • Sofía IA • Página {self._pageNumber} de {page_count}"
-        self.drawString(1.2 * cm, 0.8 * cm, "Confidencial • Uso Interno & Capacitación Comercial")
+        footer_text = f"Guía de Funcionalidades & Manual de Uso • Sofía IA • Página {self._pageNumber} de {page_count}"
+        self.drawString(1.2 * cm, 0.8 * cm, "Guía Oficial de Uso para el Comercio • Sofía Asistente Comercial")
         self.drawRightString(A4[0] - 1.2 * cm, 0.8 * cm, footer_text)
         
         # Running thin line above footer
@@ -66,8 +66,8 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
         'DocTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=15,
-        leading=18,
+        fontSize=14.5,
+        leading=17.5,
         textColor=colors.HexColor('#0F172A'),
         spaceAfter=2
     )
@@ -85,8 +85,8 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
         'Badge',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=8,
-        leading=10,
+        fontSize=7.5,
+        leading=9.5,
         alignment=2,
         textColor=colors.HexColor('#1E293B')
     )
@@ -95,22 +95,11 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
         'Heading1Section',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=11,
-        leading=14,
+        fontSize=10.5,
+        leading=13.5,
         textColor=colors.HexColor('#1E3A8A'),
-        spaceBefore=8,
-        spaceAfter=4
-    )
-
-    h2_style = ParagraphStyle(
-        'Heading2Custom',
-        parent=styles['Heading2'],
-        fontName='Helvetica-Bold',
-        fontSize=9.5,
-        leading=12.5,
-        textColor=colors.HexColor('#0F172A'),
-        spaceBefore=6,
-        spaceAfter=3
+        spaceBefore=7,
+        spaceAfter=3.5
     )
 
     body_style = ParagraphStyle(
@@ -149,15 +138,6 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
         textColor=colors.HexColor('#065F46')
     )
 
-    note_style = ParagraphStyle(
-        'NoteStyle',
-        parent=styles['Normal'],
-        fontName='Helvetica-Oblique',
-        fontSize=7.5,
-        leading=9.5,
-        textColor=colors.HexColor('#64748B')
-    )
-
     story = []
 
     # =========================================================================
@@ -172,13 +152,13 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
             logo_img = None
 
     header_text_cell = [
-        Paragraph("<b>MANUAL DE FUNCIONALIDADES & MACHETE OPERATIVO</b>", title_style),
-        Paragraph("<b>Sofía IA • Central de Compras, Reposición y Ventas para Comercios</b>", subtitle_style),
+        Paragraph("<b>GUÍA RÁPIDA DE USO & MANUAL DE FUNCIONALIDADES</b>", title_style),
+        Paragraph("<b>Sofía IA • Central Inteligente de Compras, Reposición y Ventas para Comercios</b>", subtitle_style),
         Paragraph("WhatsApp Oficial: +54 9 343 572-0312 • Paraná, Entre Ríos, Argentina", body_style)
     ]
 
     if logo_img:
-        t_header = Table([[logo_img, header_text_cell, Paragraph("<b>VERSIÓN 2.5</b><br/>EDICIÓN BLINDADA<br/>100% OPERATIVA", badge_style)]], colWidths=[1.8*cm, 12.8*cm, 4.0*cm])
+        t_header = Table([[logo_img, header_text_cell, Paragraph("<b>EDICIÓN OFICIAL 2026</b><br/>GUÍA DEL COMERCIO<br/>100% OPERATIVA", badge_style)]], colWidths=[1.8*cm, 12.8*cm, 4.0*cm])
         t_header.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (1,0), (1,0), 6),
@@ -187,7 +167,7 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
             ('BOTTOMPADDING', (0,0), (-1,-1), 2),
         ]))
     else:
-        t_header = Table([[header_text_cell, Paragraph("<b>VERSIÓN 2.5</b><br/>EDICIÓN BLINDADA<br/>100% OPERATIVA", badge_style)]], colWidths=[14.6*cm, 4.0*cm])
+        t_header = Table([[header_text_cell, Paragraph("<b>EDICIÓN OFICIAL 2026</b><br/>GUÍA DEL COMERCIO<br/>100% OPERATIVA", badge_style)]], colWidths=[14.6*cm, 4.0*cm])
         t_header.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('TOPPADDING', (0,0), (-1,-1), 0),
@@ -200,9 +180,9 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
 
     # Highlight Banner
     banner_text = (
-        "<b>🎯 PROPÓSITO DE ESTE MANUAL:</b> Esta guía contiene el 100% de las órdenes de voz y texto que Sofía entiende, "
-        "las respuestas del sistema y los 4 blindajes automáticos que garantizan cero errores en mostrador, cero cruce de mensajes "
-        "y cero duplicación de mercadería. Ideal para tener impreso junto a la caja o guardado en el celular."
+        "<b>🎯 GUÍA PRÁCTICA PARA EL COMERCIANTE:</b> Este manual contiene las órdenes de voz y texto para sacarle el máximo "
+        "provecho a Sofía en tu día a día, junto con los 4 blindajes automáticos que protegen a tu negocio de errores en compras, "
+        "listas equivocadas o duplicación de mercadería. Podés tenerlo a mano en tu celular o imprimirlo para vos y tu equipo de trabajo."
     )
     t_banner = Table([[Paragraph(banner_text, ParagraphStyle('Banner', parent=body_style, fontSize=7.5, leading=10, textColor=colors.HexColor('#1E1B4B')))]], colWidths=[18.6*cm])
     t_banner.setStyle(TableStyle([
@@ -217,9 +197,9 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
     story.append(Spacer(1, 5))
 
     # =========================================================================
-    # CAPÍTULO 1: MACHETE DE COMANDOS RÁPIDOS (TABLA PRINCIPAL)
+    # CAPÍTULO 1: COMANDOS CLAVE DE VOZ Y TEXTO (TABLA PRINCIPAL)
     # =========================================================================
-    story.append(Paragraph("<b>📋 CAPÍTULO 1: MACHETE RÁPIDO DE COMANDOS (VOZ O TEXTO)</b>", h1_section))
+    story.append(Paragraph("<b>📋 CAPÍTULO 1: COMANDOS CLAVE DE VOZ Y TEXTO (DÍA A DÍA)</b>", h1_section))
 
     table_data = [
         [
@@ -249,10 +229,10 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
             Paragraph("• <i>«Sofi, pasale el pedido a Carlos»</i><br/>"
                       "• <i>«Mandale el pedido a Distribuidora Alem»</i><br/>"
                       "• <i>«Despachale a Litoral al 3434556677»</i>", cmd_style),
-            Paragraph("<b>1)</b> Envía mensaje formal a WhatsApp del preventista.<br/>"
-                      "<b>2)</b> Adjunta el <b>Remito formal en PDF</b>.<br/>"
-                      "<b>3)</b> <b>Vacia y purga el borrador atómicamente</b> para no duplicar en la próxima reposición.<br/>"
-                      "<b>4)</b> Notifica confirmación de despacho al dueño.", action_style)
+            Paragraph("<b>1)</b> Envía mensaje formal al WhatsApp del preventista.<br/>"
+                      "<b>2)</b> Adjunta el <b>Remito formal en PDF</b> con código de orden.<br/>"
+                      "<b>3)</b> <b>Vacía el borrador inmediatamente</b> para no duplicar en la próxima reposición.<br/>"
+                      "<b>4)</b> Notifica confirmación de despacho al titular.", action_style)
         ],
         # 4. Vaciar / Cancelar Borrador
         [
@@ -260,7 +240,7 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
             Paragraph("• <i>«Sofi, vaciá el borrador de Carlos»</i><br/>"
                       "• <i>«Limpiá los faltantes de Alem»</i><br/>"
                       "• <i>«Borrá el pedido anotado de Carlos»</i>", cmd_style),
-            Paragraph("Elimina inmediatamente la mercadería anotada en base de datos y archivo JSON. La canasta queda en 0 sin enviarle nada al proveedor.", action_style)
+            Paragraph("Elimina de inmediato la mercadería anotada en los servidores del sistema. La canasta queda en 0 sin enviarle ningún mensaje al proveedor.", action_style)
         ],
         # 5. Agendar Proveedor
         [
@@ -268,7 +248,7 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
             Paragraph("• <i>«Sofi, agendá al preventista Carlos de Arcor al 3434556677»</i><br/>"
                       "• <i>«Anotá a la distribuidora Alem al 3434112233»</i><br/>"
                       "• <i>«Agendá al corredor Martín al 3434889900»</i>", cmd_style),
-            Paragraph("Registra empresa, nombre y teléfono. <b>Le envía de inmediato un WhatsApp de presentación formal</b> presentándose como la asistente del local para recibir pedidos y listas.", action_style)
+            Paragraph("Registra empresa, persona y teléfono. <b>Le envía de inmediato un WhatsApp de presentación formal</b> presentándose como la asistente del local para recibir pedidos y listas.", action_style)
         ],
         # 6. Consultas al Preventista
         [
@@ -327,7 +307,7 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
     # =========================================================================
     story.append(KeepTogether([
         Paragraph("<b>🛡️ CAPÍTULO 2: LOS 4 GRANDES BLINDAJES DE SEGURIDAD COMERCIAL</b>", h1_section),
-        Paragraph("Para que el comerciante opere con absoluta tranquilidad, Sofía cuenta con 4 mecanismos de defensa automáticos:", body_style),
+        Paragraph("Para que el comercio opere con absoluta tranquilidad, Sofía cuenta con 4 mecanismos de defensa automáticos:", body_style),
         Spacer(1, 4)
     ]))
 
@@ -337,13 +317,13 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
             Paragraph("<b>2. VACIADO ATÓMICO POST-DESPACHO</b>", ParagraphStyle('BH2', parent=bold_label, textColor=colors.HexColor('#065F46')))
         ],
         [
-            Paragraph("<b>¿Qué pasa si un preventista atiende a 5 comercios que usan Sofía?</b><br/>"
+            Paragraph("<b>¿Qué pasa si un preventista atiende a varios comercios que usan Sofía?</b><br/>"
                       "• <b>Capa 1 (Citar / Deslizar):</b> Si responde deslizando el mensaje, Sofía sabe exactamente a qué comercio responde.<br/>"
                       "• <b>Capa 2 (Mención de Negocio):</b> Si dice <i>'Para Alem...'</i> o <i>'Decile a Javier...'</i>, Sofía detecta el destinatario.<br/>"
                       "• <b>Capa 3 (Desambiguación Interactiva):</b> Si responde a secas y tiene 2 preguntas abiertas, Sofía frena y le pregunta: <i>«¿Para cuál negocio es tu respuesta? Respondé 1 o 2»</i>. <b>Imposible que se mezclen mensajes.</b>", body_style),
             Paragraph("<b>¿Qué pasa con los faltantes anotados una vez enviados?</b><br/>"
                       "• Vincula automáticamente la persona (<i>Carlos</i>) con la empresa (<i>Distribuidora Alem</i>).<br/>"
-                      "• Al despachar, <b>barre y borra en simultáneo</b> la base de datos SQL y el archivo de respaldo para ambos alias.<br/>"
+                      "• Al despachar el pedido, Sofía <b>vacía y limpia de inmediato el borrador de sus servidores seguros</b> para ambos nombres.<br/>"
                       "• Si 1 segundo después preguntás qué hay anotado, Sofía confirma: <i>«No tenés nada anotado todavía»</i>. <b>Cero riesgo de compras duplicadas.</b>", body_style)
         ],
         [
@@ -351,7 +331,7 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
             Paragraph("<b>4. REGLA DE LOS 7 DÍAS (PRECIOS FRESCOS)</b>", ParagraphStyle('BH4', parent=bold_label, textColor=colors.HexColor('#92400E')))
         ],
         [
-            Paragraph("<b>¿Qué pasa si el viajante manda un Excel que no corresponde?</b><br/>"
+            Paragraph("<b>¿Qué pasa si el viajante manda un archivo que no corresponde?</b><br/>"
                       "• Si un viajante de golosinas manda por error una lista de bulonería (0 coincidencias con el catálogo), <b>Sofía frena en el acto la actualización</b>.<br/>"
                       "• Mantiene los precios vigentes 100% intactos y le envía una alerta preventiva al dueño sugiriéndole consultar al viajante.", body_style),
             Paragraph("<b>¿Cómo se controla la inflación y listas viejas?</b><br/>"
@@ -448,7 +428,7 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
          "Por dos vías: <b>1)</b> Por las listas de precios en Excel o PDF que vas cargando de cada distribuidor. <b>2)</b> Por el dictado explícito cuando decís <i>'anotá para Carlos...'</i>. Sofía recuerda los proveedores históricos y asocia los productos automáticamente."),
          
         ("¿Los demás comercios pueden ver mis costos o a quién le compro?",
-         "<b>Absolutamente NO.</b> La arquitectura de Sofía cuenta con aislamiento multi-tenant estricto. La información de tu comercio, tus precios y tus notas de pedido están 100% aisladas y son completamente confidenciales.")
+         "<b>Absolutamente NO.</b> Tu cuenta opera en un circuito cerrado e independiente. La información de tu comercio, las listas de precios que cargás y tus notas de pedido están 100% aisladas y protegidas bajo estricta confidencialidad comercial: ningún otro negocio puede ver tus costos ni a quién le comprás.")
     ]
 
     faq_table_data = []
@@ -472,8 +452,8 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
 
     # Final Guarantee Note
     final_note = (
-        "<b>📞 SOPORTE & EVOLUCIÓN CONTINUA:</b> Desarrollado por <b>Agencia Sofía IA</b> • "
-        "Directivas y actualizaciones comerciales coordinadas por <b>Javier Coloma</b>. "
+        "<b>📞 SOPORTE & ASISTENCIA AL COMERCIO:</b> Desarrollado por <b>Agencia Sofía IA</b> • "
+        "Director General: <b>Javier Coloma</b>. "
         "Línea oficial WhatsApp: <b>+54 9 343 572-0312</b>."
     )
     t_final = Table([[Paragraph(final_note, ParagraphStyle('Final', parent=body_style, fontSize=7.5, leading=10, textColor=colors.HexColor('#1E3A8A')))]], colWidths=[18.6*cm])
