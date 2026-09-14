@@ -210,3 +210,49 @@ ART03;Coca Cola 2.25L;Pack x 6;19200;SI;Bebidas"""
     assert p_coca.price == 21500.0
 
 
+def test_supplier_wrong_list_anomaly_warning():
+    service = CatalogService()
+    # Populate existing grocery items
+    service.products = [
+        ProductItem(name="Harina 000 Cañuelas 1kg", price=850.0, supplier="Molinos"),
+        ProductItem(name="Aceite Cañuelas Girasol 1.5L", price=1600.0, supplier="Molinos"),
+        ProductItem(name="Fideos Matarazzo 500g", price=1200.0, supplier="Molinos"),
+    ]
+
+    # Supplier sends completely unrelated auto parts Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Codigo", "Descripcion", "Precio"])
+    ws.append(["AUTO-01", "Amortiguador Delantero Hilux", 45000])
+    ws.append(["AUTO-02", "Pastillas de Freno Corolla", 18500])
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".xlsx") as tmp:
+        res = service.update_from_supplier_excel(
+            stream.read(),
+            filename="repuestos_toyota.xlsx",
+            supplier_name="Distribuidora Repuestos",
+            export_path=tmp.name
+        )
+
+    assert res["status"] == "success"
+    assert res["matched_count"] == 0
+    assert res["is_mismatch_warning"] is True
+    assert "ALERTA DE SEGURIDAD COMERCIAL — POSIBLE LISTA EQUIVOCADA" in res["whatsapp_message"]
+    assert "0 de 2 productos" in res["whatsapp_message"]
+    assert "100% protegidos e intactos" in res["whatsapp_message"]
+
+    # Verify existing grocery products and prices remained 100% untouched
+    harina = service.find_product_exact_or_best("Harina 000 Cañuelas 1kg")
+    assert harina is not None
+    assert harina.price == 850.0
+
+    aceite = service.find_product_exact_or_best("Aceite Cañuelas Girasol 1.5L")
+    assert aceite is not None
+    assert aceite.price == 1600.0
+
+
+

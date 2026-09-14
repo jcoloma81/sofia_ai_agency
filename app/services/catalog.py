@@ -822,6 +822,7 @@ class CatalogService:
 
             matched_items: List[Dict[str, Any]] = []
             new_items: List[ProductItem] = []
+            initial_catalog_count = len(self.products)
 
             for sup in supplier_items:
                 norm_sup = normalize_product_text(sup.name)
@@ -904,40 +905,67 @@ class CatalogService:
             os.makedirs(os.path.dirname(export_path), exist_ok=True)
             self.export_to_excel(export_path)
 
+            # Check if this update has zero matches while active catalog had products (possible wrong supplier list)
+            is_zero_match_anomaly = (len(matched_items) == 0 and initial_catalog_count > 0 and len(supplier_items) > 0)
+
             # Build WhatsApp message
-            lines = [
-                f"📊 *¡Actualización de Proveedor Procesada!*",
-            ]
-            if supplier_name:
-                lines.append(f"🏢 *Proveedor:* {supplier_name}")
-            lines.extend([
-                f"📁 *Archivo:* `{filename}`\n",
-                f"✅ *{len(matched_items)} productos actualizados* con nuevo precio.",
-            ])
-            if new_items:
-                lines.append(f"📦 *{len(new_items)} productos nuevos* detectados en la lista del proveedor.")
-            lines.append("⚡ *Sofía ya está cotizando con estos nuevos precios.*\n")
+            if is_zero_match_anomaly:
+                lines = [
+                    "⚠️ *¡ALERTA DE SEGURIDAD COMERCIAL — POSIBLE LISTA EQUIVOCADA!* 🛡️\n",
+                ]
+                if supplier_name:
+                    lines.append(f"🏢 *Proveedor:* {supplier_name}")
+                lines.extend([
+                    f"📁 *Archivo:* `{filename}`\n",
+                    f"🔍 *Resultado del cruce:* *0 de {len(supplier_items)} productos* coincidieron con tu catálogo habitual.",
+                    f"🛡️ *Tus costos y precios vigentes quedaron 100% protegidos e intactos.*",
+                    f"💡 *¿Qué pudo pasar?* Es muy probable que el proveedor haya enviado una lista equivocada (de otro rubro, de otra fábrica o de otra zona).",
+                    f"👉 Te sugerimos consultarle al viajante antes de cotizar con estos nuevos artículos.\n"
+                ])
+                if new_items:
+                    lines.append(f"📦 *Artículos detectados en el archivo ({len(new_items)}):*")
+                    for ni in new_items[:5]:
+                        price_f = f"${int(ni.price):,}".replace(",", ".")
+                        lines.append(f"• *{ni.name}*: {price_f}")
+                    if len(new_items) > 5:
+                        lines.append(f"• ... y {len(new_items) - 5} más.")
+                    lines.append("")
+                lines.append("📥 *Descargá tu catálogo vigente sin alteraciones:*")
+                lines.append("https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx")
+            else:
+                lines = [
+                    f"📊 *¡Actualización de Proveedor Procesada!*",
+                ]
+                if supplier_name:
+                    lines.append(f"🏢 *Proveedor:* {supplier_name}")
+                lines.extend([
+                    f"📁 *Archivo:* `{filename}`\n",
+                    f"✅ *{len(matched_items)} productos actualizados* con nuevo precio.",
+                ])
+                if new_items:
+                    lines.append(f"📦 *{len(new_items)} productos nuevos* detectados en la lista del proveedor.")
+                lines.append("⚡ *Sofía ya está cotizando con estos nuevos precios.*\n")
 
-            if matched_items:
-                lines.append("📈 *Detalle de Aumentos:*")
-                for item in matched_items:
-                    old_f = f"${int(item['old_price']):,}".replace(",", ".")
-                    new_f = f"${int(item['new_price']):,}".replace(",", ".")
-                    sign = "+" if item['pct'] >= 0 else ""
-                    lines.append(f"• *{item['product']}*: {old_f} ➔ *{new_f}* ({sign}{item['pct']:.1f}%)")
-                lines.append("")
+                if matched_items:
+                    lines.append("📈 *Detalle de Aumentos:*")
+                    for item in matched_items:
+                        old_f = f"${int(item['old_price']):,}".replace(",", ".")
+                        new_f = f"${int(item['new_price']):,}".replace(",", ".")
+                        sign = "+" if item['pct'] >= 0 else ""
+                        lines.append(f"• *{item['product']}*: {old_f} ➔ *{new_f}* ({sign}{item['pct']:.1f}%)")
+                    lines.append("")
 
-            if new_items:
-                lines.append("✨ *Nuevos ítems detectados:*")
-                for ni in new_items[:5]:
-                    price_f = f"${int(ni.price):,}".replace(",", ".")
-                    lines.append(f"• *{ni.name}*: {price_f}")
-                if len(new_items) > 5:
-                    lines.append(f"• ... y {len(new_items) - 5} más.")
-                lines.append("")
+                if new_items:
+                    lines.append("✨ *Nuevos ítems detectados:*")
+                    for ni in new_items[:5]:
+                        price_f = f"${int(ni.price):,}".replace(",", ".")
+                        lines.append(f"• *{ni.name}*: {price_f}")
+                    if len(new_items) > 5:
+                        lines.append(f"• ... y {len(new_items) - 5} más.")
+                    lines.append("")
 
-            lines.append("📥 *Descargá tu catálogo actualizado:*")
-            lines.append("https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx")
+                lines.append("📥 *Descargá tu catálogo actualizado:*")
+                lines.append("https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx")
 
             msg = "\n".join(lines)
             return {
@@ -946,6 +974,7 @@ class CatalogService:
                 "new_count": len(new_items),
                 "matched_items": matched_items,
                 "new_items": new_items,
+                "is_mismatch_warning": is_zero_match_anomaly,
                 "excel_path": export_path,
                 "excel_url": "https://sofia-ai-agency.onrender.com/assets/catalogo_actualizado.xlsx",
                 "whatsapp_message": msg
