@@ -23,6 +23,9 @@ class Prospect(Base):
     status = Column(String, default="pending", index=True)        # pending, contacted, in_conversation, meeting_scheduled, human_takeover, not_interested
     campaign = Column(String, default="ai_agency", index=True)    # ai_agency, air_control, supplier, client_onboarding, etc.
     business_type = Column(String, nullable=True)               # e.g. "distribuidora", "mayorista", "ferreteria", "proveedor"
+    parent_merchant_phone = Column(String, index=True, nullable=True) # E.164 phone of store owner if this prospect is an employee
+    employee_role = Column(String, default="owner", index=True)       # "owner", "empleado" (anotador/repositor), "encargado" (comprador autorizado)
+    can_dispatch = Column(Boolean, default=False)                     # True if authorized to send formal orders to suppliers
     notes = Column(Text, nullable=True)
     conversation_history = Column(Text, default="[]")             # JSON array of message objects
     meeting_details = Column(Text, nullable=True)                 # e.g. "Miércoles 15:00 hs"

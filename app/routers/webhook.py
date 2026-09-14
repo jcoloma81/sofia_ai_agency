@@ -796,11 +796,20 @@ async def receive_whatsapp_webhook(
         "mandale un mensaje a", "mandale mensaje a", "enviá un mensaje a", "enviale un mensaje a",
         "mandale a decir a"
     ]
+    merchant_employee_triggers = [
+        "empleado", "empleados", "mis empleados", "ver empleados", "listar empleados", "lista de empleados",
+        "agregar empleado", "agregá empleado", "agrega empleado", "nuevo empleado", "alta empleado", "dar de alta empleado",
+        "autorizar empleado", "autorizá a", "autoriza a", "autorizar a", "habilitar a", "habilitá a",
+        "permiso a", "permiso para", "desautorizar", "desautorizá", "quitar permiso", "quitale el permiso",
+        "eliminar empleado", "borrar empleado", "dar de baja empleado", "mi equipo", "equipo de trabajo",
+        "quienes pueden pedir", "quiénes pueden pedir"
+    ]
     is_merchant_action = (
-        any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers + merchant_inquiry_triggers)
+        any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers + merchant_inquiry_triggers + merchant_employee_triggers)
         or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al "]))
         or (any(v in clean_msg_lower for v in ["mand", "envi", "pas", "despach", "cerr", "hac"]) and any(n in clean_msg_lower for n in ["pedido", "orden", "remito", "faltante"]))
         or (any(q in clean_msg_lower for q in ["pregunt", "consult", "decil", "escrib", "avis"]) and any(s in clean_msg_lower for s in ["proveedor", "distribuidora", "viajante", "al ", "a la "]))
+        or (any(e in clean_msg_lower for e in ["emplead", "repositor", "encargad"]) and any(a in clean_msg_lower for a in ["agreg", "alt", "autoriz", "habilit", "permis", "quit", "borr", "elimin"]))
     )
     if is_merchant_action:
         handled_b, reply_b, action_b = await process_boss_message(
@@ -903,7 +912,8 @@ async def receive_whatsapp_webhook(
         if clean_msg_lower in ["1", "opcion 1", "opción 1", "1️⃣"]:
             comp_target = "foco LED 9W" if "ferret" in (catalog_service.current_rubro or "").lower() else "aceite"
 
-        formatted_comp = catalog_service.format_price_comparison(comp_target, requester_name=safe_name, merchant_phone=clean_phone, db=db)
+        effective_phone = prospect.parent_merchant_phone if (prospect and prospect.parent_merchant_phone) else clean_phone
+        formatted_comp = catalog_service.format_price_comparison(comp_target, requester_name=safe_name, merchant_phone=effective_phone, db=db)
         if formatted_comp:
             history.append({"sender": "ai", "text": formatted_comp, "timestamp": datetime.now(timezone.utc).isoformat()})
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
@@ -927,7 +937,8 @@ async def receive_whatsapp_webhook(
 
     if is_increase_query or clean_msg_lower in ["3", "opcion 3", "opción 3", "3️⃣"]:
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
-        weekly_summary = catalog_service.get_weekly_price_changes(requester_name=safe_name, merchant_phone=clean_phone, db=db)
+        effective_phone = prospect.parent_merchant_phone if (prospect and prospect.parent_merchant_phone) else clean_phone
+        weekly_summary = catalog_service.get_weekly_price_changes(requester_name=safe_name, merchant_phone=effective_phone, db=db)
         history.append({"sender": "ai", "text": weekly_summary, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
         prospect.updated_at = datetime.now(timezone.utc)
@@ -974,7 +985,8 @@ async def receive_whatsapp_webhook(
 
     if is_suppliers_query or clean_msg_lower in ["5", "opcion 5", "opción 5", "5️⃣"]:
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
-        sup_summary = catalog_service.get_registered_suppliers_summary(requester_name=safe_name, merchant_phone=clean_phone, db=db)
+        effective_phone = prospect.parent_merchant_phone if (prospect and prospect.parent_merchant_phone) else clean_phone
+        sup_summary = catalog_service.get_registered_suppliers_summary(requester_name=safe_name, merchant_phone=effective_phone, db=db)
         history.append({"sender": "ai", "text": sup_summary, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
         prospect.updated_at = datetime.now(timezone.utc)
@@ -1070,11 +1082,12 @@ async def receive_whatsapp_webhook(
         b_name = prospect.name or "tu negocio"
         is_ferret = "ferret" in (catalog_service.current_rubro or "").lower()
         commands_block = (
-            "📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
+            "📌 *5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
             "📖 *manual* ➔ Te muestro la guía de uso completa y ejemplos de cómo pedirme cosas por audio o texto.\n"
             "🛡️ *dudas* ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.\n"
             "📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.\n"
-            "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n\n"
+            "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n"
+            "👥 *empleados* ➔ Te muestro tu equipo de trabajo y permisos para despachar pedidos.\n\n"
         )
         if is_ferret:
             menu_reply = (
@@ -1088,23 +1101,24 @@ async def receive_whatsapp_webhook(
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
                 f"6️⃣ _«Sofi, agendá a Carlos de Distribuidora El Progreso al 343...» (o compartime su contacto)_ 🆕\n"
                 f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n"
-                f"8️⃣ _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (¡Secretaria de compras!) 🆕\n\n"
+                f"8️⃣ _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (¡Secretaria de compras!) 🆕\n"
+                f"9️⃣ _«Sofi, agregá a Lucas como empleado al 343...»_ (¡Multiusuario para tu equipo!) 👥🆕\n\n"
                 f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )
         else:
             menu_reply = (
-                f"¡Hola {safe_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n"
-                f"Activé un catálogo de demostración con distribuidores mayoristas de alimentos para que hagamos una prueba en vivo juntos.\n\n"
+                f"¡Hola {safe_name}! 👋 Soy Sofía, tu asistente de compras en *{b_name}*.\n\n"
                 f"🎯 *Podés mandarme un audio o texto probando cualquiera de estas opciones:*\n\n"
-                f"1️⃣ _«Sofi, ¿quién tiene más barato el aceite?»_\n"
-                f"2️⃣ _«Anotame un pedido de 10 paquetes de harina y 5 aceites»_\n"
+                f"1️⃣ _«Sofi, ¿quién tiene más barato el aceite de girasol?»_\n"
+                f"2️⃣ _«Anotame 10 paquetes de harina y 5 cajas de galletitas»_\n"
                 f"3️⃣ _«¿Qué productos me aumentaron esta semana?»_\n"
                 f"4️⃣ _Reenviame una lista de precios en PDF o Excel de cualquier distribuidor para guardarla en mi memoria_\n"
                 f"5️⃣ _«¿Qué proveedores tengo registrados?»_\n"
-                f"6️⃣ _«Sofi, agendá a Carlos de Molinos al 343...» (o compartime su contacto)_ 🆕\n"
+                f"6️⃣ _«Sofi, agendá a Carlos de Distribuidora El Progreso al 343...» (o compartime su contacto)_ 🆕\n"
                 f"7️⃣ _Escribí «manual» para ver cómo usarme o «dudas» para preguntas frecuentes y seguridad comercial_\n"
-                f"8️⃣ _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (¡Secretaria de compras!) 🆕\n\n"
+                f"8️⃣ _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (¡Secretaria de compras!) 🆕\n"
+                f"9️⃣ _«Sofi, agregá a Lucas como empleado al 343...»_ (¡Multiusuario para tu equipo!) 👥🆕\n\n"
                 f"{commands_block}"
                 f"¿Qué querés que revisemos primero?"
             )

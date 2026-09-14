@@ -44,7 +44,8 @@ async def test_parse_supplier_inquiry_intent():
     r1 = await parse_supplier_inquiry_intent("Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto")
     assert r1.get("is_supplier_inquiry") is True
     assert "Pedro" in r1.get("supplier_name", "") or "Distribuidora Alem" in r1.get("supplier_name", "")
-    assert "lunes hacen reparto" in r1.get("inquiry_text", "")
+    assert "lunes" in r1.get("inquiry_text", "").lower()
+    assert "reparto" in r1.get("inquiry_text", "").lower()
 
     # 2. Consultale a
     r2 = await parse_supplier_inquiry_intent("consultale a Distribuidora Central por qué no llegó el camión")

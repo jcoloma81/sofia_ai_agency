@@ -90,6 +90,16 @@ El administrador gestiona la agencia directamente desde su propia línea de What
   2. Asigna automáticamente el catálogo demo del rubro (Ferretería, Almacén, Kiosco o Distribuidora).
   3. Envía el **mensaje de bienvenida oficial** al WhatsApp del comerciante con el catálogo cargado, ejemplos prácticos y el bloque de las **4 palabras clave**.
 
+### 👥 Gestión de Empleados y Equipo Multiusuario (¡Plan Comercial / Multi-Dispositivo!) 🆕
+* **Alta rápida por voz o texto:** El titular del comercio puede sumar empleados diciendo: _«Sofi, agregá a Lucas como empleado al 3434536447»_.
+* **Roles dinámicos y control de despacho:**
+  - **Nivel 1: Repositor / Anotador (por defecto):** Puede consultar precios, aumentos de la semana y cargar productos a la canasta compartida del comercio, pero **NO** puede despachar pedidos a distribuidores.
+  - **Nivel 2: Encargado / Comprador Autorizado:** El titular puede habilitarlo expresamente diciendo: _«Sofi, autorizá a Lucas a despachar pedidos»_.
+* **Seguridad y Notificación Espejo:**
+  - Si un repositor sin autorización intenta enviar un pedido (_«Sofi, mandale el pedido a Molinos»_), Sofía bloquea el despacho amablemente, conserva los artículos en la canasta compartida e indica que solicite permiso al titular.
+  - Cuando un encargado autorizado despacha un pedido formal, Sofía envía en el acto una **notificación espejo automática** al WhatsApp privado del dueño con el detalle y total estimado.
+* **Comandos de gestión:** `empleados` / `mi equipo` (listar), `autorizá a [Nombre]` (otorgar permiso), `quitale el permiso a [Nombre]` (revocar), `eliminá al empleado [Nombre]` (baja).
+
 ### 📊 Reportes y Métricas Ejecutivas
 * Comando `resumen` o `ventas`: Muestra contactos totales, conversaciones activas, pedidos confirmados y estado de catálogos.
 
@@ -111,10 +121,11 @@ El administrador gestiona la agencia directamente desde su propia línea de What
 
 ### 3. Aislamiento Multi-Tenant Estricto (Privacidad 100%)
 * Los catálogos, precios, borradores y proveedores de cada comercio están aislados por su número de teléfono en PostgreSQL.
+* Los empleados asociados comparten de forma transparente el mismo `effective_merchant_phone` (canasta, precios y proveedores compartidos).
 * Ningún proveedor ni comercio competidor puede ver los precios ni condiciones de otro.
 
 ### 4. Blindaje de Calidad en 3 Capas
-* **Capa 1: Inspector Automático de Base de Datos:** Auto-migra y valida tablas en Render al iniciar el servicio.
+* **Capa 1: Inspector Automático de Base de Datos:** Auto-migra y valida tablas en Render al iniciar el servicio (`parent_merchant_phone`, `employee_role`, `can_dispatch`).
 * **Capa 2: Simulador E2E de Calidad:** Suite automatizada de tests (con candado Air-Gap que impide envíos accidentales en pruebas).
 * **Capa 3: Centinela de Producción:** Monitorea el estado del servidor, base de datos PostgreSQL y webhook en vivo (`scripts/smoke_test_production.py`).
 
@@ -123,11 +134,13 @@ El administrador gestiona la agencia directamente desde su propia línea de What
 ## 📋 Resumen de Comandos Rápidos
 
 ```text
-📱 EN EL CHAT DEL COMERCIANTE:
-• manual       -> Guía de uso completa con las 7 funciones diarias y ejemplos.
+📱 EN EL CHAT DEL COMERCIANTE (TITULAR O EMPLEADOS):
+• manual       -> Guía de uso completa con las 8 funciones diarias y ejemplos.
 • dudas        -> Seguridad comercial, aumentos, listas viejas y privacidad.
 • resumen      -> Total de pedidos anotados por distribuidor y dinero ahorrado.
 • proveedores  -> Lista de viajantes agendados y vigencia de listas.
+• empleados    -> Lista de empleados del comercio y estado de permisos de compra.
+• autorizá a.. -> Habilita a un empleado para enviar pedidos directos a distribuidores.
 
 👔 EN EL CHAT DEL JEFE (JAVIER):
 • resumen      -> Reporte de métricas del negocio y ventas.

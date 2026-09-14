@@ -51,6 +51,13 @@ Te muestro cuántos distribuidores y productos tenés en memoria.
 👉 Mandame un audio o texto: _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (o _«consultale a...»_, _«decile a...»_, _«escribile a...»_).
 ⚡ *¿Qué hago yo al instante?* Le escribo a su WhatsApp de parte tuya transmitiéndole tu consulta respetuosamente. Y en cuanto el viajante o distribuidor me responda, te reenvío su respuesta exacta a este chat al instante.
 
+8️⃣ *Gestión de empleados y equipo del comercio (¡Multiusuario!):* 👥🆕
+¿Tenés repositores o encargados en el local y querés que usen a Sofía en sus celulares?
+👉 *Sumalos en 1 segundo:* _«Sofi, agregá a Lucas como empleado al 3434536447»_.
+👉 *Autorizá a un encargado a despachar:* _«Sofi, autorizá a Lucas a despachar pedidos»_.
+👉 *Consultá tu equipo:* Escribí _«empleados»_ o _«mi equipo»_.
+⚡ *¿Cómo funciona?* Todos comparten el catálogo y canasta de faltantes de tu comercio. Por seguridad, los repositores solo anotan y consultan. Si un encargado autorizado despacha un pedido a un distribuidor, te llega una notificación en espejo a tu WhatsApp con el remito y total en el acto.
+
 ---
 
 💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*
@@ -61,12 +68,13 @@ Te muestro cuántos distribuidores y productos tenés en memoria.
 
 ---
 
-📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*
+📌 *5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*
 
 📖 *manual* (o _«ayuda»_) ➔ Te muestro esta guía completa con ejemplos de uso.
 🛡️ *dudas* (o _«preguntas frecuentes»_) ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.
 📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.
 🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.
+👥 *empleados* (o _«mi equipo»_) ➔ Te muestro tu equipo de trabajo registrado y sus permisos de compra.
 
 ¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀
 ```

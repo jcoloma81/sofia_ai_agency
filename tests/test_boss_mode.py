@@ -355,11 +355,12 @@ async def test_manual_features_and_keywords_content():
     manual = get_client_manual_text()
     assert "Ahorro inteligente" in manual
     assert "Despacho directo" in manual
-    assert "4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS" in manual
+    assert "5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS" in manual
     assert "manual" in manual
     assert "dudas" in manual
     assert "resumen" in manual
     assert "proveedores" in manual
+    assert "empleados" in manual
 
 
 @pytest.mark.asyncio
@@ -379,11 +380,12 @@ async def test_client_onboarding_welcome_message_includes_keywords(db):
         welcome_call = [c for c in mock_msg.call_args_list if c[1].get("to_phone") == "5493434112233"]
         assert len(welcome_call) > 0
         welcome_text = welcome_call[0][1]["text"]
-        assert "4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS" in welcome_text
+        assert "5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS" in welcome_text
         assert "manual" in welcome_text
         assert "dudas" in welcome_text
         assert "resumen" in welcome_text
         assert "proveedores" in welcome_text
+        assert "empleados" in welcome_text
 
 
 @pytest.mark.asyncio
@@ -408,5 +410,207 @@ async def test_merchant_resumen_command(db):
     assert handled_b is True
     assert action_b == "boss_metrics"
     assert "REPORTE EJECUTIVO EN TIEMPO REAL" in reply_b
+
+
+@pytest.mark.asyncio
+async def test_employee_lifecycle_permissions_and_mirror_alert(db):
+    from unittest.mock import patch, AsyncMock
+    from app.services.boss_mode import add_items_to_supplier_draft
+
+    merchant_phone = "5493434112244"
+    employee_phone = "5493434536448"
+
+    # Setup owner merchant
+    owner = Prospect(
+        phone=merchant_phone,
+        name="Supermercado Don Pepe",
+        contact_name="Pepe",
+        business_type="almacen",
+        status="active",
+    )
+    db.add(owner)
+
+    supplier = Prospect(
+        phone="5493434999999",
+        name="Molinos",
+        contact_name="Carlos Molinos",
+        business_type="proveedor",
+        campaign="supplier",
+        merchant_phone=merchant_phone,
+        status="active",
+    )
+    db.add(supplier)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl:
+
+        # 1. Owner adds Lucas as employee
+        handled, reply, action = await process_boss_message(
+            db,
+            merchant_phone,
+            f"Sofi, agregá a Lucas como empleado al {employee_phone}"
+        )
+        assert handled is True
+        assert action == "employee_added"
+        assert "Lucas" in reply
+        assert "registrado con éxito" in reply
+
+        # Check DB
+        emp = db.query(Prospect).filter(Prospect.phone == employee_phone).first()
+        assert emp is not None
+        assert emp.parent_merchant_phone == merchant_phone
+        assert emp.contact_name == "Lucas"
+        assert emp.can_dispatch is False
+        assert emp.employee_role == "repositor"
+
+        # Check welcome WhatsApp sent to employee
+        emp_calls = [c for c in mock_msg.call_args_list if c[1].get("to_phone") == employee_phone]
+        assert len(emp_calls) > 0
+        assert "¡Hola Lucas!" in emp_calls[0][1]["text"]
+
+        # 2. Owner lists employees
+        handled, reply, action = await process_boss_message(
+            db,
+            merchant_phone,
+            "empleados"
+        )
+        assert handled is True
+        assert action == "employees_list"
+        assert "Lucas" in reply
+        assert "Anotador" in reply or "Solo canasta" in reply
+
+        # 3. Employee attempts dispatch while unauthorized -> blocked politely
+        handled, reply, action = await process_boss_message(
+            db,
+            employee_phone,
+            "Sofi, mandale el pedido a Molinos"
+        )
+        assert handled is True
+        assert action == "employee_dispatch_unauthorized"
+        assert "Acceso restringido" in reply
+        assert "Lucas" in reply and "autoriz" in reply
+
+        # 4. Owner authorizes employee
+        handled, reply, action = await process_boss_message(
+            db,
+            merchant_phone,
+            "Sofi, autorizá a Lucas a despachar pedidos"
+        )
+        assert handled is True
+        assert action == "employee_dispatch_granted"
+        assert "Lucas" in reply and "autorizado" in reply
+
+        db.refresh(emp)
+        assert emp.can_dispatch is True
+
+        # 5. Add items to shared store draft for Molinos
+        add_items_to_supplier_draft(
+            "Molinos",
+            [{"name": "Harina 000 1kg", "qty": 10, "price": 950.0}],
+            merchant_phone=merchant_phone,
+            db=db
+        )
+
+        # 6. Employee dispatches order -> succeeds + sends mirror alert to owner
+        mock_msg.reset_mock()
+        handled, reply, action = await process_boss_message(
+            db,
+            employee_phone,
+            "Sofi, mandale el pedido a Molinos"
+        )
+        assert handled is True
+        assert action == "kiosk_order_dispatched"
+        assert "Pedido despachado con éxito" in reply
+
+        # Verify owner received mirror alert notification
+        owner_mirror_calls = [
+            c for c in mock_msg.call_args_list 
+            if c[1].get("to_phone") == merchant_phone and "NOTIFICACIÓN DE PEDIDO DESPACHADO (EQUIPO)" in c[1].get("text", "")
+        ]
+        assert len(owner_mirror_calls) > 0
+        mirror_text = owner_mirror_calls[0][1]["text"]
+        assert "Lucas" in mirror_text
+        assert "Molinos" in mirror_text
+        assert "Harina" in mirror_text
+
+        # 7. Owner revokes dispatch permission
+        handled, reply, action = await process_boss_message(
+            db,
+            merchant_phone,
+            "Sofi, quitale el permiso a Lucas de despachar"
+        )
+        assert handled is True
+        assert action == "employee_dispatch_revoked"
+        assert "Lucas" in reply and "ya no puede" in reply
+
+        db.refresh(emp)
+        assert emp.can_dispatch is False
+
+        # 8. Owner removes employee from team
+        handled, reply, action = await process_boss_message(
+            db,
+            merchant_phone,
+            "Sofi, eliminá al empleado Lucas"
+        )
+        assert handled is True
+        assert action == "employee_deleted"
+        assert "Empleado eliminado" in reply
+        assert "Lucas" in reply and "dado de baja" in reply
+
+        emp_deleted = db.query(Prospect).filter(Prospect.phone == employee_phone).first()
+        assert emp_deleted is None
+
+
+@pytest.mark.asyncio
+async def test_employee_shared_basket_and_resumen(db):
+    from app.services.boss_mode import add_items_to_supplier_draft
+
+    merchant_phone = "5493434112255"
+    employee_phone = "5493434536455"
+
+    owner = Prospect(
+        phone=merchant_phone,
+        name="Autoservicio Centro",
+        contact_name="Martín",
+        business_type="almacen",
+        status="active",
+    )
+    db.add(owner)
+    db.commit()
+
+    # Add employee directly
+    emp = Prospect(
+        phone=employee_phone,
+        parent_merchant_phone=merchant_phone,
+        name="Autoservicio Centro",
+        contact_name="Rodrigo",
+        employee_role="repositor",
+        can_dispatch=False,
+        status="active",
+    )
+    db.add(emp)
+    db.commit()
+
+    # Add items to store's draft under owner's phone
+    add_items_to_supplier_draft(
+        "Distribuidora Alem",
+        [{"name": "Azúcar Ledesma 1kg", "qty": 20, "price": 800.0}],
+        merchant_phone=merchant_phone,
+        db=db
+    )
+
+    # Employee Rodrigo asks for "resumen"
+    handled, reply, action = await process_boss_message(
+        db,
+        employee_phone,
+        "resumen"
+    )
+    assert handled is True
+    assert action == "all_baskets_summary"
+    assert "Distribuidora Alem" in reply
+    assert "Azúcar Ledesma" in reply
+
+
 
 

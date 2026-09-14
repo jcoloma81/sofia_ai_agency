@@ -41,16 +41,27 @@ def run_auto_migrations(db_engine):
             if is_sqlite:
                 res = conn.execute(text("PRAGMA table_info(prospects)")).fetchall()
                 col_names = [r[1] for r in res]
-                if col_names and "merchant_phone" not in col_names:
-                    conn.execute(text("ALTER TABLE prospects ADD COLUMN merchant_phone VARCHAR"))
+                if col_names:
+                    if "merchant_phone" not in col_names:
+                        conn.execute(text("ALTER TABLE prospects ADD COLUMN merchant_phone VARCHAR"))
+                    if "parent_merchant_phone" not in col_names:
+                        conn.execute(text("ALTER TABLE prospects ADD COLUMN parent_merchant_phone VARCHAR"))
+                    if "employee_role" not in col_names:
+                        conn.execute(text("ALTER TABLE prospects ADD COLUMN employee_role VARCHAR DEFAULT 'owner'"))
+                    if "can_dispatch" not in col_names:
+                        conn.execute(text("ALTER TABLE prospects ADD COLUMN can_dispatch BOOLEAN DEFAULT 0"))
                     conn.commit()
                 conn.execute(text("DROP INDEX IF EXISTS ix_prospects_phone"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_parent_merchant_phone ON prospects (parent_merchant_phone)"))
                 conn.commit()
             else:
                 conn.execute(text("""
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS merchant_phone VARCHAR;
+                    ALTER TABLE prospects ADD COLUMN IF NOT EXISTS parent_merchant_phone VARCHAR;
+                    ALTER TABLE prospects ADD COLUMN IF NOT EXISTS employee_role VARCHAR DEFAULT 'owner';
+                    ALTER TABLE prospects ADD COLUMN IF NOT EXISTS can_dispatch BOOLEAN DEFAULT FALSE;
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS business_type VARCHAR;
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS campaign VARCHAR DEFAULT 'ai_agency';
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'pending';
@@ -59,6 +70,7 @@ def run_auto_migrations(db_engine):
                     DROP INDEX IF EXISTS ix_prospects_phone;
                     CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone);
                     CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone);
+                    CREATE INDEX IF NOT EXISTS ix_prospects_parent_merchant_phone ON prospects (parent_merchant_phone);
                 """))
                 conn.commit()
             log.info("🛡️ Pre-flight database schema check passed successfully.")

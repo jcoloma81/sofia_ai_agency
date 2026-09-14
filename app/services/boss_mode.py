@@ -6,6 +6,7 @@ import asyncio
 import httpx
 from typing import Optional, Tuple, List, Dict, Any
 from datetime import datetime, timezone
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config.settings import settings
@@ -145,9 +146,9 @@ def add_items_to_supplier_draft(
                 current_items = []
 
         for it in items:
-            p_name = str(it.get("product_name") or "").strip()
-            p_qty = int(it.get("quantity") or 1)
-            p_price = float(it.get("unit_price") or 0.0)
+            p_name = str(it.get("product_name") or it.get("name") or "").strip()
+            p_qty = int(it.get("quantity") or it.get("qty") or 1)
+            p_price = float(it.get("unit_price") or it.get("price") or 0.0)
             found = False
             for ex in current_items:
                 if ex["product_name"].lower() == p_name.lower():
@@ -205,9 +206,9 @@ def add_items_to_supplier_draft(
         }
     current_items = drafts[sup_key]["items"]
     for it in items:
-        p_name = str(it.get("product_name") or "").strip()
-        p_qty = int(it.get("quantity") or 1)
-        p_price = float(it.get("unit_price") or 0.0)
+        p_name = str(it.get("product_name") or it.get("name") or "").strip()
+        p_qty = int(it.get("quantity") or it.get("qty") or 1)
+        p_price = float(it.get("unit_price") or it.get("price") or 0.0)
         found = False
         for ex in current_items:
             if ex["product_name"].lower() == p_name.lower():
@@ -448,20 +449,35 @@ def resolve_merchant_identity(sender_phone: str, db: Session, target_sup_name: s
             sender_intro = "Javier Coloma"
             biz_tag = "Javier Coloma"
     elif client_prospect:
-        raw_biz = (client_prospect.name or "tu comercio").strip()
-        raw_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
-        clean_biz = re.sub(r'\s*\(.*?\)', '', raw_biz).strip() or "tu comercio"
+        parent_p = None
+        if client_prospect.parent_merchant_phone:
+            clean_p = "".join(filter(str.isdigit, str(client_prospect.parent_merchant_phone)))
+            parent_p = db.query(Prospect).filter(
+                (Prospect.phone == clean_p) | (Prospect.phone == normalize_argentine_phone(clean_p))
+            ).first()
 
-        if raw_owner.lower() in clean_biz.lower():
-            client_owner = raw_owner
-            client_biz = "su comercio"
-            sender_intro = clean_biz
+        if parent_p:
+            clean_biz = re.sub(r'\s*\(.*?\)', '', parent_p.name or "tu comercio").strip() or "tu comercio"
+            emp_first = brain.sanitize_contact_first_name(client_prospect.contact_name) or "Encargado"
+            client_owner = emp_first
+            client_biz = clean_biz
+            sender_intro = f"{emp_first} de {clean_biz}"
             biz_tag = clean_biz
         else:
-            client_owner = raw_owner
-            client_biz = clean_biz
-            sender_intro = f"{client_owner} de {client_biz}"
-            biz_tag = clean_biz
+            raw_biz = (client_prospect.name or "tu comercio").strip()
+            raw_owner = brain.sanitize_contact_first_name(client_prospect.contact_name) or "el titular"
+            clean_biz = re.sub(r'\s*\(.*?\)', '', raw_biz).strip() or "tu comercio"
+
+            if raw_owner.lower() in clean_biz.lower():
+                client_owner = raw_owner
+                client_biz = "su comercio"
+                sender_intro = clean_biz
+                biz_tag = clean_biz
+            else:
+                client_owner = raw_owner
+                client_biz = clean_biz
+                sender_intro = f"{client_owner} de {client_biz}"
+                biz_tag = clean_biz
     else:
         client_owner = "el titular"
         client_biz = "el comercio"
@@ -979,6 +995,161 @@ async def parse_supplier_inquiry_intent(text: str) -> dict:
     }
 
 
+async def parse_employee_management_intent(text: str) -> dict:
+    """
+    Detects if the merchant wants to manage their store employee team:
+    - add_employee: 'Sofi, agregá a Lucas como empleado al 3434536447'
+    - grant_dispatch: 'Sofi, autorizá a Lucas a despachar pedidos'
+    - revoke_dispatch: 'Sofi, quitale el permiso de despachar a Lucas'
+    - delete_employee: 'Sofi, eliminá al empleado Lucas'
+    - list_employees: 'empleados', 'ver empleados', 'mi equipo'
+    """
+    clean_text = text.strip()
+    orig_no_prefix = re.sub(r'^(?:sofi|sofia|hola|buenas|che)[\s,:]*', '', clean_text, flags=re.IGNORECASE).strip()
+    lower_no_prefix = orig_no_prefix.lower()
+
+    # Guard: exclude general catalog / supplier actions if no employee / team terms are present
+    if not any(k in lower_no_prefix for k in [
+        "emplead", "repositor", "encargad", "comprador", "mi equipo", "equipo",
+        "autoriz", "habilit", "permiso", "desautoriz", "quienes pueden pedir", "quiénes pueden pedir"
+    ]):
+        return {"is_employee_management": False}
+
+    # 1. List employees
+    list_keywords = [
+        "empleados", "mis empleados", "ver empleados", "listar empleados", "lista de empleados",
+        "mi equipo", "ver mi equipo", "equipo de trabajo", "nuestro equipo",
+        "quienes pueden pedir", "quiénes pueden pedir", "quienes pueden despachar", "quiénes pueden despachar",
+        "quienes son mis empleados", "quiénes son mis empleados"
+    ]
+    if lower_no_prefix in list_keywords:
+        return {"is_employee_management": True, "action": "list_employees"}
+
+    # 2. Revoke dispatch permission
+    # e.g. "quitale el permiso de despachar a Lucas", "revocar permiso a Lucas", "desautorizá a Lucas", "sacale el permiso a Lucas"
+    revoke_patterns = [
+        r'(?:quit[áa]le\s+el\s+permiso\s+(?:de\s+despachar\s+|para\s+pedir\s+)?a|quitar\s+permiso\s+(?:a\s+)?|revoc[áa](?:le)?\s+(?:el\s+)?permiso\s+(?:a\s+)?|revocar\s+permiso\s+(?:a\s+)?|desautoriz[áa](?:le)?\s+a|desautorizar\s+a|sac[áa]le\s+el\s+permiso\s+a)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)',
+    ]
+    for pat in revoke_patterns:
+        m = re.search(pat, orig_no_prefix, re.IGNORECASE)
+        if m:
+            target_name = m.group(1).strip()
+            return {
+                "is_employee_management": True,
+                "action": "revoke_dispatch",
+                "contact_name": target_name
+            }
+
+    # 3. Grant dispatch permission
+    # e.g. "autorizá a Lucas a despachar pedidos", "autorizar a Lucas para mandar pedidos", "dale permiso a Lucas para despachar", "habilitá a Lucas para pedir"
+    grant_patterns = [
+        r'(?:autoriz[áa]|dar\s+autorizaci[óo]n\s+a|habilit[áa]|dale\s+permiso\s+a|dar\s+permiso\s+a|permitir\s+a|permit[íi]\s+a)\s+(?:a\s+)?([A-Za-zÁÉÍÓÚáéíóúñÑ]+)(?:\s+(?:a|para|de)\s+(?:despachar|mandar|enviar|hacer|pasar)\s+pedidos?)?',
+        r'(?:pon[eé]|poner)\s+(?:a\s+)?([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s+como\s+(?:encargad[oa]|comprador[a]?)'
+    ]
+    for pat in grant_patterns:
+        m = re.search(pat, orig_no_prefix, re.IGNORECASE)
+        if m:
+            target_name = m.group(1).strip()
+            if not any(r in lower_no_prefix for r in ["quit", "sac", "revoc", "desautoriz", "eliminar", "borrar"]):
+                return {
+                    "is_employee_management": True,
+                    "action": "grant_dispatch",
+                    "contact_name": target_name
+                }
+
+    # 4. Delete employee
+    del_patterns = [
+        r'(?:eliminar|borrar|dar\s+de\s+baja|remover|quitar)\s+(?:al\s+empleado|a\s+la\s+empleada|al\s+repositor|a\s+la\s+repositora|al\s+encargado|a\s+la\s+encargada|empleado|repositor)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)',
+        r'(?:eliminar|borrar|dar\s+de\s+baja|remover)\s+a\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s+(?:del\s+comercio|de\s+los\s+empleados|de\s+mi\s+equipo|como\s+empleado)',
+    ]
+    for pat in del_patterns:
+        m = re.search(pat, orig_no_prefix, re.IGNORECASE)
+        if m:
+            target_name = m.group(1).strip()
+            return {
+                "is_employee_management": True,
+                "action": "delete_employee",
+                "contact_name": target_name
+            }
+
+    # 5. Add employee
+    # e.g. "agregá a Lucas como empleado al 3434536447", "dar de alta a mi empleado Marcos 1122334455"
+    add_match = any(k in lower_no_prefix for k in [
+        "agregá a", "agrega a", "agregar a", "dar de alta a", "da de alta a",
+        "agendá a", "agenda a", "agendar a", "anotame a", "anotá a", "anota a", "anotar a",
+        "nuevo empleado", "nueva empleada"
+    ]) and any(r in lower_no_prefix for r in ["emplead", "repositor", "encargad", "comprador"])
+
+    if add_match or any(k in lower_no_prefix for k in ["como empleado", "como empleada", "como repositor", "como repositora", "como encargado", "como encargada", "como comprador"]):
+        phone_m = re.search(r'(?:al|el|numero|número|telefono|teléfono|tel|cel)?\s*([0-9\s\-+]{8,25})', orig_no_prefix, re.IGNORECASE)
+        phone = "".join(filter(str.isdigit, phone_m.group(1))) if phone_m else None
+
+        clean_for_name = orig_no_prefix[:phone_m.start()].strip() if phone_m else orig_no_prefix
+
+        name_m = re.search(r'(?:agreg[áa]|dar\s+de\s+alta\s+a|agend[áa]|anot[áa]|alta\s+a|a)\s+(?:a\s+)?(?:mi\s+)?(?:emplead[oa]|repositor[a]?|encargad[oa])?\s*([A-Za-zÁÉÍÓÚáéíóúñÑ]+)', clean_for_name, re.IGNORECASE)
+        name = name_m.group(1).strip() if name_m else None
+        if not name or name.lower() in ["mi", "un", "una", "el", "la", "al", "empleado", "empleada", "repositor", "encargado"]:
+            n2 = re.search(r'(?:agreg[áa]|agend[áa]|anot[áa])\s+a\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)', clean_for_name, re.IGNORECASE)
+            name = n2.group(1).strip() if n2 else "Empleado"
+
+        is_encargado = any(k in lower_no_prefix for k in ["encargad", "comprador", "autorizado", "con permiso"])
+        role = "encargado" if is_encargado else "repositor"
+        can_dispatch = is_encargado
+
+        return {
+            "is_employee_management": True,
+            "action": "add_employee",
+            "contact_name": name,
+            "phone": phone,
+            "role": role,
+            "can_dispatch": can_dispatch
+        }
+
+    # Gemini fallback
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El dueño de un comercio habla con Sofía por WhatsApp para gestionar a los empleados del negocio.\n"
+            f"Mensaje: \"{clean_text}\"\n\n"
+            "Acciones posibles:\n"
+            "- 'add_employee': agregar o registrar nuevo empleado.\n"
+            "- 'grant_dispatch': autorizar al empleado a despachar pedidos a distribuidores.\n"
+            "- 'revoke_dispatch': quitarle el permiso de despachar pedidos al empleado.\n"
+            "- 'delete_employee': dar de baja / eliminar al empleado.\n"
+            "- 'list_employees': consultar o ver la lista de empleados.\n\n"
+            "Devolvé UN JSON con:\n"
+            "{\n"
+            "  \"is_employee_management\": true,\n"
+            "  \"action\": \"add_employee\" | \"grant_dispatch\" | \"revoke_dispatch\" | \"delete_employee\" | \"list_employees\",\n"
+            "  \"contact_name\": nombre del empleado (o null),\n"
+            "  \"phone\": teléfono solo dígitos (o null),\n"
+            "  \"role\": \"empleado\" o \"encargado\",\n"
+            "  \"can_dispatch\": true o false\n"
+            "}\n"
+            "Si no es para gestionar empleados, devolvé: {\"is_employee_management\": false}"
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.post(
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            data = json.loads(parts[0].get("text", "{}"))
+                            if data.get("is_employee_management"):
+                                return data
+        except Exception as e:
+            logger.warning(f"Gemini employee management error: {e}")
+
+    return {"is_employee_management": False}
+
+
 def get_supplier_price_freshness(
     supplier_name: str,
     db: Optional[Session] = None,
@@ -1229,17 +1400,24 @@ def get_client_manual_text() -> str:
         "¿Querés hacerle una pregunta o consulta a un distribuidor o viajante sin armar un pedido formal?\n"
         "👉 Mandame un audio o texto: _«Sofi, preguntale a Pedro de Distribuidora Alem si el lunes hacen reparto»_ (o _«consultale a...»_, _«decile a...»_, _«escribile a...»_).\n"
         "⚡ *¿Qué hago yo al instante?* Le escribo a su WhatsApp de parte tuya transmitiéndole tu consulta respetuosamente. Y en cuanto el viajante o distribuidor me responda, te reenvío su respuesta exacta a este chat al instante.\n\n"
+        "8️⃣ *Gestión de empleados y equipo del comercio (¡Multiusuario!):* 👥🆕\n"
+        "¿Tenés repositores o encargados en el local y querés que usen a Sofía en sus celulares?\n"
+        "👉 *Sumalos en 1 segundo:* _«Sofi, agregá a Lucas como empleado al 3434536447»_.\n"
+        "👉 *Autorizá a un encargado a despachar:* _«Sofi, autorizá a Lucas a despachar pedidos»_.\n"
+        "👉 *Consultá tu equipo:* Escribí _«empleados»_ o _«mi equipo»_.\n"
+        "⚡ *¿Cómo funciona?* Todos comparten el catálogo y canasta de faltantes de tu comercio. Por seguridad, los repositores solo anotan y consultan. Si un encargado autorizado despacha un pedido a un distribuidor, te llega una notificación en espejo a tu WhatsApp con el remito y total en el acto.\n\n"
         "---\n\n"
         "💡 *3 CONSEJOS PARA APROVECHARME AL MÁXIMO:*\n\n"
         "🎙️ *Usá notas de voz:* Podés hablarme por audio rápido mientras atendés el mostrador.\n"
         "🤝 *Hablame natural:* No necesitás códigos raros. Decime _«anotame»_, _«pasame precio de...»_ o _«agendá al proveedor...»_.\n"
         "📦 *Cero instalaciones:* Funciona 100% acá adentro de WhatsApp, sin descargar aplicaciones ni programas pesados en la computadora.\n\n"
         "---\n\n"
-        "📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n\n"
+        "📌 *5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n\n"
         "📖 *manual* (o _«ayuda»_) ➔ Te muestro esta guía completa con ejemplos de uso.\n"
         "🛡️ *dudas* (o _«dudas»_ / _«preguntas frecuentes»_) ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.\n"
         "📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.\n"
-        "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n\n"
+        "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n"
+        "👥 *empleados* (o _«mi equipo»_) ➔ Te muestro tu equipo de trabajo registrado y sus permisos de compra.\n\n"
         "¡Guardame en tus contactos como *«Sofía - Compras»* y probame ahora mismo mandándome un audio! 🚀"
     )
 
@@ -1247,39 +1425,41 @@ def get_client_manual_text() -> str:
 def get_client_faq_text() -> str:
     return (
         "🛡️ *GUÍA DE SEGURIDAD COMERCIAL Y PREGUNTAS FRECUENTES* ❓✨\n\n"
-        "Acá tenés respuestas claras a las dudas más comunes sobre cómo cuido tus compras, tus precios y tu tranquilidad:\n\n"
+        "Acá tenés respuestas claras a las dudas sobre cómo cuido tus compras y precios:\n\n"
         "---\n\n"
         "📦 *BLOQUE 1: PRECIOS, INFLACIÓN Y LISTAS DESACTUALIZADAS*\n\n"
         "1️⃣ *¿Qué pasa si una lista tiene más de 7 días y la otra es nueva?*\n"
-        "👉 Aplico la *Regla de los 7 días*: elijo siempre el mejor precio entre listas actualizadas en la última semana. Si un proveedor no actualiza hace semanas, te pongo una alerta (⚠️) y pido confirmación de precios antes de despachar.\n\n"
+        "👉 Aplico la *Regla de los 7 días*: elijo el mejor precio entre listas actualizadas en la última semana. Si un proveedor no actualiza hace semanas, te pongo una alerta (⚠️) y pido confirmación antes de despachar.\n\n"
         "2️⃣ *¿Qué pasa si hago un pedido y el proveedor ya aumentó esta semana?*\n"
-        "👉 Al enviar el pedido por WhatsApp, exijo confirmación de precios vigentes antes de facturar. Si el proveedor avisa un aumento, te alerto en el acto antes de recibir o pagar la mercadería.\n\n"
+        "👉 Al enviar el pedido por WhatsApp, exijo confirmación de precios vigentes antes de facturar. Si avisan una suba, te alerto en el acto.\n\n"
         "3️⃣ *¿Cómo actualizo los precios cuando me llega una lista nueva?*\n"
-        "👉 Solo reenviá el PDF o Excel del viajante a este chat. Leo los códigos y actualizo tus costos en segundos. Y si el viajante avisa por WhatsApp _«subió el aceite 5%»_, lo tomo sola automáticamente.\n\n"
+        "👉 Reenviá el PDF o Excel del viajante a este chat. Leo los datos y actualizo tus costos en segundos. Y si el viajante avisa _«subió el aceite 5%»_, lo tomo sola automáticamente.\n\n"
         "---\n\n"
         "🚚 *BLOQUE 2: PROVEEDORES, VIAJANTES Y PEDIDOS*\n\n"
         "4️⃣ *¿Qué hago con el viajante que viene a visitarme en persona al local?*\n"
-        "👉 Me preguntás _«¿Qué le tengo anotado a Alem?»_ para cantárselo desde el celular, o me decís _«Sofi, mandale el pedido a Alem»_ y le llega la orden formal por WhatsApp en el acto.\n\n"
+        "👉 Me preguntás _«¿Qué le tengo anotado a Alem?»_ para cantárselo, o decime _«Sofi, mandale el pedido a Alem»_ y le llega la orden formal por WhatsApp en el acto.\n\n"
         "5️⃣ *¿Puedo eliminar o dar de baja a un proveedor?*\n"
-        "👉 ¡Sí! Solo decime: _«Sofi, eliminar proveedor Distribuidora Alem»_. Lo saco de tu agenda y borro cualquier borrador pendiente.\n\n"
+        "👉 ¡Sí! Decime: _«Sofi, eliminar o dar de baja a un proveedor Distribuidora Alem»_. Lo saco de tu agenda y borro su borrador pendiente.\n\n"
         "6️⃣ *¿Sofía envía pedidos a los proveedores sola sin que yo me entere?*\n"
         "👉 *¡JAMÁS!* Nunca sale un mensaje a un distribuidor sin tu orden expresa. Vos anotás faltantes y el pedido *solo se despacha* cuando me decís: _«Sofi, mandale el pedido a [Proveedor]»_.\n\n"
-        "7️⃣ *¿Le puedo pedir a Sofía que le haga consultas o preguntas a un proveedor sin mandar un pedido?* 🆕\n"
-        "👉 *¡Sí, totalmente!* Funciono como tu secretaria ejecutiva de compras. Decime: _«Sofi, preguntale a [Proveedor] si el lunes reparten»_. Le escribo formalmente de tu parte y te reenvío su respuesta a este chat al instante.\n\n"
+        "7️⃣ *¿Le puedo pedir a Sofía consultas o preguntas a un proveedor sin mandar un pedido?* 🆕\n"
+        "👉 *¡Totalmente!* Funciono como tu secretaria ejecutiva de compras. Decime: _«Sofi, preguntale a [Proveedor] si el lunes reparten»_. Le escribo formalmente de tu parte y te reenvío su respuesta exacta al instante.\n\n"
         "8️⃣ *¿Qué pasa si dicto 20 o 30 productos juntos?*\n"
-        "👉 Te armo un *Resumen Ejecutivo* prolijo: cuántos artículos van para cada distribuidor, total estimado en pesos y cuánto dinero te ahorrás en esa compra.\n\n"
+        "👉 Te armo un *Resumen Ejecutivo*: artículos para cada distribuidor, total estimado y cuánto dinero te ahorrás en la compra.\n\n"
         "---\n\n"
         "🔒 *BLOQUE 3: PRIVACIDAD, AUDIOS Y OPERATORIA*\n\n"
         "9️⃣ *¿Mis proveedores o competidores pueden ver los precios de los demás?*\n"
-        "👉 *¡Absolutamente NO!* La confidencialidad es 100% estricta y blindada. Cada proveedor solo ve sus artículos y ningún otro comercio tiene acceso a tus listas.\n\n"
+        "👉 *¡NO!* La *confidencialidad es 100% estricta* y blindada. Cada proveedor solo ve sus artículos y nadie más accede a tus listas.\n\n"
         "🔟 *¿Qué pasa si mando un audio rápido con ruido en el negocio?*\n"
-        "👉 Limpio ruidos de fondo (heladeras, tránsito, clientes). Si algo no se escucha nítido, te repregunto para no anotar nunca un producto equivocado.\n\n"
-        "1️⃣1️⃣ *¿Puedo dividir un pedido grande entre varios proveedores para ahorrar?*\n"
-        "👉 ¡Totalmente automático! Si me dictás varios productos, asigno cada uno al proveedor con mejor precio para maximizar tu ganancia.\n\n"
-        "1️⃣2️⃣ *¿Le puedo pedir a Sofía que le mande mensajes a un conocido o colega que no es mi proveedor?*\n"
-        "👉 *No.* Por normas de Meta y privacidad, Sofía opera en un *circuito cerrado y profesional: únicamente se comunica con vos y con los distribuidores* registrados para pedidos o consultas. Para mostrarle Sofía a un colega amigo, podés compartirle cualquier mensaje con la opción *«Reenviar»* de tu WhatsApp.\n\n"
-        "1️⃣3️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
-        "👉 Escribí *«manual»* para la guía rápida de uso o *«dudas»* (o *«preguntas frecuentes»*) para volver a ver esta guía en cualquier momento.\n\n"
+        "👉 Limpio ruidos de fondo (heladeras, clientes). Si algo no se escucha nítido, te repregunto para no anotar nunca un producto equivocado.\n\n"
+        "1️⃣1️⃣ *¿Puedo dividir un pedido entre varios proveedores para ahorrar?*\n"
+        "👉 ¡Totalmente automático! Asigno cada producto al proveedor con mejor precio para maximizar tu ganancia.\n\n"
+        "1️⃣2️⃣ *¿Le puedo pedir a Sofía que le mande mensajes a un conocido que no es mi proveedor?*\n"
+        "👉 *No.* Sofía opera en un *circuito cerrado y profesional: únicamente se comunica con vos y con los distribuidores* para pedidos o consultas. Para mostrarle Sofía a un colega, podés reenviarle cualquier mensaje desde WhatsApp.\n\n"
+        "1️⃣3️⃣ *¿Mis empleados pueden usar a Sofía desde sus propios celulares?* 👥🆕\n"
+        "👉 *¡Sí!* Sumalos diciendo: _«Sofi, agregá a Lucas como empleado al 3434536447»_. Comparten tu catálogo y canasta. Por defecto son *Repositores* (consultan y anotan). Si querés que un encargado despache pedidos, decime: _«Sofi, autorizá a Lucas a despachar pedidos»_. Cada vez que despache, recibirás una copia en este chat con remito y total.\n\n"
+        "1️⃣4️⃣ *¿Cómo vuelvo a consultar el manual o estas dudas?*\n"
+        "👉 Escribí *«manual»* para la guía de uso o *«dudas»* (o *«preguntas frecuentes»*) para volver a ver esta guía.\n\n"
         "💡 _¡Cuidar tus costos y tu tiempo en el mostrador es mi única prioridad!_ 🤝"
     )
 
@@ -1302,6 +1482,17 @@ async def process_boss_message(
     """
     clean_text = text.strip()
     lower_text = clean_text.lower()
+    clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+
+    # Fetch sender prospect and resolve multi-employee tenancy
+    sender_prospect = None
+    if clean_sender and db:
+        sender_prospect = db.query(Prospect).filter(
+            (Prospect.phone == clean_sender) | (Prospect.phone == normalize_argentine_phone(clean_sender))
+        ).first()
+
+    is_employee = bool(sender_prospect and sender_prospect.parent_merchant_phone)
+    effective_merchant_phone = sender_prospect.parent_merchant_phone if is_employee else clean_sender
 
     # 1. Excel / CSV File upload
     if doc_bytes and doc_name:
@@ -1440,11 +1631,12 @@ async def process_boss_message(
         is_kiosc = any(k in b_type for k in ["kiosc"])
 
         commands_block = (
-            "📌 *4 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
+            "📌 *5 PALABRAS CLAVE QUE PODÉS ESCRIBIRME CUANDO QUIERAS:*\n"
             "📖 *manual* ➔ Te muestro la guía de uso completa y ejemplos de cómo pedirme cosas por audio o texto.\n"
             "🛡️ *dudas* ➔ Respuestas sobre aumentos, listas viejas de viajantes, privacidad y seguridad comercial.\n"
             "📊 *resumen* ➔ Te muestro todo lo que tenés anotado para pedirle a cada distribuidor y cuánto dinero te estás ahorrando.\n"
-            "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n\n"
+            "🏢 *proveedores* ➔ Te muestro la lista de tus distribuidores agendados con sus teléfonos y catálogos en memoria.\n"
+            "👥 *empleados* ➔ Te muestro tu equipo de trabajo y permisos para despachar pedidos.\n\n"
         )
 
         if is_ferret:
@@ -1651,6 +1843,235 @@ async def process_boss_message(
             f"3. Despachar a proveedor: *\"Sofi, mandale el pedido a Distribuidora Ricardo al [Teléfono] con...\"*"
         ), "rubro_switched"
 
+    # 1.55 Multi-Employee Team Management
+    emp_intent = await parse_employee_management_intent(clean_text)
+    if emp_intent.get("is_employee_management"):
+        # Security Guard: Employees cannot manage other employees or permissions
+        if is_employee:
+            return True, (
+                "🔒 *Función reservada para el titular del comercio*\n\n"
+                "La gestión de empleados, altas y permisos de compra solo puede ser realizada por el dueño del comercio."
+            ), "employee_mgmt_unauthorized"
+
+        action = emp_intent.get("action")
+        owner_ident = resolve_merchant_identity(clean_sender, db)
+        owner_biz_name = owner_ident.get("client_biz") or "tu comercio"
+
+        if action == "list_employees":
+            employees = db.query(Prospect).filter(
+                Prospect.parent_merchant_phone == clean_sender
+            ).order_by(Prospect.created_at.asc()).all() if db else []
+
+            if not employees:
+                return True, (
+                    "👥 *EQUIPO DE TU COMERCIO*\n\n"
+                    "Aún no tenés empleados registrados en tu comercio.\n\n"
+                    "💡 *Para dar de alta a un empleado, decime:*\n"
+                    "_«Sofi, agregá a Lucas como empleado al 3434536447»_\n"
+                    "O como encargado con permiso de compra:\n"
+                    "_«Sofi, agregá a Carlos como encargado al 3434536447»_"
+                ), "employees_empty"
+
+            lines = [f"👥 *EQUIPO REGISTRADO EN TU COMERCIO ({len(employees)}):*\n"]
+            for idx, emp in enumerate(employees, 1):
+                p_name = emp.contact_name or emp.name or "Empleado"
+                p_phone = emp.phone
+                if emp.can_dispatch:
+                    role_badge = "🚀 *Encargado / Comprador* (✅ Autorizado a despachar)"
+                else:
+                    role_badge = "🔒 *Anotador / Repositor* (Solo canasta y consultas)"
+                lines.append(f"{idx}. *{p_name}* (+{p_phone})\n   {role_badge}")
+
+            lines.append("\n💡 *Comandos disponibles:*")
+            lines.append("• _«Sofi, autorizá a [Nombre] a despachar pedidos»_")
+            lines.append("• _«Sofi, quitale el permiso a [Nombre]»_")
+            lines.append("• _«Sofi, eliminá al empleado [Nombre]»_")
+            return True, "\n".join(lines), "employees_list"
+
+        elif action == "add_employee":
+            raw_p = emp_intent.get("phone")
+            norm_p = normalize_argentine_phone(raw_p) if raw_p else None
+            emp_name = emp_intent.get("contact_name") or "Empleado"
+
+            if not norm_p:
+                return True, (
+                    f"👥 *Para registrar a {emp_name} en tu equipo*, por favor pasame su número de WhatsApp.\n\n"
+                    f"💡 Podés escribir por ejemplo:\n"
+                    f"_«Sofi, agregá a {emp_name} como empleado al 3434536447»_"
+                ), "employee_add_needs_phone"
+
+            emp_role = emp_intent.get("role") or "repositor"
+            if emp_role == "empleado":
+                emp_role = "repositor"
+            emp_can_dispatch = bool(emp_intent.get("can_dispatch", False))
+
+            existing_emp = db.query(Prospect).filter(Prospect.phone == norm_p).first() if db else None
+            if existing_emp:
+                existing_emp.parent_merchant_phone = clean_sender
+                existing_emp.employee_role = emp_role
+                existing_emp.can_dispatch = emp_can_dispatch
+                existing_emp.contact_name = emp_name
+                existing_emp.business_type = "empleado"
+                existing_emp.campaign = "client_employee"
+                existing_emp.status = "active"
+                db.commit()
+            else:
+                new_emp = Prospect(
+                    phone=norm_p,
+                    name=f"Empleado de {owner_biz_name}",
+                    contact_name=emp_name,
+                    parent_merchant_phone=clean_sender,
+                    employee_role=emp_role,
+                    can_dispatch=emp_can_dispatch,
+                    business_type="empleado",
+                    campaign="client_employee",
+                    status="active",
+                    notes=json.dumps({"owner_phone": clean_sender, "added_by": "owner"}, ensure_ascii=False)
+                )
+                db.add(new_emp)
+                db.commit()
+
+            # WhatsApp welcome to employee
+            perm_desc = "🚀 *Encargado de Compras:* tenés permiso para despachar pedidos directos a proveedores." if emp_can_dispatch else "🔒 *Nivel Repositor:* podés consultar precios, aumentos y cargar faltantes a la canasta compartida del comercio."
+            emp_welcome = (
+                f"👋 *¡Hola {emp_name}!* Te doy la bienvenida a *Sofía*.\n\n"
+                f"El titular de *{owner_biz_name}* te dio de alta en el equipo de WhatsApp del comercio.\n\n"
+                f"📌 *Tu perfil actual:*\n{perm_desc}\n\n"
+                f"💡 *¿Qué podés hacer desde este chat?*\n"
+                f"1️⃣ *Consultar precios:* _«¿Quién tiene más barato el azúcar?»_\n"
+                f"2️⃣ *Ver aumentos:* _«¿Qué aumentó esta semana?»_\n"
+                f"3️⃣ *Anotar faltantes:* _«Anotame 5 fardos de gaseosa para Distribuidora Alem»_ (se guardan en la canasta compartida del local).\n\n"
+                f"¡Cualquier consulta estoy a tu disposición para ayudarte en el día a día! 📦✨"
+            )
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=norm_p, text=emp_welcome))
+
+            role_title = "Encargado / Comprador Autorizado" if emp_can_dispatch else "Anotador / Repositor"
+            perm_title = "✅ Habilitado para enviar pedidos directos" if emp_can_dispatch else "🔒 Bloqueado (solo anota en canasta compartida)"
+            owner_reply = (
+                f"✅ *¡Empleado registrado con éxito!*\n\n"
+                f"👤 *Nombre:* {emp_name}\n"
+                f"📱 *WhatsApp:* +{norm_p}\n"
+                f"🏷️ *Rol inicial:* {role_title}\n"
+                f"🚀 *Despacho de pedidos:* {perm_title}\n\n"
+                f"📲 Ya le envié un mensaje de bienvenida a su WhatsApp con las instrucciones de uso.\n\n"
+                f"💡 Si más adelante querés modificar sus permisos, solo decime:\n"
+                f"_«Sofi, autorizá a {emp_name} a despachar pedidos»_ o _«Sofi, quitale el permiso a {emp_name}»_."
+            )
+            return True, owner_reply, "employee_added"
+
+        elif action == "grant_dispatch":
+            target_name = emp_intent.get("contact_name") or ""
+            target_phone = emp_intent.get("phone")
+
+            emp_rec = None
+            if db:
+                q = db.query(Prospect).filter(Prospect.parent_merchant_phone == clean_sender)
+                if target_phone:
+                    emp_rec = q.filter(Prospect.phone == target_phone).first()
+                if not emp_rec and target_name:
+                    emp_rec = q.filter(
+                        (Prospect.contact_name.ilike(f"%{target_name}%")) | (Prospect.name.ilike(f"%{target_name}%"))
+                    ).first()
+
+            if not emp_rec:
+                return True, (
+                    f"⚠️ *No encontré a '{target_name}' entre tus empleados registrados.*\n\n"
+                    f"💡 Escribí *«empleados»* para ver tu equipo actual, o decime:\n"
+                    f"_«Sofi, agregá a {target_name} como encargado al [número]»_ para darlo de alta directamente."
+                ), "employee_not_found"
+
+            emp_rec.can_dispatch = True
+            emp_rec.employee_role = "encargado"
+            db.commit()
+
+            emp_name = emp_rec.contact_name or "compañero"
+            emp_notify = (
+                f"🚀 *¡Permiso habilitado!*\n\n"
+                f"¡Hola {emp_name}! El titular de tu comercio te acaba de autorizar para *despachar pedidos directamente a distribuidores* a través de Sofía.\n\n"
+                f"👉 Cuando quieras enviar un remito formal, solo decime: _«Sofi, mandale el pedido a [Proveedor]»_ y le llegará de inmediato por WhatsApp con copia al dueño."
+            )
+            try:
+                await whatsapp.send_whatsapp_message(to_phone=emp_rec.phone, text=emp_notify)
+            except Exception as e:
+                logger.error(f"Error sending grant notification to employee: {e}")
+
+            return True, (
+                f"✅ *¡Permiso otorgado con éxito!*\n\n"
+                f"*{emp_name}* (+{emp_rec.phone}) ahora está autorizado para despachar pedidos directos a distribuidores.\n\n"
+                f"🔔 Cada vez que despache una orden de compra, recibirás un aviso automático en este chat con el remito y total del pedido."
+            ), "employee_dispatch_granted"
+
+        elif action == "revoke_dispatch":
+            target_name = emp_intent.get("contact_name") or ""
+            target_phone = emp_intent.get("phone")
+
+            emp_rec = None
+            if db:
+                q = db.query(Prospect).filter(Prospect.parent_merchant_phone == clean_sender)
+                if target_phone:
+                    emp_rec = q.filter(Prospect.phone == target_phone).first()
+                if not emp_rec and target_name:
+                    emp_rec = q.filter(
+                        (Prospect.contact_name.ilike(f"%{target_name}%")) | (Prospect.name.ilike(f"%{target_name}%"))
+                    ).first()
+
+            if not emp_rec:
+                return True, (
+                    f"⚠️ *No encontré a '{target_name}' entre tus empleados registrados.*\n\n"
+                    f"💡 Escribí *«empleados»* para ver tu equipo registrado."
+                ), "employee_not_found"
+
+            emp_rec.can_dispatch = False
+            emp_rec.employee_role = "repositor"
+            db.commit()
+
+            emp_name = emp_rec.contact_name or "compañero"
+            emp_notify = (
+                f"🔒 *Actualización de permisos*\n\n"
+                f"¡Hola {emp_name}! El titular de tu comercio actualizó los permisos: ahora tu perfil es de *Repositor / Anotador*.\n\n"
+                f"Podés seguir consultando precios y guardando faltantes en la canasta compartida para que el dueño los despache."
+            )
+            try:
+                await whatsapp.send_whatsapp_message(to_phone=emp_rec.phone, text=emp_notify)
+            except Exception as e:
+                logger.error(f"Error sending revoke notification to employee: {e}")
+
+            return True, (
+                f"🔒 *Permiso revocado.*\n\n"
+                f"*{emp_name}* (+{emp_rec.phone}) ya no puede despachar pedidos directos.\n\n"
+                f"Los faltantes que anote quedarán guardados en la canasta compartida del comercio para tu revisión previa."
+            ), "employee_dispatch_revoked"
+
+        elif action == "delete_employee":
+            target_name = emp_intent.get("contact_name") or ""
+            target_phone = emp_intent.get("phone")
+
+            emp_rec = None
+            if db:
+                q = db.query(Prospect).filter(Prospect.parent_merchant_phone == clean_sender)
+                if target_phone:
+                    emp_rec = q.filter(Prospect.phone == target_phone).first()
+                if not emp_rec and target_name:
+                    emp_rec = q.filter(
+                        (Prospect.contact_name.ilike(f"%{target_name}%")) | (Prospect.name.ilike(f"%{target_name}%"))
+                    ).first()
+
+            if not emp_rec:
+                return True, (
+                    f"⚠️ *No encontré a '{target_name}' entre tus empleados registrados.*\n\n"
+                    f"💡 Escribí *«empleados»* para ver tu equipo registrado."
+                ), "employee_not_found"
+
+            del_name = emp_rec.contact_name or "Empleado"
+            del_phone = emp_rec.phone
+            db.delete(emp_rec)
+            db.commit()
+
+            return True, (
+                f"🗑️ *Empleado eliminado.*\n\n"
+                f"*{del_name}* (+{del_phone}) fue dado de baja del equipo de tu comercio."
+            ), "employee_deleted"
+
     # 1.6 Supplier Registration on-the-fly via WhatsApp Audio or Text
     sup_reg_data = await parse_supplier_registration_intent(clean_text)
     if sup_reg_data.get("is_supplier_registration"):
@@ -1661,27 +2082,27 @@ async def process_boss_message(
         if norm_p:
             s_contact = sup_reg_data.get("contact_name") or s_name
             existing_sup = db.query(Prospect).filter(
-                Prospect.merchant_phone == sender_phone,
+                Prospect.merchant_phone == effective_merchant_phone,
                 Prospect.phone == norm_p
             ).first() if db else None
 
             if not existing_sup and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
                 existing_sup = db.query(Prospect).filter(
                     Prospect.phone == norm_p,
-                    (Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None)
+                    (Prospect.merchant_phone == effective_merchant_phone) | (Prospect.merchant_phone == None)
                 ).first()
 
             if existing_sup:
                 existing_sup.name = s_name
                 existing_sup.contact_name = s_contact
-                existing_sup.merchant_phone = sender_phone
+                existing_sup.merchant_phone = effective_merchant_phone
                 existing_sup.business_type = "proveedor"
                 existing_sup.campaign = "supplier"
                 existing_sup.notes = f"Proveedor actualizado desde WhatsApp el {datetime.now().strftime('%d/%m/%Y %H:%M')}"
                 db.commit()
             else:
                 new_sup = Prospect(
-                    merchant_phone=sender_phone,
+                    merchant_phone=effective_merchant_phone,
                     name=s_name,
                     contact_name=s_contact,
                     phone=norm_p,
@@ -1704,7 +2125,7 @@ async def process_boss_message(
 
             # Save merchant metadata in supplier record so incoming updates from supplier alert this merchant
             sup_meta = {
-                "merchant_phone": sender_phone,
+                "merchant_phone": effective_merchant_phone,
                 "merchant_biz": client_biz,
                 "merchant_owner": client_owner,
                 "registered_at": datetime.now(timezone.utc).isoformat()
@@ -1795,7 +2216,7 @@ async def process_boss_message(
         if not candidates and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
             candidates = db.query(Prospect).filter(
                 ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
-                ((Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None))
+                ((Prospect.merchant_phone == effective_merchant_phone) | (Prospect.merchant_phone == None))
             ).all()
 
         matched_sup = None
@@ -1806,7 +2227,7 @@ async def process_boss_message(
                 break
 
         if not matched_sup and db:
-            all_pros = db.query(Prospect).filter(Prospect.merchant_phone == sender_phone).all()
+            all_pros = db.query(Prospect).filter(Prospect.merchant_phone == effective_merchant_phone).all()
             if not all_pros and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
                 all_pros = db.query(Prospect).all()
             for s in all_pros:
@@ -1819,9 +2240,9 @@ async def process_boss_message(
             deleted_name = matched_sup.name
             db.delete(matched_sup)
             db.commit()
-            clear_supplier_draft(deleted_name, merchant_phone=sender_phone, db=db)
+            clear_supplier_draft(deleted_name, merchant_phone=effective_merchant_phone, db=db)
             if del_target.lower() != deleted_name.lower():
-                clear_supplier_draft(del_target, merchant_phone=sender_phone, db=db)
+                clear_supplier_draft(del_target, merchant_phone=effective_merchant_phone, db=db)
 
             return True, (
                 f"🗑️ *PROVEEDOR ELIMINADO CON ÉXITO*\n\n"
@@ -1829,12 +2250,12 @@ async def process_boss_message(
                 f"💡 _Para ver tus proveedores activos escribí:_ `proveedores`"
             ), "supplier_deleted"
         else:
-            drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
+            drafts = load_supplier_drafts(merchant_phone=effective_merchant_phone, db=db)
             found_draft = False
             for k, v in list(drafts.items()):
                 s_title = v.get("supplier_name", "").lower()
                 if target_clean in s_title or s_title in target_clean:
-                    clear_supplier_draft(v.get("supplier_name", del_target), merchant_phone=sender_phone, db=db)
+                    clear_supplier_draft(v.get("supplier_name", del_target), merchant_phone=effective_merchant_phone, db=db)
                     found_draft = True
                     break
 
@@ -1868,7 +2289,7 @@ async def process_boss_message(
         target_clean = cand_sup_name.lower()
         candidates = db.query(Prospect).filter(
             ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
-            (Prospect.merchant_phone == sender_phone)
+            (Prospect.merchant_phone == effective_merchant_phone)
         ).all() if db else []
 
         if not candidates and db:
@@ -1899,7 +2320,7 @@ async def process_boss_message(
                     break
 
         if not matched_sup and db:
-            all_pros = db.query(Prospect).filter(Prospect.merchant_phone == sender_phone).all()
+            all_pros = db.query(Prospect).filter(Prospect.merchant_phone == effective_merchant_phone).all()
             for s in all_pros:
                 s_name_lower = (s.name or "").lower()
                 s_cont_lower = (s.contact_name or "").lower()
@@ -2000,7 +2421,7 @@ async def process_boss_message(
         if price_upd_data.get("is_price_update") and price_upd_data.get("updates"):
             modified = catalog_service.process_supplier_price_updates(
                 price_upd_data["updates"],
-                merchant_phone=sender_phone,
+                merchant_phone=effective_merchant_phone,
                 db=db
             )
             if modified:
@@ -2058,13 +2479,13 @@ async def process_boss_message(
         elif inq_type == "list_suppliers":
             sups = db.query(Prospect).filter(
                 ((Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier")),
-                (Prospect.merchant_phone == sender_phone)
+                (Prospect.merchant_phone == effective_merchant_phone)
             ).order_by(Prospect.name.asc()).all() if db else []
 
             if not sups and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
                 sups = db.query(Prospect).filter(
                     ((Prospect.business_type == "proveedor") | (Prospect.campaign == "supplier")),
-                    ((Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None))
+                    ((Prospect.merchant_phone == effective_merchant_phone) | (Prospect.merchant_phone == None))
                 ).order_by(Prospect.name.asc()).all()
 
             if not sups:
@@ -2081,7 +2502,7 @@ async def process_boss_message(
             return True, "\n".join(lines), "suppliers_list"
 
         elif inq_type == "all_baskets":
-            drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
+            drafts = load_supplier_drafts(merchant_phone=effective_merchant_phone, db=db)
             active_baskets = {k: v for k, v in drafts.items() if v.get("items")}
             if not active_baskets:
                 return True, (
@@ -2093,13 +2514,15 @@ async def process_boss_message(
             lines = [f"📋 *PEDIDOS ANOTADOS POR PROVEEDOR ({len(active_baskets)}):*\n"]
             for k, b in active_baskets.items():
                 s_name = b.get("supplier_name", "Proveedor")
-                items_cnt = sum(it.get("quantity", 1) for it in b.get("items", []))
-                subtotal = sum(it.get("quantity", 1) * float(it.get("unit_price", 0)) for it in b.get("items", []))
+                items_cnt = sum(it.get("quantity") or it.get("qty", 1) for it in b.get("items", []))
+                subtotal = sum((it.get("quantity") or it.get("qty", 1)) * float(it.get("unit_price") or it.get("price", 0)) for it in b.get("items", []))
                 sub_str = f" — ${int(subtotal):,} est." if subtotal > 0 else ""
-                fr = get_supplier_price_freshness(s_name, db, merchant_phone=sender_phone)
+                fr = get_supplier_price_freshness(s_name, db, merchant_phone=effective_merchant_phone)
                 lines.append(f"🏢 *{s_name}* ({len(b.get('items', []))} productos, {items_cnt} unidades{sub_str}) {fr['badge']}:")
                 for it in b.get("items", [])[:3]:
-                    lines.append(f"  • {it.get('quantity')}x {it.get('product_name')}")
+                    p_name = it.get("product_name") or it.get("name", "Producto")
+                    q_val = it.get("quantity") or it.get("qty", 1)
+                    lines.append(f"  • {q_val}x {p_name}")
                 if len(b.get("items", [])) > 3:
                     lines.append(f"  • ... y {len(b.get('items', [])) - 3} más.")
                 lines.append(f"  👉 _«Mostrame lo de {s_name}»_ o _«Mandale el pedido a {s_name}»_\n")
@@ -2107,7 +2530,7 @@ async def process_boss_message(
 
         elif inq_type == "single_basket":
             target_sup = inquiry_data.get("supplier_name", "")
-            basket = get_supplier_draft(target_sup, merchant_phone=sender_phone, db=db)
+            basket = get_supplier_draft(target_sup, merchant_phone=effective_merchant_phone, db=db)
             if not basket or not basket.get("items"):
                 return True, (
                     f"📋 *No tenés nada anotado para {target_sup} todavía.*\n\n"
@@ -2117,7 +2540,7 @@ async def process_boss_message(
 
             items = basket.get("items", [])
             s_title = basket.get("supplier_name", target_sup)
-            fr = get_supplier_price_freshness(s_title, db, merchant_phone=sender_phone)
+            fr = get_supplier_price_freshness(s_title, db, merchant_phone=effective_merchant_phone)
             lines = [f"📋 *LO QUE TENÉS ANOTADO PARA {s_title.upper()}* ({len(items)} artículos) {fr['badge']}:\n"]
             total_est = sum(it.get("quantity", 1) * float(it.get("unit_price", 0)) for it in items)
             for idx, it in enumerate(items, 1):
@@ -2142,13 +2565,13 @@ async def process_boss_message(
         # Default fallback supplier from registered DB prospects or open drafts
         registered_sups = db.query(Prospect).filter(
             ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
-            (Prospect.merchant_phone == sender_phone)
+            (Prospect.merchant_phone == effective_merchant_phone)
         ).all() if db else []
 
         if not registered_sups and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
             registered_sups = db.query(Prospect).filter(
                 ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
-                ((Prospect.merchant_phone == sender_phone) | (Prospect.merchant_phone == None))
+                ((Prospect.merchant_phone == effective_merchant_phone) | (Prospect.merchant_phone == None))
             ).all()
 
         default_sup_name = registered_sups[0].name if registered_sups else "Distribuidora Alem"
@@ -2167,13 +2590,13 @@ async def process_boss_message(
 
             if target_sup and target_sup.lower() not in ["proveedor", "distribuidora", "auto", "null", "none", ""]:
                 # Explicit supplier indicated by merchant (e.g. 'anotá para Litoral')
-                prod = catalog_service.find_product_exact_or_best(p_name, merchant_phone=sender_phone, db=db)
+                prod = catalog_service.find_product_exact_or_best(p_name, merchant_phone=effective_merchant_phone, db=db)
                 if prod:
                     unit_price = prod.price
                     chosen_name = prod.name
             else:
                 # Automatic best price routing using 7-day rule
-                comp_res = catalog_service.compare_supplier_prices(p_name, merchant_phone=sender_phone, db=db)
+                comp_res = catalog_service.compare_supplier_prices(p_name, merchant_phone=effective_merchant_phone, db=db)
                 if comp_res:
                     canonical_q, matches = comp_res
                     if matches:
@@ -2182,7 +2605,7 @@ async def process_boss_message(
                         stale_matches = []
                         for m in matches:
                             s_cand = m.supplier or default_sup_name
-                            fr = get_supplier_price_freshness(s_cand, db, merchant_phone=sender_phone)
+                            fr = get_supplier_price_freshness(s_cand, db, merchant_phone=effective_merchant_phone)
                             if fr["is_fresh"]:
                                 fresh_matches.append(m)
                             else:
@@ -2208,7 +2631,7 @@ async def process_boss_message(
 
                 if not target_sup:
                     # Fallback to single open basket if exists, or default supplier
-                    drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
+                    drafts = load_supplier_drafts(merchant_phone=effective_merchant_phone, db=db)
                     active_baskets = [v for v in drafts.values() if v.get("items")]
                     if len(active_baskets) == 1:
                         target_sup = active_baskets[0].get("supplier_name", default_sup_name)
@@ -2229,7 +2652,7 @@ async def process_boss_message(
 
         # Persist into draft baskets
         for s_name, s_items in assigned_by_sup.items():
-            add_items_to_supplier_draft(s_name, s_items, merchant_phone=sender_phone, db=db)
+            add_items_to_supplier_draft(s_name, s_items, merchant_phone=effective_merchant_phone, db=db)
 
         total_items_count = len(raw_items)
 
@@ -2237,7 +2660,7 @@ async def process_boss_message(
         if total_items_count <= 3:
             lines = ["🧺 *¡Anotado!* 📝\n"]
             for sup, items in assigned_by_sup.items():
-                fr = get_supplier_price_freshness(sup, db, merchant_phone=sender_phone)
+                fr = get_supplier_price_freshness(sup, db, merchant_phone=effective_merchant_phone)
                 badge = fr["badge"]
                 flabel = fr["label"]
                 for it in items:
@@ -2448,7 +2871,7 @@ async def process_boss_message(
 
         if not target_phone and dist_name and len(dist_name) > 2 and dist_name.lower() not in ["la distribuidora", "distribuidora", "proveedor"]:
             matched_p = db.query(Prospect).filter(
-                Prospect.merchant_phone == sender_phone
+                Prospect.merchant_phone == effective_merchant_phone
             ).filter(
                 (Prospect.contact_name.ilike(f"%{dist_name}%")) |
                 (Prospect.name.ilike(f"%{dist_name}%"))
@@ -2468,14 +2891,14 @@ async def process_boss_message(
 
         if not target_phone and (not dist_name or dist_name.lower() in ["la distribuidora", "distribuidora", "proveedor"]):
             # Check if there is only 1 open basket with items
-            drafts = load_supplier_drafts(merchant_phone=sender_phone, db=db)
+            drafts = load_supplier_drafts(merchant_phone=effective_merchant_phone, db=db)
             active_baskets = [v for v in drafts.values() if v.get("items")]
             if len(active_baskets) == 1:
                 cand_sup = active_baskets[0].get("supplier_name", "")
                 if cand_sup:
                     dist_name = cand_sup
                     matched_p = db.query(Prospect).filter(
-                        Prospect.merchant_phone == sender_phone
+                        Prospect.merchant_phone == effective_merchant_phone
                     ).filter(
                         (Prospect.contact_name.ilike(f"%{cand_sup}%")) |
                         (Prospect.name.ilike(f"%{cand_sup}%"))
@@ -2494,7 +2917,7 @@ async def process_boss_message(
             if not target_phone and db:
                 sup_query = db.query(Prospect).filter(
                     ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
-                    (Prospect.merchant_phone == sender_phone)
+                    (Prospect.merchant_phone == effective_merchant_phone)
                 ).all()
                 if not sup_query:
                     sup_query = db.query(Prospect).filter(
@@ -2508,6 +2931,15 @@ async def process_boss_message(
         if target_phone:
             target_phone = normalize_argentine_phone(target_phone)
 
+        # Multi-Employee Guard: Check if sender is an employee who lacks dispatch authorization
+        if sender_prospect and sender_prospect.parent_merchant_phone and not sender_prospect.can_dispatch:
+            emp_name = brain.sanitize_contact_first_name(sender_prospect.contact_name) or "amigo"
+            return True, (
+                f"🔒 *Acceso restringido para despachar pedidos*\n\n"
+                f"¡Hola {emp_name}! Tenés permiso para consultar precios, variaciones y cargar faltantes a la canasta compartida del comercio, pero el despacho formal a distribuidores requiere autorización del titular.\n\n"
+                f"💡 Los productos para *{dist_name}* quedaron guardados en la canasta compartida. Pedile al dueño que me escriba: _«Sofi, autorizá a {emp_name} a despachar pedidos»_ si necesitás hacer envíos directos."
+            ), "employee_dispatch_unauthorized"
+
         if not target_phone:
             return True, (
                 f"📋 *¡Pedido formal en preparación para {dist_name}!* \n\n"
@@ -2517,7 +2949,7 @@ async def process_boss_message(
 
         if target_phone:
             # Check if there is an open supplier basket for dist_name
-            sup_basket = get_supplier_draft(dist_name, merchant_phone=sender_phone, db=db)
+            sup_basket = get_supplier_draft(dist_name, merchant_phone=effective_merchant_phone, db=db)
             has_basket = bool(sup_basket and sup_basket.get("items"))
 
             ai_items = ai_dispatch.get("items", [])
@@ -2531,7 +2963,7 @@ async def process_boss_message(
                     p_qty = int(it.get("quantity") or 1)
                     p_price = float(it.get("unit_price") or 0.0)
                     if p_name:
-                        prod = catalog_service.find_product_exact_or_best(p_name, merchant_phone=sender_phone, db=db)
+                        prod = catalog_service.find_product_exact_or_best(p_name, merchant_phone=effective_merchant_phone, db=db)
                         if prod:
                             fallback_items.append(OrderItem(product=prod, quantity=p_qty, unit_price=prod.price, subtotal=prod.price * p_qty))
                         else:
@@ -2676,7 +3108,23 @@ async def process_boss_message(
             ))
 
             if has_basket:
-                clear_supplier_draft(dist_name, merchant_phone=sender_phone, db=db)
+                clear_supplier_draft(dist_name, merchant_phone=effective_merchant_phone, db=db)
+
+            # Multi-Employee Mirror: If dispatched by an authorized employee, notify the store owner
+            if sender_prospect and sender_prospect.parent_merchant_phone:
+                owner_phone = sender_prospect.parent_merchant_phone
+                emp_name = sender_prospect.contact_name or "Tu empleado"
+                owner_mirror_msg = (
+                    f"🔔 *NOTIFICACIÓN DE PEDIDO DESPACHADO (EQUIPO)*\n\n"
+                    f"👤 *{emp_name}* acaba de despachar un pedido formal a *{dist_name}* (+{target_phone}):\n\n"
+                    f"📋 *Items enviados:*\n{item_lines}\n"
+                    f"💰 *Total estimado:* {total_display}\n\n"
+                    f"📄 Remito formal en PDF enviado al distribuidor vía WhatsApp."
+                )
+                try:
+                    await whatsapp.send_whatsapp_message(to_phone=owner_phone, text=owner_mirror_msg)
+                except Exception as e:
+                    logger.error(f"Error sending owner mirror alert: {e}")
 
             basket_note = f"\n\n✨ *Los faltantes anotados para {dist_name} quedaron pasados en limpio para la próxima reposición.*" if has_basket else ""
             fresh_warn = f"\n\n⚠️ *Aviso de precios:* La lista de {dist_name} tiene más de 7 días. Ya le incluí un aviso para que confirme si hubo variaciones al facturar." if not dist_freshness["is_fresh"] else ""
@@ -2703,7 +3151,7 @@ async def process_boss_message(
         OrderDraft
     )
 
-    analysis = await parse_order_or_inquiry_with_ai(clean_text, merchant_phone=sender_phone, db=db)
+    analysis = await parse_order_or_inquiry_with_ai(clean_text, merchant_phone=effective_merchant_phone, db=db)
     if analysis.intent == "price_list_request" and not is_admin_internal_view and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
         demo_reply = _build_price_list_demo(sender_phone)
         return True, demo_reply, "boss_price_list_demo"
@@ -2723,7 +3171,7 @@ async def process_boss_message(
                 f"💡 Podés pedirme la lista de precios o consultarme por productos como aceite, harina, arroz o bebidas."
             ), "boss_order_unmatched"
     elif analysis.intent == "product_inquiry":
-        inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name="Javier", merchant_phone=sender_phone, db=db)
+        inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name="Javier", merchant_phone=effective_merchant_phone, db=db)
         return True, f"🧪 *[DEMO EN VIVO — CONSULTA DE PRODUCTO]*\n\n{inquiry_reply}", "boss_product_inquiry"
 
     if is_order_confirmation(clean_text):
@@ -2754,7 +3202,7 @@ async def process_boss_message(
         "que productos me aumentaron", "qué productos me aumentaron", "subieron los precios",
         "variaciones de precio", "cambios de precio", "que subio", "qué subió"
     ]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "abono", "ia"]):
-        weekly_summary = catalog_service.get_weekly_price_changes(requester_name="Javier", merchant_phone=sender_phone, db=db)
+        weekly_summary = catalog_service.get_weekly_price_changes(requester_name="Javier", merchant_phone=effective_merchant_phone, db=db)
         return True, weekly_summary, "boss_price_increases"
 
     # 2.8.1 Multi-supplier Price Comparison & Cheapest Supplier Inquiry
@@ -2764,12 +3212,12 @@ async def process_boss_message(
         "comparame", "comparar precios", "comparativa de precios", "comparar", "mejor precio",
         "quien vende mas barato", "quién vende más barato", "quien me deja mas barato", "quién me deja más barato"
     ]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
-        formatted_comp = catalog_service.format_price_comparison(clean_text, requester_name="Javier", merchant_phone=sender_phone, db=db)
+        formatted_comp = catalog_service.format_price_comparison(clean_text, requester_name="Javier", merchant_phone=effective_merchant_phone, db=db)
         if formatted_comp:
             return True, formatted_comp, "boss_price_comparison"
 
     if any(k in lower_text for k in ["cuanto", "cuánto", "precio", "sale", "a cuanto", "a cuánto"]) and not any(k in lower_text for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
-        p = catalog_service.find_product_exact_or_best(clean_text, merchant_phone=sender_phone, db=db)
+        p = catalog_service.find_product_exact_or_best(clean_text, merchant_phone=effective_merchant_phone, db=db)
         if p:
             stock_info = "tenemos stock disponible" if p.in_stock else "actualmente figura sin stock"
             return True, (
