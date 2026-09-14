@@ -517,3 +517,114 @@ async def test_preventista_and_corredor_synonyms():
     assert r_chg.get("is_supplier_phone_update") is True
     assert "3434998877" in (r_chg.get("new_phone") or "")
 
+
+@pytest.mark.asyncio
+async def test_blindaje_borrar_pedido_despachado(db, mock_whatsapp):
+    from app.services.boss_mode import (
+        add_items_to_supplier_draft,
+        get_supplier_draft,
+        clear_supplier_draft
+    )
+    from unittest.mock import patch, AsyncMock
+
+    merchant_phone = "5493435111111"
+    supplier_phone = "5493434556677"
+
+    # Register supplier with business_name Distribuidora Alem and contact Carlos
+    db.query(Prospect).filter(Prospect.phone == supplier_phone).delete()
+    db.commit()
+
+    p = Prospect(
+        merchant_phone=merchant_phone,
+        name="Distribuidora Alem",
+        contact_name="Carlos",
+        phone=supplier_phone,
+        business_type="proveedor",
+        campaign="supplier"
+    )
+    db.add(p)
+    db.commit()
+
+    # 1. Clear any prior drafts
+    clear_supplier_draft("Distribuidora Alem", merchant_phone=merchant_phone, db=db)
+    clear_supplier_draft("Carlos", merchant_phone=merchant_phone, db=db)
+
+    # 2. Annotate items for Carlos
+    add_items_to_supplier_draft(
+        "Carlos",
+        [
+            {"product_name": "Alfajores triples", "quantity": 3, "unit_price": 5000.0},
+            {"product_name": "Turrones", "quantity": 5, "unit_price": 2000.0}
+        ],
+        merchant_phone=merchant_phone,
+        db=db
+    )
+
+    # 3. Check draft can be found both by "Carlos" and by "Distribuidora Alem"
+    draft_by_contact = get_supplier_draft("Carlos", merchant_phone=merchant_phone, db=db)
+    assert draft_by_contact is not None
+    assert len(draft_by_contact["items"]) == 2
+
+    draft_by_company = get_supplier_draft("Distribuidora Alem", merchant_phone=merchant_phone, db=db)
+    assert draft_by_company is not None
+    assert len(draft_by_company["items"]) == 2
+
+    # 4. Dispatch the order
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as m_send, \
+         patch("app.services.whatsapp.send_whatsapp_document", new_callable=AsyncMock) as m_doc, \
+         patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as m_tpl:
+        handled, reply, action = await process_boss_message(
+            db,
+            merchant_phone,
+            "Sofi, pasale el pedido a Carlos"
+        )
+        assert handled is True
+        assert action == "kiosk_order_dispatched"
+        assert "¡Pedido despachado con éxito!" in reply
+        assert "vaciados y quedaron pasados en limpio" in reply
+
+    # 5. BLINDAJE CHECK: Both drafts (by company and by contact) MUST be completely deleted!
+    assert get_supplier_draft("Carlos", merchant_phone=merchant_phone, db=db) is None
+    assert get_supplier_draft("Distribuidora Alem", merchant_phone=merchant_phone, db=db) is None
+
+    # 6. Verify when inquiring afterwards it says empty
+    h_inq, r_inq, a_inq = await process_boss_message(
+        db,
+        merchant_phone,
+        "Sofi, mostrame lo que le tengo anotado a Carlos"
+    )
+    assert h_inq is True
+    assert a_inq == "single_basket_empty"
+    assert "No tenés nada anotado para Carlos todavía" in r_inq
+
+
+@pytest.mark.asyncio
+async def test_manual_clear_draft_basket(db):
+    from app.services.boss_mode import (
+        add_items_to_supplier_draft,
+        get_supplier_draft,
+        clear_supplier_draft
+    )
+    merchant_phone = "5493435111111"
+
+    # Add items to draft
+    add_items_to_supplier_draft(
+        "Distribuidora Alem",
+        [{"product_name": "Galletitas", "quantity": 10, "unit_price": 1500.0}],
+        merchant_phone=merchant_phone,
+        db=db
+    )
+    assert get_supplier_draft("Distribuidora Alem", merchant_phone=merchant_phone, db=db) is not None
+
+    # User manually tells Sofia to clear/vaciar the draft
+    handled, reply, action = await process_boss_message(
+        db,
+        merchant_phone,
+        "Sofi, vaciá el borrador de Distribuidora Alem"
+    )
+    assert handled is True
+    assert action == "basket_cleared"
+    assert "Borrador vaciado" in reply
+    assert get_supplier_draft("Distribuidora Alem", merchant_phone=merchant_phone, db=db) is None
+
+
