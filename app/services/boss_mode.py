@@ -1059,8 +1059,9 @@ async def parse_employee_management_intent(text: str) -> dict:
 
     # 4. Delete employee
     del_patterns = [
-        r'(?:eliminar|borrar|dar\s+de\s+baja|remover|quitar)\s+(?:al\s+empleado|a\s+la\s+empleada|al\s+repositor|a\s+la\s+repositora|al\s+encargado|a\s+la\s+encargada|empleado|repositor)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)',
-        r'(?:eliminar|borrar|dar\s+de\s+baja|remover)\s+a\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s+(?:del\s+comercio|de\s+los\s+empleados|de\s+mi\s+equipo|como\s+empleado)',
+        r'(?:elimin[áa]r?|borr[áa]r?|dar\s+de\s+baja|remover|remov[eé]|quit[áa]r?|sac[áa]r?)\s+(?:al\s+empleado|a\s+la\s+empleada|al\s+repositor|a\s+la\s+repositora|al\s+encargado|a\s+la\s+encargada|empleado|repositor)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)',
+        r'(?:elimin[áa]r?|borr[áa]r?|dar\s+de\s+baja|remover|remov[eé]|quit[áa]r?|sac[áa]r?)\s+a\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s+(?:del\s+comercio|de\s+los\s+empleados|de\s+mi\s+equipo|como\s+empleado)',
+        r'(?:elimin[áa]r?|borr[áa]r?|dar\s+de\s+baja|quit[áa]r?|sac[áa]r?)\s+(?:al\s+)?emplead[oa]\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]+)',
     ]
     for pat in del_patterns:
         m = re.search(pat, orig_no_prefix, re.IGNORECASE)
