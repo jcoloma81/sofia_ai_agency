@@ -14,8 +14,11 @@ from app.services.boss_mode import (
     get_supplier_draft,
     get_client_faq_text,
     get_client_manual_text,
-    parse_supplier_deletion_intent
+    parse_supplier_deletion_intent,
+    parse_client_deletion_intent,
+    parse_supplier_phone_update_intent
 )
+from app.models.prospect import SupplierDraftOrder, MerchantProduct
 from app.services.catalog import catalog_service, ProductItem
 
 @pytest.fixture
@@ -1141,6 +1144,156 @@ async def test_supplier_excel_upload_broadcasts_to_all_linked_merchants(db):
         m2_prods = db.query(MerchantProduct).filter(MerchantProduct.merchant_phone == m2_phone).all()
         assert len(m1_prods) >= 2
         assert len(m2_prods) >= 2
+
+
+@pytest.mark.asyncio
+async def test_client_deletion_on_the_fly(db):
+    # 1. Test intent parsing for various formats
+    p1 = parse_client_deletion_intent("Sofi, eliminar comercio Kiosco Alameda")
+    assert p1["is_client_deletion"] is True
+    assert p1["target_name"] == "Kiosco Alameda"
+
+    p2 = parse_client_deletion_intent("sofia elimina a kiosco alameda")
+    assert p2["is_client_deletion"] is True
+    assert p2["target_name"].lower() == "kiosco alameda"
+
+    p3 = parse_client_deletion_intent("dar de baja comercio al 3435551122")
+    assert p3["is_client_deletion"] is True
+    assert p3["phone"] == "3435551122"
+
+    p4 = parse_client_deletion_intent("dar de baja mi comercio")
+    assert p4["is_client_deletion"] is True
+    assert p4["is_self"] is True
+
+    # Negative guard: suppliers or employees are not clients
+    assert parse_client_deletion_intent("eliminar proveedor Distribuidora Alem")["is_client_deletion"] is False
+    assert parse_client_deletion_intent("eliminar empleado Lucas")["is_client_deletion"] is False
+
+    # 2. Setup a client in DB with employee and draft orders
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock):
+        # Onboard client
+        h_onb, r_onb, a_onb = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, dar de alta al comercio Kiosco Alameda de Juan al 3435551122 de Paraná"
+        )
+        assert h_onb is True
+        assert a_onb == "client_onboarded"
+
+        client_phone = "5493435551122"
+        client_rec = db.query(Prospect).filter(Prospect.phone == client_phone).first()
+        assert client_rec is not None
+        assert client_rec.name == "Kiosco Alameda"
+
+        # Add employee
+        h_emp, r_emp, a_emp = await process_boss_message(
+            db,
+            client_phone,
+            "Sofi, agregá a Lucas como empleado al 3435559999"
+        )
+        assert h_emp is True
+        assert a_emp == "employee_added"
+
+        # Add draft order
+        draft = SupplierDraftOrder(
+            merchant_phone=client_phone,
+            supplier_key="distribuidora_test",
+            supplier_name="Distribuidora Test",
+            items=json.dumps([{"product_name": "Golosinas", "quantity": 10, "unit_price": 500}])
+        )
+        db.add(draft)
+        db.commit()
+
+        assert db.query(SupplierDraftOrder).filter(SupplierDraftOrder.merchant_phone == client_phone).count() == 1
+        assert db.query(Prospect).filter(Prospect.parent_merchant_phone == client_phone).count() == 1
+
+        # 3. Boss deletes the client by name
+        h_del, r_del, a_del = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "Sofi, eliminar comercio Kiosco Alameda"
+        )
+        assert h_del is True
+        assert a_del == "client_deleted"
+        assert "COMERCIO DADO DE BAJA CON ÉXITO" in r_del
+        assert "Kiosco Alameda" in r_del
+
+
+        # Verify client and all associated test data are deleted
+        assert db.query(Prospect).filter(Prospect.phone == client_phone).first() is None
+        assert db.query(SupplierDraftOrder).filter(SupplierDraftOrder.merchant_phone == client_phone).count() == 0
+        assert db.query(Prospect).filter(Prospect.parent_merchant_phone == client_phone).count() == 0
+
+
+@pytest.mark.asyncio
+async def test_supplier_phone_update_preserving_catalog(db):
+    merchant_phone = "5493434111222"
+
+    # 1. Test intent parsing for various formats
+    p1 = await parse_supplier_phone_update_intent("Sofi, Carlos de Distribuidora Alem cambió de número al 3434552222")
+    assert p1["is_supplier_phone_update"] is True
+    assert p1["new_phone"] == "3434552222"
+    assert "Alem" in p1["supplier_name"]
+
+    p2 = await parse_supplier_phone_update_intent("actualizá el número de Distribuidora Alem al 3434552222")
+    assert p2["is_supplier_phone_update"] is True
+    assert p2["new_phone"] == "3434552222"
+
+    p3 = await parse_supplier_phone_update_intent("Distribuidora Alem cambió de número, ahora es 3434552222")
+    assert p3["is_supplier_phone_update"] is True
+    assert p3["new_phone"] == "3434552222"
+
+    # 2. Register supplier and populate cart
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock):
+        # Register supplier
+        await process_boss_message(
+            db,
+            merchant_phone,
+            "Sofi, agendá a Carlos de Distribuidora Alem al 3434551111"
+        )
+
+        sup_rec = db.query(Prospect).filter(
+            Prospect.merchant_phone == merchant_phone,
+            Prospect.name == "Distribuidora Alem"
+        ).first()
+        assert sup_rec is not None
+        assert sup_rec.phone == "5493434551111"
+
+        # Add draft cart item for this supplier
+        draft = SupplierDraftOrder(
+            merchant_phone=merchant_phone,
+            supplier_key="distribuidora_alem",
+            supplier_name="Distribuidora Alem",
+            items=json.dumps([{"product_name": "Cerveza Quilmes", "quantity": 5, "unit_price": 1200}])
+        )
+        db.add(draft)
+        db.commit()
+
+        # 3. Update supplier phone
+        h_upd, r_upd, a_upd = await process_boss_message(
+            db,
+            merchant_phone,
+            "Sofi, Carlos de Distribuidora Alem cambió de número al 3434552222"
+        )
+        assert h_upd is True
+        assert a_upd == "supplier_phone_updated"
+        assert "TELÉFONO DE PROVEEDOR ACTUALIZADO" in r_upd
+        assert "Distribuidora Alem" in r_upd
+
+        # 4. Verify supplier in DB has updated phone
+        db.refresh(sup_rec)
+        assert sup_rec.phone == "5493434552222"
+
+        # 5. Verify draft basket is 100% intact
+        saved_draft = db.query(SupplierDraftOrder).filter(
+            SupplierDraftOrder.merchant_phone == merchant_phone,
+            SupplierDraftOrder.supplier_key == "distribuidora_alem"
+        ).first()
+        assert saved_draft is not None
+        items = json.loads(saved_draft.items)
+        assert len(items) == 1
+        assert items[0]["product_name"] == "Cerveza Quilmes"
+
 
 
 

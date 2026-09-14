@@ -916,7 +916,16 @@ async def receive_whatsapp_webhook(
         "agendá a la distribuidora", "agenda a la distribuidora", "guardá la distribuidora", "guardar distribuidora",
         "eliminar proveedor", "borrar proveedor", "dar de baja proveedor", "eliminar al proveedor", "borrar al proveedor",
         "eliminar distribuidora", "borrar distribuidora", "proveedores", "mis proveedores", "ver proveedores",
-        "lista de proveedores", "quienes son mis proveedores"
+        "lista de proveedores", "quienes son mis proveedores",
+        "cambió de número", "cambio de numero", "cambió el número", "cambio el numero", "cambió de número al",
+        "cambió de teléfono", "cambio de telefono", "cambió de whatsapp", "cambio de whatsapp",
+        "nuevo número", "nuevo numero", "nuevo teléfono", "nuevo whatsapp", "actualizar teléfono", "actualizar telefono",
+        "actualizar número", "actualizar numero", "actualizá el número", "actualiza el numero"
+    ]
+    merchant_client_triggers = [
+        "eliminar comercio", "borrar comercio", "dar de baja comercio", "eliminar al comercio",
+        "eliminar cliente", "borrar cliente", "dar de baja cliente", "eliminar al cliente",
+        "dar de baja mi comercio", "eliminar mi comercio", "borrar mi comercio", "dar de baja mi negocio"
     ]
     merchant_inquiry_triggers = [
         "preguntale a", "preguntale al", "preguntale a la", "pregúntale a", "pregúntale al", "pregúntale a la",
@@ -937,11 +946,12 @@ async def receive_whatsapp_webhook(
         "quienes pueden pedir", "quiénes pueden pedir"
     ]
     is_merchant_action = (
-        any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers + merchant_inquiry_triggers + merchant_employee_triggers)
-        or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al "]))
+        any(k in clean_msg_lower for k in merchant_dispatch_triggers + merchant_supplier_triggers + merchant_client_triggers + merchant_inquiry_triggers + merchant_employee_triggers)
+        or (any(w in clean_msg_lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in clean_msg_lower for k in ["agend", "anot", "guard", "telefono", "teléfono", "celular", "es el", "al ", "cambi", "nuevo", "actualiz"]))
         or (any(v in clean_msg_lower for v in ["mand", "envi", "pas", "despach", "cerr", "hac"]) and any(n in clean_msg_lower for n in ["pedido", "orden", "remito", "faltante"]))
         or (any(q in clean_msg_lower for q in ["pregunt", "consult", "decil", "escrib", "avis"]) and any(s in clean_msg_lower for s in ["proveedor", "distribuidora", "viajante", "al ", "a la "]))
         or (any(e in clean_msg_lower for e in ["emplead", "repositor", "encargad"]) and any(a in clean_msg_lower for a in ["agreg", "alt", "autoriz", "habilit", "permis", "quit", "borr", "elimin"]))
+        or (any(c in clean_msg_lower for c in ["comercio", "cliente", "negocio"]) and any(b in clean_msg_lower for b in ["elimin", "borr", "baja"]))
     )
     if is_merchant_action:
         handled_b, reply_b, action_b = await process_boss_message(

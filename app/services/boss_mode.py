@@ -881,8 +881,8 @@ def parse_supplier_deletion_intent(text: str) -> dict:
     lower_no_prefix = orig_no_prefix.lower()
 
     patterns = [
-        r'(?:eliminar|borrar|dar\s+de\s+baja|remover|quitar)\s+(?:al\s+proveedor|a\s+la\s+distribuidora|al\s+viajante|el\s+proveedor|la\s+distribuidora|proveedor|distribuidora|viajante)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)',
-        r'(?:eliminar|borrar|dar\s+de\s+baja|remover|quitar)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:de\s+(?:mis\s+)?proveedores)',
+        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+(?:al\s+proveedor|a\s+la\s+distribuidora|al\s+viajante|el\s+proveedor|la\s+distribuidora|proveedor|distribuidora|viajante)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)',
+        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:de\s+(?:mis\s+)?proveedores)',
     ]
     for pat in patterns:
         m = re.search(pat, orig_no_prefix, re.IGNORECASE)
@@ -901,6 +901,149 @@ def parse_supplier_deletion_intent(text: str) -> dict:
         return {"is_supplier_deletion": True, "supplier_name": None}
 
     return {"is_supplier_deletion": False}
+
+
+def parse_client_deletion_intent(text: str) -> dict:
+    """
+    Detects intent to delete, remove or deregister a client / store (comercio).
+    e.g. 'Sofi, eliminar comercio Kiosco Alameda'
+         'sofia elimina a kiosco alameda'
+         'dar de baja comercio Despensa San José'
+         'borrar cliente Kiosco Alameda'
+         'eliminar comercio 3434556677'
+         'dar de baja mi comercio'
+    """
+    clean = text.strip()
+    orig_no_prefix = re.sub(r'^(?:sofi|sofia|hola|buenas|che)[\s,:]*', '', clean, flags=re.IGNORECASE).strip()
+    lower_no_prefix = orig_no_prefix.lower()
+
+    # Guard against supplier, employee or product deletion
+    if any(k in lower_no_prefix for k in ["proveedor", "distribuidora", "viajante", "empleado", "repositor", "encargado", "producto", "item", "articulo", "artículo"]):
+        return {"is_client_deletion": False}
+
+    if lower_no_prefix in [
+        "dar de baja mi comercio", "eliminar mi comercio", "borrar mi comercio",
+        "dar de baja mi negocio", "eliminar mi negocio", "dar de baja mi cuenta", "eliminar mi cuenta"
+    ]:
+        return {"is_client_deletion": True, "target_name": None, "phone": None, "is_self": True}
+
+    patterns = [
+        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+(?:al\s+comercio|a\s+la\s+tienda|al\s+cliente|el\s+comercio|el\s+cliente|comercio|cliente|negocio)\s+(?:al\s+|a\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)',
+        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+(?:a\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:de\s+(?:mis\s+)?(?:comercios|clientes))',
+        r'(?:eliminar|elimin[áa]|borrar|borr[áa]|dar\s+de\s+baja|d[áa](?:le)?\s+de\s+baja|remover|remov[ée]|quitar|quit[áa])\s+a\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+)',
+    ]
+    for pat in patterns:
+        m = re.search(pat, orig_no_prefix, re.IGNORECASE)
+        if m:
+            c_target = m.group(1).strip()
+            c_target = re.sub(r'[\?\.\!\,]+$', '', c_target).strip()
+            c_target = re.sub(r'^(?:a\s+|la\s+|el\s+)', '', c_target, flags=re.IGNORECASE).strip()
+            if c_target:
+                digits = re.sub(r'\D', '', c_target)
+                phone = digits if len(digits) >= 8 else None
+                name = None if (phone and len(c_target.replace(' ', '').replace('-', '').replace('+', '')) == len(digits)) else c_target
+                return {"is_client_deletion": True, "target_name": name, "phone": phone, "is_self": False}
+
+    if lower_no_prefix in [
+        "eliminar comercio", "borrar comercio", "dar de baja comercio",
+        "eliminar un comercio", "borrar un comercio", "dar de baja un comercio",
+        "eliminar cliente", "borrar cliente", "dar de baja cliente"
+    ]:
+        return {"is_client_deletion": True, "target_name": None, "phone": None, "is_self": False}
+
+    return {"is_client_deletion": False}
+
+
+async def parse_supplier_phone_update_intent(text: str) -> dict:
+    """
+    Detects if a merchant wants to update the phone number of an existing supplier.
+    e.g. 'Sofi, Carlos de Distribuidora Alem cambió de número al 3434112233'
+         'Distribuidora Alem cambió de número, ahora es 3434112233'
+         'actualizá el número de Distribuidora Alem al 3434112233'
+         'el nuevo whatsapp de Carlos de Distribuidora Alem es 3434112233'
+         'cambió de número Pedro de Lácteos Paraná al 343...'
+    """
+    clean = text.strip()
+    lower = clean.lower()
+
+    # Guard: if it's order dispatch or basket addition
+    if any(k in lower for k in ["mandale el pedido", "mandar pedido", "despachale", "anotá para", "anotame para"]):
+        return {"is_supplier_phone_update": False}
+
+    update_triggers = [
+        "cambió de número", "cambio de numero", "cambió el número", "cambio el numero",
+        "cambió de número al", "cambio de numero al", "cambió su número", "cambio su numero",
+        "cambió de teléfono", "cambio de telefono", "cambió el teléfono", "cambio el telefono",
+        "cambió de whatsapp", "cambio de whatsapp", "cambió el whatsapp", "cambio el whatsapp",
+        "cambió de celu", "cambio de celu", "cambió el celu", "cambio el celu",
+        "nuevo número", "nuevo numero", "nuevo teléfono", "nuevo telefono", "nuevo whatsapp", "nuevo celu",
+        "actualizá el número", "actualiza el número", "actualizá el numero", "actualiza el numero",
+        "actualizar el número", "actualizar el numero", "actualizar número", "actualizar numero",
+        "actualizá el teléfono", "actualiza el teléfono", "actualizá el telefono", "actualiza el telefono",
+        "actualizar teléfono", "actualizar telefono", "actualizá el whatsapp", "actualiza el whatsapp",
+        "actualizar whatsapp"
+    ]
+    is_candidate = any(trig in lower for trig in update_triggers) or (
+        any(w in lower for w in ["proveedor", "distribuidora", "viajante"]) and any(k in lower for k in ["cambi", "nuevo", "actualiz"]) and any(p in lower for p in ["numero", "número", "telefono", "teléfono", "whatsapp", "celu"])
+    )
+    if not is_candidate:
+        return {"is_supplier_phone_update": False}
+
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El dueño de un comercio le habla a su asistente comercial Sofía por WhatsApp para avisar que un proveedor, distribuidora o viajante cambió de número de teléfono o para actualizar su WhatsApp.\n"
+            f"Mensaje: \"{clean}\"\n\n"
+            "Analizá y extraé en formato JSON con estas claves:\n"
+            "- is_supplier_phone_update: true o false\n"
+            "- supplier_name: nombre comercial de la empresa proveedora o distribuidora (ej: 'Distribuidora Alem', 'Distribuidora Central', o null si solo se dice el nombre del viajante)\n"
+            "- contact_name: nombre de pila de la persona si se menciona (ej: 'Carlos', 'Pedro', o null)\n"
+            "- new_phone: nuevo número de teléfono extraído (solo dígitos, o null)\n"
+            "Respondé ÚNICAMENTE un JSON válido."
+        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={gemini_key}"
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                )
+                if res.status_code == 200:
+                    cand = res.json().get("candidates", [])
+                    if cand and "content" in cand[0]:
+                        parts = cand[0]["content"].get("parts", [])
+                        if parts:
+                            data = json.loads(parts[0].get("text", "{}"))
+                            if data.get("is_supplier_phone_update"):
+                                return data
+        except Exception as e:
+            logger.warning(f"Gemini supplier phone update parse error: {e}")
+
+    # Deterministic fallback
+    phone_m = re.search(r'(?:al|a|es|nuevo\s+(?:número|numero|teléfono|telefono|whatsapp|celu)\s+es)?\s*:?\s*(\+?[0-9\s\-]{8,25})', clean, re.IGNORECASE)
+    new_phone = "".join(filter(str.isdigit, phone_m.group(1))) if phone_m else None
+
+    clean_no_phone = clean[:phone_m.start()].strip() if phone_m else clean
+    clean_no_prefix = re.sub(r'^(?:sofi|sofia|hola|buenas|che)[\s,:]*', '', clean_no_phone, flags=re.IGNORECASE).strip()
+
+    # Pattern: "Carlos de Distribuidora Alem cambió..."
+    c_m = re.search(r'(?:a\s+)?([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s+de\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:cambi[óo]|tiene|es\s+el|actualiz)', clean_no_prefix, re.IGNORECASE)
+    if c_m:
+        contact_name = c_m.group(1).strip()
+        supplier_name = c_m.group(2).strip()
+    else:
+        s_m = re.search(r'(?:actualiz[áa](?:r)?\s+(?:el\s+)?(?:número|numero|teléfono|telefono|whatsapp)\s+de\s+|al\s+proveedor\s+|a\s+la\s+distribuidora\s+|proveedor\s+|distribuidora\s+)?([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s\.\'\"]+?)\s+(?:cambi[óo]|tiene|es\s+el|al\s+[0-9]|$)', clean_no_prefix, re.IGNORECASE)
+        supplier_name = s_m.group(1).strip() if s_m else "Proveedor"
+        supplier_name = re.sub(r'^(?:el|la|al|a)\s+', '', supplier_name, flags=re.IGNORECASE).strip()
+        contact_name = supplier_name
+
+    return {
+        "is_supplier_phone_update": True,
+        "supplier_name": supplier_name,
+        "contact_name": contact_name,
+        "new_phone": new_phone
+    }
+
 
 
 async def parse_supplier_inquiry_intent(text: str) -> dict:
@@ -1846,6 +1989,94 @@ async def process_boss_message(
             f"3. Despachar a proveedor: *\"Sofi, mandale el pedido a Distribuidora Ricardo al [Teléfono] con...\"*"
         ), "rubro_switched"
 
+    # 1.38 Client / Store Deletion on-the-fly (`eliminar comercio <nombre/tel>`, `dar de baja comercio <nombre/tel>`, etc.)
+    client_del_data = parse_client_deletion_intent(clean_text)
+    if client_del_data.get("is_client_deletion"):
+        target_name = client_del_data.get("target_name")
+        target_phone = client_del_data.get("phone")
+        norm_target_phone = normalize_argentine_phone(target_phone) if target_phone else None
+        is_self = client_del_data.get("is_self", False)
+
+        is_boss = is_boss_number(clean_sender) or sender_phone == settings.WHATSAPP_ALERT_PHONE or clean_sender == "".join(filter(str.isdigit, str(settings.WHATSAPP_ALERT_PHONE or "")))
+
+        if not is_boss and not is_self:
+            return True, (
+                "🔒 *Función restringida*\n\n"
+                "Solo el Administrador del sistema o el propio comercio pueden gestionar la baja de cuentas."
+            ), "client_deletion_unauthorized"
+
+        if is_self:
+            norm_target_phone = effective_merchant_phone or clean_sender
+
+        target_prospect = None
+        if db:
+            if norm_target_phone:
+                target_prospect = db.query(Prospect).filter(
+                    (Prospect.phone == norm_target_phone) |
+                    (Prospect.phone == target_phone)
+                ).first()
+            elif target_name:
+                t_clean = target_name.strip().lower()
+                candidates = db.query(Prospect).filter(
+                    Prospect.parent_merchant_phone == None,
+                    Prospect.campaign != "supplier",
+                    Prospect.business_type != "proveedor"
+                ).all()
+
+                # 1. Exact match on store owner name or contact name
+                for p in candidates:
+                    if is_boss_number(p.phone) or p.phone == settings.WHATSAPP_ALERT_PHONE:
+                        continue
+                    if (p.name or "").strip().lower() == t_clean or (p.contact_name or "").strip().lower() == t_clean:
+                        target_prospect = p
+                        break
+
+                # 2. Substring match on store owner
+                if not target_prospect:
+                    for p in candidates:
+                        if is_boss_number(p.phone) or p.phone == settings.WHATSAPP_ALERT_PHONE:
+                            continue
+                        p_name_lower = (p.name or "").strip().lower()
+                        p_cname_lower = (p.contact_name or "").strip().lower()
+                        if t_clean in p_name_lower or t_clean in p_cname_lower or (len(p_name_lower) >= 4 and p_name_lower in t_clean):
+                            target_prospect = p
+                            break
+
+        if not target_prospect:
+            return True, (
+                f"⚠️ *No encontré al comercio '{target_name or target_phone or 'solicitado'}' registrado.*\n\n"
+                f"💡 Pasame el nombre o el número de WhatsApp, por ejemplo:\n"
+                f"_«Sofi, eliminar comercio Kiosco Alameda»_ o _«eliminar comercio al 343...»_"
+            ), "client_delete_not_found"
+
+        del_phone = target_prospect.phone
+        del_name = target_prospect.name or "Comercio"
+
+        # 1. Delete all associated draft orders for this merchant
+        db.query(SupplierDraftOrder).filter(SupplierDraftOrder.merchant_phone == del_phone).delete(synchronize_session=False)
+
+        # 2. Delete all merchant products for this merchant
+        db.query(MerchantProduct).filter(MerchantProduct.merchant_phone == del_phone).delete(synchronize_session=False)
+
+        # 3. Delete all linked employees
+        db.query(Prospect).filter(Prospect.parent_merchant_phone == del_phone).delete(synchronize_session=False)
+
+        # 4. Delete any suppliers registered strictly by this merchant
+        db.query(Prospect).filter(
+            Prospect.merchant_phone == del_phone,
+            Prospect.campaign == "supplier"
+        ).delete(synchronize_session=False)
+
+        # 5. Delete the prospect record itself
+        db.delete(target_prospect)
+        db.commit()
+
+        return True, (
+            f"🗑️ *COMERCIO DADO DE BAJA CON ÉXITO*\n\n"
+            f"*{del_name}* (+{del_phone}) y todas sus canastas y datos de prueba fueron eliminados del sistema.\n\n"
+            f"El número quedó *100% liberado y restablecido* como una hoja en blanco para nuevas pruebas o demostraciones."
+        ), "client_deleted"
+
     # 1.55 Multi-Employee Team Management
     emp_intent = await parse_employee_management_intent(clean_text)
     if emp_intent.get("is_employee_management"):
@@ -2308,6 +2539,105 @@ async def process_boss_message(
             return True, (
                 f"⚠️ No encontré ningún proveedor registrado con el nombre *\"{del_target}\"*.\n\n"
                 f"💡 Escribí `proveedores` para ver tu lista actual de distribuidores guardados."
+            ), "supplier_not_found"
+
+    # 1.635 Supplier Phone Update (`[proveedor/contacto] cambió de número al <tel>`, `actualizá el número de [proveedor] al <tel>`)
+    sup_phone_data = await parse_supplier_phone_update_intent(clean_text)
+    if sup_phone_data.get("is_supplier_phone_update"):
+        s_target = sup_phone_data.get("supplier_name")
+        c_target = sup_phone_data.get("contact_name")
+        raw_np = sup_phone_data.get("new_phone")
+        norm_np = normalize_argentine_phone(raw_np) if raw_np else None
+
+        if not s_target and not c_target:
+            return True, (
+                "⚠️ *¿A qué proveedor le querés actualizar el número?*\n\n"
+                "Decime por audio o texto, por ejemplo:\n"
+                "_«Sofi, Carlos de Distribuidora Alem cambió de número al 3434112233»_"
+            ), "supplier_phone_update_needs_name"
+
+        if not norm_np or len(norm_np) < 8:
+            return True, (
+                f"📋 *Actualización de teléfono para {s_target or c_target}:*\n\n"
+                f"Me falta el nuevo número de WhatsApp.\n\n"
+                f"💡 Pasámelo diciendo por ejemplo: `el nuevo número es 343 4112233`"
+            ), "supplier_phone_update_needs_phone"
+
+        # Search supplier record for this merchant
+        candidates = db.query(Prospect).filter(
+            ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+            (Prospect.merchant_phone == effective_merchant_phone)
+        ).all() if db else []
+
+        if not candidates and db and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
+            candidates = db.query(Prospect).filter(
+                ((Prospect.campaign == "supplier") | (Prospect.business_type == "proveedor")),
+                ((Prospect.merchant_phone == effective_merchant_phone) | (Prospect.merchant_phone == None))
+            ).all()
+
+        matched_sup = None
+        # First match by supplier_name
+        if s_target:
+            s_clean = s_target.strip().lower()
+            for s in candidates:
+                s_name_lower = (s.name or "").lower()
+                if s_clean in s_name_lower or s_name_lower in s_clean:
+                    matched_sup = s
+                    break
+
+        # Then match by contact_name
+        if not matched_sup and c_target:
+            c_clean = c_target.strip().lower()
+            for s in candidates:
+                c_name_lower = (s.contact_name or "").lower()
+                s_name_lower = (s.name or "").lower()
+                if c_clean in c_name_lower or c_clean in s_name_lower:
+                    matched_sup = s
+                    break
+
+        # Fallback to match all prospects for this merchant
+        if not matched_sup and db:
+            all_pros = db.query(Prospect).filter(Prospect.merchant_phone == effective_merchant_phone).all()
+            if not all_pros and (is_boss_number(sender_phone) or sender_phone == settings.WHATSAPP_ALERT_PHONE):
+                all_pros = db.query(Prospect).all()
+            for s in all_pros:
+                s_name_lower = (s.name or "").lower()
+                c_name_lower = (s.contact_name or "").lower()
+                if (s_target and (s_target.lower() in s_name_lower or s_name_lower in s_target.lower())) or \
+                   (c_target and (c_target.lower() in c_name_lower or c_name_lower in c_target.lower())):
+                    matched_sup = s
+                    break
+
+        if matched_sup:
+            old_phone = matched_sup.phone
+            matched_sup.phone = norm_np
+            matched_sup.updated_at = datetime.now(timezone.utc)
+            matched_sup.notes = f"Teléfono actualizado desde WhatsApp el {datetime.now().strftime('%d/%m/%Y %H:%M')}. Anterior: {old_phone}"
+            db.commit()
+
+            ident = resolve_merchant_identity(sender_phone, db, target_sup_name=matched_sup.name)
+            sender_intro = ident["sender_intro"]
+
+            # Send welcoming greeting to new phone
+            sup_contact = matched_sup.contact_name or matched_sup.name
+            sup_greet = (
+                f"¡Hola {sup_contact}! 👋 Te escribo de parte de *{sender_intro}*.\n"
+                f"Agendé este nuevo número como tu WhatsApp de contacto para coordinar pedidos y listas de precios vigentes. ¡Que tengas una excelente jornada! 📋📦"
+            )
+            try:
+                await whatsapp.send_whatsapp_message(to_phone=norm_np, text=sup_greet)
+            except Exception as w_err:
+                logger.warning(f"Could not send greeting to updated supplier phone: {w_err}")
+
+            return True, (
+                f"✅ *TELÉFONO DE PROVEEDOR ACTUALIZADO*\n\n"
+                f"*{matched_sup.name}* ({sup_contact}) ahora tiene asignado el WhatsApp *+{norm_np}*.\n\n"
+                f"📋 Mantengo intactos todos sus productos, precios y canastas pendientes en mi memoria."
+            ), "supplier_phone_updated"
+        else:
+            return True, (
+                f"⚠️ *No encontré al proveedor '{s_target or c_target}' entre tus contactos.*\n\n"
+                f"💡 Escribí *«proveedores»* para ver tu lista de distribuidores agendados."
             ), "supplier_not_found"
 
     # 1.64 Direct Supplier Inquiry / Question on behalf of Merchant ("preguntale a...", "consultale a...", "decile a...")
