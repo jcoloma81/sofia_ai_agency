@@ -76,3 +76,22 @@ class WebhookEvent(Base):
     payload = Column(Text)
     created_at = Column(DateTime, default=utc_now)
 
+class BridgeCommand(Base):
+    """
+    Commands queued for desktop PC Excel sync (Sofía Bridge).
+    Enables remote execution of Excel operations (append row, update cell, batch update).
+    """
+    __tablename__ = "bridge_commands"
+
+    id = Column(Integer, primary_key=True, index=True)
+    command_id = Column(String, unique=True, index=True)          # UUID
+    merchant_phone = Column(String, index=True, nullable=False)   # E.164 phone or identifier
+    action = Column(String, nullable=False)                       # "append_row", "update_product", "batch_update"
+    target_file = Column(String, nullable=True)                  # e.g. "Ventas.xlsx" (optional)
+    sheet_name = Column(String, nullable=True)                   # e.g. "Ventas", "Precios"
+    payload = Column(Text, nullable=False, default="{}")         # JSON object with operation data
+    status = Column(String, default="pending", index=True)        # pending, in_progress, completed, failed
+    result_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+    completed_at = Column(DateTime, nullable=True)
+

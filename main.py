@@ -11,6 +11,7 @@ from app.database import Base, engine, run_auto_migrations, verify_database_heal
 from app.routers.webhook import router as webhook_router
 from app.routers.outreach import router as outreach_router
 from app.routers.dashboard import router as dashboard_router, verify_admin_credentials
+from app.routers.bridge import router as bridge_router
 from app.config.settings import settings
 
 # Initialize logging
@@ -113,6 +114,7 @@ app.include_router(webhook_router, tags=["WhatsApp Webhook"])
 app.include_router(webhook_router, prefix="/api/v1", tags=["WhatsApp Webhook v1"])
 app.include_router(webhook_router, prefix="/api/v1/webhook", tags=["WhatsApp Webhook v1 Extra"])
 app.include_router(outreach_router, prefix="/api/v1/outreach", tags=["Outreach v1"])
+app.include_router(bridge_router, prefix="/api/v1/bridge", tags=["Sofía Bridge"])
 
 # Backward compatibility routes
 app.include_router(webhook_router, prefix="/api/v1/prospecting", tags=["Prospecting Compatibility"])

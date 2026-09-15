@@ -55,6 +55,25 @@ def run_auto_migrations(db_engine):
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_parent_merchant_phone ON prospects (parent_merchant_phone)"))
+                # Ensure bridge_commands table & indexes
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS bridge_commands (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        command_id VARCHAR UNIQUE,
+                        merchant_phone VARCHAR,
+                        action VARCHAR,
+                        target_file VARCHAR,
+                        sheet_name VARCHAR,
+                        payload TEXT DEFAULT '{}',
+                        status VARCHAR DEFAULT 'pending',
+                        result_message TEXT,
+                        created_at TIMESTAMP,
+                        completed_at TIMESTAMP
+                    )
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_bridge_commands_command_id ON bridge_commands (command_id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_bridge_commands_merchant_phone ON bridge_commands (merchant_phone)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_bridge_commands_status ON bridge_commands (status)"))
                 conn.commit()
             else:
                 conn.execute(text("""
@@ -71,6 +90,23 @@ def run_auto_migrations(db_engine):
                     CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone);
                     CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone);
                     CREATE INDEX IF NOT EXISTS ix_prospects_parent_merchant_phone ON prospects (parent_merchant_phone);
+
+                    CREATE TABLE IF NOT EXISTS bridge_commands (
+                        id SERIAL PRIMARY KEY,
+                        command_id VARCHAR UNIQUE,
+                        merchant_phone VARCHAR,
+                        action VARCHAR,
+                        target_file VARCHAR,
+                        sheet_name VARCHAR,
+                        payload TEXT DEFAULT '{}',
+                        status VARCHAR DEFAULT 'pending',
+                        result_message TEXT,
+                        created_at TIMESTAMP,
+                        completed_at TIMESTAMP
+                    );
+                    CREATE INDEX IF NOT EXISTS ix_bridge_commands_command_id ON bridge_commands (command_id);
+                    CREATE INDEX IF NOT EXISTS ix_bridge_commands_merchant_phone ON bridge_commands (merchant_phone);
+                    CREATE INDEX IF NOT EXISTS ix_bridge_commands_status ON bridge_commands (status);
                 """))
                 conn.commit()
             log.info("🛡️ Pre-flight database schema check passed successfully.")

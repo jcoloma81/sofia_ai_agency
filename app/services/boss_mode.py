@@ -735,7 +735,7 @@ async def parse_client_onboarding_intent(text: str) -> dict:
         "enviale este mensaje", "mandale este mensaje", "despachar", "despachale",
         "silenciar", "reactivar", "resumen", "ventas", "como venimos", "cómo venimos",
         "lista de precio", "lista completa", "si lo confirmo", "lo tomo yo",
-        "pedidos de", "pedido a", "pedido formal"
+        "pedidos de", "pedido a", "pedido formal", "excel", "planilla", "en el excel", "al excel"
     ]
     if any(d in lower for d in disqualifiers):
         return {"is_onboarding": False}
@@ -3051,6 +3051,53 @@ async def process_boss_message(
                     f"Los faltantes anotados para *{target_sup}* fueron eliminados y quedaron 100% pasados en limpio para la próxima reposición."
                 ), "basket_cleared"
 
+    # 1.75 Sofía Bridge — Desktop PC Excel Synchronization (Pilar 1: Comerciante Mostrador)
+    from app.services.excel_bridge import (
+        parse_bridge_excel_intent,
+        enqueue_bridge_command,
+        parse_pocket_price_query,
+        lookup_merchant_product,
+        format_pocket_price_response
+    )
+    bridge_intent = await parse_bridge_excel_intent(clean_text)
+    if bridge_intent.get("is_bridge"):
+        b_action = bridge_intent.get("action", "append_row")
+        b_sheet = bridge_intent.get("sheet_name")
+        b_summary = bridge_intent.get("summary", "Orden enviada a tu Excel.")
+        b_payload = {}
+        if b_action == "append_row":
+            b_payload["values"] = bridge_intent.get("values", [])
+            b_payload["detalle"] = clean_text
+        elif b_action == "update_product":
+            b_payload["search"] = bridge_intent.get("search_term", "")
+            b_payload["updates"] = bridge_intent.get("updates", {})
+
+        b_cmd = enqueue_bridge_command(
+            db=db,
+            merchant_phone=effective_merchant_phone,
+            action=b_action,
+            payload=b_payload,
+            sheet_name=b_sheet
+        )
+        return True, (
+            f"⚡ *SOFÍA BRIDGE EXCEL:* {b_summary}\n\n"
+            f"🖥️ _Orden enviada a tu PC (ID: `{b_cmd.command_id[:8]}`). Tu planilla de Excel se actualiza en vivo._"
+        ), "bridge_excel_command"
+
+    # 1.76 Pocket Price Query — Mobile Merchant Instant Price & Stock Consultation (Pilar 2: Comerciante Celular)
+    pocket_item = parse_pocket_price_query(clean_text)
+    if pocket_item:
+        prod_data = lookup_merchant_product(db, effective_merchant_phone, pocket_item)
+        if prod_data:
+            return True, format_pocket_price_response(prod_data), "pocket_price_query"
+        cat_prod = catalog_service.find_product_exact_or_best(pocket_item, merchant_phone=effective_merchant_phone, db=db)
+        if cat_prod:
+            stock_badge = "En stock ✅" if cat_prod.in_stock else "Sin stock ❌"
+            return True, (
+                f"🔍 *{cat_prod.name}*\n\n"
+                f"🏷️ *Precio Venta:* {cat_prod.formatted_price()}\n"
+                f"📊 *Estado:* {stock_badge}"
+            ), "pocket_price_query"
 
     # 1.8 Add items to Supplier Basket (Smart Multi-Supplier Routing & 7-Day Freshness Rule)
     basket_add_data = await parse_supplier_basket_add_intent(clean_text)

@@ -1,0 +1,29 @@
+================================================================
+          SOFÍA BRIDGE — GUÍA DE INSTALACIÓN RÁPIDA (2 MINUTOS)
+================================================================
+
+Este conector permite que Sofía actualice y cargue ventas y precios
+en Microsoft Excel en tiempo real desde WhatsApp.
+
+PASO 1: CONFIGURACIÓN BÁSICA
+----------------------------------------------------------------
+Abre el archivo 'config.json' con el Bloc de Notas y coloca:
+- "merchant_phone": El número de WhatsApp del comercio (ej: "5493434991122").
+- "excel_path": La ruta o nombre del archivo Excel (ej: "Precios.xlsx").
+- "server_url": Servidor de Sofía (por defecto: https://sofia-ai-agency.onrender.com).
+
+PASO 2: EJECUCIÓN
+----------------------------------------------------------------
+Haz doble clic en 'Sofia_Bridge.exe' (o en 'iniciar_bridge.bat').
+Verás el mensaje:
+"🚀 SOFÍA BRIDGE — Conector Activo para Microsoft Excel"
+
+PASO 3: PARA QUE ARRANQUE SOLO AL PRENDER LA PC (OPCIONAL)
+----------------------------------------------------------------
+1. Presiona las teclas Windows + R en el teclado.
+2. Escribe: shell:startup y presiona Enter.
+3. Copia un 'Acceso Directo' de Sofia_Bridge.exe en esa carpeta.
+¡Listo! El programa se iniciará automáticamente cada vez que se prenda la PC.
+================================================================
+Atención técnica: Javier Coloma — Sofía AI Agency
+================================================================
