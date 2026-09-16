@@ -317,11 +317,13 @@ class ExcelOperator:
 class SofiaBridgeClient:
     """Cliente de polling y ejecución remota para la PC del comerciante."""
 
-    def __init__(self, server_url: str, merchant_phone: str, file_path: str, poll_interval: int = 2):
+    def __init__(self, server_url: str, merchant_phone: str, file_path: str, poll_interval: int = 2, gemini_api_key: Optional[str] = None):
         self.server_url = server_url.rstrip("/")
         self.merchant_phone = "".join(filter(str.isdigit, merchant_phone))
         self.operator = ExcelOperator(file_path)
         self.poll_interval = poll_interval
+        self.gemini_api_key = gemini_api_key
+        self.client_version = "1.1.0"
         self.running = True
 
     def run(self):
@@ -334,6 +336,22 @@ class SofiaBridgeClient:
         logger.info("Esperando órdenes desde WhatsApp... (Presioná Ctrl+C para salir)")
 
         with httpx.Client(timeout=10.0) as client:
+            # 1. Ping inicial al servidor central
+            try:
+                ping_url = f"{self.server_url}/api/v1/bridge/ping"
+                ping_resp = client.post(ping_url, json={
+                    "merchant_phone": self.merchant_phone,
+                    "version": self.client_version,
+                    "gemini_api_key": self.gemini_api_key
+                })
+                if ping_resp.status_code == 200:
+                    pdata = ping_resp.json()
+                    logger.info(f"🟢 Servidor Central: {pdata.get('message', 'Online')} (v{pdata.get('server_version', '1.1.0')})")
+                    if pdata.get("update_available"):
+                        logger.warning(f"⚠️ Actualización disponible en el servidor: v{pdata.get('server_version')}")
+            except Exception as pe:
+                logger.warning(f"Conexión inicial offline ({pe}). Continuando en modo local...")
+
             while self.running:
                 try:
                     self._check_and_execute(client)
@@ -411,18 +429,34 @@ class SofiaBridgeClient:
 
 
 def main():
+    # Buscar config.json en dir actual o junto al script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_paths = ["config.json", os.path.join(script_dir, "config.json")]
+    cfg = {}
+    for cp in config_paths:
+        if os.path.exists(cp):
+            try:
+                with open(cp, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                break
+            except Exception:
+                pass
+
     parser = argparse.ArgumentParser(description="Sofía Bridge para Microsoft Excel")
-    parser.add_argument("--merchant", default="5493434991122", help="Teléfono E.164 del comercio")
-    parser.add_argument("--server", default="http://localhost:8000", help="URL del backend de Sofía")
-    parser.add_argument("--file", default="ferreteria_demo.xlsx", help="Ruta al archivo Excel")
-    parser.add_argument("--interval", type=int, default=2, help="Intervalo de sondeo en segundos")
+    parser.add_argument("--merchant", default=cfg.get("merchant_phone", "5493434991122"), help="Teléfono E.164 del comercio")
+    parser.add_argument("--server", default=cfg.get("server_url", "http://localhost:8000"), help="URL del backend de Sofía")
+    parser.add_argument("--file", default=cfg.get("excel_path", "ferreteria_demo.xlsx"), help="Ruta al archivo Excel")
+    parser.add_argument("--interval", type=int, default=cfg.get("poll_interval", 2), help="Intervalo de sondeo en segundos")
     args = parser.parse_args()
+
+    gemini_key = cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY")
 
     client = SofiaBridgeClient(
         server_url=args.server,
         merchant_phone=args.merchant,
         file_path=args.file,
-        poll_interval=args.interval
+        poll_interval=args.interval,
+        gemini_api_key=gemini_key
     )
     client.run()
 

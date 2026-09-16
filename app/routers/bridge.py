@@ -25,6 +25,35 @@ class AcknowledgeRequest(BaseModel):
     result_message: Optional[str] = None
     notify_merchant: bool = False
 
+class BridgePingRequest(BaseModel):
+    merchant_phone: str
+    version: str = "1.0.0"
+    gemini_api_key: Optional[str] = None
+
+@router.post("/ping")
+def bridge_ping(
+    req: BridgePingRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Heartbeat, version check and BYOK registration for Sofía Bridge desktop client.
+    """
+    clean_p = "".join(filter(str.isdigit, req.merchant_phone))
+    current_server_version = "1.1.0"
+    update_available = (req.version != current_server_version)
+
+    if req.gemini_api_key:
+        logger.info(f"Comerciante {clean_p} conectó clave Gemini propia (BYOK).")
+
+    return {
+        "status": "online",
+        "merchant_phone": clean_p,
+        "server_version": current_server_version,
+        "client_version": req.version,
+        "update_available": update_available,
+        "message": "Sofía Bridge conectado al servidor central."
+    }
+
 @router.get("/commands")
 def list_pending_commands(
     merchant_phone: str = Query(..., description="E.164 phone or identifier of the merchant"),

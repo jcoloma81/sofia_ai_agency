@@ -180,9 +180,9 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
 
     # Highlight Banner
     banner_text = (
-        "<b>🎯 GUÍA PRÁCTICA PARA EL COMERCIANTE:</b> Este manual contiene las órdenes de voz y texto para sacarle el máximo "
-        "provecho a Sofía en tu día a día, junto con los 4 blindajes automáticos que protegen a tu negocio de errores en compras, "
-        "listas equivocadas o duplicación de mercadería. Podés tenerlo a mano en tu celular o imprimirlo para vos y tu equipo de trabajo."
+        "<b>🎯 GUÍA PRÁCTICA PARA EL COMERCIANTE:</b> Órdenes de voz y texto para sacarle el máximo provecho a Sofía en tu día a día, "
+        "con <b>Sofía Bridge</b> (conector que escribe en vivo en tu Microsoft Excel de mostrador sin tocar el teclado) y los 4 blindajes "
+        "automáticos de seguridad comercial que protegen a tu negocio de errores en compras y listas desactualizadas."
     )
     t_banner = Table([[Paragraph(banner_text, ParagraphStyle('Banner', parent=body_style, fontSize=7.5, leading=10, textColor=colors.HexColor('#1E1B4B')))]], colWidths=[18.6*cm])
     t_banner.setStyle(TableStyle([
@@ -264,12 +264,13 @@ def build_manual_pdf(filename="assets/Manual_Funcionalidades_Sofia.pdf"):
                       "• <i>«Actualizá el número de Distribuidora Alem al 3434...»</i>", cmd_style),
             Paragraph("Actualiza el contacto en el acto para que futuros pedidos y consultas vayan a la nueva línea sin perder el historial ni los precios cargados.", action_style)
         ],
-        # 8. Carga de Precios
+        # 8. Carga de Precios y Sofía Bridge
         [
-            Paragraph("<b>Actualizar Precios</b><br/>(Excel o PDF)", bold_label),
-            Paragraph("• <i>Simplemente reenviar el archivo Excel o PDF que mandó el viajante al chat de Sofía</i>.<br/>"
-                      "• <i>«Subió todo un 10% en Distribuidora Alem»</i>", cmd_style),
-            Paragraph("Lee las tablas en segundos, actualiza los costos en el catálogo y calcula el % promedio de aumento. <b>Si la lista no coincide en nada con el local, frena y te alerta</b>.", action_style)
+            Paragraph("<b>Actualizar Precios & Excel</b><br/>(Bridge en Vivo)", bold_label),
+            Paragraph("• <i>Reenviar archivo Excel/PDF del viajante por WhatsApp</i>.<br/>"
+                      "• <i>«Sofi, subí 15% todo lo de Loma Negra»</i><br/>"
+                      "• <i>«Anotá venta: 10 bolsas de cemento a $120.000»</i>", cmd_style),
+            Paragraph("Lee las tablas en segundos y actualiza costos. Con <b>Sofía Bridge</b>, escribe directamente en tu Excel abierto en la PC (Efecto Fantasma) y resalta los cambios en pantalla.", action_style)
         ],
         # 9. Cambio de Rubro
         [

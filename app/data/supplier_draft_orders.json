@@ -9,15 +9,15 @@
           "unit_price": 0.0
         }
       ],
-      "updated_at": "2026-09-14T14:35:50.901792+00:00"
+      "updated_at": "2026-09-15T15:16:55.889862+00:00"
     },
     "distribuidora_alem": {
       "supplier_name": "Distribuidora Alem",
       "items": [
         {
-          "product_name": "Azúcar Ledesma Clásica 1kg",
+          "product_name": "Harina Pureza 000 1kg",
           "quantity": 5,
-          "unit_price": 11000.0
+          "unit_price": 12500.0
         },
         {
           "product_name": "Aceite Cañuelas 1.5L",
@@ -50,7 +50,7 @@
           "unit_price": 17500.0
         }
       ],
-      "updated_at": "2026-09-14T14:36:10.055642+00:00"
+      "updated_at": "2026-09-15T15:18:15.280450+00:00"
     }
   },
   "5493435111111": {},
@@ -66,47 +66,6 @@
         "unit_price": 0.0
       }
     ],
-    "updated_at": "2026-09-14T14:35:50.901792+00:00"
-  },
-  "distribuidora_alem": {
-    "supplier_name": "Distribuidora Alem",
-    "items": [
-      {
-        "product_name": "Azúcar Ledesma Clásica 1kg",
-        "quantity": 5,
-        "unit_price": 11000.0
-      },
-      {
-        "product_name": "Aceite Cañuelas 1.5L",
-        "quantity": 5,
-        "unit_price": 14400.0
-      },
-      {
-        "product_name": "Alfajores",
-        "quantity": 10,
-        "unit_price": 0.0
-      },
-      {
-        "product_name": "Gaseosa Coca Cola 2.25L",
-        "quantity": 5,
-        "unit_price": 19200.0
-      },
-      {
-        "product_name": "Fideos Matarazzo Guiseros 500g",
-        "quantity": 4,
-        "unit_price": 18000.0
-      },
-      {
-        "product_name": "Puré de Tomate De Cecco 520g",
-        "quantity": 6,
-        "unit_price": 9800.0
-      },
-      {
-        "product_name": "Mayonesa Hellmanns Doypack 475g",
-        "quantity": 3,
-        "unit_price": 17500.0
-      }
-    ],
-    "updated_at": "2026-09-14T14:36:10.055642+00:00"
+    "updated_at": "2026-09-15T15:16:55.889862+00:00"
   }
 }

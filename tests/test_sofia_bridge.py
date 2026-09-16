@@ -205,3 +205,27 @@ async def test_boss_mode_bridge_and_pocket_price_integration(db_session):
     assert action_b == "bridge_excel_command"
     assert "SOFÍA BRIDGE EXCEL" in reply_b
     assert "actualiza en vivo" in reply_b
+
+def test_bridge_ping_heartbeat_and_byok(db_session):
+    client = TestClient(app)
+    # 1. Ping with matching version and Gemini BYOK key
+    resp = client.post("/api/v1/bridge/ping", json={
+        "merchant_phone": "5493434991122",
+        "version": "1.1.0",
+        "gemini_api_key": "AIzaSyFakeKeyTest123"
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "online"
+    assert data["server_version"] == "1.1.0"
+    assert data["client_version"] == "1.1.0"
+    assert data["update_available"] is False
+    assert data["merchant_phone"] == "5493434991122"
+
+    # 2. Ping with older version -> update_available True
+    resp_old = client.post("/api/v1/bridge/ping", json={
+        "merchant_phone": "5493434991122",
+        "version": "1.0.0"
+    })
+    assert resp_old.status_code == 200
+    assert resp_old.json()["update_available"] is True
