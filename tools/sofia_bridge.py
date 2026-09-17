@@ -676,7 +676,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Sofía Bridge para Microsoft Excel")
     parser.add_argument("--merchant", default=cfg.get("merchant_phone", "5493434991122"), help="Teléfono E.164 del comercio")
-    parser.add_argument("--server", default=cfg.get("server_url", "http://localhost:8000"), help="URL del backend de Sofía")
+    parser.add_argument("--server", default=cfg.get("server_url", "https://sofia-ai-agency.onrender.com"), help="URL del backend de Sofía")
     parser.add_argument("--file", default=cfg.get("excel_path", "ferreteria_demo.xlsx"), help="Ruta al archivo Excel")
     parser.add_argument("--interval", type=int, default=cfg.get("poll_interval", 2), help="Intervalo de sondeo en segundos")
     args = parser.parse_args()

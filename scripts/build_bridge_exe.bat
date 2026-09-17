@@ -9,14 +9,21 @@ echo.
 echo Instalando dependencias necesarias...
 pip install pyinstaller openpyxl httpx pywin32
 echo.
-echo Compilando tools\sofia_bridge.py en un unico archivo .EXE...
-pyinstaller --onefile --name "Sofia_Bridge" --icon=NONE tools\sofia_bridge.py
+set SCRIPT_FILE=sofia_bridge.py
+if not exist "%SCRIPT_FILE%" (
+    if exist "tools\sofia_bridge.py" (
+        set SCRIPT_FILE=tools\sofia_bridge.py
+    )
+)
+
+echo Compilando %SCRIPT_FILE% en un unico archivo .EXE...
+pyinstaller --noconfirm --onefile --name "Sofia_Bridge" --icon=NONE "%SCRIPT_FILE%"
 echo.
 if exist dist\Sofia_Bridge.exe (
     echo ============================================================
     echo    COMPILACION EXITOSA: dist\Sofia_Bridge.exe
     echo ============================================================
-    echo Puedes copiar ese archivo y compartirlo por WhatsApp o pendrive.
+    echo Puedes copiar ese archivo junto a config.json y compartirlo.
 ) else (
     echo Hubo un problema al compilar. Revisa los mensajes anteriores.
 )

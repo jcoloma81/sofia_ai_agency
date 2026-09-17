@@ -175,6 +175,10 @@ def download_bridge_package(
         if os.path.exists(bat_file):
             zf.write(bat_file, arcname="iniciar_bridge.bat")
 
+        build_bat = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scripts", "build_bridge_exe.bat")
+        if os.path.exists(build_bat):
+            zf.write(build_bat, arcname="compilar_a_exe.bat")
+
         readme_file = os.path.join(tools_dir, "LEEME_INSTALACION.txt")
         if os.path.exists(readme_file):
             zf.write(readme_file, arcname="LEEME_INSTALACION.txt")
