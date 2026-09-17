@@ -61,8 +61,115 @@ def similarity(a: str, b: str) -> float:
         return 0.8
     return SequenceMatcher(None, na, nb).ratio()
 
+def clean_alphanumeric(text: str) -> str:
+    """Remueve puntuaciones, puntos, barras y espacios para comparar siglas (ej: 'p.c.' -> 'pc')."""
+    norm = normalize_text(text)
+    import re
+    return re.sub(r'[^a-z0-9$]', '', norm)
+
+def detect_column_role(header_text: str) -> Optional[str]:
+    """
+    Detecta el rol semántico de una columna a partir de su encabezado, soportando
+    abreviaturas típicas de mostrador argentino (P.C., P.V., STK, ART., etc.).
+    """
+    raw = str(header_text or "").strip()
+    if not raw:
+        return None
+    norm = normalize_text(raw)
+    clean = clean_alphanumeric(raw)
+
+    # 1. Total / Subtotal
+    if clean in ("total", "subtotal", "importe", "monto") or "total" in norm:
+        return "total"
+
+    # 2. Fecha / Hora
+    if clean in ("fecha", "date", "dia") or "fecha" in norm:
+        return "fecha"
+    if clean in ("hora", "time", "horario") or "hora" in norm:
+        return "hora"
+
+    # 3. Costo (DEBE CHEQUEARSE ANTES DE PRECIO porque 'precio costo' o 'p.c.' contienen la palabra 'precio')
+    cost_exact_clean = {
+        "pc", "cost", "costo", "pcompra", "pcosto", "prcosto", "preciocosto",
+        "costosiva", "costociva", "costosiva", "costociva", "costociva", "costou", "costounitario"
+    }
+    cost_tokens = [
+        "costo", "p.costo", "p. costo", "cost", "compra", "p.compra", "p. compra",
+        "adquisicion", "fabrica", "coste", "proveedor", "mayorista"
+    ]
+    if clean in cost_exact_clean or any(t in norm for t in cost_tokens):
+        return "cost"
+
+    # 4. Precio de venta
+    price_exact_clean = {
+        "pv", "pvp", "pr", "precio", "precioventa", "pventa", "prventa", "publico",
+        "ppub", "ppublico", "l1", "lista1", "lista", "valor", "$", "pvpiva", "pventasiva"
+    }
+    price_tokens = [
+        "venta", "p.venta", "p. venta", "precio", "pvp", "p.v.p", "valor", "publico",
+        "al publico", "mostrador", "lista 1", "lista", "contado", "p.contado", "$"
+    ]
+    if clean in price_exact_clean or any(t in norm for t in price_tokens):
+        return "price"
+
+    # 5. Stock / Existencias
+    stock_exact_clean = {
+        "stk", "stock", "cant", "cantidad", "disp", "disponible",
+        "un", "unid", "unidades", "u", "saldo", "existencia", "existencias"
+    }
+    stock_tokens = [
+        "stock", "cantidad", "cant", "disponible", "disp", "existencia",
+        "existencias", "saldo", "unidades"
+    ]
+    if clean in stock_exact_clean or any(t in norm for t in stock_tokens):
+        return "stock"
+
+    # 6. Código / SKU / Barras
+    code_exact_clean = {"cod", "codigo", "sku", "id", "ref", "ean", "cb"}
+    code_tokens = ["codigo", "cod.", "sku", "referencia", "barra", "barras", "ean"]
+    if clean in code_exact_clean or any(t in norm for t in code_tokens):
+        return "code"
+
+    # 7. Producto / Descripción / Detalle
+    name_exact_clean = {
+        "art", "articulo", "desc", "descripcion", "detalle", "nombre",
+        "item", "producto", "prod", "concepto", "mercaderia", "material"
+    }
+    name_tokens = [
+        "producto", "articulo", "descripcion", "detalle", "nombre",
+        "concepto", "denominacion", "mercaderia", "material"
+    ]
+    if clean in name_exact_clean or any(t in norm for t in name_tokens):
+        return "name"
+
+    # 8. Rubro / Categoría / Marca
+    cat_tokens = ["rubro", "categoria", "marca", "familia", "linea", "grupo"]
+    if any(t in norm for t in cat_tokens):
+        return "category"
+
+    return None
+
+def _add_convenience_aliases(mapping: Dict[str, int]) -> Dict[str, int]:
+    """Copia roles canónicos a sinónimos frecuentes para búsquedas directas."""
+    if "name" in mapping:
+        for k in ["producto", "articulo", "descripcion", "detalle", "nombre", "item"]:
+            mapping[k] = mapping["name"]
+    if "cost" in mapping:
+        for k in ["costo", "cost_price", "p.costo", "pc", "cost", "compra"]:
+            mapping[k] = mapping["cost"]
+    if "price" in mapping:
+        for k in ["precio", "sale_price", "p.venta", "pv", "pvp", "valor", "$"]:
+            mapping[k] = mapping["price"]
+    if "stock" in mapping:
+        for k in ["cantidad", "cant", "stk", "disp", "unidades"]:
+            mapping[k] = mapping["stock"]
+    if "code" in mapping:
+        for k in ["codigo", "cod", "sku", "id"]:
+            mapping[k] = mapping["code"]
+    return mapping
+
 class ExcelOperator:
-    """Maneja la lectura y modificación de archivos Excel."""
+    """Maneja la lectura y modificación de archivos Excel con tolerancia a cualquier formato."""
 
     def __init__(self, file_path: str, highlight: bool = True):
         self.file_path = os.path.abspath(file_path)
@@ -121,13 +228,141 @@ class ExcelOperator:
             pass
         return False, None
 
+    def _resolve_sheet_openpyxl(self, wb: openpyxl.Workbook, sheet_name: Optional[str] = None, purpose: str = "prices"):
+        """Resuelve inteligentemente la hoja adecuada en openpyxl según su nombre o propósito."""
+        if sheet_name and sheet_name in wb.sheetnames:
+            return wb[sheet_name]
+
+        if purpose == "sales":
+            for sname in wb.sheetnames:
+                ns = normalize_text(sname)
+                if any(k in ns for k in ["venta", "movimiento", "caja", "diario", "operacion"]):
+                    return wb[sname]
+            # Si no existe, crear la hoja de ventas automáticamente
+            ws_v = wb.create_sheet(title=sheet_name or "Ventas")
+            v_headers = ["Fecha", "Hora", "Detalle de Venta", "Total"]
+            ws_v.append(v_headers)
+            header_font = Font(bold=True)
+            for col in range(1, len(v_headers) + 1):
+                ws_v.cell(row=1, column=col).font = header_font
+            return ws_v
+
+        # Para catálogo/precios
+        if sheet_name:
+            for sname in wb.sheetnames:
+                if normalize_text(sheet_name) in normalize_text(sname) or normalize_text(sname) in normalize_text(sheet_name):
+                    return wb[sname]
+
+        for sname in wb.sheetnames:
+            ns = normalize_text(sname)
+            if any(k in ns for k in ["precio", "articulo", "producto", "stock", "catalogo", "lista", "inventario", "mercaderia"]):
+                return wb[sname]
+
+        return wb.active
+
+    def _resolve_sheet_com(self, wb: Any, sheet_name: Optional[str] = None, purpose: str = "prices"):
+        """Resuelve inteligentemente la hoja adecuada en win32com según su nombre o propósito."""
+        if sheet_name:
+            try:
+                return wb.Sheets(sheet_name)
+            except Exception:
+                pass
+
+        try:
+            keywords = ["venta", "movimiento", "caja", "diario"] if purpose == "sales" else ["precio", "articulo", "producto", "stock", "catalogo", "lista"]
+            for i in range(1, wb.Sheets.Count + 1):
+                s = wb.Sheets(i)
+                ns = normalize_text(s.Name)
+                if any(k in ns for k in keywords):
+                    return s
+        except Exception:
+            pass
+
+        return wb.ActiveSheet
+
+    def _find_header_row_and_mapping(self, sheet: Any) -> Tuple[int, Dict[str, int]]:
+        """
+        Escanea las primeras 10 filas de la hoja para detectar dónde arrancan los encabezados
+        reales (saltando logos, títulos vacíos o fechas) y mapear las columnas.
+        """
+        best_row = 1
+        best_mapping = {}
+        best_score = 0
+        max_scan = min(sheet.max_row, 10) if hasattr(sheet, "max_row") else 10
+
+        for r in range(1, max_scan + 1):
+            mapping = {}
+            score = 0
+            max_c = sheet.max_column if hasattr(sheet, "max_column") else 30
+            for c in range(1, max_c + 1):
+                val = sheet.cell(row=r, column=c).value
+                if val is not None:
+                    role = detect_column_role(str(val))
+                    if role and role not in mapping:
+                        mapping[role] = c
+                        if role in ("name", "price"):
+                            score += 3
+                        elif role in ("cost", "stock", "code"):
+                            score += 2
+                        else:
+                            score += 1
+            if score > best_score:
+                best_score = score
+                best_row = r
+                best_mapping = mapping
+
+        if not best_mapping or best_score < 2:
+            # Fallback fila 1
+            best_row = 1
+            max_c = sheet.max_column if hasattr(sheet, "max_column") else 10
+            headers = [str(sheet.cell(row=1, column=c).value or "") for c in range(1, max_c + 1)]
+            best_mapping = self._detect_headers_list(headers)
+
+        _add_convenience_aliases(best_mapping)
+        return best_row, best_mapping
+
+    def _find_header_row_and_mapping_com(self, sheet: Any, max_cols: int) -> Tuple[int, Dict[str, int]]:
+        """Detector de encabezados y mapeo para win32com escaneando las primeras 10 filas."""
+        best_row = 1
+        best_mapping = {}
+        best_score = 0
+        max_scan = min(sheet.UsedRange.Rows.Count, 10)
+
+        for r in range(1, max_scan + 1):
+            mapping = {}
+            score = 0
+            for c in range(1, max_cols + 1):
+                val = sheet.Cells(r, c).Value
+                if val is not None:
+                    role = detect_column_role(str(val))
+                    if role and role not in mapping:
+                        mapping[role] = c
+                        if role in ("name", "price"):
+                            score += 3
+                        elif role in ("cost", "stock", "code"):
+                            score += 2
+                        else:
+                            score += 1
+            if score > best_score:
+                best_score = score
+                best_row = r
+                best_mapping = mapping
+
+        if not best_mapping or best_score < 2:
+            best_row = 1
+            headers = [str(sheet.Cells(1, c).Value or "") for c in range(1, max_cols + 1)]
+            best_mapping = self._detect_headers_list(headers)
+
+        _add_convenience_aliases(best_mapping)
+        return best_row, best_mapping
+
     def append_row(self, values: List[Any], sheet_name: Optional[str] = None) -> str:
         """Agrega un renglón al final de la planilla (ej: venta)."""
         has_com, com_objs = self._try_win32_com()
         if has_com:
             excel, wb = com_objs
             try:
-                sheet = wb.Sheets(sheet_name) if sheet_name else wb.ActiveSheet
+                sheet = self._resolve_sheet_com(wb, sheet_name=sheet_name, purpose="sales")
                 last_row = sheet.UsedRange.Rows.Count + 1
                 for idx, val in enumerate(values, start=1):
                     sheet.Cells(last_row, idx).Value = val
@@ -139,7 +374,7 @@ class ExcelOperator:
 
         # Fallback OpenPyXL
         wb = openpyxl.load_workbook(self.file_path)
-        sheet = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        sheet = self._resolve_sheet_openpyxl(wb, sheet_name=sheet_name, purpose="sales")
         sheet.append(values)
         last_row = sheet.max_row
         if self.highlight:
@@ -154,19 +389,19 @@ class ExcelOperator:
         if has_com:
             excel, wb = com_objs
             try:
-                sheet = wb.Sheets(sheet_name) if sheet_name else wb.ActiveSheet
+                sheet = self._resolve_sheet_com(wb, sheet_name=sheet_name, purpose="prices")
                 max_r = sheet.UsedRange.Rows.Count
                 max_c = sheet.UsedRange.Columns.Count
 
-                # 1. Identificar columnas por encabezados de la fila 1
-                col_map = self._detect_headers_com(sheet, max_c)
+                # 1. Identificar encabezados dinámicamente escaneando filas iniciales
+                header_row, col_map = self._find_header_row_and_mapping_com(sheet, max_c)
                 
-                # 2. Buscar fila del producto
+                # 2. Buscar fila del producto a partir de header_row + 1
                 best_row = None
                 best_score = 0.0
                 name_col = col_map.get("name", 2)
 
-                for r in range(2, max_r + 1):
+                for r in range(header_row + 1, max_r + 1):
                     cell_val = str(sheet.Cells(r, name_col).Value or "")
                     score = similarity(search_term, cell_val)
                     if score > best_score:
@@ -178,7 +413,7 @@ class ExcelOperator:
                     changed_fields = []
                     for k, v in updates.items():
                         norm_k = normalize_text(k)
-                        target_col = col_map.get(norm_k)
+                        target_col = col_map.get(norm_k) or col_map.get(detect_column_role(k))
                         if target_col:
                             sheet.Cells(best_row, target_col).Value = v
                             if self.highlight:
@@ -191,17 +426,16 @@ class ExcelOperator:
 
         # Fallback OpenPyXL
         wb = openpyxl.load_workbook(self.file_path)
-        sheet = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        sheet = self._resolve_sheet_openpyxl(wb, sheet_name=sheet_name, purpose="prices")
 
-        # Detectar columnas
-        headers = [str(sheet.cell(row=1, column=c).value or "") for c in range(1, sheet.max_column + 1)]
-        col_map = self._detect_headers_list(headers)
+        # Detectar columnas inteligentemente
+        header_row, col_map = self._find_header_row_and_mapping(sheet)
 
         best_row = None
         best_score = 0.0
         name_col = col_map.get("name", 2)
 
-        for r in range(2, sheet.max_row + 1):
+        for r in range(header_row + 1, sheet.max_row + 1):
             cell_val = str(sheet.cell(row=r, column=name_col).value or "")
             score = similarity(search_term, cell_val)
             if score > best_score:
@@ -213,7 +447,7 @@ class ExcelOperator:
             changed_fields = []
             for k, v in updates.items():
                 norm_k = normalize_text(k)
-                target_col = col_map.get(norm_k)
+                target_col = col_map.get(norm_k) or col_map.get(detect_column_role(k))
                 if target_col:
                     cell = sheet.cell(row=best_row, column=target_col)
                     cell.value = v
@@ -229,10 +463,9 @@ class ExcelOperator:
     def batch_update(self, items: List[Dict[str, Any]], sheet_name: Optional[str] = None) -> str:
         """Actualiza una lista de productos en lote (aumentos de proveedores)."""
         wb = openpyxl.load_workbook(self.file_path)
-        sheet = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        sheet = self._resolve_sheet_openpyxl(wb, sheet_name=sheet_name, purpose="prices")
 
-        headers = [str(sheet.cell(row=1, column=c).value or "") for c in range(1, sheet.max_column + 1)]
-        col_map = self._detect_headers_list(headers)
+        header_row, col_map = self._find_header_row_and_mapping(sheet)
         name_col = col_map.get("name", 2)
         price_col = col_map.get("price", col_map.get("precio", 4))
         cost_col = col_map.get("cost", col_map.get("costo", 3))
@@ -245,10 +478,10 @@ class ExcelOperator:
             if not it_name:
                 continue
 
-            # Buscar fila existente
+            # Buscar fila existente desde header_row + 1
             matched_row = None
             best_score = 0.0
-            for r in range(2, sheet.max_row + 1):
+            for r in range(header_row + 1, sheet.max_row + 1):
                 cell_val = str(sheet.cell(row=r, column=name_col).value or "")
                 score = similarity(it_name, cell_val)
                 if score > best_score:
@@ -266,14 +499,30 @@ class ExcelOperator:
                         sheet.cell(row=matched_row, column=price_col).fill = YELLOW_FILL
                 updated_count += 1
             else:
-                # Agregar nuevo producto
-                new_row = [
-                    item.get("code") or f"ART-{sheet.max_row}",
-                    it_name,
-                    item.get("cost_price", 0),
-                    item.get("sale_price", 0),
-                    0
-                ]
+                # Agregar nuevo producto mapeando dinámicamente sus columnas
+                target_cols = max(sheet.max_column, max(col_map.values(), default=5))
+                new_row = [None] * target_cols
+                if "code" in col_map:
+                    new_row[col_map["code"] - 1] = item.get("code") or f"ART-{sheet.max_row}"
+                if "name" in col_map:
+                    new_row[col_map["name"] - 1] = it_name
+                if "cost" in col_map:
+                    new_row[col_map["cost"] - 1] = item.get("cost_price", 0)
+                if "price" in col_map:
+                    new_row[col_map["price"] - 1] = item.get("sale_price", 0)
+                if "stock" in col_map:
+                    new_row[col_map["stock"] - 1] = item.get("stock", 0)
+
+                # Si no había mapeo suficiente, fallback estándar
+                if not any(new_row):
+                    new_row = [
+                        item.get("code") or f"ART-{sheet.max_row}",
+                        it_name,
+                        item.get("cost_price", 0),
+                        item.get("sale_price", 0),
+                        0
+                    ]
+
                 sheet.append(new_row)
                 if self.highlight:
                     for col in range(1, len(new_row) + 1):
@@ -286,27 +535,10 @@ class ExcelOperator:
     def _detect_headers_list(self, headers: List[str]) -> Dict[str, int]:
         mapping = {}
         for idx, h in enumerate(headers, start=1):
-            nh = normalize_text(h)
-            if any(k in nh for k in ["producto", "articulo", "descripcion", "detalle", "nombre"]):
-                mapping["name"] = idx
-            elif any(k in nh for k in ["costo", "p.costo", "cost"]):
-                mapping["cost"] = idx
-                mapping["costo"] = idx
-                mapping["cost_price"] = idx
-            elif any(k in nh for k in ["venta", "p.venta", "precio", "valor", "pvp", "$"]):
-                mapping["price"] = idx
-                mapping["precio"] = idx
-                mapping["sale_price"] = idx
-            elif any(k in nh for k in ["stock", "cantidad", "cant", "disp"]):
-                mapping["stock"] = idx
-                mapping["cantidad"] = idx
-            elif any(k in nh for k in ["codigo", "cod", "sku", "id"]):
-                mapping["code"] = idx
-                mapping["codigo"] = idx
-            elif any(k in nh for k in ["fecha"]):
-                mapping["fecha"] = idx
-            elif any(k in nh for k in ["total"]):
-                mapping["total"] = idx
+            role = detect_column_role(h)
+            if role and role not in mapping:
+                mapping[role] = idx
+        _add_convenience_aliases(mapping)
         return mapping
 
     def _detect_headers_com(self, sheet: Any, max_cols: int) -> Dict[str, int]:

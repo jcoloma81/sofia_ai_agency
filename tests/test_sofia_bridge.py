@@ -229,3 +229,103 @@ def test_bridge_ping_heartbeat_and_byok(db_session):
     })
     assert resp_old.status_code == 200
     assert resp_old.json()["update_available"] is True
+
+def test_detect_column_role_abbreviations():
+    from tools.sofia_bridge import detect_column_role
+
+    # Cost abbreviations
+    assert detect_column_role("P.C.") == "cost"
+    assert detect_column_role("P.C") == "cost"
+    assert detect_column_role("p/c") == "cost"
+    assert detect_column_role("COST") == "cost"
+    assert detect_column_role("P. COSTO") == "cost"
+    assert detect_column_role("PRECIO DE COSTO") == "cost"
+    assert detect_column_role("Costo Unitario") == "cost"
+
+    # Price abbreviations
+    assert detect_column_role("P.V.") == "price"
+    assert detect_column_role("P.V") == "price"
+    assert detect_column_role("p/v") == "price"
+    assert detect_column_role("PVP") == "price"
+    assert detect_column_role("P. VENTA") == "price"
+    assert detect_column_role("PRECIO VENTA") == "price"
+    assert detect_column_role("PRECIO AL PUBLICO") == "price"
+    assert detect_column_role("LISTA 1") == "price"
+    assert detect_column_role("$") == "price"
+
+    # Name / Detail abbreviations
+    assert detect_column_role("ART.") == "name"
+    assert detect_column_role("DESC.") == "name"
+    assert detect_column_role("Detalle") == "name"
+    assert detect_column_role("Mercadería") == "name"
+
+    # Stock abbreviations
+    assert detect_column_role("STK") == "stock"
+    assert detect_column_role("CANT.") == "stock"
+    assert detect_column_role("DISP.") == "stock"
+    assert detect_column_role("Existencias") == "stock"
+
+    # Code abbreviations
+    assert detect_column_role("COD.") == "code"
+    assert detect_column_role("SKU") == "code"
+    assert detect_column_role("EAN") == "code"
+
+def test_excel_operator_chaotic_format():
+    """Prueba que el conector soporte planillas con títulos arriba, filas vacías y siglas raras."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        excel_path = os.path.join(tmpdir, "lista_desordenada.xlsx")
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Lista General de Precios"
+
+        # Fila 1: Título o logo del local
+        ws.cell(row=1, column=1, value="FERRETERIA SAN MIGUEL S.R.L. — SUCURSAL 1")
+        # Fila 2: Subtítulo
+        ws.cell(row=2, column=1, value="Lista actualizada al 15/09/2026")
+        # Fila 3: Vacía
+
+        # Fila 4: Encabezados reales con abreviaturas callejeras
+        headers = ["COD.", "ART.", "P.C.", "P.V.", "STK"]
+        for c, h in enumerate(headers, start=1):
+            ws.cell(row=4, column=c, value=h)
+
+        # Filas 5+: Productos
+        ws.cell(row=5, column=1, value="T-10")
+        ws.cell(row=5, column=2, value="Tornillo Fix 4x40mm (Caja x 100)")
+        ws.cell(row=5, column=3, value=1200)
+        ws.cell(row=5, column=4, value=1800)
+        ws.cell(row=5, column=5, value=20)
+
+        ws.cell(row=6, column=1, value="A-01")
+        ws.cell(row=6, column=2, value="Alambre Galvanizado 100m")
+        ws.cell(row=6, column=3, value=8000)
+        ws.cell(row=6, column=4, value=12000)
+        ws.cell(row=6, column=5, value=5)
+
+        wb.save(excel_path)
+
+        # Inicializar operador en este archivo no convencional
+        op = ExcelOperator(excel_path)
+
+        # 1. Modificar precio y stock por voz
+        res = op.update_product(
+            search_term="tornillo fix 4x40",
+            updates={"precio": 2200, "stock": 45}
+        )
+        assert "actualizada" in res
+        assert "Fila #5" in res
+
+        # Verificar que efectivamente se escribió en la Fila 5, en las columnas 4 y 5
+        wb_check = openpyxl.load_workbook(excel_path)
+        ws_check = wb_check["Lista General de Precios"]
+        assert ws_check.cell(row=5, column=4).value == 2200
+        assert ws_check.cell(row=5, column=5).value == 45
+
+        # 2. Agregar venta (debe autogenerar la hoja 'Ventas' porque no existía)
+        res_v = op.append_row(["16/09", "18:50", "2 cajas tornillos", 4400])
+        assert "agregada con éxito" in res_v
+        wb_check2 = openpyxl.load_workbook(excel_path)
+        assert "Ventas" in wb_check2.sheetnames
+        ws_v = wb_check2["Ventas"]
+        assert ws_v.cell(row=2, column=3).value == "2 cajas tornillos"
+
