@@ -77,6 +77,14 @@ def serve_alta_cliente():
     alta_path = os.path.join(os.path.dirname(__file__), "app", "static", "ficha_alta_cliente.html")
     return FileResponse(alta_path)
 
+# Executive Technical Architecture & Meeting Cheat Sheet
+@app.get("/hoja-de-ruta", response_class=FileResponse)
+@app.get("/arquitectura", response_class=FileResponse)
+@app.get("/cheat-sheet", response_class=FileResponse)
+def serve_hoja_de_ruta():
+    doc_path = os.path.join(os.path.dirname(__file__), "docs", "hoja_de_ruta_tecnica.html")
+    return FileResponse(doc_path)
+
 # Executive Web Dashboard (Restricted Admin Access)
 @app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
 @app.get("/admin", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
