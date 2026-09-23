@@ -66,8 +66,8 @@ def create_detailed_sofia_logo(output_path="assets/sofia_agency_logo.jpg", size=
     w_s = bbox_s[2] - bbox_s[0]
     draw.text((cx - w_s // 2, cy - 90), text_sofia, fill="#ffffff", font=font_title)
 
-    # 3. SUBTITLE: AGENCIA DE IA
-    text_agency = "AGENCIA DE IA"
+    # 3. SUBTITLE: AUTOMATIZACIÓN INTELIGENTE
+    text_agency = "AUTOMATIZACIÓN"
     bbox_ag = draw.textbbox((0, 0), text_agency, font=font_agency)
     w_ag = bbox_ag[2] - bbox_ag[0]
     draw.text((cx - w_ag // 2, cy + 30), text_agency, fill="#38bdf8", font=font_agency)
@@ -77,8 +77,7 @@ def create_detailed_sofia_logo(output_path="assets/sofia_agency_logo.jpg", size=
     draw.ellipse([cx - 8, cy + 82, cx + 8, cy + 98], fill="#25d366")
     draw.line([cx + 25, cy + 90, cx + 180, cy + 90], fill="#334155", width=2)
 
-    # 4. KEY BADGE: VENTAS Y ATENCIÓN 24/7
-    # Badge background box
+    # 4. KEY BADGE: INTEGRACIÓN WHATSAPP & ERP
     badge_w, badge_h = 320, 36
     badge_y = cy + 145
     draw.rounded_rectangle(
@@ -90,19 +89,19 @@ def create_detailed_sofia_logo(output_path="assets/sofia_agency_logo.jpg", size=
     )
     # Live dot
     draw.ellipse([cx - badge_w + 35, badge_y - 10, cx - badge_w + 55, badge_y + 10], fill="#22c55e")
-    text_va = "VENTAS Y ATENCIÓN 24/7"
+    text_va = "WHATSAPP & ERP EN TIEMPO REAL"
     bbox_va = draw.textbbox((0, 0), text_va, font=font_feature)
     w_va = bbox_va[2] - bbox_va[0]
     draw.text((cx - w_va // 2 + 15, badge_y - 20), text_va, fill="#ffffff", font=font_feature)
 
-    # 5. BENEFIT LINE: AUTOMATIZACIÓN PARA EMPRESAS
-    text_auto = "Automatización para Empresas"
+    # 5. BENEFIT LINE: Python • FastAPI • Gemini LLM
+    text_auto = "Python • FastAPI • Gemini Multimodal"
     bbox_au = draw.textbbox((0, 0), text_auto, font=font_sub)
     w_au = bbox_au[2] - bbox_au[0]
     draw.text((cx - w_au // 2, cy + 245), text_auto, fill="#94a3b8", font=font_sub)
 
-    # 6. LOCATION ANCHOR: Paraná, Entre Ríos • Argentina
-    text_loc = "Paraná, Entre Ríos • Argentina"
+    # 6. AUTHOR / ARCHITECTURE FOOTER
+    text_loc = "Desarrollado por Javier Coloma"
     try:
         font_loc = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 25)
     except Exception:
