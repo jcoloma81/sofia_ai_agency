@@ -50,34 +50,43 @@ def generate_combined_profile(
     ws = bbox_sub[2] - bbox_sub[0]
     draw.text((cx - ws // 2, 780), text_sub, fill=(56, 189, 248, 255), font=font_agency)
 
-    # 5. Pill Badge: ● WHATSAPP & ERP EN TIEMPO REAL (y = 835)
-    badge_w, badge_h = 240, 22
-    by = 835
+    # 5. Pill Badge: ● WHATSAPP & ERP EN TIEMPO REAL (y = 840)
+    by = 840
+    text_badge = "WHATSAPP & ERP EN TIEMPO REAL"
+    try:
+        font_badge = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+    except Exception:
+        font_badge = font_auto
+
+    bbox_b = draw.textbbox((0, 0), text_badge, font=font_badge)
+    wb = bbox_b[2] - bbox_b[0]
+    hb = bbox_b[3] - bbox_b[1]
+
+    dot_s = 10
+    d_gap = 10
+    total_w = dot_s + d_gap + wb
+    sx = cx - (total_w // 2)
+
+    pad_px = 20
+    pad_py = 10
     draw.rounded_rectangle(
-        [cx - badge_w, by - badge_h, cx + badge_w, by + badge_h],
-        radius=18,
+        [sx - pad_px, by - pad_py, sx + total_w + pad_px, by + hb + pad_py],
+        radius=16,
         fill=(6, 78, 59, 240),
         outline=(16, 185, 129, 255),
         width=2
     )
-    # Green pulsing dot
-    draw.ellipse([cx - badge_w + 18, by - 6, cx - badge_w + 30, by + 6], fill=(34, 197, 94, 255))
-    text_badge = "WHATSAPP & ERP EN TIEMPO REAL"
-    bbox_b = draw.textbbox((0, 0), text_badge, font=font_badge)
-    wb = bbox_b[2] - bbox_b[0]
-    draw.text((cx - wb // 2 + 10, by - 14), text_badge, fill=(255, 255, 255, 255), font=font_badge)
+    # Green pulsing dot completely separated
+    dot_top = by + (hb - dot_s) // 2
+    draw.ellipse([sx, dot_top, sx + dot_s, dot_top + dot_s], fill=(34, 197, 94, 255))
+    # Crisp white text cleanly offset to the right
+    draw.text((sx + dot_s + d_gap, by), text_badge, fill=(255, 255, 255, 255), font=font_badge)
 
-    # 6. Benefit line: Python • FastAPI • Gemini LLM (y = 880)
+    # 6. Benefit line: Python • FastAPI • Gemini Multimodal (y = 900)
     text_auto = "Python • FastAPI • Gemini Multimodal"
     bbox_au = draw.textbbox((0, 0), text_auto, font=font_auto)
     w_au = bbox_au[2] - bbox_au[0]
-    draw.text((cx - w_au // 2, 878), text_auto, fill=(148, 163, 184, 255), font=font_auto)
-
-    # 7. Author Anchor: Desarrollado por Javier Coloma (y = 925)
-    text_loc = "Desarrollado por Javier Coloma"
-    bbox_loc = draw.textbbox((0, 0), text_loc, font=font_loc)
-    w_loc = bbox_loc[2] - bbox_loc[0]
-    draw.text((cx - w_loc // 2, 922), text_loc, fill=(56, 189, 248, 255), font=font_loc)
+    draw.text((cx - w_au // 2, 900), text_auto, fill=(148, 163, 184, 255), font=font_auto)
 
     # 8. Circular border accents (fits WhatsApp circle crop of radius 512)
     draw.arc([14, 14, w - 14, h - 14], start=0, end=360, fill=(30, 41, 59, 140), width=5)

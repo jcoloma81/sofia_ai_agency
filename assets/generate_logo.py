@@ -77,38 +77,43 @@ def create_detailed_sofia_logo(output_path="assets/sofia_agency_logo.jpg", size=
     draw.ellipse([cx - 8, cy + 82, cx + 8, cy + 98], fill="#25d366")
     draw.line([cx + 25, cy + 90, cx + 180, cy + 90], fill="#334155", width=2)
 
-    # 4. KEY BADGE: INTEGRACIÓN WHATSAPP & ERP
-    badge_w, badge_h = 320, 36
-    badge_y = cy + 145
+    # 4. KEY BADGE: WHATSAPP & ERP EN TIEMPO REAL
+    badge_y = cy + 150
+    text_va = "WHATSAPP & ERP EN TIEMPO REAL"
+    try:
+        font_feature = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+    except Exception:
+        font_feature = font_sub
+
+    bbox_va = draw.textbbox((0, 0), text_va, font=font_feature)
+    w_va = bbox_va[2] - bbox_va[0]
+    h_va = bbox_va[3] - bbox_va[1]
+
+    dot_size = 14
+    dot_gap = 14
+    content_w = dot_size + dot_gap + w_va
+    start_x = cx - (content_w // 2)
+
+    pad_x = 26
+    pad_y = 14
     draw.rounded_rectangle(
-        [cx - badge_w, badge_y - badge_h, cx + badge_w, badge_y + badge_h],
-        radius=25,
+        [start_x - pad_x, badge_y - pad_y, start_x + content_w + pad_x, badge_y + h_va + pad_y],
+        radius=22,
         fill="#064e3b",
         outline="#10b981",
         width=3
     )
-    # Live dot
-    draw.ellipse([cx - badge_w + 35, badge_y - 10, cx - badge_w + 55, badge_y + 10], fill="#22c55e")
-    text_va = "WHATSAPP & ERP EN TIEMPO REAL"
-    bbox_va = draw.textbbox((0, 0), text_va, font=font_feature)
-    w_va = bbox_va[2] - bbox_va[0]
-    draw.text((cx - w_va // 2 + 15, badge_y - 20), text_va, fill="#ffffff", font=font_feature)
+    # Green live dot (completely separated to the left)
+    dot_y = badge_y + (h_va - dot_size) // 2
+    draw.ellipse([start_x, dot_y, start_x + dot_size, dot_y + dot_size], fill="#22c55e")
+    # Crisp white text safely to the right of the dot
+    draw.text((start_x + dot_size + dot_gap, badge_y), text_va, fill="#ffffff", font=font_feature)
 
-    # 5. BENEFIT LINE: Python • FastAPI • Gemini LLM
+    # 5. BENEFIT LINE: Python • FastAPI • Gemini Multimodal
     text_auto = "Python • FastAPI • Gemini Multimodal"
     bbox_au = draw.textbbox((0, 0), text_auto, font=font_sub)
     w_au = bbox_au[2] - bbox_au[0]
-    draw.text((cx - w_au // 2, cy + 245), text_auto, fill="#94a3b8", font=font_sub)
-
-    # 6. AUTHOR / ARCHITECTURE FOOTER
-    text_loc = "Desarrollado por Javier Coloma"
-    try:
-        font_loc = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 25)
-    except Exception:
-        font_loc = font_sub
-    bbox_loc = draw.textbbox((0, 0), text_loc, font=font_loc)
-    w_loc = bbox_loc[2] - bbox_loc[0]
-    draw.text((cx - w_loc // 2, cy + 320), text_loc, fill="#38bdf8", font=font_loc)
+    draw.text((cx - w_au // 2, cy + 250), text_auto, fill="#94a3b8", font=font_sub)
 
     # Save PNG and JPG
     img.save(output_path, "JPEG", quality=95)
