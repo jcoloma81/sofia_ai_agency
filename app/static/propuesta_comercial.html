@@ -567,6 +567,156 @@
     .footer a:hover {
       text-decoration: underline;
     }
+
+    /* Mobile Responsiveness Overhaul (Phones & Tablets) */
+    @media (max-width: 640px) {
+      .container {
+        padding: 20px 14px 50px 14px;
+      }
+
+      .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        margin-bottom: 28px;
+        text-align: center;
+      }
+
+      .brand-logo {
+        justify-content: center;
+      }
+
+      .nav-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+      }
+
+      .nav-actions .btn-secondary,
+      .nav-actions .btn-primary {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+
+      .hero {
+        margin-bottom: 36px;
+      }
+
+      .hero-title {
+        font-size: clamp(24px, 7.5vw, 34px);
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+      }
+
+      .hero-sub {
+        font-size: 15px;
+        line-height: 1.55;
+        margin-bottom: 24px;
+      }
+
+      .hero-cta-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+      }
+
+      .hero-cta-group .btn-primary,
+      .hero-cta-group .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 13px 16px;
+        font-size: 14px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
+        padding: 20px 14px;
+        gap: 18px;
+        margin-bottom: 44px;
+      }
+
+      .metric-value {
+        font-size: 32px;
+      }
+
+      .section-title {
+        font-size: 24px;
+        letter-spacing: -0.5px;
+      }
+
+      .section-sub {
+        font-size: 14px;
+      }
+
+      .box-card {
+        padding: 20px 14px;
+      }
+
+      .feature-card {
+        padding: 20px 14px;
+      }
+
+      .arch-container {
+        padding: 20px 14px;
+        margin-bottom: 44px;
+      }
+
+      .step-card {
+        padding: 16px 14px;
+      }
+
+      .stack-section {
+        padding: 20px 14px;
+        margin-bottom: 44px;
+      }
+
+      .stack-grid {
+        gap: 8px;
+      }
+
+      .stack-badge {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        font-size: 12.5px;
+      }
+
+      .agency-card {
+        padding: 26px 16px;
+        border-radius: 18px;
+        margin-bottom: 44px;
+      }
+
+      .agency-title {
+        font-size: 22px;
+        line-height: 1.25;
+      }
+
+      .agency-desc {
+        font-size: 14px;
+        line-height: 1.5;
+        margin-bottom: 20px;
+      }
+
+      .agency-cta-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+      }
+
+      .agency-cta-group .btn-primary,
+      .agency-cta-group .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 13px 16px;
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 <body>
