@@ -9,6 +9,7 @@ fastapi-mail>=1.4.1
 beautifulsoup4>=4.12.0
 requests>=2.31.0
 certifi>=2024.2.2
+psycopg[binary]>=3.1.18
 psycopg2-binary>=2.9.9
 python-multipart>=0.0.9
 pytest>=8.0.0
@@ -16,4 +17,3 @@ pytest-asyncio>=0.23.0
 reportlab>=5.0.0
 openpyxl>=3.1.0
 edge-tts>=7.2.0
-
