@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Modelo de Implementación y Servicios — Sofía Automatización</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 10mm 12mm 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1e293b;
+      background-color: #ffffff;
+      line-height: 1.35;
+      font-size: 9pt;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .brand-title h1 {
+      font-size: 17pt;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .brand-title h2 {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #059669;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-top: 3px;
+    }
+    .contact-box {
+      text-align: right;
+      font-size: 8pt;
+      color: #475569;
+      line-height: 1.35;
+    }
+    .contact-box strong {
+      color: #0f172a;
+    }
+
+    /* Core Banner */
+    .value-banner {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #059669;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 8.5pt;
+      color: #334155;
+    }
+    .value-banner strong {
+      color: #0f172a;
+    }
+
+    /* Section Title */
+    .section-title {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 3px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-title .badge {
+      font-size: 7.5pt;
+      background: #e2e8f0;
+      color: #334155;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+      text-transform: none;
+    }
+
+    /* Native capabilities box */
+    .native-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .native-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 7px 9px;
+    }
+    .native-card h4 {
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .native-card p {
+      font-size: 7.8pt;
+      color: #475569;
+      line-height: 1.25;
+    }
+
+    /* 3 Pillars Grid */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .pillar-card {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 9px 10px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .pillar-card.highlight {
+      border-color: #059669;
+      background: #fafdfb;
+    }
+    .pillar-header {
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 5px;
+      margin-bottom: 7px;
+    }
+    .pillar-tag {
+      font-size: 7pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-bottom: 3px;
+    }
+    .tag-step1 {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .tag-step2 {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .tag-step3 {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .pillar-title {
+      font-size: 10pt;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .pillar-subtitle {
+      font-size: 7.5pt;
+      font-weight: 600;
+      color: #059669;
+      margin-top: 2px;
+    }
+    .pillar-desc {
+      font-size: 7.8pt;
+      color: #475569;
+      margin-bottom: 7px;
+      line-height: 1.25;
+    }
+
+    .feature-list {
+      list-style: none;
+      margin-bottom: 6px;
+    }
+    .feature-list li {
+      font-size: 7.6pt;
+      color: #334155;
+      margin-bottom: 4px;
+      padding-left: 13px;
+      position: relative;
+      line-height: 1.25;
+    }
+    .feature-list li::before {
+      content: "✔";
+      position: absolute;
+      left: 0;
+      color: #059669;
+      font-weight: 700;
+      font-size: 7.5pt;
+    }
+
+    .pillar-summary {
+      background: #f1f5f9;
+      padding: 4px 7px;
+      border-radius: 4px;
+      font-size: 7.2pt;
+      color: #334155;
+      margin-top: 4px;
+      line-height: 1.25;
+    }
+    .pillar-summary strong {
+      color: #0f172a;
+    }
+
+    /* Comparison Table */
+    .table-container {
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.8pt;
+      text-align: left;
+    }
+    th, td {
+      padding: 5px 8px;
+      border: 1px solid #e2e8f0;
+      line-height: 1.25;
+    }
+    th {
+      background: #f8fafc;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 7.6pt;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    td.feature-name {
+      font-weight: 600;
+      color: #1e293b;
+      width: 36%;
+    }
+    td.col-trad {
+      width: 32%;
+      color: #64748b;
+    }
+    td.col-sofia {
+      width: 32%;
+      color: #166534;
+      background: #fcfdfc;
+      font-weight: 600;
+    }
+
+    /* Footer Note */
+    .footer {
+      border-top: 1px solid #cbd5e1;
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7.5pt;
+      color: #64748b;
+    }
+    .footer strong {
+      color: #0f172a;
+    }
+    .cta-box {
+      font-weight: 700;
+      color: #059669;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand-title">
+      <h1>SOFÍA AUTOMATIZACIÓN</h1>
+      <h2>Modelo de Implementación B2B — WhatsApp & ERP</h2>
+    </div>
+    <div class="contact-box">
+      <strong>Javier Coloma</strong> | Technical Operator & Founder<br>
+      WhatsApp Directo: +54 9 343 572-0312<br>
+      Web: sofia-ai-agency.onrender.com
+    </div>
+  </div>
+
+  <!-- VALUE PROPOSITION BANNER -->
+  <div class="value-banner">
+    <strong>Software Propio y Ágil, Sin Ataduras Mensuales:</strong> Diseñamos e implementamos infraestructura de software para empresas y distribuidoras. A diferencia de las plataformas tradicionales que imponen suscripciones mensuales obligatorias para siempre, nuestro modelo se basa en <strong>propiedad del sistema, cero costo fijo mensual y soporte 100% a demanda</strong>.
+  </div>
+
+  <!-- NATIVE CAPABILITIES SECTION -->
+  <div class="section-title">
+    <span>1. Capacidades Nativas del Software (Incluidas en Todo Despliegue)</span>
+    <span class="badge">Automatización Pura</span>
+  </div>
+  <div class="native-grid">
+    <div class="native-card">
+      <h4>⚡ Ingesta de Catálogo y ERP</h4>
+      <p>Sofía procesa y sincroniza automáticamente inventarios y listas de precios desde archivos Excel o bases de datos sin trabajo manual diario.</p>
+    </div>
+    <div class="native-card">
+      <h4>📈 Detección de Aumentos y Stock</h4>
+      <p>Detecta de forma inteligente nuevos productos e incrementos de precios en listas de proveedores y <strong>notifica de inmediato al dueño</strong>.</p>
+    </div>
+    <div class="native-card">
+      <h4>🛒 Pedidos y Cotización 24/7</h4>
+      <p>Atiende consultas de clientes, confirma disponibilidad y registra pedidos estructurados listos para despacho en tiempo real.</p>
+    </div>
+  </div>
+
+  <!-- THE 3 PILLARS SECTION -->
+  <div class="section-title">
+    <span>2. Cómo Funciona el Modelo de Servicios (Estructura en 3 Pasos)</span>
+    <span class="badge">Simple · Transparente · Sin Costos Ocultos</span>
+  </div>
+
+  <div class="pillars-grid">
+
+    <!-- PILAR 1: IMPLEMENTACIÓN ÚNICA -->
+    <div class="pillar-card">
+      <div>
+        <div class="pillar-header">
+          <span class="pillar-tag tag-step1">Paso 1 · Puesta en Marcha</span>
+          <div class="pillar-title">Implementación Llave en Mano</div>
+          <div class="pillar-subtitle">Inversión Única Inicial</div>
+        </div>
+        <div class="pillar-desc">
+          Despliegue completo del sistema adaptado al catálogo y flujo comercial específico de tu empresa.
+        </div>
+        <ul class="feature-list">
+          <li><strong>Licencia y propiedad de tu instancia:</strong> El software trabaja para tu negocio sin ataduras a contratos SaaS.</li>
+          <li><strong>Conexión con WhatsApp:</strong> Configuración y vinculación directa con el canal de mensajería.</li>
+          <li><strong>Calibración del Catálogo:</strong> Entrenamiento del agente con tus listas de productos y reglas base.</li>
+          <li><strong>Garantía Técnica de 30 días:</strong> Acompañamiento inicial y ajustes finos sin costo.</li>
+        </ul>
+      </div>
+      <div class="pillar-summary">
+        <strong>Resultado:</strong> Tu canal de WhatsApp operando 24/7 desde el primer día con tu propio activo de software.
+      </div>
+    </div>
+
+    <!-- PILAR 2: CANON ANUAL DE INFRAESTRUCTURA -->
+    <div class="pillar-card">
+      <div>
+        <div class="pillar-header">
+          <span class="pillar-tag tag-step2">Paso 2 · Uptime & Servidores</span>
+          <div class="pillar-title">Infraestructura y Nube 24/7</div>
+          <div class="pillar-subtitle">Canon Anual Mínimo de Servidor</div>
+        </div>
+        <div class="pillar-desc">
+          Mantenimiento de los servidores y base de datos para que el sistema nunca se apague ni sufra demoras.
+        </div>
+        <ul class="feature-list">
+          <li><strong>Servidor en la Nube 24/7:</strong> Instancia en alta disponibilidad para atención ininterrumpida.</li>
+          <li><strong>Base de Datos y Seguridad:</strong> Almacenamiento seguro, copias de respaldo y certificado SSL.</li>
+          <li><strong>Monitor Centinela Activo:</strong> Verificación continua de disponibilidad para eliminar caídas.</li>
+          <li><strong>Cero Cuotas Mensuales:</strong> Un único pago anual a valor de costo de infraestructura.</li>
+        </ul>
+      </div>
+      <div class="pillar-summary">
+        <strong>Ventaja:</strong> Te olvidás de servidores caídos o facturas mensuales complejas en dólares.
+      </div>
+    </div>
+
+    <!-- PILAR 3: MEJORAS Y SOPORTE A DEMANDA -->
+    <div class="pillar-card highlight">
+      <div>
+        <div class="pillar-header">
+          <span class="pillar-tag tag-step3">Paso 3 · Evolución Flexible</span>
+          <div class="pillar-title">Soporte y Mejoras On-Demand</div>
+          <div class="pillar-subtitle">100% a Demanda · Sin Abonos Fijos</div>
+        </div>
+        <div class="pillar-desc">
+          Evolucioná el sistema a tu ritmo. Pagás únicamente cuando solicitás cambios o nuevas funciones.
+        </div>
+        <ul class="feature-list">
+          <li><strong>Nuevas Reglas Comerciales:</strong> Modificaciones de promociones especiales o combos por requerimiento.</li>
+          <li><strong>Nuevas Integraciones:</strong> Conexión con nuevas pasarelas de pago, ERPs o CRMs a medida.</li>
+          <li><strong>Soporte Técnico Eventual:</strong> Asistencia operativa puntual cotizada por incidencia o por hora.</li>
+          <li><strong>Control de Presupuesto:</strong> No pagás cuotas en meses donde no necesitás cambios.</li>
+        </ul>
+      </div>
+      <div class="pillar-summary" style="background: #e8f5e9;">
+        <strong>Libertad Total:</strong> Tu empresa decide cuándo invertir en mejoras según el crecimiento del negocio.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="section-title">
+    <span>3. Cuadro Comparativo: Plataformas Tradicionales vs. Sofía</span>
+    <span class="badge">Transparencia comercial</span>
+  </div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Aspecto Operativo</th>
+          <th>Plataformas Tradicionales (SaaS)</th>
+          <th>Sofía Automatización</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feature-name">Costos Fijos Mensuales</td>
+          <td class="col-trad">Abonos mensuales obligatorios de por vida</td>
+          <td class="col-sofia"><strong>$0 (Cero costo mensual obligatorio)</strong></td>
+        </tr>
+        <tr>
+          <td class="feature-name">Propiedad del Sistema</td>
+          <td class="col-trad">Software alquilado (si dejás de pagar, lo perdés)</td>
+          <td class="col-sofia"><strong>Propiedad de la instancia y control de datos</strong></td>
+        </tr>
+        <tr>
+          <td class="feature-name">Mantenimiento de Servidores</td>
+          <td class="col-trad">Oculto en planes mensuales crecientes</td>
+          <td class="col-sofia"><strong>Canon anual mínimo a valor de infraestructura</strong></td>
+        </tr>
+        <tr>
+          <td class="feature-name">Actualización de Precios y Stock</td>
+          <td class="col-trad">Carga manual o módulos pagos adicionales</td>
+          <td class="col-sofia"><strong>Nativa y automática por software (Incluida)</strong></td>
+        </tr>
+        <tr>
+          <td class="feature-name">Nuevas Funciones y Soporte</td>
+          <td class="col-trad">Atadas a planes más caros ("Enterprise")</td>
+          <td class="col-sofia"><strong>100% a demanda según tu necesidad real</strong></td>
+        </tr>
+        <tr>
+          <td class="feature-name">Garantía de Despliegue</td>
+          <td class="col-trad">Soporte genérico por ticket o foros</td>
+          <td class="col-sofia"><strong>Garantía inicial de 30 días con operador directo</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      Documento emitido por <strong>Sofía Automatización</strong> · Paraná, Entre Ríos, Argentina.
+    </div>
+    <div class="cta-box">
+      ¿Listo para coordinar la demo en vivo? WhatsApp: +54 9 343 572-0312
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

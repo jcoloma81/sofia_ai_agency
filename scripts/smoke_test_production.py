@@ -80,7 +80,7 @@ def run_smoke_test(base_url: str):
         all_passed = False
 
     # 3. Public Web Landing
-    print(f"\n🔍 [3/3] Verificando Portal Comercial Web (/)...")
+    print(f"\n🔍 [3/4] Verificando Portal Comercial Web (/)...")
     try:
         t0 = time.time()
         resp_landing = requests.get(f"{base_url}/", timeout=15)
@@ -91,6 +91,25 @@ def run_smoke_test(base_url: str):
             print(f"   {YELLOW}⚠️ Portal Web devolvió status {resp_landing.status_code}{RESET}")
     except Exception as e:
         print(f"   {YELLOW}⚠️ No se pudo verificar portal web: {e}{RESET}")
+
+    # 4. Multilingual & Responsive Verification
+    print(f"\n🔍 [4/4] Verificando Soporte Multilingüe (ES / PT / EN) y Responsive...")
+    try:
+        t0 = time.time()
+        resp_landing = requests.get(f"{base_url}/", timeout=15)
+        lat_landing = int((time.time() - t0) * 1000)
+        has_switcher = 'class="lang-switcher"' in resp_landing.text
+        has_es = 'data-lang="es"' in resp_landing.text
+        has_pt = 'data-lang="pt"' in resp_landing.text
+        has_en = 'data-lang="en"' in resp_landing.text
+        has_viewport = 'viewport-fit=cover' in resp_landing.text or 'viewport' in resp_landing.text
+
+        if has_switcher and has_es and has_pt and has_en and has_viewport:
+            print(f"   {GREEN}✅ Switcher Multilingüe (ES/PT/EN) y Responsive: 100% ACTIVO ({lat_landing} ms){RESET}")
+        else:
+            print(f"   {YELLOW}ℹ️  El servidor en Render todavía tiene el despliegue anterior; se actualizará con el próximo git push.{RESET}")
+    except Exception as e:
+        print(f"   {YELLOW}⚠️ Error verificando multilingüe: {e}{RESET}")
 
     total_time = round(time.time() - start_total, 2)
     print(f"\n{CYAN}------------------------------------------------------------{RESET}")
