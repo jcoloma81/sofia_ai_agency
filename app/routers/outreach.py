@@ -22,9 +22,9 @@ class OutreachRequest(BaseModel):
     contact_name: Optional[str] = None
     city: Optional[str] = None
     units_count: Optional[int] = None
-    campaign: Optional[str] = "ai_agency"
+    campaign: Optional[str] = "air_control"
     business_type: Optional[str] = None
-    strategy: Optional[str] = "two_step"
+    strategy: Optional[str] = "template"
 
 class BatchOutreachRequest(BaseModel):
     leads: List[OutreachRequest]
@@ -127,16 +127,17 @@ async def start_outreach(
         ]
         template_chain = ["contacto_comercial_v3", "contacto_comercial_v2", "contacto_comercial_v1"]
     else:
+        # Campaña Oficial Air Control PRO (Plantilla Aprobada en Meta: prospeccion_aircontrol_v1)
         initial_pitch = (
-            f"{greeting} Te escribe Sofía de Air Control.\n\n"
-            f"Somos una empresa nueva y estamos ofreciendo un sistema para el ahorro energético enfocado en hoteles y alojamientos turísticos.\n\n"
-            f"El sistema permite reducir la factura eléctrica hasta en un 50% o más, dependiendo de la configuración. La instalación es rápida, limpia, pero lo más importante: ¡funciona muy bien!\n\n"
-            f"Lo que proponemos con este mensaje es coordinar una reunión breve (presencial o virtual) para que nuestro asesor les muestre en detalle el funcionamiento.\n\n"
-            f"¿Les parece que coordinemos unos minutos? Quedo a disposición.\n\n"
-            f"Sofía — Air Control"
+            "¡Hola! Te escribe Sofía de Air Control, desde Paraná, Entre Ríos.\n\n"
+            "Por una mínima fracción de lo que cuesta instalar paneles solares, ayudamos a alojamientos turísticos a reducir hasta un 40% la factura de luz.\n\n"
+            "Es un sistema inteligente que evita que los aires acondicionados queden prendidos cuando las cabañas o habitaciones quedan vacías. Se instala en 15 minutos, sin cables y sin romper paredes.\n\n"
+            "Si querés ver cómo funciona en acción, respondeme «DEMO» y te paso un video de 2 minutos.\n\n"
+            "Quedo a disposición,\n"
+            "Sofía — Air Control"
         )
         components = None
-        template_chain = []
+        template_chain = ["prospeccion_aircontrol_v1"]
 
     history = [{
         "sender": "ai",
@@ -148,9 +149,9 @@ async def start_outreach(
     db.refresh(prospect)
 
     sent = False
-    if campaign in ["ai_agency", "canchas_futbol"] and settings.META_ACCESS_TOKEN:
+    if settings.META_ACCESS_TOKEN and template_chain:
         for t_name in template_chain:
-            curr_components = None if t_name == "pitch_directo_v1" else components
+            curr_components = None if t_name in ["pitch_directo_v1", "prospeccion_aircontrol_v1"] else components
             sent = await whatsapp.send_whatsapp_template(
                 to_phone=clean_phone,
                 template_name=t_name,
@@ -159,9 +160,7 @@ async def start_outreach(
             )
             if sent:
                 break
-        if not sent:
-            sent = await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=initial_pitch)
-    else:
+    if not sent:
         sent = await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=initial_pitch)
 
     return {

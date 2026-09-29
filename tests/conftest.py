@@ -29,6 +29,21 @@ def setup_test_database():
 
 
 @pytest.fixture(autouse=True)
+def override_db_dependency():
+    from main import app
+    from app.database import get_db
+    def _override_get_db():
+        session = TestingSessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+    app.dependency_overrides[get_db] = _override_get_db
+    yield
+    app.dependency_overrides[get_db] = _override_get_db
+
+
+@pytest.fixture(autouse=True)
 def reset_catalog_to_base():
     from app.services.catalog import catalog_service
     sample_csv = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "app", "data", "sample_catalog.csv"))
@@ -49,6 +64,7 @@ def prevent_real_external_whatsapp_calls(monkeypatch):
     monkeypatch.setattr("app.services.whatsapp.send_whatsapp_template", AsyncMock(return_value=True))
     monkeypatch.setattr("app.services.whatsapp.send_whatsapp_document", AsyncMock(return_value=True))
     monkeypatch.setattr("app.services.whatsapp.send_whatsapp_audio", AsyncMock(return_value=True))
+    monkeypatch.setattr("app.services.whatsapp.send_whatsapp_video", AsyncMock(return_value=True))
     yield
 
 @pytest.fixture

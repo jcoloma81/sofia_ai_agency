@@ -462,13 +462,22 @@ async def receive_whatsapp_webhook(
         prospect = db.query(Prospect).filter(Prospect.phone.in_(cand_phones)).first()
 
     if not prospect:
-        default_city = "Feira de Santana / Bahia (Brasil)" if clean_phone.startswith("55") else "Entre Ríos / Santa Fe"
+        default_city = "Paraná / Entre Ríos" if not clean_phone.startswith("55") else "Feira de Santana / Bahia (Brasil)"
+        inferred_campaign = body.get("campaign")
+        if not inferred_campaign:
+            msg_and_name = f"{message} {body.get('complex_name', '')} {body.get('name', '')}".lower()
+            if any(w in msg_and_name for w in ["inteligencia artificial", "agencia", "distribuidora", "preventista", "pedidos", "agente de ventas"]):
+                inferred_campaign = "ai_agency"
+            else:
+                inferred_campaign = "air_control"
+
+        default_name = f"Alojamiento ({clean_phone})" if inferred_campaign == "air_control" else f"Prospecto ({clean_phone})"
         prospect = Prospect(
             phone=clean_phone,
-            name=body.get("complex_name") or body.get("name") or f"Prospecto ({clean_phone})",
+            name=body.get("complex_name") or body.get("name") or default_name,
             contact_name=body.get("contact_name") or contact_name,
             city=body.get("city") or default_city,
-            campaign="ai_agency",
+            campaign=inferred_campaign,
             status="in_conversation",
             conversation_history="[]"
         )
@@ -1711,31 +1720,42 @@ async def receive_whatsapp_webhook(
 
     # 4. Check if lead is explicitly requesting the demo video (from template CTA)
     clean_lower = message.strip().lower()
-    is_demo_intent = False
-    if clean_lower in [
-        "demo", "la demo", "ver demo", "quiero demo", "quiero la demo",
-        "video", "video demo", "el video", "mandame el video", "mandá el video",
-        "pasame el video", "pasanos el video", "pasame la demo", "mandame la demo",
-        "ver demostración", "ver demostracion", "demostración", "demostracion",
-        "ver la demostración", "ver la demostracion", "quiero ver una demostración",
-        "quiero ver una demostracion", "me gustaría ver una demostración", "me gustaria ver una demostracion"
-    ] or "video demo" in clean_lower or "ver demo" in clean_lower or "ver demostra" in clean_lower:
-        is_demo_intent = True
-    elif any(phrase in clean_lower for phrase in [
+    is_demo_intent = bool(re.search(
+        r'\b(demo|demostraci[oó]n|video|el video|la demo)\b',
+        clean_lower
+    )) or any(phrase in clean_lower for phrase in [
         "mandame el video", "mandá el video", "pasame el video", "pasanos el video",
-        "mandame la demo", "pasame la demo", "ver demostración", "ver demostracion"
-    ]):
-        is_demo_intent = True
+        "mandame la demo", "pasame la demo", "ver demostración", "ver demostracion",
+        "ver la demo", "quiero ver", "me pasas el video", "me pasás el video",
+        "quiero la demo", "quiero ver la demo"
+    ])
 
     if is_demo_intent:
         prospect.status = "demo_requested"
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
         contact_str = f" {safe_name}" if safe_name else ""
-        demo_reply = (
-            f"¡Hola{contact_str}! Qué bueno que te interese ver cómo funciona Sofía. "
-            f"En breve nuestro asesor te va a enviar el video demo para que veas el sistema en acción. "
-            f"¡Muchas gracias por escribirme!"
-        )
+        
+        if (prospect.campaign or "air_control") == "air_control":
+            city_str = (prospect.city or "").lower()
+            is_parana = "paraná" in city_str or "parana" in city_str
+            meeting_modality = (
+                "Para ver el caso específico de tu complejo, Javier (nuestro desarrollador) puede acercarse directamente al alojamiento a hacerte una breve visita presencial de 10 minutos y mostrártelo funcionando en vivo."
+                if is_parana else
+                "Para ver los números específicos de tu complejo, Javier se conecta en una videollamada corta de 10 minutos para mostrártelo funcionando y pasarte la propuesta adaptada a tu cantidad de cabañas o habitaciones."
+            )
+            location_q = "¿Qué día y horario te quedaría cómodo charlar unos minutos con Javier?" if is_parana else "¿En qué localidad está tu complejo y qué día te vendría bien charlar 10 minutos con Javier?"
+            demo_reply = (
+                f"¡Dale{contact_str}, buenísimo! Te comparto acá el video demo de 2 minutos para que veas cómo funciona el sistema y cómo se instala en 15 minutos sin cables ni romper paredes:\n"
+                f"👉 https://sofia-ai-agency.onrender.com/assets/demo_air_control.mp4\n\n"
+                f"{meeting_modality}\n\n"
+                f"{location_q} ¡Muchas gracias por escribirme!"
+            )
+        else:
+            demo_reply = (
+                f"¡Hola{contact_str}! Qué bueno que te interese ver cómo funciona Sofía. "
+                f"En breve nuestro asesor te va a enviar el video demo para que veas el sistema en acción. "
+                f"¡Muchas gracias por escribirme!"
+            )
         history.append({"sender": "ai", "text": demo_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
         prospect.updated_at = datetime.now(timezone.utc)
@@ -1749,6 +1769,15 @@ async def receive_whatsapp_webhook(
         ))
 
         await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=demo_reply)
+
+        if (prospect.campaign or "air_control") == "air_control":
+            video_url = "https://sofia-ai-agency.onrender.com/assets/demo_air_control.mp4"
+            asyncio.create_task(whatsapp.send_whatsapp_video(
+                to_phone=clean_phone,
+                video_url=video_url,
+                caption="🎥 Demostración Air Control PRO (2 min)"
+            ))
+
         return {
             "status": "success",
             "demo_requested": True,
@@ -1765,7 +1794,7 @@ async def receive_whatsapp_webhook(
         city=prospect.city,
         audio_data_b64=audio_b64,
         audio_mime_type=audio_mime,
-        campaign=prospect.campaign or "ai_agency",
+        campaign=prospect.campaign or "air_control",
         phone=clean_phone
     )
 
@@ -1796,7 +1825,7 @@ async def receive_whatsapp_webhook(
             city=prospect.city,
             meeting_details=prospect.meeting_details,
             last_message=last_msg_display,
-            campaign=prospect.campaign or "ai_agency"
+            campaign=prospect.campaign or "air_control"
         ))
     else:
         if prospect.status == "pending":

@@ -292,6 +292,50 @@ async def send_whatsapp_document(
         logger.error(f"Error sending WhatsApp document to {clean_phone}: {e}")
         return False
 
+
+async def send_whatsapp_video(
+    to_phone: str,
+    video_url: str,
+    caption: Optional[str] = None
+) -> bool:
+    """
+    Sends a video through Meta WhatsApp Cloud API.
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+
+    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
+        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+        meta_headers = {
+            "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        for target_phone in get_phone_candidates(clean_phone):
+            meta_payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": target_phone,
+                "type": "video",
+                "video": {
+                    "link": video_url
+                }
+            }
+            if caption:
+                meta_payload["video"]["caption"] = caption
+
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
+                    if res.status_code in [200, 201]:
+                        logger.info(f"✅ Meta WhatsApp Cloud API video sent successfully to {target_phone}")
+                        return True
+                    else:
+                        logger.warning(f"Meta Cloud API video returned status {res.status_code} for {target_phone}: {res.text}")
+            except Exception as e:
+                logger.error(f"Error sending video via Meta WhatsApp Cloud API for {target_phone}: {e}")
+
+    return False
+
+
 async def notify_javier_meeting_scheduled(
     prospect_name: str,
     contact_name: Optional[str],
