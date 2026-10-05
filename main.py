@@ -29,9 +29,9 @@ run_auto_migrations(engine)
 
 
 app = FastAPI(
-    title="Sofía AI Agency — Autonomous B2B SDR Platform",
-    description="Autonomous B2B outbound & inbound sales development representative powered by Google Gemini Flash Lite Multimodal, Whapi Cloud, and Intelligent Lead Scraping.",
-    version="1.0.0"
+    title="Sofía AI Agency — Autonomous WhatsApp & Multi-Industry Business Platform",
+    description="Autonomous multi-industry and B2B WhatsApp platform powered by Google Gemini 1.5 Multimodal, Official Meta WhatsApp Cloud API, and Mercado Pago.",
+    version="2.0.0"
 )
 
 # CORS configuration
