@@ -93,6 +93,9 @@ async def receive_whatsapp_webhook(
     audio_mime = None
     doc_bytes = None
     doc_name = None
+    image_bytes = None
+    image_mime = "image/jpeg"
+    button_id = body.get("button_id") or body.get("interactive_button_id")
     is_incoming_voice = False
 
     # 0. Handle Official Meta WhatsApp Cloud API format (Production & Dashboard Test Tool)
@@ -142,9 +145,33 @@ async def receive_whatsapp_webhook(
         elif msg_type == "interactive":
             interactive = incoming_meta_msg.get("interactive", {})
             if interactive.get("type") == "button_reply":
-                message = interactive.get("button_reply", {}).get("title", "")
+                b_reply = interactive.get("button_reply", {})
+                message = b_reply.get("title", "")
+                button_id = b_reply.get("id")
             elif interactive.get("type") == "list_reply":
-                message = interactive.get("list_reply", {}).get("title", "")
+                l_reply = interactive.get("list_reply", {})
+                message = l_reply.get("title", "")
+                button_id = l_reply.get("id")
+        elif msg_type == "image":
+            image_info = incoming_meta_msg.get("image", {})
+            media_id = image_info.get("id")
+            image_mime = image_info.get("mime_type", "image/jpeg")
+            caption = image_info.get("caption", "")
+            message = caption or "(Imagen adjunta recibida)"
+            if media_id and settings.META_ACCESS_TOKEN:
+                try:
+                    meta_headers = {"Authorization": f"Bearer {settings.META_ACCESS_TOKEN}"}
+                    async with httpx.AsyncClient(timeout=20.0) as client:
+                        info_res = await client.get(f"https://graph.facebook.com/v20.0/{media_id}", headers=meta_headers)
+                        if info_res.status_code == 200:
+                            download_url = info_res.json().get("url")
+                            if download_url:
+                                img_res = await client.get(download_url, headers=meta_headers)
+                                if img_res.status_code == 200:
+                                    image_bytes = img_res.content
+                                    logger.info(f"📷 Meta image downloaded ({len(image_bytes)} bytes)")
+                except Exception as img_err:
+                    logger.error(f"Error downloading Meta image: {img_err}")
         elif msg_type in ["voice", "audio"]:
             is_incoming_voice = True
             audio_info = incoming_meta_msg.get("audio") or incoming_meta_msg.get("voice") or {}
@@ -441,6 +468,27 @@ async def receive_whatsapp_webhook(
                         logger.error(f"Error generating boss voice response: {v_err}")
 
                 return {"status": "success", "action": boss_action, "reply": boss_reply}
+
+    # -----------------------------------------------------------------
+    # ENTERPRISE MULTI-TENANT ROUTING (CLINICS, GYMS, OPTICS, COMMERCE)
+    # -----------------------------------------------------------------
+    from app.services.tenant_service import tenant_service
+    from app.services.tenant_dispatcher import tenant_dispatcher
+
+    tenant, cleaned_msg = tenant_service.resolve_incoming_tenant(db, clean_phone, message)
+    if tenant:
+        logger.info(f"🏢 Enterprise Tenant resolved: '{tenant.name}' ({tenant.slug}) for phone {clean_phone}")
+        handled, tenant_reply = await tenant_dispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=clean_phone,
+            message=cleaned_msg,
+            interactive_button_id=button_id,
+            image_bytes=image_bytes,
+            image_mime=image_mime
+        )
+        if handled:
+            return {"status": "success", "tenant": tenant.slug, "reply": tenant_reply}
 
     # Find or create prospect (supporting multi-merchant shared suppliers)
     from app.services.boss_mode import normalize_argentine_phone

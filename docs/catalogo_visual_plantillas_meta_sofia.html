@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sofía AI Agency — Catálogo Visual de Plantillas Oficiales de Meta WhatsApp</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      background: #f1f5f9;
+      line-height: 1.35;
+      font-size: 8.3pt;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @media screen {
+      .page-sheet {
+        max-width: 820px;
+        margin: 20px auto;
+        background: #ffffff;
+        padding: 22px 26px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 7mm 9mm 7mm 9mm;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        font-size: 8.1pt;
+        line-height: 1.32;
+      }
+      .page-sheet {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        height: 282mm !important;
+        max-height: 282mm !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+      }
+      .page-1 {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .page-2 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .template-card, .wa-bubble, table, tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      margin-bottom: 7px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .header-text h1 {
+      font-size: 14pt;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: #ffffff;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .header-text h1 span {
+      color: #38bdf8;
+    }
+
+    .header-text p {
+      font-size: 7.8pt;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    .badge-meta {
+      background: rgba(37, 211, 102, 0.15);
+      border: 1px solid #25D366;
+      color: #22c55e;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 7.2pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* Key Benefits Banner */
+    .intro-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .intro-col {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 7.6pt;
+      font-weight: 600;
+      color: #1e3a8a;
+    }
+
+    .intro-col span.icon {
+      font-size: 10pt;
+    }
+
+    /* Templates Stack */
+    .templates-container {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex-grow: 1;
+    }
+
+    .template-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      gap: 12px;
+      align-items: stretch;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    /* Left meta info */
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px dashed #e2e8f0;
+      padding-right: 10px;
+    }
+
+    .card-title-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .card-name {
+      font-size: 9pt;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .badge-cat-utility {
+      display: inline-block;
+      align-self: flex-start;
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      font-size: 6.8pt;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      margin-top: 1px;
+    }
+
+    .badge-cat-mkt {
+      display: inline-block;
+      align-self: flex-start;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      font-size: 6.8pt;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      margin-top: 1px;
+    }
+
+    .card-rubros {
+      font-size: 7.2pt;
+      color: #475569;
+      margin-top: 3px;
+      line-height: 1.25;
+    }
+
+    .card-rubros strong {
+      color: #0f172a;
+    }
+
+    .card-action-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 4px 6px;
+      font-size: 6.8pt;
+      color: #334155;
+      line-height: 1.25;
+      margin-top: 4px;
+    }
+
+    .card-action-box strong {
+      color: #0284c7;
+    }
+
+    /* Right WhatsApp Phone Bubble */
+    .wa-bubble-wrapper {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .wa-bubble {
+      background: #e7fed8;
+      border: 1px solid #c2ebaf;
+      border-radius: 8px 8px 8px 2px;
+      padding: 7px 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 7.6pt;
+      color: #111827;
+      line-height: 1.32;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    .wa-bubble .wa-header {
+      font-size: 7pt;
+      font-weight: 700;
+      color: #047857;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .wa-bubble p {
+      margin-bottom: 4px;
+    }
+
+    .wa-bubble p:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .wa-variables {
+      background: rgba(255,255,255,0.7);
+      border-left: 2px solid #10b981;
+      padding: 3px 6px;
+      margin: 4px 0;
+      border-radius: 0 4px 4px 0;
+      font-size: 7.2pt;
+    }
+
+    /* Interactive Buttons */
+    .wa-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding-top: 5px;
+    }
+
+    .wa-btn {
+      background: #ffffff;
+      border: 1px solid #10b981;
+      color: #065f46;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 7.1pt;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    .wa-btn-secondary {
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
+    /* Page Footer */
+    .page-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 5px;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 6.9pt;
+      color: #64748b;
+    }
+
+    .footer-highlight {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7.4pt;
+      margin-top: 4px;
+    }
+
+    .footer-highlight strong {
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PÁGINA 1: SALUD, TURNOS Y COMERCIOS ==================== -->
+  <div class="page-sheet page-1">
+    <div>
+      <!-- Header -->
+      <div class="header">
+        <div class="header-text">
+          <h1>SOFÍA AI AGENCY <span>• CATÁLOGO VISUAL DE PLANTILLAS</span></h1>
+          <p>Meta WhatsApp Cloud API v20.0 — Plantillas Oficiales Homologadas para Negocios Reales</p>
+        </div>
+        <div class="badge-meta">✓ Meta Verified Templates</div>
+      </div>
+
+      <!-- Key Benefits Banner -->
+      <div class="intro-banner">
+        <div class="intro-col">
+          <span class="icon">⚡</span>
+          <span><strong>98% Tasa de Apertura:</strong> Leído en menos de 3 minutos por el cliente.</span>
+        </div>
+        <div class="intro-col">
+          <span class="icon">🛡️</span>
+          <span><strong>Cero Riesgo de Baneo:</strong> Aprobadas por Meta, jamás van a la carpeta de spam.</span>
+        </div>
+        <div class="intro-col">
+          <span class="icon">👆</span>
+          <span><strong>Botones de 1 Toque:</strong> El cliente confirma o reprograma sin tipear.</span>
+        </div>
+      </div>
+
+      <!-- Templates 1, 2, 3 -->
+      <div class="templates-container">
+
+        <!-- Plantilla 1: recordatorio_turno_v2 -->
+        <div class="template-card">
+          <div class="card-meta">
+            <div class="card-title-row">
+              <div class="card-name">1. recordatorio_turno_v2</div>
+              <span class="badge-cat-utility">CATEGORÍA: UTILITY (Económica)</span>
+            </div>
+            <div class="card-rubros">
+              <strong>Rubros:</strong> Clínicas Médicas, Odontología, Kinesiología, Estética, Peluquerías y Veterinarias.
+            </div>
+            <div class="card-action-box">
+              <strong>Automatización:</strong> Se envía 24h antes del turno (09:00 hs). Si el paciente confirma, pasa a verde en agenda. Si cancela, activa el Rellena-Huecos de inmediato.
+            </div>
+          </div>
+          <div class="wa-bubble-wrapper">
+            <div class="wa-bubble">
+              <div class="wa-header">💬 WhatsApp Oficial • Clínica Dental Sonrisas</div>
+              <p>Hola <strong>Martín</strong>, te recordamos tu turno en <strong>*Clínica Dental Sonrisas*</strong>:</p>
+              <div class="wa-variables">
+                🗓 <strong>Fecha:</strong> Mañana Martes 15/10<br>
+                ⏰ <strong>Horario:</strong> 16:30 hs<br>
+                🩺 <strong>Profesional:</strong> Limpieza con Dra. Gómez<br>
+                📍 <strong>Dirección:</strong> Av. Corrientes 1234, Piso 2
+              </div>
+              <p>Por favor, confirmá tu asistencia tocando una de las opciones a continuación para mantener tu lugar reservado.</p>
+              <div class="wa-buttons">
+                <div class="wa-btn">Confirmo asistencia</div>
+                <div class="wa-btn wa-btn-secondary">Reprogramar</div>
+                <div class="wa-btn wa-btn-secondary">No podré asistir</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plantilla 2: adelanta_turno_v1 -->
+        <div class="template-card">
+          <div class="card-meta">
+            <div class="card-title-row">
+              <div class="card-name">2. adelanta_turno_v1</div>
+              <span class="badge-cat-utility">CATEGORÍA: UTILITY (Económica)</span>
+            </div>
+            <div class="card-rubros">
+              <strong>Rubros:</strong> Salud, Talleres Mecánicos, Diagnóstico, Odontología y Estética.
+            </div>
+            <div class="card-action-box">
+              <strong>Motor Rellena-Huecos:</strong> Cuando alguien cancela para mañana, Sofía le escribe al instante a quien tiene turno dentro de 10 días para adelantarlo. ¡Cero horas ociosas!
+            </div>
+          </div>
+          <div class="wa-bubble-wrapper">
+            <div class="wa-bubble">
+              <div class="wa-header">💬 WhatsApp Oficial • Consultorios Alvear</div>
+              <p>Hola <strong>Mariana</strong>, te escribimos de <strong>*Consultorios Alvear*</strong>.</p>
+              <p>Se liberó un espacio disponible para el día <strong>*Mañana Miércoles a las 10:30 hs*</strong> con Dra. Silvina Gómez.</p>
+              <div class="wa-variables">
+                Como tenés turno asignado para el <strong>Viernes 24/10</strong>, te ofrecemos adelantarlo para esta nueva fecha. ¿Te gustaría aprovechar este horario?
+              </div>
+              <div class="wa-buttons">
+                <div class="wa-btn">Sí adelantar turno</div>
+                <div class="wa-btn wa-btn-secondary">Mantener turno actual</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plantilla 3: pedido_listo_retiro_v1 -->
+        <div class="template-card">
+          <div class="card-meta">
+            <div class="card-title-row">
+              <div class="card-name">3. pedido_listo_retiro_v1</div>
+              <span class="badge-cat-utility">CATEGORÍA: UTILITY (Económica)</span>
+            </div>
+            <div class="card-rubros">
+              <strong>Rubros:</strong> Ópticas, Talleres Mecánicos, Casas de Repuestos, B2B y Distribuidoras.
+            </div>
+            <div class="card-action-box">
+              <strong>Despacho y Cobro:</strong> Avisa que el anteojo, auto o pedido ya está listo. Cobra saldos pendientes y envía la ubicación de Google Maps con 1 solo clic.
+            </div>
+          </div>
+          <div class="wa-bubble-wrapper">
+            <div class="wa-bubble">
+              <div class="wa-header">💬 WhatsApp Oficial • Óptica Visión</div>
+              <p>Hola <strong>Carla</strong>, te informamos desde <strong>*Óptica Visión*</strong> que tu trabajo/pedido ya se encuentra listo para retirar.</p>
+              <div class="wa-variables">
+                📦 <strong>Detalle:</strong> Anteojos multifocales con filtro azul<br>
+                🔖 <strong>Orden:</strong> ORD-4082 &nbsp;|&nbsp; 📍 <strong>Retiro:</strong> San Martín 820<br>
+                🕒 <strong>Horarios:</strong> Lunes a Viernes de 8:30 a 19 hs
+              </div>
+              <p>¡Te esperamos! Si necesitás coordinar un envío o consultar el saldo, avisanos por acá.</p>
+              <div class="wa-buttons">
+                <div class="wa-btn">Cómo llegar</div>
+                <div class="wa-btn">Consultar saldo</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer Page 1 -->
+    <div class="page-footer">
+      <span>Sofía AI Agency • Dossier Oficial de Plantillas Meta Cloud API</span>
+      <span>Página 1 de 2 • Paraná, Entre Ríos, Argentina</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 2: COBRANZAS, MANTENIMIENTO Y PROMOCIONES ==================== -->
+  <div class="page-sheet page-2">
+    <div>
+      <!-- Header compact -->
+      <div class="header" style="margin-bottom: 7px; padding: 8px 16px;">
+        <div class="header-text">
+          <h1 style="font-size: 13pt;">SOFÍA AI AGENCY <span>• CATÁLOGO VISUAL (PARTE II)</span></h1>
+          <p>Membresías Recurrentes, Mantenimiento Preventivo y Reactivación de Clientes Inactivos</p>
+        </div>
+        <div class="badge-meta">✓ Meta Verified Templates</div>
+      </div>
+
+      <!-- Templates 4, 5, 6 -->
+      <div class="templates-container">
+
+        <!-- Plantilla 4: aviso_vencimiento_cuota_v1 -->
+        <div class="template-card">
+          <div class="card-meta">
+            <div class="card-title-row">
+              <div class="card-name">4. aviso_vencimiento_cuota_v1</div>
+              <span class="badge-cat-utility">CATEGORÍA: UTILITY (Económica)</span>
+            </div>
+            <div class="card-rubros">
+              <strong>Rubros:</strong> Gimnasios, Clubes, Escuelas de Danza, Institutos y Servicios Recurrentes.
+            </div>
+            <div class="card-action-box">
+              <strong>Cobranza Automática:</strong> Se dispara 48h antes del vencimiento. Genera link de pago seguro o recibe el comprobante de transferencia y lo audita con IA multimodal.
+            </div>
+          </div>
+          <div class="wa-bubble-wrapper">
+            <div class="wa-bubble">
+              <div class="wa-header">💬 WhatsApp Oficial • Iron Gym Paraná</div>
+              <p>Hola <strong>Lucas</strong>, te saludamos desde <strong>*Iron Gym Paraná*</strong>.</p>
+              <div class="wa-variables">
+                Te recordamos que tu cuota de <strong>*Pase Libre Musculación*</strong> vence el <strong>*10 de Octubre*</strong>.<br>
+                💵 <strong>Importe:</strong> $31.000 ARS
+              </div>
+              <p>Podés abonar por transferencia o solicitar tu link de pago seguro tocando el botón a continuación. Si ya pagaste, envianos el comprobante por acá.</p>
+              <div class="wa-buttons">
+                <div class="wa-btn">Pedir link de pago</div>
+                <div class="wa-btn wa-btn-secondary">Enviar comprobante</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plantilla 5: aviso_control_preventivo_v1 -->
+        <div class="template-card">
+          <div class="card-meta">
+            <div class="card-title-row">
+              <div class="card-name">5. aviso_control_preventivo_v1</div>
+              <span class="badge-cat-utility">CATEGORÍA: UTILITY (Económica)</span>
+            </div>
+            <div class="card-rubros">
+              <strong>Rubros:</strong> Veterinarias (vacunas/pipetas), Lubricentros (cambio de aceite) y Odontología (limpiezas).
+            </div>
+            <div class="card-action-box">
+              <strong>Máquina de Facturación Recurrente:</strong> El cliente nunca recuerda la fecha exacta de la vacuna o el service. Sofía le avisa al cumplirse el plazo y llena la agenda.
+            </div>
+          </div>
+          <div class="wa-bubble-wrapper">
+            <div class="wa-bubble">
+              <div class="wa-header">💬 WhatsApp Oficial • Veterinaria Huellitas</div>
+              <p>Hola <strong>Carla</strong>, te saludamos desde <strong>*Veterinaria Huellitas*</strong>.</p>
+              <div class="wa-variables">
+                Te recordamos que se cumple el período recomendado para <strong>la vacunación séxtuple anual</strong> de <strong>tu perro Toby</strong>.<br>
+                🗓 <strong>Último registro:</strong> Noviembre 2025 (hace 11 meses)<br>
+                📍 <strong>Sede:</strong> Av. Rivadavia 4500
+              </div>
+              <p>Mantener los controles al día es fundamental. Tocá una opción para agendar o avisanos si ya lo hiciste.</p>
+              <div class="wa-buttons">
+                <div class="wa-btn">Agendar turno</div>
+                <div class="wa-btn wa-btn-secondary">Ya lo realicé</div>
+                <div class="wa-btn wa-btn-secondary">Consultar fechas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plantilla 6: campana_promo_v1 -->
+        <div class="template-card">
+          <div class="card-meta">
+            <div class="card-title-row">
+              <div class="card-name">6. campana_promo_v1</div>
+              <span class="badge-cat-mkt">CATEGORÍA: MARKETING (Reactivación)</span>
+            </div>
+            <div class="card-rubros">
+              <strong>Rubros:</strong> Todos los rubros: Ex-socios, clientes inactivos (+60 días) y fechas especiales.
+            </div>
+            <div class="card-action-box">
+              <strong>Modo Director por Audio:</strong> El dueño manda un audio de 5 segundos: <em>«Sofía, armame una promo para los que no vienen hace 2 meses»</em>. Sofía filtra, pide confirmación y dispara.
+            </div>
+          </div>
+          <div class="wa-bubble-wrapper">
+            <div class="wa-bubble">
+              <div class="wa-header">💬 WhatsApp Oficial • Iron Gym Paraná</div>
+              <p>Hola <strong>Esteban</strong>, te saludamos desde <strong>*Iron Gym Paraná*</strong>.</p>
+              <p>Queríamos contarte una novedad especial pensada para vos:</p>
+              <div class="wa-variables">
+                ✨ <strong>Te extrañamos en el gimnasio y preparamos un beneficio para tu regreso:</strong><br>
+                Durante esta semana podés reactivar tu pase libre con <strong>25% de bonificación</strong> en tu cuota y sin matrícula de inscripción.
+              </div>
+              <p>Si te interesa conocer más detalles o reservar tu lugar, tocanos el botón aquí abajo.</p>
+              <div class="wa-buttons">
+                <div class="wa-btn">Quiero más información</div>
+                <div class="wa-btn wa-btn-secondary">No por ahora, gracias</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Strategic Summary -->
+      <div class="footer-highlight">
+        <div>
+          <strong>💼 Modelo Comercial Sofía AI:</strong> Abono mensual unificado de <strong>$30.000 ARS/mes</strong> para todos los rubros.
+        </div>
+        <div>
+          🚀 <strong>Implementación en 48 Horas</strong> • Sin contratos forzosos • Soporte técnico local.
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Page 2 -->
+    <div class="page-footer">
+      <span>Sofía AI Agency • Asesoría &amp; Consultoría Comercial: Javier Coloma (+54 9 343 572-0312)</span>
+      <span>Página 2 de 2 • Documento Homologado Meta</span>
+    </div>
+  </div>
+
+</body>
+</html>

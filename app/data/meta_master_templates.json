@@ -1,0 +1,196 @@
+[
+  {
+    "name": "recordatorio_turno_v2",
+    "category": "UTILITY",
+    "language": "es_AR",
+    "description": "Recordatorio de cita médica/profesional con confirmación interactiva 24h antes.",
+    "rubros": ["Salud", "Odontología", "Kinesiología", "Estética", "Peluquerías", "Veterinarias"],
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hola {{1}}, te recordamos tu turno en *{{2}}*:\n\n🗓 *Fecha:* {{3}}\n⏰ *Horario:* {{4}} hs\n🩺 *Especialidad / Profesional:* {{5}}\n📍 *Lugar / Dirección:* {{6}}\n\nPor favor, confirmá tu asistencia tocando una de las opciones a continuación para mantener tu lugar reservado.",
+        "example": {
+          "body_text": [
+            ["Martín", "Clínica Dental Sonrisas", "Mañana Martes 15/10", "16:30", "Limpieza con Dra. Gómez", "Av. Corrientes 1234, Piso 2"]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Confirmo asistencia"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Reprogramar"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "No podré asistir"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "adelanta_turno_v1",
+    "category": "UTILITY",
+    "language": "es_AR",
+    "description": "Motor anti-huecos: ofrece vacantes inmediatas a pacientes con turno la semana siguiente.",
+    "rubros": ["Salud", "Estética", "Talleres", "Odontología"],
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hola {{1}}, te escribimos de *{{2}}*.\n\nSe liberó un espacio disponible para el día *{{3}} a las {{4}} hs* con {{5}}.\n\nComo tenés turno asignado para el día {{6}}, te ofrecemos la posibilidad de adelantarlo para esta nueva fecha. ¿Te gustaría aprovechar este horario?",
+        "example": {
+          "body_text": [
+            ["Mariana", "Consultorios Alvear", "Mañana Miércoles", "10:30", "Dra. Silvina Gómez", "Viernes 17/10 a las 16hs"]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Sí adelantar turno"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Mantener turno actual"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "pedido_listo_retiro_v1",
+    "category": "UTILITY",
+    "language": "es_AR",
+    "description": "Aviso de trabajo terminado para retirar en local, cobro de saldos y despacho de órdenes.",
+    "rubros": ["Ópticas", "Talleres Mecánicos", "Servicios Técnicos", "Ferreterías B2B"],
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hola {{1}}, te informamos desde *{{2}}* que tu trabajo/pedido ya se encuentra listo para retirar.\n\n📦 *Detalle:* {{3}}\n🔖 *Orden / Referencia:* {{4}}\n📍 *Retiro en:* {{5}}\n🕒 *Horarios de atención:* {{6}}\n\n¡Te esperamos! Si necesitás coordinar un envío o consultar el saldo, avisanos por acá.",
+        "example": {
+          "body_text": [
+            ["Carla", "Óptica Visión", "Anteojos multifocales antirréflex", "ORD-2041", "San Martín 820", "Lunes a Viernes de 8:30 a 19 hs"]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Cómo llegar"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Consultar saldo"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aviso_vencimiento_cuota_v1",
+    "category": "UTILITY",
+    "language": "es_AR",
+    "description": "Recordatorio cordial de vencimiento de cuota mensual con botón de pago directo y recepción de comprobantes.",
+    "rubros": ["Gimnasios", "Clubes", "Academias de Danza", "Institutos", "Comercios"],
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hola {{1}}, te saludamos desde *{{2}}*.\n\nTe recordamos que tu cuota correspondiente a *{{3}}* vence el *{{4}}*.\n\n💵 *Importe:* ${{5}}\n\nPodés abonar mediante transferencia bancaria o solicitar tu link de pago seguro tocando el botón a continuación. Si ya realizaste el pago, podés enviarnos el comprobante por este medio.",
+        "example": {
+          "body_text": [
+            ["Lucas", "Iron Gym Paraná", "Pase Libre Musculación", "10 de Octubre", "31.000"]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Pedir link de pago"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Enviar comprobante"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "aviso_control_preventivo_v1",
+    "category": "UTILITY",
+    "language": "es_AR",
+    "description": "Notificación periódica preventiva de vacunación, mantenimiento de vehículos, limpiezas y revisiones.",
+    "rubros": ["Veterinarias", "Lubricentros / Talleres", "Odontología Preventiva", "Ópticas"],
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hola {{1}}, te saludamos desde *{{2}}*.\n\nTe recordamos que se cumple el período recomendado para {{3}} de {{4}}.\n\n🗓 *Último registro:* {{5}}\n📍 *Lugar:* {{6}}\n\nMantener los controles al día es fundamental. Tocá una opción para reservar tu espacio esta semana o avisanos si ya lo realizaste.",
+        "example": {
+          "body_text": [
+            ["Carla", "Veterinaria Huellitas", "la vacunación séxtuple anual", "tu mascota Toby", "Noviembre 2025 (hace 11 meses)", "Sede Central - Av. Rivadavia 4500"]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Agendar turno"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Ya lo realicé"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "Consultar fechas"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "campana_promo_v1",
+    "category": "MARKETING",
+    "language": "es_AR",
+    "description": "Reactivación de clientes y socios inactivos (+60 días) con ofertas de temporada creadas por audio.",
+    "rubros": ["Gimnasios", "Salud / Estética", "Comercios", "Talleres", "Distribuidoras"],
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hola {{1}}, te saludamos desde *{{2}}*.\n\nQueríamos contarte una novedad especial pensada para vos:\n\n✨ {{3}}\n\n{{4}}\n\nSi te interesa conocer más detalles o querés que te reservemos un lugar, tocanos el botón aquí abajo.",
+        "example": {
+          "body_text": [
+            ["Esteban", "Iron Gym", "Te extrañamos en el gimnasio y preparamos un beneficio para tu regreso.", "Durante esta semana podés reactivar tu pase libre con 25% de bonificación en tu cuota y sin matrícula."]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "QUICK_REPLY",
+            "text": "Quiero más información"
+          },
+          {
+            "type": "QUICK_REPLY",
+            "text": "No por ahora, gracias"
+          }
+        ]
+      }
+    ]
+  }
+]

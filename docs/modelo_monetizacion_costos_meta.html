@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sofía AI Agency — Política Oficial de Monetización, Precios y Costos Meta</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      background: #f1f5f9;
+      line-height: 1.38;
+      font-size: 8.4pt;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @media screen {
+      .page-sheet {
+        max-width: 820px;
+        margin: 24px auto;
+        background: #ffffff;
+        padding: 24px 28px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm 8mm 10mm;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        font-size: 8.2pt;
+        line-height: 1.34;
+      }
+      .page-sheet {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        height: 279mm !important;
+        max-height: 279mm !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+      }
+      .page-1 {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .page-2 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .card, .wa-preview, .cmd-box, table, tr, .grid-2, .grid-3 {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .header-text h1 {
+      font-size: 15pt;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .header-text h1 span {
+      color: #818cf8;
+    }
+
+    .header-text p {
+      font-size: 8pt;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    .header-badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+    }
+
+    .badge-enterprise {
+      background: rgba(99, 102, 241, 0.25);
+      border: 1px solid #818cf8;
+      color: #e0e7ff;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 7.2pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .badge-sub {
+      font-size: 6.8pt;
+      color: #94a3b8;
+    }
+
+    .mini-header {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #6366f1;
+      padding: 7px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mini-header-title {
+      font-size: 9pt;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .mini-header-sub {
+      font-size: 7.2pt;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .section-title {
+      font-size: 9.8pt;
+      font-weight: 800;
+      color: #0f172a;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 3px;
+      margin-top: 7px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .section-title .icon {
+      font-size: 11pt;
+    }
+
+    p.lead-desc {
+      font-size: 7.7pt;
+      color: #475569;
+      margin-bottom: 5px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 7px 10px;
+    }
+
+    .card.highlight {
+      background: #f5f3ff;
+      border-color: #c7d2fe;
+    }
+
+    .card.alert {
+      background: #fff1f2;
+      border-color: #fecdd3;
+      border-left: 3.5px solid #e11d48;
+    }
+
+    .card.success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      border-left: 3.5px solid #16a34a;
+    }
+
+    .card h3 {
+      font-size: 8.4pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card p {
+      font-size: 7.4pt;
+      color: #475569;
+      line-height: 1.33;
+      margin-bottom: 0;
+    }
+
+    .wa-preview {
+      background: #efeae2;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 7px 9px;
+      margin: 5px 0 6px 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .wa-bubble {
+      background: #ffffff;
+      padding: 6px 9px;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      font-size: 7.4pt;
+      line-height: 1.33;
+      color: #111b21;
+    }
+
+    .wa-header {
+      font-weight: 700;
+      color: #008069;
+      border-bottom: 1px solid #e9edef;
+      padding-bottom: 3px;
+      margin-bottom: 4px;
+      font-size: 7.2pt;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .cmd-box {
+      background: #ffffff;
+      border-left: 3px solid #6366f1;
+      padding: 5px 8px;
+      margin-top: 3px;
+      font-size: 7.3pt;
+      border-radius: 0 5px 5px 0;
+      border: 1px solid #e2e8f0;
+      border-left-width: 3px;
+      border-left-color: #6366f1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.5pt;
+      margin: 5px 0 8px 0;
+    }
+
+    th, td {
+      padding: 5px 7px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      line-height: 1.28;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 7.2pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .tag-success {
+      background: #dcfce7;
+      color: #15803d;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 6.8pt;
+      display: inline-block;
+    }
+
+    .tag-info {
+      background: #e0e7ff;
+      color: #4338ca;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 6.8pt;
+      display: inline-block;
+    }
+
+    .footer-cta {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #ffffff;
+      padding: 9px 13px;
+      border-radius: 7px;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .footer-cta h4 {
+      font-size: 8.8pt;
+      color: #ffffff;
+      margin-bottom: 2px;
+      font-weight: 800;
+    }
+
+    .footer-cta p {
+      font-size: 7.2pt;
+      color: #94a3b8;
+      margin-bottom: 0;
+    }
+
+    .footer-page-pill {
+      font-size: 6.8pt;
+      color: #94a3b8;
+      text-align: right;
+      padding-top: 3px;
+      border-top: 1px solid #f1f5f9;
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PÁGINA 1: ESTRUCTURA DE COSTOS Y ANÁLISIS DE MODELOS ==================== -->
+  <div class="page-sheet page-1">
+    <div>
+      <div class="header">
+        <div class="header-text">
+          <h1>SOFÍA <span>AI</span> — Política de Precios & Costos Meta</h1>
+          <p>Estrategia Comercial Oficial: Abono Único de $30.000 ARS, Cupo de Mensajes y Escudo Anti-Sobregiro</p>
+        </div>
+        <div class="header-badges">
+          <div class="badge-enterprise">Tarifario Oficial 2026</div>
+          <div class="badge-sub">Meta Cloud API • Transparencia Operativa</div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 1: CÓMO COBRA META -->
+      <div class="section-title">
+        <span class="icon">💡</span> 1. ¿Cómo cobra realmente Meta (WhatsApp Business Cloud API)?
+      </div>
+      <p class="lead-desc">Meta no cobra cuotas fijas de mantenimiento. Su facturación es estrictamente <strong>por conversación iniciada</strong> y distingue entre mensajes entrantes y salientes:</p>
+
+      <div class="grid-3">
+        <div class="card success">
+          <h3>📥 Mensajes Entrantes</h3>
+          <p><strong>100% GRATIS (Ventana 24hs).</strong> Si un paciente o cliente escribe al número para consultar horarios o reservar, Sofía responde ilimitadamente sin ningún costo de Meta.</p>
+        </div>
+        <div class="card">
+          <h3>⚡ Plantillas UTILITY</h3>
+          <p><strong>~$0,015 a $0,02 USD (~$15 a $25 ARS).</strong> Mensajes transaccionales iniciados por el negocio: recordatorios de turnos, confirmaciones, avisos de retiro y cobranzas de cuotas.</p>
+        </div>
+        <div class="card highlight">
+          <h3>📣 Plantillas MARKETING</h3>
+          <p><strong>~$0,035 a $0,05 USD (~$40 a $60 ARS).</strong> Mensajes salientes para reactivación de clientes inactivos (+60 días), promociones de temporada o anuncios comerciales.</p>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: LA POLÍTICA COMERCIAL UNIFICADA -->
+      <div class="section-title">
+        <span class="icon">🏷️</span> 2. La Regla de Oro: Mismo Abono SaaS ($30.000 ARS/mes) para Ambos Planes
+      </div>
+      <p class="lead-desc">Para erradicar toda fricción de venta, el mantenimiento del cerebro de Sofía tiene la misma tarifa mensual accesible para todos. La diferencia radica en la infraestructura del número:</p>
+
+      <div class="grid-2">
+        <div class="card highlight" style="border-top: 3.5px solid #6366f1;">
+          <h3>🟢 Plan Central Compartida ($30.000/mes)</h3>
+          <p style="font-size: 7.3pt; line-height: 1.32;">
+            • <strong>Infraestructura:</strong> Opera dentro del número verificado de la Central Sofía con la tarjeta de la agencia.<br>
+            • <strong>Cupo Incluido:</strong> El abono cubre hasta <strong>150 mensajes salientes automáticos al mes</strong> (recordatorios de turnos, avisos de cuota o reactivación).<br>
+            • <strong>Costo Meta para la Agencia:</strong> ~$2.500 ARS. <strong>Ganancia limpia para la agencia: ~$27.500 ARS/mes (91% margen).</strong><br>
+            • <strong>Si supera los 150 mensajes:</strong> Sofía frena y le envía automáticamente un link de Mercado Pago para recargar packs extra.
+          </p>
+          <div style="margin-top: 4px;"><span class="tag-success">Ideal Profesionales y Consultorios • Setup $30.000</span></div>
+        </div>
+
+        <div class="card success" style="border-top: 3.5px solid #16a34a;">
+          <h3>💎 Plan Enterprise — Línea Propia ($30.000/mes)</h3>
+          <p style="font-size: 7.3pt; line-height: 1.32;">
+            • <strong>Infraestructura:</strong> <strong>Número propio exclusivo (su propio chip)</strong>, cuenta de Meta propia y logo/nombre verificado.<br>
+            • <strong>Tarjeta del Cliente:</strong> El comercio carga su propia tarjeta en Meta; Meta le debita directamente los consumos.<br>
+            • <strong>Mensajes de Sofía:</strong> <strong>ILIMITADOS.</strong> Sofía nunca le frena los envíos porque los costos de API los cubre el cliente.<br>
+            • <strong>Ganancia para la Agencia:</strong> Los <strong>$30.000 ARS mensuales son 100% netos</strong> de software, servidor y soporte.
+          </p>
+          <div style="margin-top: 4px;"><span class="tag-info">Ideal Clínicas, Gimnasios y Comercios • Setup $95.000</span></div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 3: TABLA DE RENTABILIDAD Y MÁRGENES -->
+      <div class="section-title">
+        <span class="icon">📊</span> 3. Desglose de Rentabilidad Financiera para la Agencia
+      </div>
+      <p class="lead-desc">Comparativa de ingresos limpios generados por cada tipo de cliente:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">Modalidad</th>
+            <th style="width: 20%;">Setup Inicial (Único)</th>
+            <th style="width: 20%;">Abono Mensual (SaaS)</th>
+            <th style="width: 20%;">Costo Meta Agencia</th>
+            <th style="width: 15%;">Margen Neto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Plan Central Compartida</strong><br><small style="color:#64748b;">Cupo: 150 msjs / mes</small></td>
+            <td><strong>$30.000 ARS</strong></td>
+            <td><strong>$30.000 ARS</strong></td>
+            <td>~$2.500 ARS</td>
+            <td><span class="tag-success">91,6% Limpio</span></td>
+          </tr>
+          <tr>
+            <td><strong>Plan Enterprise Línea Propia</strong><br><small style="color:#64748b;">Mensajes Ilimitados</small></td>
+            <td><strong>$95.000 ARS</strong></td>
+            <td><strong>$30.000 ARS</strong></td>
+            <td>$0,00 ARS (Paga el cliente)</td>
+            <td><span class="tag-success">97,5% Limpio</span></td>
+          </tr>
+          <tr>
+            <td><strong>Pack 100 Mensajes Extra</strong><br><small style="color:#64748b;">Solo Plan Compartido</small></td>
+            <td>—</td>
+            <td><strong>$4.500 ARS</strong> (Prepago)</td>
+            <td>~$1.800 ARS</td>
+            <td><span class="tag-info">60% Limpio</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="cmd-box" style="margin-top: 4px;">
+        💰 <strong>Proyección Rápida:</strong> Con solo 20 clientes activos a $30.000/mes generás <strong>$600.000 ARS mensuales recurrentes</strong> de ganancia neta, más los ingresos de Setup ($95.000 por cada cliente Enterprise que se suma).
+      </div>
+    </div>
+
+    <div class="footer-page-pill">
+      Página 1 de 2 • Sofía AI Enterprise • Estructura Comercial & Costos de Meta
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 2: EL ESCUDO ANTI-SOBREGIRO DE SOFÍA ==================== -->
+  <div class="page-sheet page-2">
+    <div>
+      <div class="mini-header">
+        <div class="mini-header-title">SOFÍA AI — El Escudo Financiero & Automatización de Pagos</div>
+        <div class="mini-header-sub">Gestión Automática del Cupo de 150 Mensajes y Cobro por Mercado Pago</div>
+      </div>
+
+      <!-- SECCIÓN 4: CÓMO OPERA EL CONTROL DE CUPO -->
+      <div class="section-title">
+        <span class="icon">🛡️</span> 4. El Escudo Financiero: ¿Cómo controla Sofía el Cupo de 150 Mensajes?
+      </div>
+      <p class="lead-desc">En el <strong>Plan Compartido</strong>, Sofía lleva un contador en tiempo real de mensajes salientes enviados en el mes. <strong>Jamás se sobregiran costos a espaldas de la agencia:</strong></p>
+
+      <!-- CASO 1: DENTRO DE LOS 150 MENSAJES -->
+      <div class="card" style="margin-bottom: 6px;">
+        <h3 style="color: #4338ca;">Caso 1: El Dueño pide una campaña y está DENTRO de los 150 mensajes</h3>
+        <p style="font-size: 7.2pt; color: #64748b; margin-bottom: 3px;">Sofía descuenta del cupo y le confirma los mensajes restantes con total claridad:</p>
+        <div class="wa-preview" style="margin: 0;">
+          <div class="wa-bubble">
+            <div class="wa-header">
+              <span>🤖 Sofía AI ➔ Dueño (Chat Privado de Administración)</span>
+              <span>ESTADO DE CUPO</span>
+            </div>
+            ¡Hola Lucas! Encontré <strong>35 socios inactivos</strong> (+60 días).<br>
+            Esta campaña consumirá <strong>35 mensajes</strong> de tus 150 mensajes incluidos en tu abono mensual de $30.000 (te quedarán <strong>115 mensajes disponibles</strong> este mes).<br>
+            📲 <em>Texto: «Hola [Nombre], te saludamos de Iron Gym. Notamos que hace un tiempo no te vemos y preparamos un 25% off si volvés a entrenar esta semana...»</em><br>
+            ¿Confirmás el envío a los 35 socios?
+          </div>
+        </div>
+      </div>
+
+      <!-- CASO 2: SUPERA LOS 150 MENSAJES -> LINK DE MERCADO PAGO -->
+      <div class="card alert" style="margin-bottom: 6px;">
+        <h3 style="color: #9f1239;">Caso 2: Se superan los 150 mensajes ➔ Sofía envía el Link de Mercado Pago</h3>
+        <p style="font-size: 7.2pt; color: #9f1239; margin-bottom: 3px;">Sofía frena el envío, avisa cordialmente y cobra por adelantado el paquete extra:</p>
+        <div class="wa-preview" style="margin: 0;">
+          <div class="wa-bubble">
+            <div class="wa-header" style="color: #dc2626;">
+              <span>🤖 Sofía AI ➔ Dueño (Aviso de Cupo Completado & Recarga)</span>
+              <span>ACCESO A RECARGA</span>
+            </div>
+            Lucas, tu cuenta ha alcanzado el límite de <strong>150 mensajes mensuales incluidos</strong> en tu abono de $30.000.<br>
+            Para procesar esta nueva campaña (o continuar enviando recordatorios sin pausas), podés habilitar el <strong>Pack de 100 Mensajes Extra</strong> por <strong>$4.500 ARS</strong>.<br>
+            💳 <strong>Link de pago seguro de Mercado Pago:</strong> 👉 <em>https://mpago.la/pack100_sofia_agency</em><br>
+            <em>En cuanto se acredite el pago (inmediato), los mensajes se enviarán automáticamente cuidando la reputación de la línea.</em>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 5: COMPARATIVA DEFINITIVA DE CONDICIONES -->
+      <div class="section-title">
+        <span class="icon">📋</span> 5. Resumen de Condiciones Comerciales por Modalidad
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">Característica</th>
+            <th style="width: 37%;">🟢 Plan Central Compartida</th>
+            <th style="width: 38%;">💎 Plan Enterprise (Línea Propia)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Abono Mensual (SaaS)</strong></td>
+            <td><strong>$30.000 ARS / mes</strong></td>
+            <td><strong>$30.000 ARS / mes</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Costo de Setup Inicial</strong></td>
+            <td><strong>$30.000 ARS</strong> (Alta en 15 min con QR)</td>
+            <td><strong>$95.000 ARS</strong> (Homologación Meta + Chip propio)</td>
+          </tr>
+          <tr>
+            <td><strong>Número de WhatsApp</strong></td>
+            <td>Central Oficial Compartida (con QR/Hashtag)</td>
+            <td><strong>Número y chip exclusivo del comercio</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Identidad en WhatsApp</strong></td>
+            <td>Logo y membrete en cada texto</td>
+            <td><strong>Perfil de empresa verificado propio (Tilde Verde)</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Límite de Mensajes Salientes</strong></td>
+            <td><strong>150 mensajes / mes incluidos</strong></td>
+            <td><strong>ILIMITADOS</strong> (Paga Meta con su tarjeta propia)</td>
+          </tr>
+          <tr>
+            <td><strong>Costo de Mensajes Excedentes</strong></td>
+            <td>$4.500 ARS por cada Pack de 100 msgs (Mercado Pago)</td>
+            <td>Consumo oficial debitado a su tarjeta por Meta</td>
+          </tr>
+          <tr>
+            <td><strong>Soporte y Modo Director</strong></td>
+            <td>Incluido por WhatsApp (1 celular)</td>
+            <td>Incluido multi-secretaria y soporte prioritario</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- CONCLUSIÓN Y POLÍTICA DE SEGURIDAD -->
+      <div class="footer-cta">
+        <div>
+          <h4>🔐 Garantía de Rentabilidad para la Agencia</h4>
+          <p>Tus costos están 100% protegidos: en el Plan Compartido el límite de 150 mensajes te asegura un margen del 91%, y en el Plan Enterprise la tarjeta de Meta es del cliente.</p>
+        </div>
+        <div style="text-align: right; min-width: 170px;">
+          <span style="font-weight: 800; font-size: 9.2pt; color: #a5b4fc;">Sofía AI Agency</span><br>
+          <span style="font-size: 7pt; color: #cbd5e1;">Meta Tech Partner • Finanzas Claras</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-page-pill">
+      Página 2 de 2 • Sofía AI Enterprise • Documento de Política Comercial & Costos
+    </div>
+  </div>
+
+</body>
+</html>

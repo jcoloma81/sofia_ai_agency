@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>CV - Javier Coloma - AI & Automation Developer</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 15mm 12mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      background-color: #ffffff;
+      line-height: 1.35;
+      font-size: 9.5pt;
+    }
+    a {
+      color: #0284c7;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .header {
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .name-title h1 {
+      font-size: 20pt;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      margin-bottom: 2px;
+    }
+    .name-title h2 {
+      font-size: 11pt;
+      font-weight: 600;
+      color: #0284c7;
+    }
+    .contact-info {
+      text-align: right;
+      font-size: 8.5pt;
+      color: #475569;
+      line-height: 1.4;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+    }
+    .section-title {
+      font-size: 10pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #0f172a;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 3px;
+      margin-bottom: 8px;
+    }
+    .profile-summary {
+      font-size: 9pt;
+      color: #334155;
+      margin-bottom: 12px;
+      text-align: justify;
+    }
+    .project-card, .job-card {
+      margin-bottom: 10px;
+    }
+    .project-header, .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2px;
+    }
+    .project-title, .job-title {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .project-url {
+      font-size: 8.5pt;
+      font-weight: 600;
+    }
+    .project-meta, .job-meta {
+      font-size: 8pt;
+      color: #64748b;
+      margin-bottom: 3px;
+    }
+    .project-desc {
+      font-size: 8.8pt;
+      color: #334155;
+    }
+    ul.bullet-list {
+      margin-left: 14px;
+      margin-top: 3px;
+    }
+    ul.bullet-list li {
+      margin-bottom: 2px;
+      font-size: 8.8pt;
+      color: #334155;
+    }
+    .sidebar-section {
+      margin-bottom: 12px;
+    }
+    .skill-category {
+      margin-bottom: 7px;
+    }
+    .skill-name {
+      font-weight: 600;
+      font-size: 8.8pt;
+      color: #0f172a;
+    }
+    .skill-items {
+      font-size: 8.5pt;
+      color: #475569;
+      line-height: 1.3;
+    }
+    .tag {
+      display: inline-block;
+      background: #f1f5f9;
+      color: #334155;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 7.8pt;
+      font-weight: 500;
+      margin-right: 3px;
+      margin-bottom: 3px;
+      border: 1px solid #e2e8f0;
+    }
+    .badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="name-title">
+      <h1>Javier Coloma</h1>
+      <h2>Desarrollador de IA, Backend & Automatizaciones WhatsApp</h2>
+    </div>
+    <div class="contact-info">
+      <div>📍 Argentina (GMT-3)</div>
+      <div>💻 <a href="https://github.com/jcoloma81" target="_blank">github.com/jcoloma81</a></div>
+      <div>🌐 <a href="https://sofia-ai-agency.onrender.com/" target="_blank">sofia-ai-agency.onrender.com</a></div>
+      <div>⚡ Disponibilidad Inmediata / Remoto</div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="profile-summary">
+    <strong>Operador Técnico y Creador de Producto</strong> enfocado en resolver problemas de negocio mediante <strong>Inteligencia Artificial aplicada, backend con Python y automatización en tiempo real</strong>. Especializado en conectar modelos LLM con canales de mensajería (WhatsApp Cloud API), sistemas CRM y plataformas de pago para aumentar conversiones y eliminar cuellos de botella operativos 24/7.
+  </div>
+
+  <div class="grid">
+    <!-- COLUMNA PRINCIPAL -->
+    <div class="main-col">
+      <div class="section-title">Proyectos Destacados en Producción</div>
+
+      <!-- SOFIA AI -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="project-title">Sofía AI — Sistema de Automatización WhatsApp & CRM</div>
+          <div class="project-url"><a href="https://sofia-ai-agency.onrender.com/" target="_blank">sofia-ai-agency.onrender.com ↗</a></div>
+        </div>
+        <div class="project-meta">FastAPI (Python) · OpenAI / LLMs · Webhooks · UptimeRobot · Render Cloud</div>
+        <ul class="bullet-list">
+          <li><strong>Agente Conversacional 24/7:</strong> Diseñado con modelos LLM para atención inteligente, calificación de prospectos y derivación directa a canales comerciales sin respuestas robóticas.</li>
+          <li><strong>Soporte Multilingüe en Tiempo Real:</strong> Detección y respuesta fluida en Español, Portugués e Inglés.</li>
+          <li><strong>Backend Robusto & Cero Caídas:</strong> API desarrollada en FastAPI con arquitectura de webhooks y monitorización activa 24/7 libre de tiempos de inactividad (zero cold starts).</li>
+        </ul>
+      </div>
+
+      <!-- AIR CONTROL PRO -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="project-title">Air Control Pro — Plataforma Cloud IoT & Pagos Digitales</div>
+          <div class="project-url"><a href="https://aircontrolpro.net/" target="_blank">aircontrolpro.net ↗</a></div>
+        </div>
+        <div class="project-meta">Python · Mercado Pago API · Broker MQTT · ESP8266 / ESP32 · Webhooks</div>
+        <ul class="bullet-list">
+          <li><strong>Integración FinTech & IoT:</strong> Plataforma integral para tarifado, pago digital y control automático de equipos de climatización comercial.</li>
+          <li><strong>Flujo de Pago a Hardware:</strong> Procesamiento de webhooks de Mercado Pago con emisión instantánea de órdenes de control vía MQTT hacia microcontroladores físicos.</li>
+          <li><strong>Resiliencia Operativa:</strong> Sistema de guardas, reintentos y tolerancia a fallos de red para garantizar transacciones físicas seguras.</li>
+        </ul>
+      </div>
+
+      <!-- HISTORIA LABORAL -->
+      <div class="section-title" style="margin-top: 14px;">Experiencia & Trayectoria</div>
+
+      <div class="job-card">
+        <div class="job-header">
+          <div class="job-title">Especialista en Automatización & Desarrollo de IA</div>
+          <span class="badge">2023 - Presente</span>
+        </div>
+        <div class="job-meta">Sofia AI Solutions / Consultor Independiente · Remoto</div>
+        <ul class="bullet-list">
+          <li>Diseño e integración de bots y agentes de IA conversacionales para comercio electrónico, servicios y turismo en Latinoamérica.</li>
+          <li>Implementación de arquitecturas de seguimiento y atribución de conversiones (Meta Conversions API / CAPI) vinculadas a cierres de ventas en WhatsApp.</li>
+          <li>Desarrollo de pipelines de automatización con Python, webhooks, scrapers y sincronización con CRMs y bases de datos.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-col">
+      <div class="section-title">Habilidades Técnicas</div>
+
+      <div class="sidebar-section">
+        <div class="skill-category">
+          <div class="skill-name">Backend & Lenguajes</div>
+          <div class="skill-items">
+            <span class="tag">Python 3</span>
+            <span class="tag">FastAPI</span>
+            <span class="tag">REST APIs</span>
+            <span class="tag">Webhooks</span>
+            <span class="tag">PostgreSQL</span>
+            <span class="tag">SQLite</span>
+          </div>
+        </div>
+
+        <div class="skill-category">
+          <div class="skill-name">Inteligencia Artificial</div>
+          <div class="skill-items">
+            <span class="tag">OpenAI API</span>
+            <span class="tag">Claude / Gemini</span>
+            <span class="tag">Prompt Eng.</span>
+            <span class="tag">Agentes de IA</span>
+            <span class="tag">Structured Outputs</span>
+          </div>
+        </div>
+
+        <div class="skill-category">
+          <div class="skill-name">Canales & Automatización</div>
+          <div class="skill-items">
+            <span class="tag">WhatsApp API</span>
+            <span class="tag">Meta CAPI</span>
+            <span class="tag">Telegram Bots</span>
+            <span class="tag">n8n / Make</span>
+            <span class="tag">CRMs (HubSpot)</span>
+          </div>
+        </div>
+
+        <div class="skill-category">
+          <div class="skill-name">IoT & Cloud</div>
+          <div class="skill-items">
+            <span class="tag">ESP8266 / ESP32</span>
+            <span class="tag">MQTT Protocol</span>
+            <span class="tag">Render Cloud</span>
+            <span class="tag">Git / GitHub</span>
+            <span class="tag">Uptime Monitoring</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Metodología de Trabajo</div>
+      <div class="sidebar-section" style="font-size: 8.5pt; color: #334155; line-height: 1.35;">
+        • <strong>Orientado a Producto:</strong> Foco en métricas de negocio y ROI antes que en código innecesario.<br>
+        • <strong>Calidad & Centinelas:</strong> Verificación sistemática con suites de prueba (pytest) y reintentos ante fallos.<br>
+        • <strong>Trabajo Asíncrono:</strong> Comunicación proactiva y clara.
+      </div>
+
+      <div class="section-title">Idiomas</div>
+      <div class="sidebar-section" style="font-size: 8.5pt; color: #334155; line-height: 1.4;">
+        • <strong>Español:</strong> Nativo<br>
+        • <strong>Portugués:</strong> Operativo / Intermedio (Brasil GMT-3)<br>
+        • <strong>Inglés:</strong> Técnico / Profesional
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

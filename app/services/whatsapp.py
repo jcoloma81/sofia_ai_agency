@@ -169,12 +169,30 @@ async def send_whatsapp_template(
     to_phone: str,
     template_name: str = "prospeccion_sofia_v1",
     language_code: str = "es_AR",
-    components: Optional[List[dict]] = None
+    components: Optional[List[dict]] = None,
+    tenant_id: Optional[int] = None,
+    db: Optional[Any] = None
 ) -> bool:
     """
     Sends an approved Meta WhatsApp template to initiate outbound prospecting without ban risk.
+    Enforces tenant message quota on the Shared Plan.
     """
     clean_phone = "".join(filter(str.isdigit, to_phone))
+
+    tenant = None
+    if tenant_id and db:
+        try:
+            from app.models.tenant import Tenant
+            from app.services.mercado_pago_service import mercadopago_service
+            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+            if tenant:
+                can_send, remaining, reason = mercadopago_service.check_outbound_quota(tenant)
+                if not can_send:
+                    logger.warning(f"🚫 Quota exhausted ({remaining} remaining) for tenant {tenant.slug}. Triggering alert with MP link.")
+                    await mercadopago_service.handle_quota_exhausted_alert(db, tenant)
+                    return False
+        except Exception as e:
+            logger.error(f"Error checking tenant quota in send_whatsapp_template: {e}")
 
     if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
         meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
@@ -203,6 +221,12 @@ async def send_whatsapp_template(
                     res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
                     if res.status_code in [200, 201]:
                         logger.info(f"✅ Meta WhatsApp Template '{template_name}' sent successfully to {target_phone}")
+                        if tenant and db:
+                            try:
+                                tenant.messages_sent_this_month = (tenant.messages_sent_this_month or 0) + 1
+                                db.commit()
+                            except Exception:
+                                pass
                         return True
                     else:
                         logger.warning(f"Meta Cloud API template returned status {res.status_code} for {target_phone}: {res.text}")
@@ -334,6 +358,119 @@ async def send_whatsapp_video(
                 logger.error(f"Error sending video via Meta WhatsApp Cloud API for {target_phone}: {e}")
 
     return False
+
+
+async def send_whatsapp_image(
+    to_phone: str,
+    image_url: str,
+    caption: Optional[str] = None
+) -> bool:
+    """
+    Sends an HD image / logo banner through Meta WhatsApp Cloud API.
+    Used for tenant branding banners (Clínica, Gym, Óptica) and property / product photos.
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+
+    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
+        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+        meta_headers = {
+            "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        for target_phone in get_phone_candidates(clean_phone):
+            meta_payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": target_phone,
+                "type": "image",
+                "image": {
+                    "link": image_url
+                }
+            }
+            if caption:
+                meta_payload["image"]["caption"] = caption
+
+            try:
+                async with httpx.AsyncClient(timeout=25.0) as client:
+                    res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
+                    if res.status_code in [200, 201]:
+                        logger.info(f"✅ Meta WhatsApp Cloud API image sent successfully to {target_phone}")
+                        return True
+                    else:
+                        logger.warning(f"Meta Cloud API image returned status {res.status_code} for {target_phone}: {res.text}")
+            except Exception as e:
+                logger.error(f"Error sending image via Meta WhatsApp Cloud API for {target_phone}: {e}")
+
+    # Fallback to simulation log
+    logger.info(f"[WHATSAPP SIMULATION] Image to {clean_phone}: {image_url} (Caption: {caption})")
+    return True
+
+
+async def send_whatsapp_interactive_buttons(
+    to_phone: str,
+    body_text: str,
+    buttons: List[dict],
+    header_text: Optional[str] = None,
+    footer_text: Optional[str] = None
+) -> bool:
+    """
+    Sends interactive quick-reply buttons via Meta WhatsApp Cloud API.
+    Example buttons: [{"id": "btn_confirmar", "title": "✅ SÍ, CONFIRMO"}, {"id": "btn_cancelar", "title": "❌ REPROGRAMAR"}]
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+
+    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
+        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+        meta_headers = {
+            "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        interactive_obj = {
+            "type": "button",
+            "body": {"text": body_text},
+            "action": {
+                "buttons": [
+                    {
+                        "type": "reply",
+                        "reply": {
+                            "id": btn["id"],
+                            "title": btn["title"][:20]  # Meta limit: max 20 chars
+                        }
+                    }
+                    for btn in buttons[:3]  # Meta limit: max 3 quick-reply buttons
+                ]
+            }
+        }
+        if header_text:
+            interactive_obj["header"] = {"type": "text", "text": header_text[:60]}
+        if footer_text:
+            interactive_obj["footer"] = {"text": footer_text[:60]}
+
+        for target_phone in get_phone_candidates(clean_phone):
+            meta_payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": target_phone,
+                "type": "interactive",
+                "interactive": interactive_obj
+            }
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    res = await client.post(meta_url, json=meta_payload, headers=meta_headers)
+                    if res.status_code in [200, 201]:
+                        logger.info(f"✅ Meta WhatsApp interactive buttons sent successfully to {target_phone}")
+                        return True
+                    else:
+                        logger.warning(f"Meta Cloud API interactive returned status {res.status_code} for {target_phone}: {res.text}")
+            except Exception as e:
+                logger.error(f"Error sending interactive buttons via Meta WhatsApp Cloud API for {target_phone}: {e}")
+
+    # Fallback to plain text with button titles listed
+    fallback_text = body_text
+    if buttons:
+        btn_lines = "\n".join([f"• {b['title']}" for b in buttons])
+        fallback_text += f"\n\n*Opciones:*\n{btn_lines}"
+    return await _send_single_whatsapp_message(clean_phone, fallback_text)
 
 
 async def notify_javier_meeting_scheduled(

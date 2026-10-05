@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sofía AI Agency — Dossier Comercial & Operativo Multi-Rubro</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      background: #f1f5f9;
+      line-height: 1.38;
+      font-size: 8.4pt;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @media screen {
+      .download-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #0f172a;
+        color: #ffffff;
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      }
+      .download-bar span {
+        font-size: 13px;
+        font-weight: 600;
+        color: #cbd5e1;
+      }
+      .download-btn {
+        background: #6366f1;
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .download-btn:hover {
+        background: #4f46e5;
+      }
+      .page-sheet {
+        max-width: 820px;
+        margin: 24px auto;
+        background: #ffffff;
+        padding: 24px 28px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm 8mm 10mm;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        font-size: 8.2pt;
+        line-height: 1.34;
+      }
+      .download-bar {
+        display: none !important;
+      }
+      .page-sheet {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        height: 279mm !important;
+        max-height: 279mm !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+      }
+      .page-1, .page-2, .page-3, .page-4 {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .page-5 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .card, .wa-preview, .cmd-box, table, tr, .grid-2, .grid-3 {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .header-text h1 {
+      font-size: 16pt;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .header-text h1 span {
+      color: #818cf8;
+    }
+
+    .header-text p {
+      font-size: 8pt;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    .header-badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+    }
+
+    .badge-enterprise {
+      background: rgba(99, 102, 241, 0.25);
+      border: 1px solid #818cf8;
+      color: #e0e7ff;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 7.2pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .badge-sub {
+      font-size: 6.8pt;
+      color: #94a3b8;
+    }
+
+    .mini-header {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #6366f1;
+      padding: 7px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mini-header-title {
+      font-size: 9pt;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .mini-header-sub {
+      font-size: 7.2pt;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .section-title {
+      font-size: 9.8pt;
+      font-weight: 800;
+      color: #0f172a;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 3px;
+      margin-top: 7px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .section-title .icon {
+      font-size: 11pt;
+    }
+
+    p.lead-desc {
+      font-size: 7.7pt;
+      color: #475569;
+      margin-bottom: 5px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 7px 10px;
+    }
+
+    .card.highlight {
+      background: #f5f3ff;
+      border-color: #c7d2fe;
+    }
+
+    .card.escudo {
+      background: #f0f9ff;
+      border-left: 3.5px solid #0284c7;
+      border-color: #bae6fd;
+      padding: 7px 10px;
+      margin-bottom: 6px;
+    }
+
+    .card.success {
+      background: #f0fdf4;
+      border-left: 3.5px solid #16a34a;
+      border-color: #bbf7d0;
+    }
+
+    .card h3 {
+      font-size: 8.4pt;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card p {
+      font-size: 7.5pt;
+      color: #475569;
+      line-height: 1.33;
+      margin-bottom: 0;
+    }
+
+    .wa-preview {
+      background: #efeae2;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 7px 9px;
+      margin: 5px 0 6px 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .wa-bubble {
+      background: #ffffff;
+      padding: 6px 9px;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      font-size: 7.5pt;
+      line-height: 1.33;
+      color: #111b21;
+    }
+
+    .wa-header {
+      font-weight: 700;
+      color: #008069;
+      border-bottom: 1px solid #e9edef;
+      padding-bottom: 3px;
+      margin-bottom: 4px;
+      font-size: 7.2pt;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .wa-btn-group {
+      display: flex;
+      gap: 5px;
+      margin-top: 5px;
+    }
+
+    .wa-btn {
+      background: #f0f2f5;
+      color: #00a884;
+      border: 1px solid #d1d7db;
+      border-radius: 5px;
+      padding: 3px 6px;
+      font-size: 7pt;
+      font-weight: 700;
+      text-align: center;
+      flex: 1;
+    }
+
+    .wa-btn.danger {
+      color: #dc2626;
+    }
+
+    .cmd-box {
+      background: #ffffff;
+      border-left: 3px solid #6366f1;
+      padding: 5px 8px;
+      margin-top: 3px;
+      font-size: 7.3pt;
+      border-radius: 0 5px 5px 0;
+      border: 1px solid #e2e8f0;
+      border-left-width: 3px;
+      border-left-color: #6366f1;
+    }
+
+    .cmd-box code {
+      font-weight: 700;
+      color: #4338ca;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.5pt;
+      margin: 5px 0 8px 0;
+    }
+
+    th, td {
+      padding: 5px 7px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      line-height: 1.28;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 7.2pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .tag-success {
+      background: #dcfce7;
+      color: #15803d;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 6.8pt;
+      display: inline-block;
+    }
+
+    .tag-info {
+      background: #e0e7ff;
+      color: #4338ca;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 6.8pt;
+      display: inline-block;
+    }
+
+    .footer-cta {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #ffffff;
+      padding: 9px 13px;
+      border-radius: 7px;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .footer-cta h4 {
+      font-size: 8.8pt;
+      color: #ffffff;
+      margin-bottom: 2px;
+      font-weight: 800;
+    }
+
+    .footer-cta p {
+      font-size: 7.2pt;
+      color: #94a3b8;
+      margin-bottom: 0;
+    }
+
+    .footer-page-pill {
+      font-size: 6.8pt;
+      color: #94a3b8;
+      text-align: right;
+      padding-top: 3px;
+      border-top: 1px solid #f1f5f9;
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Web Download Action Bar (Hidden in Print) -->
+  <div class="download-bar">
+    <span>📄 Manual Comercial & Dossier de Venta — Sofía AI Agency Enterprise (Edición Multi-Rubro 5 Páginas)</span>
+    <a href="/descargar-guia-pdf" class="download-btn">📥 Descargar Dossier PDF Oficial</a>
+  </div>
+
+  <!-- ==================== PÁGINA 1: SALUD, CONSULTORIOS Y EL FLUJO DE CANCELACIÓN ==================== -->
+  <div class="page-sheet page-1">
+    <div>
+      <div class="header">
+        <div class="header-text">
+          <h1>SOFÍA <span>AI</span></h1>
+          <p>Central de Inteligencia Artificial para WhatsApp Oficial de Comercios & Clínicas</p>
+        </div>
+        <div class="header-badges">
+          <div class="badge-enterprise">Tecnología Meta Cloud API</div>
+          <div class="badge-sub">Línea Oficial Verificada • Anti-Bloqueos</div>
+        </div>
+      </div>
+
+      <div class="card highlight" style="margin-bottom: 7px;">
+        <h3>🎯 La Propuesta de Valor para su Negocio</h3>
+        <p><strong>Sofía</strong> es una secretaria ejecutiva inteligente que opera <strong>100% dentro de WhatsApp</strong> bajo número verificado oficial. No requiere instalar aplicaciones ni capacitar personal. Atiende 24/7, confirma turnos, cobra cuotas con Mercado Pago y reactiva clientes inactivos llevando en cada mensaje el <strong>logo, membrete y datos de su comercio</strong>.</p>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">🏥</span> 1. Módulo para Clínicas, Consultorios Odontológicos, Médicos y Estética
+      </div>
+      <p class="lead-desc">Erradica el 25% de ausentismo habitual y cubre de inmediato los baches vacíos de $25.000 a $50.000 por turno.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>⏰ Doble Recordatorio Estratégico</h3>
+          <p>• <strong>48 Horas Antes:</strong> Aviso natural y cordial («Faltan 2 días para tu consulta»), sin presión ni botones aún.<br>
+          • <strong>24 Horas Antes (9:00 AM):</strong> Aviso decisivo con botones [SÍ, CONFIRMO] o [NO, REPROGRAMAR] y plazo hasta las 18:00 hs.</p>
+        </div>
+        <div class="card">
+          <h3>⚡ Rellena-Huecos 1 a 1 (2 Horas)</h3>
+          <p>Si un turno se libera, Sofía activa la lista de espera <strong>de a 1 persona por vez con 2 horas de margen</strong>. Cero riesgo de doble reserva o conflictos en sala de espera.</p>
+        </div>
+      </div>
+
+      <div class="card" style="border-left: 3.5px solid #e11d48; background: #fff1f2; margin-bottom: 6px;">
+        <h3 style="color: #9f1239;">🔄 ¿Qué sucede exactamente si el paciente toca [NO, REPROGRAMAR]?</h3>
+        <p>El sistema ejecuta <strong>3 acciones coordinadas en tiempo real sin que la secretaria mueva un dedo</strong>:</p>
+        <div class="cmd-box" style="border-left-color: #e11d48; font-size: 7.2pt;">
+          1. <strong>Respuesta cordial al paciente:</strong> <em>«Comprendido María. Tu turno del 07/10 a las 16hs ha sido cancelado. Cuando desees reprogramar, avisanos por acá.»</em> (El turno pasa a estado Cancelado).<br>
+          2. <strong>Alerta en tiempo real a la secretaria:</strong> WhatsApp privado a secretaría: <em>«⚠️ María Gómez canceló turno de 16hs. Sofía ya está activando la lista de espera para cubrir el hueco.»</em><br>
+          3. <strong>Disparo al suplente #1 (o Adelanta-Turnos):</strong> Sofía busca al primer paciente en espera (2 horas de margen). Si no hay nadie en espera, activa el <strong>Adelanta-Turnos</strong> ofreciéndole el hueco a pacientes agendados para la semana siguiente.
+        </div>
+      </div>
+
+      <div class="card escudo">
+        <h3>🛡️ La Innovación: "El Escudo para la Secretaria" (15:00 hs — 3 Horas de Margen)</h3>
+        <p>A las <strong>15:00 hs</strong> (3 horas antes del corte de las 18:00), Sofía envía un resumen privado a la secretaria con los turnos de mañana aún sin confirmar. <strong>La secretaría tiene el control absoluto:</strong></p>
+        <div class="cmd-box">
+          • Si la secretaria responde: <code>mantener a María</code> ➔ Sofía protege al paciente amigo y NO cancela su turno.<br>
+          • Si no interviene ➔ A las 18:00 hs Sofía cancela con aviso formal de no concurrencia y activa la lista de espera.
+        </div>
+      </div>
+
+      <div class="wa-preview">
+        <div class="wa-bubble">
+          <div class="wa-header">
+            <span>🏥 Consultorios Alvear — Central de Turnos</span>
+            <span>OFICIAL ✓</span>
+          </div>
+          Hola <strong>María</strong>! Te recordamos tu turno para mañana a las <strong>16:00 hs</strong> con la <strong>Dra. Silvina Gómez</strong>.<br>
+          Por favor confirmá tu asistencia antes de las 18:00 hs de hoy para conservar tu lugar en agenda.<br>
+          <div class="wa-btn-group">
+            <div class="wa-btn">✅ SÍ, CONFIRMO</div>
+            <div class="wa-btn danger">❌ NO, REPROGRAMAR</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-page-pill">
+      Página 1 de 5 • Sofía AI Enterprise • Módulo Salud y Flujos de Turnos
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 2: GIMNASIOS + TALLERES / ÓPTICAS / SERVICIOS ==================== -->
+  <div class="page-sheet page-2">
+    <div>
+      <div class="mini-header">
+        <div class="mini-header-title">SOFÍA AI — Módulos Operativos por Rubro Comercial</div>
+        <div class="mini-header-sub">Gimnasios, Clubes, Ópticas, Talleres y Reparaciones</div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">🏋️‍♂️</span> 2. Módulo para Gimnasios, Danza, Natatorios, Clubes y Academias
+      </div>
+      <p class="lead-desc">Recupera entre el 15% y el 25% de facturación mensual automatizando la cobranza y erradicando la morosidad.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>💳 Cobranza Amable 1 al 10</h3>
+          <p>Aviso mensual automático con <strong>link directo de Mercado Pago</strong> y datos bancarios. El socio abona en 2 clics.</p>
+        </div>
+        <div class="card">
+          <h3>🤖 Lectura de Comprobantes</h3>
+          <p>El alumno envía la foto de la transferencia; la <strong>IA multimodal</strong> valida monto y fecha, acreditando el pago en el acto.</p>
+        </div>
+        <div class="card highlight">
+          <h3>🌴 Reactivador de Ex-Socios</h3>
+          <p>Filtra a quienes no asisten hace más de 60 días y dispara ofertas de temporada («Promo Verano»). Notifica al dueño cuando muestran interés.</p>
+        </div>
+      </div>
+
+      <div class="wa-preview">
+        <div class="wa-bubble">
+          <div class="wa-header">
+            <span>🏋️‍♂️ Iron Gym Paraná — Administración</span>
+            <span>OFICIAL ✓</span>
+          </div>
+          Hola <strong>Lucas</strong>! Te recordamos que tu cuota de <strong>Pase Libre Musculación ($31.000)</strong> vence el día 10/10.<br>
+          Podés abonar cómodamente con este link seguro de Mercado Pago: 👉 <em>https://mpago.la/pos/iron_gym/31000</em><br>
+          O transferir a nuestro Alias. Si ya transferiste, envianos la foto del comprobante por acá para registrarlo. ¡Gracias!
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">🔧</span> 3. Módulo para Ópticas, Talleres Mecánicos y Reparaciones Técnicas
+      </div>
+      <p class="lead-desc">Elimina el cuello de botella de productos terminados que acumulan polvo y clientes llamando todo el día para consultar estado.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>📦 Aviso «Listo para Retirar»</h3>
+          <p>Cuando el trabajo se completa, Sofía dispara un WhatsApp formal: <em>«Tu trabajo está listo para retirar. Saldo pendiente: $X. Horarios: Lun a Vie 8 a 18hs.»</em> Acelera el cobro del 100% de los saldos.</p>
+        </div>
+        <div class="card">
+          <h3>🔍 Consulta de Estado 24/7</h3>
+          <p>Si el cliente escribe: <em>«¿Cómo viene mi arreglo?»</em> o <em>«¿Están listos mis anteojos?»</em>, Sofía consulta la orden y responde el estado exacto sin interrumpir al técnico en el taller.</p>
+        </div>
+      </div>
+
+      <div class="wa-preview">
+        <div class="wa-bubble">
+          <div class="wa-header">
+            <span>👓 Óptica del Centro — Taller de Laboratorio</span>
+            <span>OFICIAL ✓</span>
+          </div>
+          Hola <strong>Carla</strong>! Te informamos que tus cristales multifocales ya fueron calibrados y <strong>tu anteojo está listo para retirar</strong>.<br>
+          📍 Dirección: San Martín 820. Horario: 8:30 a 12:30 y 16:30 a 20:30 hs.<br>
+          💵 Saldo pendiente al retirar: <strong>$18.500</strong> (Efectivo, Débito o Mercado Pago). ¡Te esperamos!
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-page-pill">
+      Página 2 de 5 • Sofía AI Enterprise • Gimnasios, Cobranzas y Retiros Técnicos
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 3: VETERINARIAS, SALUD PREVENTIVA & MANTENIMIENTO PERIÓDICO ==================== -->
+  <div class="page-sheet page-3">
+    <div>
+      <div class="mini-header">
+        <div class="mini-header-title">SOFÍA AI — Salud Preventiva & Servicios Periódicos</div>
+        <div class="mini-header-sub">Veterinarias, Lubricentros, Odontología Preventiva y Chequeos</div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">🐾</span> 4. Módulo de Servicios Periódicos: La Máquina de Facturación Recurrente
+      </div>
+      <p class="lead-desc">El cliente rara vez recuerda la fecha exacta de su próximo control, pero cuando recibe el recordatorio por WhatsApp, <strong>el 70% agenda de inmediato</strong> porque cuida la salud de su mascota o el estado de su vehículo:</p>
+
+      <div class="grid-3">
+        <div class="card success">
+          <h3>🐶 Veterinarias</h3>
+          <p>Vacuna séxtuple / antirrábica anual, desparasitaciones trimestrales y pipetas contra pulgas y garrapatas.</p>
+        </div>
+        <div class="card">
+          <h3>🚗 Talleres y Lubricentros</h3>
+          <p>Cambio de aceite y filtros cada 10.000 km o 1 año. Rotación periódica y balanceo de neumáticos.</p>
+        </div>
+        <div class="card highlight">
+          <h3>🦷 Odonto & Ópticas</h3>
+          <p>Limpieza dental profiláctica semestral y chequeo anual de graduación visual para renovación de cristales.</p>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">⚡</span> Plantilla Maestra Oficial: <code>aviso_control_preventivo_v1</code> (UTILITY)
+      </div>
+      <p class="lead-desc">Aprobada por Meta bajo categoría <strong>UTILITY (Costo bajo de servicio)</strong>, garantizando entrega prioritaria sin riesgo de ser considerada publicidad invasiva:</p>
+
+      <div class="card" style="margin-bottom: 6px;">
+        <p style="font-size: 7.4pt; font-family: monospace; color: #1e1b4b; background: #e0e7ff; padding: 6px 8px; border-radius: 4px;">
+          Hola {{1}}, te saludamos desde *{{2}}*.<br>
+          Te recordamos que se cumple el período recomendado para {{3}} de {{4}}.<br>
+          🗓 *Último registro:* {{5}} &nbsp;|&nbsp; 📍 *Lugar:* {{6}}<br>
+          Mantener los controles al día es fundamental. Tocá una opción para reservar tu espacio esta semana o avisanos si ya lo realizaste.
+        </p>
+        <div class="wa-btn-group" style="margin-top: 5px;">
+          <div class="wa-btn">🗓 Agendar turno</div>
+          <div class="wa-btn">Ya lo realicé</div>
+          <div class="wa-btn">Consultar fechas</div>
+        </div>
+      </div>
+
+      <!-- EJEMPLOS MULTI-RUBRO EN VIVO -->
+      <div class="grid-2">
+        <div class="wa-preview" style="margin: 0;">
+          <div class="wa-bubble">
+            <div class="wa-header">
+              <span>🐾 Veterinaria Huellitas — Vacunación</span>
+              <span>OFICIAL ✓</span>
+            </div>
+            Hola <strong>Carla</strong>, te saludamos de *Veterinaria Huellitas*.<br>
+            Te recordamos que se cumple el período para <strong>la vacunación séxtuple anual</strong> de <strong>tu perro Toby</strong>.<br>
+            🗓 <em>Última aplicación: Noviembre (hace 11 meses).</em><br>
+            📍 Sede Central: Av. Rivadavia 4500. Tocá abajo para agendar:
+            <div class="wa-btn-group">
+              <div class="wa-btn">🗓 Agendar turno</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wa-preview" style="margin: 0;">
+          <div class="wa-bubble">
+            <div class="wa-header">
+              <span>🚗 Lubricentro Express — Mantenimiento</span>
+              <span>OFICIAL ✓</span>
+            </div>
+            Hola <strong>Esteban</strong>, te saludamos de *Lubricentro Express*.<br>
+            Te recordamos que corresponde realizar <strong>el cambio de aceite y filtros</strong> a tu <strong>Toyota Corolla</strong>.<br>
+            🗓 <em>Último service: Hace 10.000 km / 11 meses.</em><br>
+            📍 Taller Belgrano 230. ¿Querés coordinar el turno esta semana?
+            <div class="wa-btn-group">
+              <div class="wa-btn">🗓 Agendar turno</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card highlight" style="margin-top: 6px;">
+        <h3>🚀 Automatización Total: Sofía lo ejecuta en Piloto Automático</h3>
+        <p>El veterinario o mecánico <strong>no tiene que acordarse de revisar agendas pasadas</strong>. Todos los días a las <strong>09:30 AM</strong>, un cronjob interno escanea la base de datos: si hoy se cumplen 330 días (11 meses) del registro, Sofía envía automáticamente el recordatorio y agenda la visita.</p>
+      </div>
+    </div>
+
+    <div class="footer-page-pill">
+      Página 3 de 5 • Sofía AI Enterprise • Veterinarias y Mantenimiento Periódico
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 4: COMERCIOS / B2B + MODO DIRECTOR POR VOZ ==================== -->
+  <div class="page-sheet page-4">
+    <div>
+      <div class="mini-header">
+        <div class="mini-header-title">SOFÍA AI — Automatización Comercial & Modo Director</div>
+        <div class="mini-header-sub">Comercios Minoristas, Distribuidoras y Creación de Promociones por Voz</div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">🛍️</span> 5. Módulo para Comercios Minoristas, Distribuidoras Mayoristas y B2B
+      </div>
+      <p class="lead-desc">Vende y toma pedidos los 7 días de la semana, incluso de noche o feriados cuando la competencia no atiende.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>📑 Catálogos y Precios PDF</h3>
+          <p>Envía al instante el catálogo y lista de precios oficial cuando el cliente lo solicita por WhatsApp.</p>
+        </div>
+        <div class="card">
+          <h3>🛒 Toma de Pedidos Guiada</h3>
+          <p>El cliente dicta la lista de productos y Sofía arma el detalle, calcula el total y lo pasa a depósito.</p>
+        </div>
+        <div class="card">
+          <h3>📍 Stock y Envíos 24/7</h3>
+          <p>Informa zonas de entrega, costos de flete, montos mínimos de compra y datos de facturación.</p>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">🎙️</span> 6. Modo Director: El Dueño Crea Campañas por Audio de WhatsApp
+      </div>
+      <p class="lead-desc">El dueño o encargada <strong>no necesita usar computadoras ni planillas complejas</strong>. Puede armar y lanzar una promoción de reactivación en 4 pasos dictándole un audio de 10 segundos a Sofía:</p>
+
+      <!-- FLUJO EN 4 PASOS -->
+      <div class="grid-2">
+        <div class="card">
+          <h3>1. Instrucción por Audio (Dueño)</h3>
+          <p>🎙️ <em>«Sofi, armame una promo para los socios que no vienen hace más de 2 meses: 25% de descuento en la cuota si vuelven esta semana. Avisame antes de mandar.»</em></p>
+        </div>
+        <div class="card">
+          <h3>2. Sofía Procesa e Interpreta</h3>
+          <p>Transcribe el audio, filtra la base de datos (<code>inactivos > 60 días</code>), cuenta destinatarios (ej: 42 socios) y adapta el texto a la plantilla <code>campana_promo_v1</code>.</p>
+        </div>
+        <div class="card highlight">
+          <h3>3. Escudo de Confirmación Previa</h3>
+          <p>Sofía responde al chat privado del dueño con la vista previa exacta del mensaje y el consumo de cupo para que dé el visto bueno final antes de cualquier envío.</p>
+        </div>
+        <div class="card success">
+          <h3>4. Disparo Seguro y Reporte</h3>
+          <p>El dueño confirma con un <em>«Dale, mandalo 👍»</em>. Sofía envía los mensajes espaciados (respetando los límites de Meta) y luego entrega un reporte de entregados y respuestas.</p>
+        </div>
+      </div>
+
+      <!-- MOCKUP WHATSAPP CHAT PRIVADO DEL DUEÑO -->
+      <div class="wa-preview" style="background: #e2e8f0; margin-top: 5px;">
+        <div class="wa-bubble" style="border-left: 3px solid #6366f1;">
+          <div class="wa-header" style="color: #4338ca;">
+            <span>👑 Chat Privado: Dueño ➔ Sofía (Modo Director)</span>
+            <span>ADMINISTRACIÓN</span>
+          </div>
+          🎤 <em>Audio del Dueño (0:08): «Sofi, promo de 25% off para los que no vienen hace 2 meses. Mostrame antes.»</em><br>
+          🤖 <strong>Respuesta de Sofía:</strong> <em>«¡Hola Lucas! Encontré 42 socios inactivos (+60 días). El mensaje consumirá 42 envíos de tu cupo disponible. Texto: "Hola [Nombre], te saludamos de Iron Gym. Notamos que hace un tiempo no te vemos y preparamos un 25% off en tu pase si volvés esta semana...". ¿Confirmás el envío a los 42 contactos?»</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-page-pill">
+      Página 4 de 5 • Sofía AI Enterprise • Comercios, B2B y Modo Director por Voz
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 5: ALTA EN 24HS, COMPARATIVA ROI Y PREGUNTAS CLAVE ==================== -->
+  <div class="page-sheet page-5">
+    <div>
+      <div class="mini-header">
+        <div class="mini-header-title">SOFÍA AI — Puesta en Marcha & Preguntas Frecuentes</div>
+        <div class="mini-header-sub">Setup en 24hs, Comparativa ROI y Garantía de Satisfacción</div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">🚀</span> 7. Proceso de Alta: ¿Qué le pedimos al Comercio? (Setup en 24hs)
+      </div>
+      <p class="lead-desc">Nosotros realizamos toda la configuración técnica. El cliente solo nos envía estos 5 puntos básicos por WhatsApp:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">Dato Requerido</th>
+            <th style="width: 45%;">¿Para qué se utiliza?</th>
+            <th style="width: 30%;">Ejemplo Práctico</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Nombre y Dirección</strong></td>
+            <td>Membrete corporativo y geolocalización enviada a clientes.</td>
+            <td><em>Consultorios Alvear — Alvear 450, Paraná</em></td>
+          </tr>
+          <tr>
+            <td><strong>2. Celular Responsable</strong></td>
+            <td>Línea autorizada para Modo Director y alertas privadas.</td>
+            <td><em>+54 9 343 453-6447 (Secretaría/Dueño)</em></td>
+          </tr>
+          <tr>
+            <td><strong>3. Logo o Foto del Local</strong></td>
+            <td>Banner en alta resolución que encabeza cada mensaje.</td>
+            <td><em>Archivo JPG / PNG de buena calidad</em></td>
+          </tr>
+          <tr>
+            <td><strong>4. Tarifas y Horarios</strong></td>
+            <td>Base de conocimiento para responder consultas 24/7.</td>
+            <td><em>Lun a Vie 8 a 20hs / Grilla de precios</em></td>
+          </tr>
+          <tr>
+            <td><strong>5. Lista de Turnos/Socios</strong></td>
+            <td>Carga inicial para comenzar los recordatorios automáticos.</td>
+            <td><em>Foto de cuaderno o planilla Excel</em></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-title">
+        <span class="icon">📊</span> 8. Tabla Comparativa: Gestión Tradicional vs. Central Sofía AI
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 26%;">Aspecto Operativo</th>
+            <th style="width: 37%;">Método Tradicional (Manual / Cuaderno)</th>
+            <th style="width: 37%;">Con la Central Sofía AI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Respuesta Fuera de Hora</strong></td>
+            <td>❌ Espera hasta el día siguiente (y se va a la competencia).</td>
+            <td><span class="tag-success">Respuesta en 3 seg las 24 horas</span></td>
+          </tr>
+          <tr>
+            <td><strong>Cancelación de Turnos</strong></td>
+            <td>❌ Hueco vacío de $25.000 a $50.000 perdido.</td>
+            <td><span class="tag-success">Relleno automático con Espera 1 a 1</span></td>
+          </tr>
+          <tr>
+            <td><strong>Cobranza de Cuotas</strong></td>
+            <td>❌ Vergüenza, discusiones y 25% de morosidad.</td>
+            <td><span class="tag-success">Aviso cordial con botón Mercado Pago</span></td>
+          </tr>
+          <tr>
+            <td><strong>Clientes Inactivos</strong></td>
+            <td>❌ Contactos archivados sin volver a comprar jamás.</td>
+            <td><span class="tag-success">Campañas de temporada por voz</span></td>
+          </tr>
+          <tr>
+            <td><strong>Facilidad de Uso</strong></td>
+            <td>❌ Softwares pesados que nadie quiere cargar.</td>
+            <td><span class="tag-success">100% WhatsApp sin apps extra</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card highlight" style="margin-bottom: 6px;">
+        <h3>💡 Preguntas Clave de Mostrador:</h3>
+        <p style="font-size: 7.1pt; line-height: 1.25;">
+          • <strong>«¿Cómo le damos el WhatsApp al cliente en el mostrador?»</strong> ➔ Con un QR en acrílico en recepción (lo escanean y abre el chat listo en 1 segundo). Si ya es cliente, la base de datos lo reconoce de inmediato por su número.<br>
+          • <strong>«¿Qué pasa si en la clínica tenemos 2 o 3 secretarias?»</strong> ➔ Sofía se integra al Grupo de WhatsApp interno de Recepción y a los celulares autorizados. Cualquier secretaria puede consultar o mandar audios, coordinando la misma agenda sin desfasajes.<br>
+          • <strong>«¿Qué pasa si una persona no confirma su turno?»</strong> ➔ Aviso a las 9 AM con plazo hasta las 18 hs. A las 15:00 hs aviso preventivo a secretaría (3 hs de margen). Si a las 18:00 hs no confirmó, se libera a lista de espera (2 hs) o Adelanta-Turnos.
+        </p>
+      </div>
+
+      <div class="footer-cta">
+        <div>
+          <h4>🛡️ Garantía de Satisfacción Total de 7 Días</h4>
+          <p>Conectamos a Sofía en su negocio durante una semana. Si no recupera turnos o no agiliza su cobranza, no abona absolutamente nada.</p>
+        </div>
+        <div style="text-align: right; min-width: 170px;">
+          <span style="font-weight: 800; font-size: 9.2pt; color: #a5b4fc;">Sofía AI Agency</span><br>
+          <span style="font-size: 7pt; color: #cbd5e1;">Meta Tech Partner • Entre Ríos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-page-pill">
+      Página 5 de 5 • Sofía AI Enterprise • Documento Oficial de Presentación Comercial
+    </div>
+  </div>
+
+</body>
+</html>

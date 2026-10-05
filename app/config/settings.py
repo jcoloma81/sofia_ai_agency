@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     META_WABA_ID: Optional[str] = "1592707075880588"
     META_VERIFY_TOKEN: str = "sofia_meta_secret_token_2026"
 
+    # Mercado Pago Integration (Message Packs & Billing)
+    MP_ACCESS_TOKEN: Optional[str] = None
+    MP_PUBLIC_KEY: Optional[str] = None
+    MP_WEBHOOK_SECRET: Optional[str] = None
+
     # Mail / SMTP alerts
     MAIL_USERNAME: Optional[str] = None
     MAIL_PASSWORD: Optional[str] = None

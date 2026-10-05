@@ -1,0 +1,48 @@
+{
+  "clinic_name": "San Lucas Medical Center",
+  "departments": [
+    {
+      "name": "Laboratory & Diagnostics",
+      "guidelines": [
+        {
+          "test_name": "Blood Glucose & Lipid Profile (Perfil Lipídico / Glucemia)",
+          "preparation": "Strict 8 to 12 hours fasting required. Only plain water is permitted. Avoid alcohol and intense physical activity 24 hours prior.",
+          "schedule": "Monday to Friday from 07:00 to 10:30 AM (no prior appointment needed, first-come first-served)."
+        },
+        {
+          "test_name": "Routine Urine Test (Orina Completa)",
+          "preparation": "First morning urine sample required in a sterile container. Collect midstream after proper hygiene.",
+          "schedule": "Monday to Friday from 07:00 to 11:00 AM."
+        }
+      ]
+    },
+    {
+      "name": "Cardiology & Consultations",
+      "doctors": [
+        {
+          "name": "Dr. Fernando Ruiz",
+          "specialty": "Cardiology (Cardiología)",
+          "days": "Tuesday and Thursday, 14:00 to 18:00 hs",
+          "booking": "Requires scheduled appointment via WhatsApp or online portal."
+        },
+        {
+          "name": "Dra. Mariana Gomez",
+          "specialty": "General Medicine (Medicina General)",
+          "days": "Monday to Friday, 08:00 to 13:00 hs",
+          "booking": "Walk-in triage available and scheduled appointments."
+        }
+      ]
+    }
+  ],
+  "emergency_protocol": {
+    "red_flags": [
+      "chest pain", "dolor de pecho", "shortness of breath", "dificultad para respirar",
+      "severe bleeding", "hemorragia", "loss of consciousness", "desmayo", "stroke symptoms",
+      "paralisis", "asfixia", "convulsion"
+    ],
+    "emergency_action": "🚨 CRITICAL TRIAGE ALERT: The symptoms mentioned may indicate a life-threatening medical emergency. Immediately contact Emergency Services (911 / 107) or go to the nearest 24/7 Hospital Emergency Room. San Lucas Medical Center Emergency Care is located at Av. San Martín 450 (Open 24/7)."
+  },
+  "general_policy": {
+    "disclaimer": "I am an AI Clinical Information Assistant. I do not prescribe medication, diagnose illnesses, or replace a licensed medical practitioner. My answers are strictly grounded in San Lucas Medical Center protocols."
+  }
+}

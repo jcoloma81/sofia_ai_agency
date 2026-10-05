@@ -12,6 +12,8 @@ from app.routers.webhook import router as webhook_router
 from app.routers.outreach import router as outreach_router
 from app.routers.dashboard import router as dashboard_router, verify_admin_credentials
 from app.routers.bridge import router as bridge_router
+from app.routers.tenants import router as tenants_router
+from app.routers.payments import router as payments_router
 from app.config.settings import settings
 
 # Initialize logging
@@ -85,6 +87,44 @@ def serve_hoja_de_ruta():
     doc_path = os.path.join(os.path.dirname(__file__), "docs", "hoja_de_ruta_tecnica.html")
     return FileResponse(doc_path)
 
+# Commercial Multi-Tenant Manual & Pitch PDF for Businesses
+@app.get("/manual-rubros", response_class=FileResponse)
+@app.get("/guia-comercial", response_class=FileResponse)
+def serve_manual_rubros_html():
+    doc_path = os.path.join(os.path.dirname(__file__), "docs", "manual_comercial_sofia_rubros.html")
+    return FileResponse(doc_path)
+
+@app.get("/manual-rubros-pdf", response_class=FileResponse)
+@app.get("/descargar-guia-pdf", response_class=FileResponse)
+def serve_manual_rubros_pdf():
+    pdf_path = os.path.join(os.path.dirname(__file__), "docs", "Manual_Comercial_Sofia_Rubros.pdf")
+    return FileResponse(pdf_path, media_type="application/pdf", filename="Manual_Comercial_Sofia_Rubros.pdf")
+
+# Monetization, Pricing Policy & Meta Cloud Costs
+@app.get("/modelo-costos", response_class=FileResponse)
+@app.get("/politica-precios", response_class=FileResponse)
+def serve_modelo_costos_html():
+    doc_path = os.path.join(os.path.dirname(__file__), "docs", "modelo_monetizacion_costos_meta.html")
+    return FileResponse(doc_path)
+
+@app.get("/descargar-costos-pdf", response_class=FileResponse)
+@app.get("/modelo-costos-pdf", response_class=FileResponse)
+def serve_modelo_costos_pdf():
+    pdf_path = os.path.join(os.path.dirname(__file__), "docs", "Modelo_Monetizacion_Costos_Meta.pdf")
+    return FileResponse(pdf_path, media_type="application/pdf", filename="Modelo_Monetizacion_Costos_Meta.pdf")
+
+# Visual Catalog of Meta Templates (2 Pages A4)
+@app.get("/catalogo-plantillas", response_class=FileResponse)
+def serve_catalogo_plantillas_html():
+    doc_path = os.path.join(os.path.dirname(__file__), "docs", "catalogo_visual_plantillas_meta_sofia.html")
+    return FileResponse(doc_path)
+
+@app.get("/descargar-catalogo-pdf", response_class=FileResponse)
+@app.get("/catalogo-plantillas-pdf", response_class=FileResponse)
+def serve_catalogo_plantillas_pdf():
+    pdf_path = os.path.join(os.path.dirname(__file__), "docs", "Catalogo_Visual_Plantillas_Meta_Sofia.pdf")
+    return FileResponse(pdf_path, media_type="application/pdf", filename="Catalogo_Visual_Plantillas_Meta_Sofia.pdf")
+
 # Executive Web Dashboard (Restricted Admin Access)
 @app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
 @app.get("/admin", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
@@ -123,6 +163,9 @@ app.include_router(webhook_router, prefix="/api/v1", tags=["WhatsApp Webhook v1"
 app.include_router(webhook_router, prefix="/api/v1/webhook", tags=["WhatsApp Webhook v1 Extra"])
 app.include_router(outreach_router, prefix="/api/v1/outreach", tags=["Outreach v1"])
 app.include_router(bridge_router, prefix="/api/v1/bridge", tags=["Sofía Bridge"])
+app.include_router(tenants_router)
+app.include_router(tenants_router, prefix="/api/v1")
+app.include_router(payments_router)
 
 # Backward compatibility routes
 app.include_router(webhook_router, prefix="/api/v1/prospecting", tags=["Prospecting Compatibility"])
