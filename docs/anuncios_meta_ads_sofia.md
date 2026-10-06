@@ -139,3 +139,60 @@ Guía definitiva de copys de alta conversión, segmentación y llamados a la acc
 | **Veterinaria** | `https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Veterinaria` | Activa rol clínica veterinaria en vivo |
 | **Taller** | `https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Taller%20Mecánico` | Activa rol recepción técnica en vivo |
 | **Distribuidora** | `https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Distribuidora` | Activa rol toma de pedidos y listas Excel |
+
+---
+
+## 🎨 4. Guía Visual para el Slider / Carrusel (5 Placas en Canva / Editor)
+
+* **Paleta de Colores:** Fondo oscuro `#0B0F19`, texto blanco `#F9FAFB`, acento verde esmeralda `#10B981` y detalles cian `#3B82F6`.
+* **Formato:** Cuadrado (1:1 / 1080x1080 px) o Vertical (4:5 / 1080x1350 px para mayor cobertura en el feed de Instagram y Facebook).
+
+### 📱 Placa 1: La Portada (El Gancho que frena el scroll)
+* **Visual:** Fondo oscuro tecnológico, ícono de WhatsApp con alertas rojas flotando.
+* **Texto Principal (Grande y Centrado):**
+  > **¿Cuánta plata pierde tu negocio por no responder WhatsApp a tiempo?**
+* **Subtexto inferior:**
+  > *El costo invisible de no tener a Sofía en tu equipo.*  
+  > *(Deslizá para ver tu rubro 👉)*
+
+### 🏥 Placa 2: Clínicas y Consultorios Médicos
+* **Visual:** Fondo oscuro con detalle cian médico, ícono de consultorio 🩺 o calendario.
+* **Titular:**
+  > **CONSULTORIOS Y CLÍNICAS**
+* **El Dolor vs La Solución:**
+  > ❌ **El problema:** Pacientes que faltan sin avisar y secretaria colapsada de mensajes.  
+  > ✅ **Con Sofía:** Anti-ausentismo con recordatorios y **reprogramación autónoma de turnos**. Si un paciente cancela, llena el hueco sola.
+* **Frase inferior:**
+  > *Tu secretaria trabaja en paz. Vos no perdés consultas.*
+
+### 💪 Placa 3: Gimnasios y Fitness
+* **Visual:** Fondo oscuro con acento enérgico, ícono de gym 🏋️‍♂️.
+* **Titular:**
+  > **GIMNASIOS Y FITNESS**
+* **El Dolor vs La Solución:**
+  > ❌ **El problema:** Decenas de socios que dejan de ir y nadie tiene tiempo de contactarlos uno por uno.  
+  > ✅ **Con Sofía:** **Campañas automáticas de reactivación** para recuperar ex-socios dormidos (+60 días) y avisos cordiales de cuota.
+* **Frase inferior:**
+  > *Recuperá cuotas y alumnos que dabas por perdidos.*
+
+### 🐾 Placa 4: Veterinarias y Pet Shops
+* **Visual:** Fondo oscuro con detalle cálido, ícono de mascota 🐶💉.
+* **Titular:**
+  > **VETERINARIAS Y PET SHOPS**
+* **El Dolor vs La Solución:**
+  > ❌ **El problema:** El 60% de los dueños se olvidan de la vacuna anual o la desparasitación si nadie les avisa.  
+  > ✅ **Con Sofía:** **Recordatorios programados de vacunación y tratamientos** antes de que venzan, más turnos de clínica y peluquería 24/7.
+* **Frase inferior:**
+  > *Fidelizá a tus pacientes en piloto automático.*
+
+### 🚀 Placa 5: El Cierre y Llamado a la Acción (CTA)
+* **Visual:** Fondo oscuro con botón verde simulado de WhatsApp y tilde de verificación.
+* **Texto Grande:**
+  > **TODO EN AUTOMÁTICO.**  
+  > **$30.000 / mes.**
+* **Puntos clave:**
+  > • Sin contratos atados  
+  > • Atiende texto y audios de voz 24/7  
+  > • Configurado en 24 horas  
+* **Llamado a la acción gigante:**
+  > **Tocá el botón de abajo y mandale un audio a Sofía para probarla en vivo 👇**
