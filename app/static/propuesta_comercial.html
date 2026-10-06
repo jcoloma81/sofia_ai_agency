@@ -1001,6 +1001,72 @@
       line-height: 1.45;
       margin-bottom: 16px;
     }
+
+    /* Demo Rubro Button */
+    .btn-demo-rubro {
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--accent-green);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      width: fit-content;
+    }
+
+    .btn-demo-rubro:hover {
+      background: var(--accent-green);
+      color: #030712;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transform: translateY(-1px);
+    }
+
+    /* Floating WhatsApp Button */
+    .floating-whatsapp {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: #25D366;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+    }
+
+    .floating-whatsapp:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 12px 30px rgba(37, 211, 102, 0.6);
+      color: #fff;
+    }
+
+    .floating-whatsapp-icon {
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .floating-whatsapp {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+    }
   </style>
 
 </head>
@@ -1065,11 +1131,11 @@
       </p>
 
       <div class="hero-cta-group">
-        <a href="/hoja-de-ruta" class="btn-primary" target="_blank" data-i18n="hero_cta_spec">
-          View Technical Specification →
+        <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" class="btn-primary btn-whatsapp" target="_blank" data-i18n="hero_cta_spec">
+          🟢 Probar a Sofía en WhatsApp en Vivo →
         </a>
-        <a href="#architecture" class="btn-secondary" data-i18n="hero_cta_arch">
-          Explore Workflow &amp; Architecture ↓
+        <a href="#rubros" class="btn-secondary" data-i18n="hero_cta_arch">
+          🎯 Ver Demos por Rubro ↓
         </a>
       </div>
     </section>
@@ -1077,8 +1143,8 @@
     <!-- Metrics Bar -->
     <section class="metrics-grid">
       <div class="metric-item">
-        <div class="metric-value accent" data-i18n="metric_latency_val">&lt; 2.2s</div>
-        <div class="metric-label" data-i18n="metric_latency_lbl">Voice-to-Order Latency</div>
+        <div class="metric-value accent" data-i18n="metric_latency_val">Al Instante</div>
+        <div class="metric-label" data-i18n="metric_latency_lbl">Respuesta en Tiempo Real</div>
       </div>
       <div class="metric-item">
         <div class="metric-value" data-i18n="metric_data_val">100%</div>
@@ -1241,6 +1307,9 @@
             <div class="rubro-title" data-i18n="rubro_salud_title">Salud, Consultorios &amp; Estética</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_salud_desc">Erradica el 25% de ausentismo con doble recordatorio estratégico (48h/24h), el Escudo para la Secretaria (15:00 a 18:00 hs) y Adelanta-Turnos automático para llenar huecos de cancelaciones.</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Consultorio%20M%C3%A9dico" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Consultorio en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_salud_tag">Turnos &amp; Rellena-Huecos</span>
       </div>
@@ -1252,6 +1321,9 @@
             <div class="rubro-title" data-i18n="rubro_gym_title">Gimnasios, Clubes &amp; Academias</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_gym_desc">Cobranza cordial automática del 1 al 10 con link de Mercado Pago, validación por IA multimodal de fotos de transferencias y reactivador de ex-socios dormidos (+60 días).</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Gimnasio" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Gimnasio en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_gym_tag">Cobranza &amp; Reactivación</span>
       </div>
@@ -1263,6 +1335,9 @@
             <div class="rubro-title" data-i18n="rubro_vet_title">Veterinarias &amp; Prevención</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_vet_desc">Recordatorios programados de vacunación séxtuple, desparasitación, service de autos cada 10.000 km o 1 año y controles periódicos en piloto automático.</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Veterinaria" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Veterinaria en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_vet_tag">Servicios Recurrentes</span>
       </div>
@@ -1274,6 +1349,9 @@
             <div class="rubro-title" data-i18n="rubro_taller_title">Ópticas &amp; Talleres Técnicos</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_taller_desc">Notificación automática «Listo para Retirar» para acelerar el cobro de saldos y despejar depósitos, más atención 24/7 de consultas de estado de orden sin interrumpir el taller.</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Taller%20Mec%C3%A1nico" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Taller en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_taller_tag">Despacho &amp; Saldos</span>
       </div>
@@ -1284,7 +1362,10 @@
             <div class="rubro-icon">🛍️</div>
             <div class="rubro-title" data-i18n="rubro_b2b_title">Comercios, Mayoristas &amp; Modo Director</div>
           </div>
-          <p class="rubro-desc" data-i18n="rubro_b2b_desc">Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp de 5 segundos (aumento de precios, promociones y avisos).</p>
+          <p class="rubro-desc" data-i18n="rubro_b2b_desc">Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp (aumento de precios, promociones y avisos).</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Distribuidora" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Mayorista en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_b2b_tag">Voz &amp; B2B 24/7</span>
       </div>
@@ -1470,21 +1551,21 @@
   <script>
     const translations = {
       es: {
-        doc_title: "Sofía AI — Motor Autónomo Multi-Agente para WhatsApp y ERP | Caso de Estudio",
-        brand_tag: "Sistemas Autónomos y Flujos Inteligentes",
-        nav_blueprint: "📐 Hoja de Ruta Técnica",
+        doc_title: "Sofía AI — Asistente Inteligente para WhatsApp Oficial | Negocios y Profesionales",
+        brand_tag: "Asistente IA para WhatsApp Oficial",
+        nav_blueprint: "📐 Hoja de Ruta",
         nav_whatsapp: "Hablar por WhatsApp →",
-        hero_badge: "Caso de Estudio Real • Sistema en Producción",
-        hero_title: "Transformando el Caos de WhatsApp en <span>Flujos ERP Automatizados Sin Errores</span>",
-        hero_sub: "Conozca <strong>Sofía AI</strong>: un motor de orquestación multimodal autónomo que procesa audios de voz ruidosos, indexa listas de precios de múltiples proveedores y concilia pedidos comerciales en tiempo real con Python, Google Gemini y la API Cloud de WhatsApp. Diseñado para operaciones reales con cero carga manual de datos.",
-        hero_cta_spec: "Ver Especificación Técnica →",
-        hero_cta_arch: "Explorar Flujo y Arquitectura ↓",
-        metric_latency_val: "< 2.2s",
-        metric_latency_lbl: "Latencia de Audio a Pedido",
+        hero_badge: "Asistente Inteligente para WhatsApp Oficial",
+        hero_title: "La Asistente con Inteligencia Artificial que <span>Atiende tu WhatsApp al Instante y Nunca Duerme</span>",
+        hero_sub: "Respondé dudas, pasá presupuestos y agendá turnos en tiempo real, incluso por notas de voz. Diseñada para consultorios, veterinarias, gimnasios, talleres y comercios que no quieren perder clientes por demoras.",
+        hero_cta_spec: "🟢 Probar a Sofía en WhatsApp en Vivo →",
+        hero_cta_arch: "🎯 Ver Demos por Rubro ↓",
+        metric_latency_val: "Al Instante",
+        metric_latency_lbl: "Respuesta a Consultas y Turnos",
         metric_data_val: "100%",
-        metric_data_lbl: "Eliminación de Carga Manual",
-        metric_catalogs_val: "20+",
-        metric_catalogs_lbl: "Catálogos de Proveedores Sincronizados",
+        metric_data_lbl: "Atención 24/7 Sin Descanso",
+        metric_catalogs_val: "5",
+        metric_catalogs_lbl: "Rubros Comerciales Listos",
         metric_installs_val: "0",
         metric_installs_lbl: "Apps a Instalar por el Cliente",
         problem_title: "El Cuello de Botella Operativo",
@@ -1562,7 +1643,7 @@
         rubro_taller_desc: "Notificación automática «Listo para Retirar» para acelerar el cobro de saldos y despejar depósitos, más atención 24/7 de consultas de estado de orden sin interrumpir el taller.",
         rubro_taller_tag: "Despacho & Saldos",
         rubro_b2b_title: "Comercios, Mayoristas & Modo Director",
-        rubro_b2b_desc: "Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp de 5 segundos (aumento de precios, promociones y avisos).",
+        rubro_b2b_desc: "Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp (aumento de precios, promociones y avisos).",
         rubro_b2b_tag: "Voz & B2B 24/7",
         pricing_tag: "Estructura Comercial Transparente",
         pricing_title: "Abono Mensual Único de $30.000 ARS para Todos",
@@ -1604,24 +1685,24 @@
         doc_blue_title: "Blueprint de Arquitectura",
         doc_blue_desc: "Especificación técnica profunda de FastAPI, modelos multimodales Gemini, schemas Pydantic y webhooks en producción.",
         doc_blue_btn: "🔍 Ver Especificación Técnica",
-        wa_msg: "Hola Javier, vi la propuesta de Sofia AI y me gustaría comenzar con un plan para mi negocio."
+        wa_msg: "Hola Sofia, quiero ver una demo de cómo atendés para mi negocio"
       },
       pt: {
-        doc_title: "Sofía AI — Motor Autônomo Multiagente para WhatsApp e ERP | Estudo de Caso",
-        brand_tag: "Sistemas Autônomos e Fluxos Inteligentes",
+        doc_title: "Sofía AI — Assistente Inteligente para WhatsApp Oficial | Negócios e Profissionais",
+        brand_tag: "Assistente IA para WhatsApp Oficial",
         nav_blueprint: "📐 Blueprint Técnico",
         nav_whatsapp: "Falar no WhatsApp →",
-        hero_badge: "Estudo de Caso Real • Sistema em Produção",
-        hero_title: "Transformando o Caos do WhatsApp em <span>Fluxos ERP Automatizados Sem Erros</span>",
-        hero_sub: "Conheça a <strong>Sofía AI</strong>: um motor de orquestração multimodal autônomo que processa áudios ruidosos, indexa catálogos de preços de múltiplos fornecedores e reconcilia pedidos comerciais em tempo real usando Python, Google Gemini e WhatsApp Cloud API. Construído para operações reais com zero entrada manual de dados.",
-        hero_cta_spec: "Ver Especificação Técnica →",
-        hero_cta_arch: "Explorar Fluxo e Arquitetura ↓",
-        metric_latency_val: "< 2.2s",
-        metric_latency_lbl: "Latência de Áudio a Pedido",
+        hero_badge: "Assistente Inteligente para WhatsApp Oficial",
+        hero_title: "A Assistente com Inteligência Artificial que <span>Atende seu WhatsApp no Instante e Nunca Dorme</span>",
+        hero_sub: "Responda dúvidas, orçamentos e agende consultas em tempo real, inclusive por áudios de voz. Criada para clínicas, pet shops, academias, oficinas e comércios que não querem perder clientes por demora.",
+        hero_cta_spec: "🟢 Testar a Sofía no WhatsApp ao Vivo →",
+        hero_cta_arch: "🎯 Ver Demos por Setor ↓",
+        metric_latency_val: "No Instante",
+        metric_latency_lbl: "Resposta a Dúvidas e Consultas",
         metric_data_val: "100%",
-        metric_data_lbl: "Eliminação de Digitação Manual",
-        metric_catalogs_val: "20+",
-        metric_catalogs_lbl: "Catálogos de Fornecedores Sincronizados",
+        metric_data_lbl: "Atendimento 24/7 Sem Parar",
+        metric_catalogs_val: "5",
+        metric_catalogs_lbl: "Setores Comerciais Prontos",
         metric_installs_val: "0",
         metric_installs_lbl: "Apps a Instalar pelo Cliente",
         problem_title: "O Gargalo Operacional",
@@ -1680,24 +1761,24 @@
         footer_privacy: "Política de Privacidade",
         footer_terms: "Termos de Serviço",
         footer_docs: "Documentação Técnica",
-        wa_msg: "Olá Javier, vi o estudo de caso da Sofía AI e gostaria de conversar sobre um projeto de automação."
+        wa_msg: "Olá Sofia, quero ver uma demo de como você atende para meu negócio"
       },
       en: {
-        doc_title: "Sofía AI — Autonomous Multi-Agent WhatsApp & ERP Engine | Case Study",
-        brand_tag: "Autonomous Systems & Intelligent Workflows",
-        nav_blueprint: "📐 Architecture Blueprint",
+        doc_title: "Sofía AI — Intelligent Official WhatsApp Assistant for Businesses",
+        brand_tag: "Official WhatsApp AI Assistant",
+        nav_blueprint: "📐 Roadmap",
         nav_whatsapp: "Chat on WhatsApp →",
-        hero_badge: "Production Case Study • Live In-Market System",
-        hero_title: "Turning Messy WhatsApp Chaos Into <span>Zero-Error Automated ERP Pipelines</span>",
-        hero_sub: "Inside <strong>Sofía AI</strong>: an autonomous multimodal orchestration engine that parses noisy voice notes, indexes multi-vendor price catalogs, and reconciles commercial orders in real time using Python, Google Gemini, and WhatsApp Cloud APIs. Built for real-world operations with zero manual data entry.",
-        hero_cta_spec: "View Technical Specification →",
-        hero_cta_arch: "Explore Workflow & Architecture ↓",
-        metric_latency_val: "< 2.2s",
-        metric_latency_lbl: "Voice-to-Order Latency",
+        hero_badge: "Official WhatsApp AI Assistant for Businesses",
+        hero_title: "The AI Assistant that <span>Instantly Handles your WhatsApp 24/7 Without Missing a Lead</span>",
+        hero_sub: "Answer inquiries, share quotes, and schedule appointments in real time, even via voice notes. Purpose-built for clinics, vet shops, gyms, auto shops, and businesses that never want to lose another customer to slow replies.",
+        hero_cta_spec: "🟢 Try Sofía Live on WhatsApp →",
+        hero_cta_arch: "🎯 View Demos by Industry ↓",
+        metric_latency_val: "Instant",
+        metric_latency_lbl: "Real-Time Inquiry Response",
         metric_data_val: "100%",
-        metric_data_lbl: "Data Entry Elimination",
-        metric_catalogs_val: "20+",
-        metric_catalogs_lbl: "Supplier Catalogs Synced",
+        metric_data_lbl: "24/7 Uninterrupted Attention",
+        metric_catalogs_val: "5",
+        metric_catalogs_lbl: "Ready-to-Use Business Sectors",
         metric_installs_val: "0",
         metric_installs_lbl: "Client App Installs Required",
         problem_title: "The Operational Bottleneck",
@@ -1881,17 +1962,23 @@
 
       if (!activeLang) {
         const bl = (navigator.language || navigator.userLanguage || '').toLowerCase();
-        if (bl.startsWith('es')) {
-          activeLang = 'es';
-        } else if (bl.startsWith('pt')) {
+        if (bl.startsWith('pt')) {
           activeLang = 'pt';
-        } else {
+        } else if (bl.startsWith('en')) {
           activeLang = 'en';
+        } else {
+          activeLang = 'es';
         }
       }
 
       setLanguage(activeLang);
     });
   </script>
+
+  <!-- Floating WhatsApp Action -->
+  <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" target="_blank" class="floating-whatsapp" aria-label="Probar a Sofía en WhatsApp">
+    <span class="floating-whatsapp-icon">💬</span>
+    <span>Probar Demo en Vivo</span>
+  </a>
 </body>
 </html>
