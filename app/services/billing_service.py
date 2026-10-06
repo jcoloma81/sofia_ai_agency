@@ -152,7 +152,7 @@ class BillingService:
             import google.generativeai as genai
             if settings.GEMINI_API_KEY:
                 genai.configure(api_key=settings.GEMINI_API_KEY)
-                model = genai.GenerativeModel("gemini-2.5-flash-lite")
+                model = genai.GenerativeModel("gemini-flash-lite-latest")
                 response = model.generate_content([
                     prompt,
                     {"mime_type": mime_type, "data": image_bytes}
