@@ -1862,8 +1862,43 @@ async def receive_whatsapp_webhook(
     prospect.conversation_history = json.dumps(history, ensure_ascii=False)
     prospect.updated_at = datetime.now(timezone.utc)
 
-    # If meeting was confirmed, trigger dual alert to Javier
-    if is_meeting_confirmed:
+    # 1. Live Demo Mirror Alert: If a live demo is currently active (#demo consultorio, etc.)
+    # and the message is from the client (not Javier himself), notify Javier's phone immediately
+    # so Javier can show the doctor/client the real-time notification on his own screen!
+    from app.services.live_demo import live_demo_service
+    active_demo = live_demo_service.get_active_demo()
+    boss_phone = "".join(filter(str.isdigit, str(settings.WHATSAPP_ALERT_PHONE or "")))
+
+    if active_demo and boss_phone and clean_phone != boss_phone:
+        rubro_icons = {
+            "consultorio": "🏥 CONSULTORIO MÉDICO",
+            "veterinaria": "🐾 VETERINARIA & PET SHOP",
+            "gym": "💪 GIMNASIO & PÁDEL",
+            "taller": "🚗 TALLER MECÁNICO",
+            "distribuidora": "📦 DISTRIBUIDORA"
+        }
+        rubro_label = rubro_icons.get(active_demo, active_demo.upper())
+        last_msg_display = f"🎙️ Nota de voz ({meeting_details})" if (audio_b64 and meeting_details) else (f"🎙️ Nota de voz" if audio_b64 else message.strip())
+        is_turn = bool(is_meeting_confirmed or any(k in message.lower() for k in ["turno", "agend", "consulta", "hora", "reserva", "clase", "vacuna", "service"]))
+
+        if is_turn:
+            demo_alert_text = (
+                f"🔔 *[NUEVO TURNO AGENDADO — {rubro_label}]*\n\n"
+                f"👤 *Paciente / Cliente:* +{clean_phone}\n"
+                f"⏰ *Horario / Detalle:* {meeting_details or message.strip()}\n"
+                f"💬 *Mensaje recibido:* \"{last_msg_display}\"\n"
+                f"🤖 *Respuesta de Sofía:* \"{ai_response.strip()}\"\n\n"
+                f"✨ *Demostración en Vivo:* Así recibe el dueño del negocio la confirmación de cada turno en tiempo real."
+            )
+        else:
+            demo_alert_text = (
+                f"📱 *[INTERACCIÓN EN VIVO — {rubro_label}]*\n\n"
+                f"👤 *Cliente:* +{clean_phone}\n"
+                f"💬 *Mensaje:* \"{last_msg_display}\"\n"
+                f"🤖 *Sofía respondió:* \"{ai_response.strip()}\""
+            )
+        asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=demo_alert_text))
+    elif is_meeting_confirmed:
         prospect.status = "meeting_scheduled"
         prospect.meeting_details = meeting_details or message.strip()
         prospect.meeting_scheduled_at = datetime.now(timezone.utc)
@@ -1879,7 +1914,7 @@ async def receive_whatsapp_webhook(
             city=prospect.city,
             meeting_details=prospect.meeting_details,
             last_message=last_msg_display,
-            campaign=prospect.campaign or "air_control"
+            campaign=prospect.campaign or "ai_agency"
         ))
     else:
         if prospect.status == "pending":

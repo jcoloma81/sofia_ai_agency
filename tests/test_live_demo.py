@@ -93,3 +93,36 @@ async def test_generate_ai_response_uses_live_demo():
             assert "Veterinaria & Pet Shop Huellitas" in system_instruction
     finally:
         live_demo_service.reset_demo_mode()
+
+
+@pytest.mark.asyncio
+async def test_live_demo_webhook_mirror_alert():
+    from fastapi.testclient import TestClient
+    from main import app
+    from unittest.mock import patch, AsyncMock
+    client = TestClient(app)
+    live_demo_service.set_demo_mode("consultorio", duration_minutes=30)
+    try:
+        payload = {
+            "messages": [{
+                "from": "5493439998877", # Doctor / client phone
+                "id": "wamid.demo.test.1",
+                "type": "text",
+                "text": {"body": "Hola, quería saber si tienen turnos para mañana a las 11"}
+            }]
+        }
+        with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_send, \
+             patch("app.services.brain.generate_ai_response", new_callable=AsyncMock) as mock_ai:
+            mock_ai.return_value = ("¡Hola! Te dejo agendado para mañana a las 11:00 hs.", True, "mañana a las 11:00 hs")
+            res = client.post("/webhook", json=payload)
+            assert res.status_code == 200
+            data = res.json()
+            assert data["status"] == "success"
+            # Verify send_whatsapp_message was called
+            calls = [call.kwargs for call in mock_send.call_args_list]
+            boss_alerts = [c for c in calls if "NUEVO TURNO AGENDADO" in c.get("text", "") or "INTERACCIÓN EN VIVO" in c.get("text", "")]
+            assert len(boss_alerts) >= 1
+            assert "CONSULTORIO MÉDICO" in boss_alerts[0]["text"]
+            assert "5493439998877" in boss_alerts[0]["text"]
+    finally:
+        live_demo_service.reset_demo_mode()
