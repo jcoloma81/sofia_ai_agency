@@ -896,12 +896,25 @@
     }
 
     .pricing-setup {
-      font-size: 13px;
-      color: var(--accent-blue);
-      font-weight: 700;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border-color);
+      font-size: 14px;
+      font-weight: 800;
+      color: #FBBF24;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 8px;
+      padding: 9px 14px;
+      margin-bottom: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.3px;
+      width: fit-content;
+    }
+
+    .pricing-card.featured .pricing-setup {
+      color: #34D399;
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.4);
     }
 
     .pricing-features-list {
@@ -1258,40 +1271,6 @@
       </div>
     </section>
 
-    <!-- Architecture Flow Diagram -->
-    <section class="arch-container" id="architecture">
-      <div class="section-header" style="margin-bottom: 24px;">
-        <div class="section-tag" data-i18n="flow_tag">System Dataflow</div>
-        <h3 class="section-title" style="font-size: 26px;" data-i18n="flow_title">End-to-End Orchestration Pipeline</h3>
-      </div>
-
-      <div class="flow-steps">
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_1_num">Step 01 // Intake</div>
-          <div class="step-title" data-i18n="step_1_title">Inbound Webhook</div>
-          <div class="step-desc" data-i18n="step_1_desc">WhatsApp audio note or forwarded catalog PDF ingested via Meta Cloud API webhook into FastAPI.</div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_2_num">Step 02 // Extraction</div>
-          <div class="step-title" data-i18n="step_2_title">Gemini Multimodal LLM</div>
-          <div class="step-desc" data-i18n="step_2_desc">Audio transcribed &amp; mapped to strictly-typed JSON schemas via Pydantic model validation.</div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_3_num">Step 03 // Logic &amp; Rules</div>
-          <div class="step-title" data-i18n="step_3_title">Business Engine</div>
-          <div class="step-desc" data-i18n="step_3_desc">Matches SKUs against database, cross-compares supplier margins, and queues confirmation draft.</div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_4_num">Step 04 // Execution</div>
-          <div class="step-title" data-i18n="step_4_title">Dispatch &amp; Local Sync</div>
-          <div class="step-desc" data-i18n="step_4_desc">Owner approves via 1 tap. Formal purchase order sent to vendor; local Excel ledger updated instantly.</div>
-        </div>
-      </div>
-    </section>
-
     <!-- Multi-Rubro Industry Solutions -->
     <div class="section-header" id="rubros">
       <div class="section-tag" data-i18n="rubros_tag">Especialización Multi-Rubro</div>
@@ -1389,12 +1368,11 @@
             <div class="pricing-price">$30.000</div>
             <div class="pricing-currency">ARS / mes</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_shared_setup">Setup de Instalación: $30.000 ARS (Pago único inicial)</div>
+          <div class="pricing-setup" data-i18n="plan_shared_setup">⚡ Pago Único de Alta &amp; Configuración: $30.000 ARS</div>
 
           <ul class="pricing-features-list">
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_1">Atención entrante 24/7 ILIMITADA en línea oficial verificada</span></li>
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_2"><strong>150 Mensajes Salientes Automáticos incluidos al mes</strong> (turnos, cuotas o retiros)</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_3">QR en acrílico de recepción para inicio automático en 1 segundo</span></li>
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_4">Modo Director por voz desde el WhatsApp del titular</span></li>
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_5">Packs de recarga prepago disponibles si superás los 150 mensajes</span></li>
           </ul>
@@ -1416,7 +1394,7 @@
             <div class="pricing-price">$30.000</div>
             <div class="pricing-currency">ARS / mes</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_enterprise_setup" style="color: var(--accent-green);">Setup e Implementación Meta: $95.000 ARS (Pago único)</div>
+          <div class="pricing-setup" data-i18n="plan_enterprise_setup">🚀 Pago Único de Alta &amp; Homologación Meta: $80.000 ARS</div>
 
           <ul class="pricing-features-list">
             <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_1"><strong>Número y chip propio exclusivo</strong> del comercio en Meta Cloud API</span></li>
@@ -1491,17 +1469,6 @@
         </a>
       </div>
 
-      <div class="download-card">
-        <div>
-          <div class="download-header">
-            <span class="download-icon">📐</span>
-            <div class="download-title" data-i18n="doc_blue_title">Blueprint de Arquitectura</div>
-          </div>
-          <p class="download-desc" data-i18n="doc_blue_desc">Especificación técnica profunda de FastAPI, modelos multimodales Gemini, schemas Pydantic y webhooks en producción.</p>
-        </div>
-        <a href="/hoja-de-ruta" class="btn-secondary" target="_blank" style="text-align: center; font-size: 13.5px; padding: 10px 16px;" data-i18n="doc_blue_btn">
-          🔍 Ver Especificación Técnica
-        </a>
       </div>
     </section>
 
@@ -1531,9 +1498,6 @@
       <div class="agency-cta-group">
         <a href="https://wa.me/5493435720312" class="btn-primary btn-whatsapp" target="_blank" style="padding: 14px 28px; font-size: 15px;" data-i18n="agency_cta_whatsapp">
           Discuss Your Project on WhatsApp →
-        </a>
-        <a href="/hoja-de-ruta" class="btn-secondary" target="_blank" style="padding: 14px 24px; font-size: 15px;" data-i18n="agency_cta_blueprint">
-          Explore Architectural Blueprint
         </a>
       </div>
     </section>
@@ -1650,17 +1614,16 @@
         pricing_sub: "El mismo costo accesible para cualquier negocio. Sin sorpresas, sin comisiones sobre tus ventas y con cancelación libre.",
         plan_shared_title: "Plan Central Compartida",
         plan_shared_desc: "Ideal para consultorios individuales, profesionales de la salud, estética y comercios barriales.",
-        plan_shared_setup: "Setup de Instalación: $30.000 ARS (Pago único inicial)",
+        plan_shared_setup: "⚡ Pago Único de Alta & Configuración: $30.000 ARS",
         feat_shared_1: "Atención entrante 24/7 ILIMITADA en línea oficial verificada",
         feat_shared_2: "150 Mensajes Salientes Automáticos incluidos al mes (turnos, cuotas o retiros)",
-        feat_shared_3: "QR en acrílico de recepción para inicio automático en 1 segundo",
         feat_shared_4: "Modo Director por voz desde el WhatsApp del titular",
         feat_shared_5: "Packs de recarga prepago disponibles si superás los 150 mensajes",
         plan_shared_cta: "Elegir Plan Central →",
         plan_enterprise_badge: "Más Recomendado",
         plan_enterprise_title: "Plan Enterprise — Línea Propia",
         plan_enterprise_desc: "Para clínicas, gimnasios, ópticas, talleres y distribuidoras que desean su propio número oficial exclusivo.",
-        plan_enterprise_setup: "Setup e Implementación Meta: $95.000 ARS (Pago único)",
+        plan_enterprise_setup: "🚀 Pago Único de Alta & Homologación Meta: $80.000 ARS",
         feat_ent_1: "Número y chip propio exclusivo del comercio en Meta Cloud API",
         feat_ent_2: "Mensajes Salientes ILIMITADOS (Meta debita el consumo a la tarjeta del comercio)",
         feat_ent_3: "Perfil corporativo con logo, catálogo y tilde verde oficial",
@@ -1863,17 +1826,16 @@
         pricing_sub: "The exact same accessible rate for any business. Zero hidden fees, zero sales commissions, cancel anytime.",
         plan_shared_title: "Shared Central Plan",
         plan_shared_desc: "Ideal for individual practices, solo healthcare professionals, beauty studios, and local stores.",
-        plan_shared_setup: "Setup & Onboarding: $30,000 ARS (One-time fee)",
+        plan_shared_setup: "⚡ One-Time Setup & Onboarding: $30,000 ARS",
         feat_shared_1: "UNLIMITED 24/7 inbound customer support on official verified line",
         feat_shared_2: "150 Automated Outbound Messages included per month (appointments, dues, pickups)",
-        feat_shared_3: "Reception acrylic QR code for instant 1-second customer chat launch",
         feat_shared_4: "Voice & text Director Mode from owner's personal WhatsApp",
         feat_shared_5: "Prepaid refill packs available instantly if you exceed 150 messages",
         plan_shared_cta: "Choose Shared Central →",
         plan_enterprise_badge: "Most Recommended",
         plan_enterprise_title: "Enterprise Plan — Dedicated Line",
         plan_enterprise_desc: "For clinics, gyms, opticians, automotive centers, and distributors desiring their own exclusive official line.",
-        plan_enterprise_setup: "Meta Homologation & Setup: $95,000 ARS (One-time)",
+        plan_enterprise_setup: "🚀 One-Time Meta Homologation & Setup: $80,000 ARS",
         feat_ent_1: "Exclusive dedicated business number & SIM chip on Meta Cloud API",
         feat_ent_2: "UNLIMITED Outbound Messages (official Meta carrier costs billed to client's card)",
         feat_ent_3: "Official verified enterprise profile with custom logo, catalog & green checkmark",

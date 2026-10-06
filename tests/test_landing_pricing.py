@@ -21,7 +21,7 @@ def test_landing_page_pricing_and_rubros_sections():
     assert "Plan Central Compartida" in html
     assert "Plan Enterprise" in html
     assert "150 Mensajes Salientes" in html
-    assert "$95.000" in html
+    assert "$80.000" in html
     assert "Pack de 100 Mensajes Extra por solo $4.500 ARS" in html
 
     # 3. Downloads Section
