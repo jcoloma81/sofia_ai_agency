@@ -514,10 +514,12 @@ async def receive_whatsapp_webhook(
         inferred_campaign = body.get("campaign")
         if not inferred_campaign:
             msg_and_name = f"{message} {body.get('complex_name', '')} {body.get('name', '')}".lower()
-            if any(w in msg_and_name for w in ["inteligencia artificial", "agencia", "distribuidora", "preventista", "pedidos", "agente de ventas"]):
-                inferred_campaign = "ai_agency"
-            else:
+            if any(w in msg_and_name for w in ["cabaña", "cabañas", "alojamiento", "hospedaje", "aire acondicionado", "air control"]):
                 inferred_campaign = "air_control"
+            elif any(w in msg_and_name for w in ["cancha", "futbol", "fútbol", "torneo"]):
+                inferred_campaign = "canchas_futbol"
+            else:
+                inferred_campaign = "ai_agency"
 
         default_name = f"Alojamiento ({clean_phone})" if inferred_campaign == "air_control" else f"Prospecto ({clean_phone})"
         prospect = Prospect(

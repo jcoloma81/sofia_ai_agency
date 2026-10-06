@@ -713,7 +713,11 @@ async def parse_dispatch_intent_and_entities(text: str) -> dict:
                     if cand and "content" in cand[0]:
                         parts = cand[0]["content"].get("parts", [])
                         if parts:
-                            return json.loads(parts[0].get("text", "{}"))
+                            parsed = json.loads(parts[0].get("text", "{}"))
+                            if isinstance(parsed, dict):
+                                return parsed
+                            elif isinstance(parsed, list) and len(parsed) > 0 and isinstance(parsed[0], dict):
+                                return parsed[0]
         except Exception as e:
             logger.warning(f"Gemini dispatch parse error: {e}")
     return {}
@@ -1742,6 +1746,33 @@ async def process_boss_message(
 
     is_employee = bool(sender_prospect and sender_prospect.parent_merchant_phone)
     effective_merchant_phone = sender_prospect.parent_merchant_phone if is_employee else clean_sender
+
+    # 0. Live Demo Mode Command (triggered by Javier before meetings)
+    if lower_text.startswith("#demo") or lower_text in ["demo reset", "reset demo", "demo status"]:
+        from app.services.live_demo import live_demo_service
+        subcmd = lower_text.replace("#demo", "").strip()
+        if not subcmd or subcmd in ["ayuda", "help", "menu"]:
+            help_msg = (
+                "🎭 *Comandos de Demostración en Vivo para Clientes:*\n\n"
+                "Activá el modo que necesites antes de entrar a tu reunión:\n"
+                "• `#demo consultorio` 🏥 (Médico / Odontológico)\n"
+                "• `#demo veterinaria` 🐾 (Veterinaria / Pet Shop)\n"
+                "• `#demo gym` 💪 (Gimnasio / Padel / Fitness)\n"
+                "• `#demo taller` 🚗 (Taller Mecánico / Lavadero)\n"
+                "• `#demo distribuidora` 📦 (Distribuidora / Mayorista)\n\n"
+                "💡 Para cancelar la demo y volver al modo agencia: `#demo reset`\n"
+                "💡 Para ver el estado actual: `#demo status`"
+            )
+            return True, help_msg, "demo_help"
+        elif subcmd in ["reset", "stop", "salir", "apagar", "cancelar"] or lower_text in ["demo reset", "reset demo"]:
+            reply = live_demo_service.reset_demo_mode()
+            return True, reply, "demo_reset"
+        elif subcmd in ["status", "estado"]:
+            reply = live_demo_service.get_status_summary()
+            return True, reply, "demo_status"
+        else:
+            ok, reply = live_demo_service.set_demo_mode(subcmd, duration_minutes=60)
+            return True, reply, "demo_activated" if ok else "demo_error"
 
     # 1. Excel / CSV File upload
     if doc_bytes and doc_name:
@@ -3376,6 +3407,10 @@ async def process_boss_message(
         from app.services.order_engine import OrderItem, OrderDraft
 
         ai_dispatch = await parse_dispatch_intent_and_entities(clean_text)
+        if isinstance(ai_dispatch, list):
+            ai_dispatch = ai_dispatch[0] if (ai_dispatch and isinstance(ai_dispatch[0], dict)) else {}
+        elif not isinstance(ai_dispatch, dict):
+            ai_dispatch = {}
         is_dispatch = ai_dispatch.get("is_dispatch", True)
 
         target_phone = ai_dispatch.get("recipient_phone")

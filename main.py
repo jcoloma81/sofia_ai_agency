@@ -125,6 +125,18 @@ def serve_catalogo_plantillas_pdf():
     pdf_path = os.path.join(os.path.dirname(__file__), "docs", "Catalogo_Visual_Plantillas_Meta_Sofia.pdf")
     return FileResponse(pdf_path, media_type="application/pdf", filename="Catalogo_Visual_Plantillas_Meta_Sofia.pdf")
 
+# Sales Playbook & Objections Manual (2 Pages A4)
+@app.get("/manual-ventas", response_class=FileResponse)
+def serve_manual_ventas_html():
+    doc_path = os.path.join(os.path.dirname(__file__), "docs", "manual_ventas_y_objeciones_sofia.html")
+    return FileResponse(doc_path)
+
+@app.get("/descargar-manual-ventas-pdf", response_class=FileResponse)
+@app.get("/manual-ventas-pdf", response_class=FileResponse)
+def serve_manual_ventas_pdf():
+    pdf_path = os.path.join(os.path.dirname(__file__), "docs", "MANUAL_VENTAS_Y_OBJECIONES_SOFIA.pdf")
+    return FileResponse(pdf_path, media_type="application/pdf", filename="MANUAL_VENTAS_Y_OBJECIONES_SOFIA.pdf")
+
 # Executive Web Dashboard (Restricted Admin Access)
 @app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
 @app.get("/admin", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
