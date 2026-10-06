@@ -14,9 +14,10 @@ SLIDES = [
         <div class="hero-box">
           <div class="wa-icon-glow">💬</div>
           <div class="stats-pills">
-            <div class="pill">❌ Pacientes que no vienen</div>
+            <div class="pill">❌ Pacientes que faltan</div>
             <div class="pill">❌ Socios que se van</div>
-            <div class="pill">❌ Consultas perdidas</div>
+            <div class="pill">❌ Cuotas sin cobrar del 1 al 10</div>
+            <div class="pill">❌ Consultas que nadie responde</div>
           </div>
         </div>
         """,
@@ -54,7 +55,7 @@ SLIDES = [
           </div>
           <div class="card solution">
             <div class="card-tag">✅ Con Sofía AI (En Automático)</div>
-            <p>• <strong>Campañas de Reactivación:</strong> detecta socios inactivos (+60 días) y les escribe con mensajes cálidos.<br>• Informa precios y anota pases 24/7.</p>
+            <p>• <strong>Campañas de Reactivación:</strong> detecta socios inactivos (+60 días) y les escribe con mensajes cálidos.<br>• <strong>Cobro de Cuotas (1 al 10):</strong> recordatorio automático con link de pago.<br>• Informa precios y anota pases 24/7.</p>
           </div>
         </div>
         """,
@@ -190,19 +191,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     margin-bottom: 20px;
   }
   .stats-pills {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
   }
   .pill {
     background: #111827;
     border: 1px solid #1F2937;
-    padding: 14px 24px;
+    padding: 16px 20px;
     border-radius: 14px;
     font-size: 21px;
     font-weight: 700;
     color: #F87171;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
   .cards-stack {
     display: flex;
@@ -338,13 +345,18 @@ def generate_slides():
             "google-chrome",
             "--headless=new",
             "--disable-gpu",
-            "--window-size=1080,1080",
+            "--window-size=1080,1167",
             f"--screenshot={out_png}",
             temp_html
         ]
         subprocess.run(cmd, check=True)
+        # Recortar exactamente a 1080x1080 para eliminar el offset de ventana headless y asegurar placa completa
+        from PIL import Image
+        im = Image.open(out_png)
+        im_1080 = im.crop((0, 0, 1080, 1080))
+        im_1080.save(out_png, optimize=True)
         size_kb = os.path.getsize(out_png) / 1024
-        print(f"✅ Placa {idx}/5 lista: {slide['filename']} ({size_kb:.1f} KB)")
+        print(f"✅ Placa {idx}/5 lista y completa: {slide['filename']} ({size_kb:.1f} KB)")
         
     print(f"\n🎉 ¡Todas las placas fueron creadas con éxito en: {OUTPUT_DIR}!")
 

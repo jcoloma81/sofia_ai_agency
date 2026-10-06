@@ -148,12 +148,15 @@ Guía definitiva de copys de alta conversión, segmentación y llamados a la acc
 * **Formato:** Cuadrado (1:1 / 1080x1080 px) o Vertical (4:5 / 1080x1350 px para mayor cobertura en el feed de Instagram y Facebook).
 
 ### 📱 Placa 1: La Portada (El Gancho que frena el scroll)
-* **Visual:** Fondo oscuro tecnológico, ícono de WhatsApp con alertas rojas flotando.
+* **Visual:** Fondo oscuro tecnológico, ícono de WhatsApp con alertas rojas flotando en grilla 2x2.
 * **Texto Principal (Grande y Centrado):**
   > **¿Cuánta plata pierde tu negocio por no responder WhatsApp a tiempo?**
+* **Pastillas de dolor (Dolores clave):**
+  > ❌ Pacientes que faltan • ❌ Socios que se van  
+  > ❌ Cuotas sin cobrar del 1 al 10 • ❌ Consultas que nadie responde
 * **Subtexto inferior:**
   > *El costo invisible de no tener a Sofía en tu equipo.*  
-  > *(Deslizá para ver tu rubro 👉)*
+  > *(Deslizá para ver cómo lo solucionamos en tu rubro 👉)*
 
 ### 🏥 Placa 2: Clínicas y Consultorios Médicos
 * **Visual:** Fondo oscuro con detalle cian médico, ícono de consultorio 🩺 o calendario.
@@ -171,9 +174,9 @@ Guía definitiva de copys de alta conversión, segmentación y llamados a la acc
   > **GIMNASIOS Y FITNESS**
 * **El Dolor vs La Solución:**
   > ❌ **El problema:** Decenas de socios que dejan de ir y nadie tiene tiempo de contactarlos uno por uno.  
-  > ✅ **Con Sofía:** **Campañas automáticas de reactivación** para recuperar ex-socios dormidos (+60 días) y avisos cordiales de cuota.
+  > ✅ **Con Sofía:** **Campañas automáticas de reactivación** (+60 días dormidos), **cobro de cuotas del 1 al 10** en automático y atención 24/7.
 * **Frase inferior:**
-  > *Recuperá cuotas y alumnos que dabas por perdidos.*
+  > *Recuperá ingresos todos los meses sin mover un dedo.*
 
 ### 🐾 Placa 4: Veterinarias y Pet Shops
 * **Visual:** Fondo oscuro con detalle cálido, ícono de mascota 🐶💉.
