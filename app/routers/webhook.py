@@ -1357,6 +1357,11 @@ async def receive_whatsapp_webhook(
             "meeting_confirmed": False
         }
 
+    # Check if a non-distributor live demo is currently active (e.g. consultorio, veterinaria, gym, taller)
+    from app.services.live_demo import live_demo_service
+    active_demo = live_demo_service.get_active_demo()
+    is_non_distribuidora_demo = bool(active_demo and active_demo != "distribuidora")
+
     # 1.8 Multi-supplier Price Comparison Inquiry from Client (e.g. "¿Quién tiene más barato el foco LED 9W?")
     is_comparison_query = any(k in clean_msg_lower for k in [
         "mas barato", "más barato", "vende mas barato", "vende más barato",
@@ -1365,7 +1370,7 @@ async def receive_whatsapp_webhook(
         "quien me deja mas barato", "quién me deja más barato", "quien vende mas barato", "quién vende más barato"
     ]) and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
 
-    if is_comparison_query or clean_msg_lower in ["1", "opcion 1", "opción 1", "1️⃣"]:
+    if not is_non_distribuidora_demo and (is_comparison_query or clean_msg_lower in ["1", "opcion 1", "opción 1", "1️⃣"]):
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
         comp_target = message
         if clean_msg_lower in ["1", "opcion 1", "opción 1", "1️⃣"]:
@@ -1394,7 +1399,7 @@ async def receive_whatsapp_webhook(
         "variaciones de precio", "cambios de precio", "que subio", "qué subió"
     ]) and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
 
-    if is_increase_query or clean_msg_lower in ["3", "opcion 3", "opción 3", "3️⃣"]:
+    if not is_non_distribuidora_demo and (is_increase_query or clean_msg_lower in ["3", "opcion 3", "opción 3", "3️⃣"]):
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
         effective_phone = prospect.parent_merchant_phone if (prospect and prospect.parent_merchant_phone) else clean_phone
         weekly_summary = catalog_service.get_weekly_price_changes(requester_name=safe_name, merchant_phone=effective_phone, db=db)
@@ -1412,10 +1417,10 @@ async def receive_whatsapp_webhook(
         }
 
     # 1.91 Instructions on loading/forwarding supplier catalogs (Option 4)
-    if clean_msg_lower in ["4", "opcion 4", "opción 4", "4️⃣"] or (
+    if not is_non_distribuidora_demo and (clean_msg_lower in ["4", "opcion 4", "opción 4", "4️⃣"] or (
         any(k in clean_msg_lower for k in ["cargar lista", "como cargo", "cómo cargo", "mandar lista", "enviar lista", "subir lista"])
         and not any(k in clean_msg_lower for k in ["servicio", "software", "agencia", "abono", "ia"])
-    ):
+    )):
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
         greeting = f"¡Hola {safe_name}! " if safe_name else "¡Hola! "
         catalog_instructions = (
@@ -1538,7 +1543,7 @@ async def receive_whatsapp_webhook(
         prospect.campaign in ["client_onboarding", "client_employee"]
         or bool(prospect.parent_merchant_phone)
     )
-    if is_client_or_emp and clean_msg_lower in [
+    if not is_non_distribuidora_demo and is_client_or_emp and clean_msg_lower in [
         "hola", "buenas", "buen dia", "buen día", "buenas tardes", "hola sofi", "hola sofia", "menu", "menú", "?"
     ]:
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name) or "amigo"
@@ -1606,8 +1611,8 @@ async def receive_whatsapp_webhook(
         }
 
     # 2. Check if customer wants to place a new order or consult product/stock
-    analysis = await parse_order_or_inquiry_with_ai(message)
-    if analysis.intent == "order":
+    analysis = None if is_non_distribuidora_demo else await parse_order_or_inquiry_with_ai(message)
+    if analysis and analysis.intent == "order":
         if analysis.draft.items:
             order_summary = format_order_summary_message(analysis.draft, prospect.contact_name)
             prospect.notes = json.dumps({
@@ -1651,7 +1656,7 @@ async def receive_whatsapp_webhook(
                 "reply": unmatched_reply,
                 "meeting_confirmed": False
             }
-    elif analysis.intent == "product_inquiry":
+    elif analysis and analysis.intent == "product_inquiry":
         found_prods = [catalog_service.find_product_exact_or_best(q) for q in analysis.inquired_products]
         is_quote = any(p is not None for p in found_prods)
         inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name=prospect.contact_name)
@@ -1684,7 +1689,7 @@ async def receive_whatsapp_webhook(
         "tabela de preço", "tabela de preços", "tabela de precos", "manda a tabela",
         "manda a lista", "passa a tabela", "tem tabela", "ver tabela"
     ]
-    if (any(trigger in message.lower() for trigger in price_list_triggers) or analysis.intent == "price_list_request") and catalog_service.products:
+    if not is_non_distribuidora_demo and (any(trigger in message.lower() for trigger in price_list_triggers) or (analysis and analysis.intent == "price_list_request")) and catalog_service.products:
         if not any(k in message.lower() for k in ["servicio", "software", "agencia", "abono", "ia"]):
             # Extract name if prospect introduced themselves (e.g. "soy Martin del kiosco..." or "sou a Mariana...")
             soy_match = re.search(r'\b(?:soy|me llamo|te habla|habla|sou|me chamo)\s+([a-zA-ZáéíóúÁÉÍÓÚñÑãõÃÕ]{3,15})\b', message, re.IGNORECASE)
@@ -1743,7 +1748,7 @@ async def receive_whatsapp_webhook(
             }
 
     # 3. Check if customer asks about a specific product's price
-    if any(k in message.lower() for k in ["cuanto", "cuánto", "precio", "sale", "tenes", "tenés", "a cuanto", "a cuánto"]) and catalog_service.products:
+    if not is_non_distribuidora_demo and any(k in message.lower() for k in ["cuanto", "cuánto", "precio", "sale", "tenes", "tenés", "a cuanto", "a cuánto"]) and catalog_service.products:
         if not any(k in message.lower() for k in ["servicio", "software", "agencia", "sofia", "ia", "abono"]):
             found_prod = catalog_service.find_product_exact_or_best(message)
             if found_prod:
@@ -1780,7 +1785,7 @@ async def receive_whatsapp_webhook(
         "quiero la demo", "quiero ver la demo"
     ])
 
-    if is_demo_intent:
+    if not is_non_distribuidora_demo and is_demo_intent:
         prospect.status = "demo_requested"
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
         contact_str = f" {safe_name}" if safe_name else ""

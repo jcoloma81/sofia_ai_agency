@@ -137,6 +137,18 @@ def serve_manual_ventas_pdf():
     pdf_path = os.path.join(os.path.dirname(__file__), "docs", "MANUAL_VENTAS_Y_OBJECIONES_SOFIA.pdf")
     return FileResponse(pdf_path, media_type="application/pdf", filename="MANUAL_VENTAS_Y_OBJECIONES_SOFIA.pdf")
 
+# Client-Facing Modo Jefe Guide & Pre-Delivery QA Checklist (2 Pages A4)
+@app.get("/modo-jefe", response_class=FileResponse)
+def serve_modo_jefe_html():
+    doc_path = os.path.join(os.path.dirname(__file__), "docs", "manual_modo_jefe_cliente.html")
+    return FileResponse(doc_path)
+
+@app.get("/descargar-modo-jefe-pdf", response_class=FileResponse)
+@app.get("/modo-jefe-pdf", response_class=FileResponse)
+def serve_modo_jefe_pdf():
+    pdf_path = os.path.join(os.path.dirname(__file__), "docs", "MANUAL_MODO_JEFE_CLIENTE.pdf")
+    return FileResponse(pdf_path, media_type="application/pdf", filename="MANUAL_MODO_JEFE_CLIENTE.pdf")
+
 # Executive Web Dashboard (Restricted Admin Access)
 @app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
 @app.get("/admin", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])

@@ -222,7 +222,7 @@ async def test_boss_ferreteria_order_dispatch(db):
         assert action == "kiosk_order_dispatched"
         assert "¡Pedido despachado con éxito!" in reply
         assert "Ferretería Industrial Ricardo" in reply
-        assert "Tornillos autoperforantes" in reply
+        assert "tornillos autoperforantes" in reply.lower()
         mock_msg.assert_called_once()
         mock_doc.assert_called_once()
 

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sofía AI — Guía de Control en Modo Jefe y Flujo de Entrega</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      background: #f1f5f9;
+      line-height: 1.35;
+      font-size: 8.4pt;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @media screen {
+      .page-sheet {
+        max-width: 820px;
+        margin: 20px auto;
+        background: #ffffff;
+        padding: 24px 28px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 8mm 9mm 8mm 9mm;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        font-size: 8.2pt;
+        line-height: 1.32;
+      }
+      .page-sheet {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+      }
+      .page-break {
+        page-break-before: always;
+        break-before: page;
+        padding-top: 4mm;
+      }
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 8px;
+      margin-bottom: 11px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .brand-title {
+      font-size: 13pt;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 7.2pt;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .badge-doc {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      font-size: 6.8pt;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-title {
+      font-size: 9.6pt;
+      font-weight: 800;
+      color: #1e3a8a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 10px 0 6px 0;
+      border-left: 3px solid #2563eb;
+      padding-left: 7px;
+    }
+
+    .intro-banner {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 11px;
+      margin-bottom: 9px;
+      font-size: 8pt;
+      color: #334155;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .card-title {
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .script-box {
+      background: #f8fafc;
+      border-left: 3px solid #2563eb;
+      padding: 5px 8px;
+      margin: 4px 0;
+      border-radius: 0 4px 4px 0;
+      font-size: 7.7pt;
+      color: #1e293b;
+      font-family: monospace;
+    }
+
+    .step-badge {
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 7pt;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 9999px;
+      margin-right: 4px;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      padding: 6px 9px;
+      margin-bottom: 5px;
+      font-size: 7.8pt;
+    }
+
+    .check-icon {
+      color: #16a34a;
+      font-weight: 800;
+      font-size: 9pt;
+      line-height: 1;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+      margin-top: 9px;
+      font-size: 6.8pt;
+      color: #64748b;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PÁGINA 1 ==================== -->
+  <div class="page-sheet">
+    <div class="header">
+      <div class="brand">
+        <div class="brand-icon">S</div>
+        <div>
+          <div class="brand-title">SOFÍA AI — GUÍA DE CONTROL EN MODO JEFE</div>
+          <div class="brand-subtitle">Manual de Autogestión por WhatsApp para Dueños, Médicos y Encargados</div>
+        </div>
+      </div>
+      <div class="badge-doc">MANUAL DEL CLIENTE v1.0</div>
+    </div>
+
+    <div class="intro-banner">
+      <strong>👑 ¿Qué es el Modo Jefe?</strong> Es la tecnología que te permite darle órdenes, directivas y cambios a Sofía directamente desde tu WhatsApp personal, <strong>por mensaje de texto o con una simple nota de voz</strong>. No necesitás paneles complicados ni entrar a ninguna computadora: le hablás como a una secretaria real y ella actualiza todo en segundos.
+    </div>
+
+    <!-- SECCIÓN 1: RECONOCIMIENTO AUTOMÁTICO -->
+    <div class="section-title">1. ¿Cómo sabe Sofía que sos el Jefe?</div>
+    <div class="card" style="margin-bottom: 8px;">
+      <div class="card-body">
+        Tu número de teléfono personal queda registrado como <strong>Administrador / Dueño</strong>. Cuando un cliente o paciente le escribe a Sofía, ella atiende con calidez comercial; pero cuando le escribís vos desde tu número, Sofía entra automáticamente en <strong>Modo Ejecutivo</strong>: acata directivas, te pasa resúmenes y te avisa cada vez que alguien agenda un turno o hace un pedido.
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2: HORARIOS Y FERIADOS -->
+    <div class="section-title">2. Cambios de Horarios, Feriados y Días Especiales</div>
+    <div class="card" style="margin-bottom: 8px;">
+      <div class="card-body">
+        Si un día abrís más tarde, te tomás vacaciones o hay un feriado, solo le mandás un audio o texto por WhatsApp:
+        <div class="script-box">
+          🎤 «Sofía, este viernes abrimos a las 10:30 hs porque tengo un trámite.»<br>
+          🎤 «Sofía, el próximo lunes es feriado nacional y no atendemos consultas.»<br>
+          🎤 «Sofía, a partir de la semana que viene atendemos de corrido de 9 a 18 hs.»
+        </div>
+        Sofía te confirma en el acto y, desde ese momento, todos los pacientes o clientes que pregunten por ese día recibirán los nuevos horarios sin que vos tengas que hacer nada más.
+      </div>
+    </div>
+
+    <!-- SECCIÓN 3: PRECIOS Y SERVICIOS -->
+    <div class="section-title">3. Actualización de Precios y Aranceles en Vivo</div>
+    <div class="card" style="margin-bottom: 8px;">
+      <div class="card-body">
+        Olvidate de avisar con días de anticipación cuando cambian los costos. Le dictás el nuevo precio y ya queda operativo:
+        <div class="script-box">
+          💬 «Sofía, la consulta médica clínica subió a $22.000.»<br>
+          💬 «Sofía, el pase libre del gimnasio ahora está en $32.000.»<br>
+          💬 «Sofía, la vacuna séxtuple con control veterinario pasa a $20.000.»<br>
+          💬 «Sofía, agregá el servicio de blanqueamiento dental a $45.000.»
+        </div>
+        Sofía registra el valor y cotiza con los aranceles actualizados desde el próximo mensaje que reciba.
+      </div>
+    </div>
+
+    <!-- SECCIÓN 4: CARGA DE ARCHIVOS EXCEL Y PDF -->
+    <div class="section-title">4. Carga de Listas Masivas de Precios en Excel o PDF</div>
+    <div class="card">
+      <div class="card-body">
+        Si manejás decenas o cientos de productos o insumos (distribuidoras, pet shops, ferreterías o farmacias):
+        <div style="margin-top: 4px;">
+          1. <strong>Arrastrás o adjuntás el archivo .xlsx o .pdf</strong> directamente a la conversación de WhatsApp con Sofía.<br>
+          2. Sofía procesa el archivo en <strong>3 segundos</strong>, detecta nombres, presentaciones y precios.<br>
+          3. Te responde: <em>«✅ ¡Lista procesada con éxito! Se cargaron 148 productos. Sofía ya está lista para cotizar y tomar pedidos.»</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Sofía AI Agency © 2026 — Guía de Operación Exclusiva para Clientes</span>
+      <span>Página 1 de 2</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 2 ==================== -->
+  <div class="page-sheet page-break">
+    <div class="header">
+      <div class="brand">
+        <div class="brand-icon">S</div>
+        <div>
+          <div class="brand-title">SOFÍA AI — PROTOCOLO DE CONTROL Y TESTEO PRE-ENTREGA</div>
+          <div class="brand-subtitle">Intervención Humana, Reportes y Checklist de Puesta en Marcha</div>
+        </div>
+      </div>
+      <div class="badge-doc">MESA DE CONTROL & QA</div>
+    </div>
+
+    <!-- SECCIÓN 5: PAUSAR Y CONTROL HUMANO -->
+    <div class="section-title">5. Pausar a Sofía y Tomar el Control Humano (Handover)</div>
+    <div class="card" style="margin-bottom: 8px;">
+      <div class="card-body">
+        Si querés atender personalmente a un cliente específico o conversar un tema delicado:
+        <div class="script-box">
+          💬 «Pausar» o «Silenciar 3434556677» ➔ Sofía se apaga para ese contacto y te deja la charla 100% a vos.<br>
+          💬 «Activar» o «Reactivar 3434556677» ➔ Sofía vuelve a tomar el control de la conversación automáticamente.
+        </div>
+        Así tenés la tranquilidad absoluta de que vos siempre tenés el mando total de tu WhatsApp.
+      </div>
+    </div>
+
+    <!-- SECCIÓN 6: RESÚMENES Y VENTAS -->
+    <div class="section-title">6. Pedido de Resúmenes y Reportes del Día</div>
+    <div class="card" style="margin-bottom: 8px;">
+      <div class="card-body">
+        Al final del día o a la mañana antes de arrancar, mandale a Sofía:
+        <div class="script-box">
+          💬 «Resumen» / «¿Qué turnos tenemos agendados para hoy?» / «Ventas de hoy»
+        </div>
+        Sofía te devuelve una lista ordenada con los pacientes/clientes confirmados, sus números de contacto y los horarios pactados.
+      </div>
+    </div>
+
+    <!-- SECCIÓN 7: PROTOCOLO DE TESTEO PRE-ENTREGA -->
+    <div class="section-title">7. Flujo de Prueba y Calibración Pre-Entrega (Puesta en Marcha)</div>
+    <div class="card" style="background: #f8fafc; margin-bottom: 6px;">
+      <div class="card-body" style="margin-bottom: 4px;">
+        Antes de entregarle la línea definitiva al cliente, Javier y el dueño realizan juntos este <strong>Checklist de 5 Pruebas Reales</strong> para garantizar que el sistema funcione al 100%:
+      </div>
+
+      <div class="checklist-item">
+        <div class="check-icon">✓</div>
+        <div>
+          <span class="step-badge">Paso 1</span> <strong>Prueba de Identidad y Aranceles:</strong> Le escribimos desde otro celular preguntando precios y servicios. Verificamos que Sofía responda con exactitud los precios acordados y sin inventar aranceles.
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="check-icon">✓</div>
+        <div>
+          <span class="step-badge">Paso 2</span> <strong>Prueba de Agendamiento por Audio:</strong> Enviamos una nota de voz de 10 segundos pidiendo turno para un día específico. Comprobamos que Sofía transcriba y confirme en <strong>menos de 3 segundos</strong>.
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="check-icon">✓</div>
+        <div>
+          <span class="step-badge">Paso 3</span> <strong>Prueba de Alerta al Celular del Dueño:</strong> Verificamos que en el mismo instante en que se confirma el turno, el WhatsApp personal del dueño reciba la campanita con el reporte completo del paciente.
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="check-icon">✓</div>
+        <div>
+          <span class="step-badge">Paso 4</span> <strong>Prueba de Reprogramación / Cancelación:</strong> Simulamos que el paciente avisa que no puede venir y pide pasar el turno a otro día. Comprobamos la calidez y rapidez para liberar el horario.
+        </div>
+      </div>
+
+      <div class="checklist-item">
+        <div class="check-icon">✓</div>
+        <div>
+          <span class="step-badge">Paso 5</span> <strong>Prueba de Emergencia o Caso Especial:</strong> Escribimos planteando un dolor fuerte o duda clínica. Verificamos que Sofía no invente diagnósticos y derive inmediatamente con aviso al profesional.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Sofía AI Agency © 2026 — Soporte y Calibración: +54 9 343 453-6447</span>
+      <span>Página 2 de 2</span>
+    </div>
+  </div>
+
+</body>
+</html>
