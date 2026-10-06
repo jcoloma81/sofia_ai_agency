@@ -448,17 +448,16 @@ async def transcribe_audio_gemini(audio_b64: str, audio_mime_type: Optional[str]
     }
 
     candidate_models = [
-        "gemini-3.8-flash",
-        "gemini-3.5-flash",
-        "gemini-flash-latest",
         "gemini-flash-lite-latest",
         "gemini-3.5-flash-lite",
-        "gemini-3.5-transcribe"
+        "gemini-3.5-transcribe",
+        "gemini-3.5-flash",
+        "gemini-3.6-flash"
     ]
     for model_name in candidate_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
         try:
-            async with httpx.AsyncClient(timeout=25.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 res = await client.post(url, json=payload)
                 if res.status_code == 200:
                     data = res.json()
@@ -555,7 +554,10 @@ async def generate_ai_response(
                 "parts": [{"text": msg.get("text", "")}]
             })
 
-        if audio_data_b64:
+        has_transcribed_text = bool(
+            incoming_text and incoming_text.strip() and not incoming_text.strip().startswith("(")
+        )
+        if audio_data_b64 and not has_transcribed_text:
             clean_mime = audio_mime_type.split(";")[0].strip() if audio_mime_type else "audio/ogg"
             instruction_text = (
                 "O cliente enviou esta mensagem de voz no WhatsApp. Ouça com atenção e responda com carinho, leveza e profissionalismo em português do Brasil (pt-BR)."
@@ -586,16 +588,15 @@ async def generate_ai_response(
         }
 
         candidate_models = [
-            "gemini-3.8-flash",
-            "gemini-3.5-flash",
-            "gemini-flash-latest",
             "gemini-flash-lite-latest",
-            "gemini-3.1-flash-lite"
+            "gemini-3.5-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-3.6-flash"
         ]
         for model_name in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             try:
-                async with httpx.AsyncClient(timeout=20.0) as client:
+                async with httpx.AsyncClient(timeout=5.0) as client:
                     res = await client.post(url, json=payload)
                     if res.status_code == 200:
                         data = res.json()

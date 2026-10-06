@@ -1834,13 +1834,17 @@ async def receive_whatsapp_webhook(
         }
 
     # Generate response via AI Brain
+    # If voice note was already transcribed into clear text, avoid re-sending heavy audio binary
+    has_transcribed_speech = bool(message and not message.strip().startswith("("))
+    effective_audio_b64 = None if has_transcribed_speech else audio_b64
+
     ai_response, is_meeting_confirmed, meeting_details = await brain.generate_ai_response(
         incoming_text=message.strip(),
         conversation_history=history,
         prospect_name=prospect.name,
         contact_name=prospect.contact_name,
         city=prospect.city,
-        audio_data_b64=audio_b64,
+        audio_data_b64=effective_audio_b64,
         audio_mime_type=audio_mime,
         campaign=prospect.campaign or "air_control",
         phone=clean_phone
