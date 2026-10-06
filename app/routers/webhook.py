@@ -1885,6 +1885,10 @@ async def receive_whatsapp_webhook(
         rubro_label = rubro_icons.get(active_demo, active_demo.upper())
         last_msg_display = f"🎙️ Nota de voz ({meeting_details})" if (audio_b64 and meeting_details) else (f"🎙️ Nota de voz" if audio_b64 else message.strip())
         is_turn = bool(is_meeting_confirmed or any(k in message.lower() for k in ["turno", "agend", "consulta", "hora", "reserva", "clase", "vacuna", "service"]))
+        is_high_intent = any(k in message.lower() for k in [
+            "quiero contratar", "contratacion", "contratación", "hablar con javier",
+            "hablar con una persona", "asesor", "humano", "llamenme", "llamame", "comprar"
+        ])
 
         if is_turn:
             demo_alert_text = (
@@ -1895,14 +1899,27 @@ async def receive_whatsapp_webhook(
                 f"🤖 *Respuesta de Sofía:* \"{ai_response.strip()}\"\n\n"
                 f"✨ *Demostración en Vivo:* Así recibe el dueño del negocio la confirmación de cada turno en tiempo real."
             )
-        else:
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=demo_alert_text))
+        elif is_high_intent:
             demo_alert_text = (
-                f"📱 *[INTERACCIÓN EN VIVO — {rubro_label}]*\n\n"
+                f"🔥 *[LEAD CALIENTE / QUIERE CONTRATAR — {rubro_label}]*\n\n"
+                f"👤 *Prospecto:* +{clean_phone}\n"
+                f"💬 *Mensaje recibido:* \"{last_msg_display}\"\n"
+                f"🤖 *Respuesta de Sofía:* \"{ai_response.strip()}\"\n\n"
+                f"👉 *Acción sugerida:* Abrí el Dashboard de Sofía para responderle o llamalo ahora mismo."
+            )
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=demo_alert_text))
+        elif live_demo_service.get_active_demo():
+            # Solo enviamos espejo de charla continua si Javier activó manualmente una demo presencial 1-a-1 (#demo ...)
+            demo_alert_text = (
+                f"📱 *[DEMO PRESENCIAL 1-A-1 — {rubro_label}]*\n\n"
                 f"👤 *Cliente:* +{clean_phone}\n"
                 f"💬 *Mensaje:* \"{last_msg_display}\"\n"
                 f"🤖 *Sofía respondió:* \"{ai_response.strip()}\""
             )
-        asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=demo_alert_text))
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=demo_alert_text))
+        # Nota: En campañas de Meta Ads, la charla continua no satura el celular de Javier.
+        # Todo se visualiza y gestiona en tiempo real desde el Dashboard de Sofía.
     elif is_meeting_confirmed:
         prospect.status = "meeting_scheduled"
         prospect.meeting_details = meeting_details or message.strip()
