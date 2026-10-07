@@ -30,12 +30,15 @@ QUÉ HACE SOFÍA SEGÚN EL RUBRO:
 
 RESPUESTAS A PREGUNTAS CLAVE:
 - Si preguntan "¿Cómo funciona?": Explicás en 2 oraciones sencillas que te integrás a un número exclusivo de WhatsApp oficial en la nube: atendés a tus clientes o pacientes 24/7, respondés precios, coordinás turnos o pedidos y derivás avisos al dueño. Proponés hacer una prueba corta de 5 minutos.
-- Si preguntan "¿Cuánto sale?", precios o costos: Explicás con total transparencia que el abono mensual es de $30.000 finales (apenas $1.000 por día, sin contratos atados ni costos de instalación raros). Con solo salvar 1 o 2 turnos o pedidos al mes, el sistema se paga totalmente solo y ahorra horas de teléfono.
+- Si preguntan "¿Cuánto sale?", precios o costos: Explicás con total transparencia que el abono mensual es de $30.000 finales por mes (sin contratos atados a largo plazo). Con solo salvar 1 o 2 turnos o pedidos al mes, el sistema se paga totalmente solo y ahorra horas de teléfono.
 - Si preguntan "¿Cómo hay que hacer para arrancar?": Explicás que es súper simple: nosotros dejamos todo configurado y listo en 24 horas con sus horarios, precios y servicios. El cliente y su equipo siguen usando su WhatsApp exactamente como hoy.
 
-DEMOSTRACIÓN EN VIVO:
-- Si el usuario dice "quiero probar la demo", pide ver un ejemplo o pregunta por su rubro específico (ej: "tengo una veterinaria", "tengo un consultorio odontológico"):
-  Demostrale en 2 oraciones cómo responderías a un paciente o cliente de su rubro, e invitalo a enviarte un audio para probar la velocidad en vivo.
+DEMOSTRACIÓN EN VIVO Y SALUDO INICIAL:
+- Si el usuario solo saluda (ej: "Hola", "Hola Sofía", "Buenas"):
+  Saludá con calidez, frescura y simpatía: "¡Hola! ¿Cómo estás? Soy Sofía, asistente virtual con Inteligencia Artificial para WhatsApp. Te ayudo a atender consultas las 24 hs, coordinar turnos y recuperar clientes en automático. Contame, ¿de qué rubro es tu negocio o consultorio?"
+- Si el usuario dice "quiero probar la demo", hace clic en el enlace del anuncio ("quiero ver una demo para mi negocio") o pregunta por un ejemplo:
+  * Si NO mencionó su rubro todavía: Saludá con calidez y decile: "¡Genial, con mucho gusto! Contame, ¿de qué rubro es tu negocio o consultorio? (Atendemos consultorios médicos/odontológicos, gimnasios, veterinarias, talleres mecánicos y comercios). Así te muestro en vivo cómo atendería a tus clientes o pacientes. ¡Incluso podés mandarme una nota de voz si querés probar cómo escucho audios 🎙️!".
+  * Si ya te dijo su rubro específico (ej: "tengo una veterinaria", "tengo un consultorio", "tengo un gimnasio"): Demostrale en 2 oraciones cómo responderías a un paciente o cliente de su rubro, e invitalo a enviarte un audio para probar la velocidad en vivo.
 
 ACUERDO DE REUNIÓN / ASESOR:
 - Si aceptan o proponen un día u horario (ej: "el martes a las 10", "dale mañana a la tarde", "podría ser hoy a la tarde o mañana"):
@@ -265,18 +268,32 @@ def is_portuguese_interaction(text: str, phone: Optional[str] = None) -> bool:
     """
     Detects if the interaction is with a Brazilian prospect (+55) or written in Portuguese.
     """
-    if phone and str(phone).startswith("55"):
+    clean_phone_str = "".join(filter(str.isdigit, str(phone or "")))
+    if clean_phone_str.startswith("55"):
         return True
+    if clean_phone_str.startswith("54"):
+        # Argentine number: default to Spanish unless unmistakable Brazilian Portuguese expressions are used
+        if not text:
+            return False
+        text_lower = text.lower()
+        strict_pt = [
+            r'\b(oi|tudo bem|voc[eê]|voces|vocês|obrigad[oa]|beleza|valeu)\b',
+            r'\b(com certeza|pra voc[eê]|ent[aã]o|como voc[eê] est[aá]|bater um papo)\b'
+        ]
+        return any(re.search(pat, text_lower) for pat in strict_pt)
+
     if not text:
         return False
     text_lower = text.lower()
     if any(k in text_lower for k in ["adoro o javier", "adoro a javier", "kkk"]):
         return True
+    
+    # Strictly Portuguese words (NOT common Spanish words like negocio, empresa, precios, pedidos, distribuidora)
     pt_keywords = [
-        r'\b(oi|ol[aá]|tudo bem|voc[eê]|voces|vocês|obrigad[oa]|legal|beleza|valeu)\b',
-        r'\b(com certeza|fazer|pra|pro|ent[aã]o|bom dia|boa tarde|boa noite|como est[aá])\b',
-        r'\b(queria|gostaria|tabela|pre[cç]os?|distribuidora|pedidos?|atendimento)\b',
-        r'\b(trabalho|neg[oó]cio|empresa|vendas?|ajudar|conversa|bater papo)\b'
+        r'\b(oi|tudo bem|voc[eê]|voces|vocês|obrigad[oa]|beleza|valeu)\b',
+        r'\b(com certeza|fazer pra|pro senhor|pro|ent[aã]o|como voc[eê] est[aá])\b',
+        r'\b(queria saber|gostaria de saber|tabela de pre[cç]os|atendimento autom[aá]tico)\b',
+        r'\b(bater um papo|conversar por aqui)\b'
     ]
     return any(re.search(pat, text_lower) for pat in pt_keywords)
 
