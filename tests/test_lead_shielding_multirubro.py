@@ -222,8 +222,10 @@ async def test_meta_ads_lead_other_province_remote_response():
 @pytest.mark.asyncio
 async def test_no_director_word_in_system_prompt():
     """
-    Verifies that Sofia does NOT refer to Javier as 'director', but as team sales specialist.
+    Verifies that Sofia does NOT refer to Javier as 'director', but as team sales specialist,
+    and prohibits mentioning personal names unsolicited.
     """
-    assert "PROHIBIDO usar la palabra \"director\"" in SYSTEM_PROMPT_AGENCY
-    assert "equipo de ventas" in SYSTEM_PROMPT_AGENCY
+    assert "PROHIBIDO TERMINANTEMENTE usar la palabra \"director\"" in SYSTEM_PROMPT_AGENCY
+    assert "CERO NOMBRES PERSONALES" in SYSTEM_PROMPT_AGENCY
+    assert "alguien de nuestro equipo de ventas" in SYSTEM_PROMPT_AGENCY
 
