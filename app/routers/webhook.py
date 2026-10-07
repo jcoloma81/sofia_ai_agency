@@ -575,11 +575,23 @@ async def receive_whatsapp_webhook(
 
     # If this specific prospect is in human_takeover, check if 6 hours have passed
     if prospect.status == "human_takeover":
-        last_update = prospect.updated_at
-        if last_update:
-            if last_update.tzinfo is None:
-                last_update = last_update.replace(tzinfo=timezone.utc)
-            elapsed_seconds = (datetime.now(timezone.utc) - last_update).total_seconds()
+        last_human_time = None
+        try:
+            temp_history = json.loads(prospect.conversation_history or "[]")
+            for msg_item in reversed(temp_history):
+                if msg_item.get("sender") in ["javier_human", "boss"]:
+                    ts_str = msg_item.get("timestamp")
+                    if ts_str:
+                        last_human_time = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                        break
+        except Exception:
+            pass
+
+        ref_time = last_human_time or prospect.updated_at
+        if ref_time:
+            if ref_time.tzinfo is None:
+                ref_time = ref_time.replace(tzinfo=timezone.utc)
+            elapsed_seconds = (datetime.now(timezone.utc) - ref_time).total_seconds()
             if elapsed_seconds > 6 * 3600:
                 logger.info(f"⏰ Auto-reactivating Sofia for {clean_phone}: 6 hours of human takeover have elapsed.")
                 prospect.status = "in_conversation"
@@ -598,7 +610,6 @@ async def receive_whatsapp_webhook(
                 "timestamp": datetime.now(timezone.utc).isoformat()
             })
             prospect.conversation_history = json.dumps(history, ensure_ascii=False)
-            prospect.updated_at = datetime.now(timezone.utc)
             db.commit()
             logger.info(f"Prospect {clean_phone} is in human_takeover (within 6h window). Sofia remains silent.")
             return {"status": "ignored", "reason": "Prospect in human_takeover mode (Sofia silenced for this chat)"}

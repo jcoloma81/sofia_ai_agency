@@ -229,3 +229,87 @@ async def test_no_director_word_in_system_prompt():
     assert "CERO NOMBRES PERSONALES" in SYSTEM_PROMPT_AGENCY
     assert "alguien de nuestro equipo de ventas" in SYSTEM_PROMPT_AGENCY
 
+def test_human_takeover_auto_reactivation_after_6_hours(db):
+    """
+    Verifies that when Javier takes manual control of a specific lead,
+    Sofia stays silent within 6h, but automatically retakes control after 6h.
+    """
+    from datetime import datetime, timedelta, timezone
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.models.prospect import Prospect
+
+    client = TestClient(app)
+    phone_a = "5493437778899"
+    db.query(Prospect).filter(Prospect.phone == phone_a).delete()
+    db.commit()
+
+    # Case 1: Within 6 hours (< 6h) -> Sofia silenced
+    two_hours_ago = datetime.now(timezone.utc) - timedelta(hours=2)
+    lead = Prospect(
+        phone=phone_a,
+        name="Lead Pausado",
+        campaign="ai_agency",
+        status="human_takeover",
+        updated_at=two_hours_ago,
+        conversation_history='[{"sender": "javier_human", "text": "Hola, te habla Javier", "timestamp": "' + two_hours_ago.isoformat() + '"}]'
+    )
+    db.add(lead)
+    db.commit()
+
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [{
+            "changes": [{
+                "value": {
+                    "messages": [{
+                        "from": phone_a,
+                        "id": "wamid.takeover.test.within6h",
+                        "type": "text",
+                        "text": {"body": "Hola estás?"}
+                    }]
+                }
+            }]
+        }]
+    }
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        res = client.post("/webhook", json=payload)
+        assert res.status_code == 200
+        assert res.json()["status"] == "ignored"
+        mock_msg.assert_not_called()
+
+    # Case 2: After 6 hours (> 6h) -> Sofia automatically reactivates
+    seven_hours_ago = datetime.now(timezone.utc) - timedelta(hours=7)
+    lead.conversation_history = '[{"sender": "javier_human", "text": "Hola, te habla Javier", "timestamp": "' + seven_hours_ago.isoformat() + '"}]'
+    lead.updated_at = seven_hours_ago
+    db.commit()
+
+    payload_after = {
+        "object": "whatsapp_business_account",
+        "entry": [{
+            "changes": [{
+                "value": {
+                    "messages": [{
+                        "from": phone_a,
+                        "id": "wamid.takeover.test.after6h",
+                        "type": "text",
+                        "text": {"body": "¿Cuánto cuesta el abono mensual?"}
+                    }]
+                }
+            }]
+        }]
+    }
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.brain.generate_ai_response", new_callable=AsyncMock) as mock_brain:
+        mock_brain.return_value = ("El abono mensual es de $30.000 finales.", False, None)
+        res_after = client.post("/webhook", json=payload_after)
+        assert res_after.status_code == 200
+        assert res_after.json()["status"] == "success"
+        mock_msg.assert_called()
+
+        db.refresh(lead)
+        assert lead.status == "in_conversation"
+
+
