@@ -1371,8 +1371,13 @@ async def receive_whatsapp_webhook(
     # Check if a non-distributor live demo is currently active (e.g. consultorio, veterinaria, gym, taller)
     from app.services.live_demo import live_demo_service
     active_demo = live_demo_service.get_active_demo()
-    is_agency_lead = bool(prospect.campaign in ["ai_agency", "air_control"])
-    is_non_distribuidora_demo = bool((active_demo and active_demo != "distribuidora") or is_agency_lead)
+    is_non_distribuidora_demo = bool(active_demo and active_demo != "distribuidora")
+    is_b2b_service_inquiry = any(k in clean_msg_lower for k in [
+        "abono", "servicio", "software", "sistema", "agencia", "anuncio", "publicidad",
+        "automatiz", "inteligencia artificial", "consultorio", "gimnasio", "gym",
+        "veterinaria", "taller", "cancha", "canchas", "paciente", "cuanto sale el servicio",
+        "cuánto sale el servicio", "precio del abono", "costo del abono"
+    ])
 
     # 1.8 Multi-supplier Price Comparison Inquiry from Client (e.g. "¿Quién tiene más barato el foco LED 9W?")
     is_comparison_query = any(k in clean_msg_lower for k in [
@@ -1623,7 +1628,7 @@ async def receive_whatsapp_webhook(
         }
 
     # 2. Check if customer wants to place a new order or consult product/stock
-    analysis = None if is_non_distribuidora_demo else await parse_order_or_inquiry_with_ai(message)
+    analysis = None if (is_non_distribuidora_demo or is_b2b_service_inquiry) else await parse_order_or_inquiry_with_ai(message)
     if analysis and analysis.intent == "order":
         if analysis.draft.items:
             order_summary = format_order_summary_message(analysis.draft, prospect.contact_name)
@@ -1950,6 +1955,31 @@ async def receive_whatsapp_webhook(
             last_message=last_msg_display,
             campaign=prospect.campaign or "ai_agency"
         ))
+    elif any(k in clean_msg_lower for k in [
+        "quiero contratar", "contratacion", "contratación", "obtener el servicio",
+        "adquirir el servicio", "quiero el servicio", "como hacemos para arrancar",
+        "cómo hacemos para arrancar", "como arrancamos", "cómo arrancamos",
+        "espero que me contacten", "espero su contacto", "espero el contacto",
+        "espero el llamado", "me gustaría el servicio", "me gustaria el servicio",
+        "me gustaría obtener", "me gustaria obtener",
+        "donde pago", "dónde pago", "link de pago", "cómo te pago", "como te pago"
+    ]):
+        prospect.status = "interested"
+        db.commit()
+        db.refresh(prospect)
+        logger.info(f"🔥 HIGH-INTENT LEAD DETECTED: {prospect.name} (+{prospect.phone})! Message: {message.strip()}")
+        last_msg_display = f"🎙️ Nota de voz" if audio_b64 else message.strip()
+        wa_lead_alert = (
+            f"🔥 *[LEAD CALIENTE — QUIERE CONTRATAR]* 🚀\n\n"
+            f"🏢 *Empresa / Negocio:* {prospect.name or 'Prospecto Meta Ads'}\n"
+            f"👤 *Contacto:* {prospect.contact_name or 'Interesado/a'}\n"
+            f"📱 *Teléfono:* +{clean_phone}\n"
+            f"💬 *Mensaje recibido:* \"{last_msg_display}\"\n"
+            f"🤖 *Sofía respondió:* \"{ai_response.strip()}\"\n\n"
+            f"👉 *Acción:* Entrá al WhatsApp o al Dashboard y contactalo ahora mismo para cerrar la venta ($30.000/mes)."
+        )
+        if boss_phone:
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=wa_lead_alert))
     else:
         if prospect.status == "pending":
             prospect.status = "in_conversation"
