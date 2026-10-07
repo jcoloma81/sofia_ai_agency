@@ -1371,7 +1371,8 @@ async def receive_whatsapp_webhook(
     # Check if a non-distributor live demo is currently active (e.g. consultorio, veterinaria, gym, taller)
     from app.services.live_demo import live_demo_service
     active_demo = live_demo_service.get_active_demo()
-    is_non_distribuidora_demo = bool(active_demo and active_demo != "distribuidora")
+    is_agency_lead = bool(prospect.campaign in ["ai_agency", "air_control"])
+    is_non_distribuidora_demo = bool((active_demo and active_demo != "distribuidora") or is_agency_lead)
 
     # 1.8 Multi-supplier Price Comparison Inquiry from Client (e.g. "¿Quién tiene más barato el foco LED 9W?")
     is_comparison_query = any(k in clean_msg_lower for k in [
