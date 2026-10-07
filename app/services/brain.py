@@ -51,7 +51,10 @@ ACUERDO DE REUNIÓN / ASESOR:
   PROHIBIDO pegar la frase del cliente como un robot ("agendada para Podría ser hoy...").
   No des más vueltas una vez acordado.
 
-REGLAS DE ORO ANTI-ROBOT:
+REGLAS DE ORO ANTI-ROBOT Y BLINDAJE B2B:
+- Sos la ASISTENTE COMERCIAL DE LA AGENCIA hablando con el DUEÑO o PROFESIONAL titular del negocio/consultorio.
+- NUNCA te hagas pasar por la recepcionista de un negocio ficticio vendiéndole un servicio o membresía al dueño (ej: NO le vendas un pase de gimnasio a un dueño de gimnasio, ni un turno odontológico a un dentista, ni una vacuna a un veterinario, ni un service a un mecánico). Hablales siempre como dueños de su propio emprendimiento.
+- Si te piden un ejemplo o demo de su rubro, explicás con entusiasmo cómo atiende Sofía a SUS propios pacientes o clientes en ese rubro, o proponés coordinar una videollamada corta o visita presencial de 10 minutos con Javier.
 - PROHIBIDO inventar o forzar nombres de pila si el usuario no se presentó con su nombre personal (ej: "Soy Juan"). Si no sabés su nombre personal, usá respuestas directas: "¡Perfecto!", "¡Genial!", "¡Excelente!".
 - PROHIBIDO TERMINANTEMENTE saludar o dirigirte al usuario usando el nombre de su empresa ("¡Genial Consultorio San Lucas!"). Nadie habla así en la vida real.
 - PROHIBIDO el entusiasmo exagerado o frases de cassette ("¡Me alegro mucho de que te sume la propuesta!", "Es un placer atenderte"). Sé sobria, directa, cálida y ejecutiva.
@@ -526,8 +529,20 @@ async def generate_ai_response(
         contents = []
         from app.services.live_demo import live_demo_service
         active_demo = live_demo_service.get_active_demo()
-        fly_demo = live_demo_service.detect_rubro_intent(incoming_text)
-        demo_rubro = active_demo or fly_demo
+        
+        # Shielding: Check if message is a B2B agency/commercial inquiry (pricing, software, ads, consultation)
+        text_lower = (incoming_text or "").lower()
+        is_commercial_agency_inquiry = any(k in text_lower for k in [
+            "anuncio", "publicidad", "instagram", "facebook", "software", "sistema", "contratar", "servicio",
+            "abono", "cuánto sale", "cuanto sale", "precio", "costo", "¿cuánto", "¿cuanto", "información", "info",
+            "automatización", "automatizacion", "ia", "inteligencia artificial", "javier", "robot", "agencia",
+            "mi negocio", "mi consultorio", "mi gimnasio", "mi taller", "mi veterinaria", "de qué se trata",
+            "de que se trata", "cómo funciona", "como funciona", "cómo se instala", "como se instala"
+        ])
+
+        # Live demo applies ONLY when explicitly activated AND the message is an end-patient/client query,
+        # never when a business lead from Meta Ads is inquiring about the service.
+        demo_rubro = active_demo if (active_demo and not is_commercial_agency_inquiry) else None
 
         if demo_rubro:
             selected_prompt = live_demo_service.get_demo_prompt(demo_rubro)
@@ -565,8 +580,8 @@ async def generate_ai_response(
             
             from app.services.directives import directives_service
             from app.services.catalog import catalog_service
-            directives_ctx = directives_service.get_prompt_context() if campaign in ["ai_agency", "client_onboarding"] else ""
-            catalog_ctx = catalog_service.get_summary_prompt() if (campaign in ["ai_agency", "client_onboarding"] and catalog_service.products) else ""
+            directives_ctx = directives_service.get_prompt_context() if campaign in ["client_onboarding", "distribuidora"] else ""
+            catalog_ctx = catalog_service.get_summary_prompt() if (campaign in ["client_onboarding", "distribuidora"] and catalog_service.products) else ""
 
             system_context = (
                 f"{selected_prompt}\n\n"

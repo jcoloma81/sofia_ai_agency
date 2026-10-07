@@ -1871,7 +1871,7 @@ async def receive_whatsapp_webhook(
     # and the message is from the client (not Javier himself), notify Javier's phone immediately
     # so Javier can show the doctor/client the real-time notification on his own screen!
     from app.services.live_demo import live_demo_service
-    active_demo = live_demo_service.get_active_demo() or live_demo_service.detect_rubro_intent(message)
+    active_demo = live_demo_service.get_active_demo()
     boss_phone = "".join(filter(str.isdigit, str(settings.WHATSAPP_ALERT_PHONE or "")))
 
     if active_demo and boss_phone and clean_phone != boss_phone:
