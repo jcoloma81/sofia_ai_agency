@@ -27,7 +27,7 @@ def test_landing_page_pricing_and_rubros_sections():
     # 3. Downloads Section
     assert 'id="descargas"' in html
     assert "/descargar-guia-pdf" in html
-    assert "/descargar-costos-pdf" in html
+    assert "/descargar-modo-jefe-pdf" in html
     assert "/descargar-catalogo-pdf" in html
     assert "/hoja-de-ruta" in html
 
@@ -35,6 +35,10 @@ def test_download_and_doc_endpoints():
     res_guia_pdf = client.get("/descargar-guia-pdf")
     assert res_guia_pdf.status_code == 200
     assert res_guia_pdf.headers["content-type"] == "application/pdf"
+
+    res_modo_jefe_pdf = client.get("/descargar-modo-jefe-pdf")
+    assert res_modo_jefe_pdf.status_code == 200
+    assert res_modo_jefe_pdf.headers["content-type"] == "application/pdf"
 
     res_costos_pdf = client.get("/descargar-costos-pdf")
     assert res_costos_pdf.status_code == 200
