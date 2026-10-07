@@ -611,6 +611,103 @@ async def test_employee_shared_basket_and_resumen(db):
     assert "Distribuidora Alem" in reply
     assert "Azúcar Ledesma" in reply
 
+@pytest.mark.asyncio
+async def test_boss_consultorio_simulation_affirmation(db):
+    from app.services.live_demo import live_demo_service
+    live_demo_service.reset_demo_mode()
+    try:
+        history = [
+            {"sender": "boss", "text": "Hola Sofia, tengo un consultorio médico, ¿cómo me ayudás con los turnos?"},
+            {"sender": "ai", "text": "¡Hola, Javi! Me encargo de todo el flujo: el paciente me escribe por WhatsApp, le muestro los horarios disponibles en tiempo real, agendo el turno y, para evitar faltazos, le mando un recordatorio automático el día anterior. ¿Querés que simulemos cómo le respondería a un paciente?"}
+        ]
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "si",
+            conversation_history=history
+        )
+        assert handled is True
+        assert action == "demo_consultorio_activated"
+        assert "Consultorio San Lucas" in reply
+        assert "PEDIDO CONFIRMADO" not in reply
+        assert "Autoservicio San Martín" not in reply
+        assert live_demo_service.get_active_demo() == "consultorio"
+    finally:
+        live_demo_service.reset_demo_mode()
+
+@pytest.mark.asyncio
+async def test_boss_generic_si_without_draft_does_not_confirm_order(db):
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.boss_mode.generate_boss_ai_response", new_callable=AsyncMock) as mock_ai:
+        mock_ai.return_value = ("Entendido Javi, ¿en qué avanzamos?", "boss_chat")
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "si",
+            conversation_history=[]
+        )
+        assert handled is True
+        assert action != "boss_confirm_test"
+        assert "PEDIDO CONFIRMADO" not in reply
+        assert "Autoservicio San Martín" not in reply
+
+@pytest.mark.asyncio
+async def test_boss_live_demo_interaction_from_boss_phone(db):
+    from app.services.live_demo import live_demo_service
+    from unittest.mock import patch, AsyncMock
+    live_demo_service.set_demo_mode("consultorio", duration_minutes=30)
+    try:
+        with patch("app.services.brain.generate_ai_response", new_callable=AsyncMock) as mock_ai:
+            mock_ai.return_value = ("¡Hola! Para consulta médica tenemos disponibilidad mañana a las 11:00 hs.", False, None)
+            handled, reply, action = await process_boss_message(
+                db,
+                settings.WHATSAPP_ALERT_PHONE,
+                "Hola, ¿tienen turno disponible para mañana?",
+                conversation_history=[]
+            )
+            assert handled is True
+            assert action == "demo_consultorio_interaction"
+            assert "11:00 hs" in reply
+
+        # Now test exiting with "modo jefe"
+        handled, reply, action = await process_boss_message(
+            db,
+            settings.WHATSAPP_ALERT_PHONE,
+            "modo jefe",
+            conversation_history=[]
+        )
+        assert handled is True
+        assert action == "demo_reset"
+        assert "Modo Jefe" in reply
+        assert live_demo_service.get_active_demo() is None
+    finally:
+        live_demo_service.reset_demo_mode()
+
+@pytest.mark.asyncio
+async def test_boss_prospect_simulation_mode_switch(db):
+    boss_lead = Prospect(
+        phone=settings.WHATSAPP_ALERT_PHONE,
+        name="Javier Coloma (Director)",
+        campaign="boss_mode",
+        status="director"
+    )
+    db.add(boss_lead)
+    db.commit()
+
+    handled, reply, action = await process_boss_message(
+        db,
+        settings.WHATSAPP_ALERT_PHONE,
+        "modo prospecto",
+        conversation_history=[]
+    )
+    assert handled is True
+    assert action == "prospect_simulation_started"
+    assert "MODO PROSPECTO ACTIVADO" in reply
+    db.refresh(boss_lead)
+    assert boss_lead.campaign == "ai_agency"
+    assert boss_lead.status == "in_conversation"
+
+
 
 
 

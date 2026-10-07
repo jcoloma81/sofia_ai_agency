@@ -582,6 +582,63 @@ def resolve_merchant_identity(sender_phone: str, db: Session, target_sup_name: s
         "biz_tag": biz_tag
     }
 
+def detect_simulation_affirmation(conversation_history: Optional[List[dict]], text: str) -> Optional[str]:
+    """
+    Detects if Javier is confirming/agreeing to simulate a client or patient interaction.
+    Returns the target rubro ('consultorio', 'veterinaria', 'gym', 'taller', 'distribuidora') or None.
+    """
+    if not text:
+        return None
+    clean = text.lower().strip()
+    words = re.findall(r'\b[a-záéíóúñ0-9]+\b', clean)
+    if not words or len(words) > 6:
+        return None
+
+    affirmative_words = {
+        "si", "sí", "dale", "de una", "probemos", "mostrame", "a ver",
+        "dale probemos", "bueno dale", "bueno", "ok", "claro", "por favor",
+        "me interesa", "simulemos", "vamos", "metele", "dale simulemos"
+    }
+    is_affirmative = clean in affirmative_words or any(w in ["si", "sí", "dale"] for w in words)
+    if not is_affirmative:
+        return None
+
+    if not conversation_history:
+        return None
+
+    # Check the latest message sent by AI in conversation history
+    last_ai_text = ""
+    for msg in reversed(conversation_history):
+        if msg.get("sender") in ["ai", "sofia", "assistant"]:
+            last_ai_text = (msg.get("text") or "").lower()
+            break
+
+    if not last_ai_text:
+        return None
+
+    sim_triggers = [
+        "simulemos", "simular", "cómo le respondería", "como le respondería",
+        "cómo respondería", "como respondería", "hacer una prueba", "probar una demo",
+        "probar cómo", "probar como", "hacemos una prueba", "simulamos",
+        "querés que probemos", "quieres que probemos", "querés simular", "quieres simular"
+    ]
+    if not any(t in last_ai_text for t in sim_triggers):
+        return None
+
+    combined = last_ai_text + " " + " ".join(m.get("text", "") for m in conversation_history[-4:]).lower()
+    if any(k in combined for k in ["consultorio", "medico", "médico", "paciente", "odonto", "dentist", "clinica", "clínica", "salud", "doctor", "turno"]):
+        return "consultorio"
+    if any(k in combined for k in ["veterinaria", "vet", "pet", "mascota", "perro", "gato"]):
+        return "veterinaria"
+    if any(k in combined for k in ["gym", "gimnasio", "fitness", "padel", "pádel", "entrenam"]):
+        return "gym"
+    if any(k in combined for k in ["taller", "mecanic", "mecánic", "auto"]):
+        return "taller"
+    if any(k in combined for k in ["distribuidora", "mayorista"]):
+        return "distribuidora"
+
+    return "consultorio"
+
 async def generate_boss_ai_response(
     db: Session,
     incoming_text: str,
@@ -605,7 +662,7 @@ async def generate_boss_ai_response(
     cat_summary = f"{len(catalog_service.products)} productos activos ({catalog_service.source_info})\n{catalog_preview}"
 
     system_prompt = f"""Sos Sofía, la asistente ejecutiva de Inteligencia Artificial y mano derecha de Javier Coloma.
-Javier es tu creador y el director general de la agencia de IA y de las soluciones comerciales para distribuidoras y comercios.
+Javier es tu creador y el director general de la agencia de automatización con IA (Sofía AI Agency).
 Estás hablando directamente con él a través de su WhatsApp personal.
 
 PERSONALIDAD Y TONO:
@@ -613,8 +670,15 @@ PERSONALIDAD Y TONO:
 - Cero respuestas de bot tipo menú de opciones ("Podés pedirme: 1, 2, 3"). NUNCA respondas con listas de comandos a menos que Javier te lo pida expresamente.
 - Respuestas concisas, ágiles, profesionales y al grano (estilo WhatsApp, generalmente de 1 a 3 oraciones bien redactadas).
 - Si Javier te saluda o te pregunta si estás lista para trabajar hoy, respondé con entusiasmo, confirmale que los sistemas están al 100% y preguntale con qué arrancamos.
-- Tenés visión comercial para distribuidoras mayoristas, hoteles y comercios. Si te pide opiniones o consejos sobre ventas o prospección, razoná con él como una compañera estratégica de negocios.
-- Conocés tus capacidades operativas: sabés que podés pausar o reactivar a Sofía en un chat ('pausar <número>', 'activar <número>'), mostrar métricas del día ('resumen'), actualizar la lista de precios si te manda un Excel o CSV, y cotizar o tomar pedidos. Si es relevante para la consulta de Javier, mencionalo de forma orgánica y conversacional.
+- Como agencia, automatizás WhatsApp en tiempo real para múltiples rubros comerciales:
+  * Consultorios médicos y odontológicos: agendamiento de turnos 24/7 y recordatorios automáticos el día anterior para eliminar faltazos.
+  * Gimnasios, fitness y pádel: pases libres, reservas de turnos y clases gratis de prueba.
+  * Veterinarias y pet shops: turnos veterinarios, vacunas y servicios.
+  * Talleres mecánicos y mantenimiento de vehículos.
+  * Distribuidoras mayoristas y comercios: cotizaciones en vivo, toma de pedidos y sincronización de listas.
+- El abono mensual oficial de la agencia es de $30.000 / mes (tarifa plana todo incluido, sin comisiones por turno o venta, con garantía). NUNCA menciones tarifas diarias como "1.000 por día".
+- Conocés tus capacidades operativas: sabés que podés pausar o reactivar a Sofía en un chat ('pausar <número>', 'activar <número>'), mostrar métricas del día ('resumen'), activar demos en vivo ('#demo consultorio', '#demo gym', '#demo veterinaria', etc.), actualizar la lista de precios si te manda un Excel o CSV, y cotizar o tomar pedidos.
+- Si Javier te pide opiniones, estrategias o consultas sobre cualquier rubro o simulación, razoná con él como una compañera estratégica de negocios.
 
 ESTADO DEL SISTEMA EN TIEMPO REAL:
 - Línea oficial WhatsApp: Meta Cloud API (+54 9 343 572-0312), calidad Verde, 100% activa.
@@ -1747,10 +1811,54 @@ async def process_boss_message(
     is_employee = bool(sender_prospect and sender_prospect.parent_merchant_phone)
     effective_merchant_phone = sender_prospect.parent_merchant_phone if is_employee else clean_sender
 
-    # 0. Live Demo Mode Command (triggered by Javier before meetings)
-    if lower_text.startswith("#demo") or lower_text in ["demo reset", "reset demo", "demo status"]:
-        from app.services.live_demo import live_demo_service
-        subcmd = lower_text.replace("#demo", "").strip()
+    # 0. Live Demo Mode Commands & Active Demo Interactivity
+    from app.services.live_demo import live_demo_service
+    active_demo = live_demo_service.get_active_demo()
+
+    # If demo is currently active and boss wants to exit
+    if active_demo and lower_text.strip() in [
+        "modo jefe", "salir", "salir de demo", "terminar demo", "fin demo",
+        "demo reset", "reset demo", "#demo reset", "salir de prueba"
+    ]:
+        live_demo_service.reset_demo_mode()
+        return True, "✅ Modo demo finalizado. Has vuelto a Modo Jefe (Director).", "demo_reset"
+
+    # If demo is active and boss is interacting as a patient/client (not sending #demo or admin commands)
+    admin_bypass = (
+        lower_text.startswith("#demo") or lower_text.startswith("demo ") or
+        lower_text in ["resumen", "estado", "catalogo", "catálogo", "metricas", "métricas", "pausar", "activar"]
+    )
+    if active_demo and not admin_bypass:
+        ai_reply, is_meet, meet_det = await brain.generate_ai_response(
+            incoming_text=clean_text,
+            conversation_history=conversation_history or [],
+            prospect_name="Javier (Demo)",
+            contact_name="Javier",
+            city="Paraná",
+            campaign="ai_agency",
+            phone=sender_phone
+        )
+        return True, ai_reply, f"demo_{active_demo}_interaction"
+
+    # 0.1 Explicit demo commands (#demo, demo ..., simular ..., probar ...)
+    is_demo_cmd = lower_text.startswith("#demo") or lower_text.startswith("demo ") or lower_text.startswith("simular ")
+    if not is_demo_cmd and lower_text.startswith("probar "):
+        cand = lower_text[7:].strip()
+        if any(r in cand for r in ["consultorio", "veterinaria", "gym", "gimnasio", "taller", "distribuidora", "padel", "medico", "médico"]):
+            is_demo_cmd = True
+
+    if is_demo_cmd or lower_text in ["demo reset", "reset demo", "demo status", "salir de demo", "terminar demo", "fin demo"]:
+        if lower_text.startswith("#demo"):
+            subcmd = lower_text.replace("#demo", "").strip()
+        elif lower_text.startswith("demo "):
+            subcmd = lower_text[5:].strip()
+        elif lower_text.startswith("simular "):
+            subcmd = lower_text[8:].strip()
+        elif lower_text.startswith("probar "):
+            subcmd = lower_text[7:].strip()
+        else:
+            subcmd = lower_text.strip()
+
         if not subcmd or subcmd in ["ayuda", "help", "menu"]:
             help_msg = (
                 "🎭 *Comandos de Demostración en Vivo para Clientes:*\n\n"
@@ -1773,6 +1881,44 @@ async def process_boss_message(
         else:
             ok, reply = live_demo_service.set_demo_mode(subcmd, duration_minutes=60)
             return True, reply, "demo_activated" if ok else "demo_error"
+
+    # 0.2 Prospect simulation mode switch
+    if lower_text in [
+        "modo cliente", "modo prospecto", "probar como cliente", "probar como prospecto",
+        "simular cliente", "simular prospecto", "probar flujo", "probar bot"
+    ]:
+        if sender_prospect:
+            sender_prospect.campaign = "ai_agency"
+            sender_prospect.status = "in_conversation"
+            db.commit()
+        return True, (
+            "🧪 *¡MODO PROSPECTO ACTIVADO!* 🚀\n\n"
+            "A partir de ahora tus mensajes se procesan exactamente como si fueras un prospecto nuevo que llegó desde un anuncio de Meta Ads.\n\n"
+            "Podés interactuar con Sofía para ver su flujo completo de venta y asesoramiento comercial.\n\n"
+            "💡 *Para volver a Modo Jefe en cualquier momento, escribí:* `modo jefe`"
+        ), "prospect_simulation_started"
+
+    # 0.3 Detect if boss affirms a demo proposal from previous turn (e.g. "¿Querés que simulemos...?" -> "si")
+    sim_rubro = detect_simulation_affirmation(conversation_history, clean_text)
+    if sim_rubro:
+        live_demo_service.set_demo_mode(sim_rubro, duration_minutes=60)
+        rubro_headers = {
+            "consultorio": ("Consultorio Médico / Odontológico 🏥", "Consultorio San Lucas", "Hola, ¿tienen turno disponible para control médico mañana a la mañana?"),
+            "veterinaria": ("Veterinaria & Pet Shop 🐾", "Veterinaria Huellitas", "Hola, ¿tienen turno para vacunar a mi perro hoy a la tarde?"),
+            "gym": ("Gimnasio & Pádel 💪", "Centro de Fitness Olimpo", "Hola, ¿cuánto sale la cuota mensual y qué horarios tienen?"),
+            "taller": ("Taller Mecánico 🚗", "Taller Boxes", "Hola, ¿tienen turno para service y frenos?"),
+            "distribuidora": ("Distribuidora Mayorista 📦", "Distribuidora Central", "Hola, ¿a cuánto tienen la caja de aceite?")
+        }
+        title, biz, example = rubro_headers.get(sim_rubro, rubro_headers["consultorio"])
+        sim_msg = (
+            f"🎭 *¡Dale, activada la simulación para {title}!* 🚀\n\n"
+            f"A partir de ahora te atiendo en vivo como la recepcionista virtual de *{biz}*.\n\n"
+            f"Escribime como si fueras un paciente o cliente. Por ejemplo:\n"
+            f"• *\"{example}\"*\n\n"
+            f"Mandame tu mensaje y fijate cómo gestiono la consulta en tiempo real.\n"
+            f"*(Para volver a Modo Jefe cuando termines, escribí:* `modo jefe` o `#demo reset`*)*"
+        )
+        return True, sim_msg, f"demo_{sim_rubro}_activated"
 
     # 1. Excel / CSV File upload
     if doc_bytes and doc_name:
@@ -3780,11 +3926,21 @@ async def process_boss_message(
         inquiry_reply = build_product_inquiry_reply(analysis.inquired_products, contact_name="Javier", merchant_phone=effective_merchant_phone, db=db)
         return True, f"🧪 *[DEMO EN VIVO — CONSULTA DE PRODUCTO]*\n\n{inquiry_reply}", "boss_product_inquiry"
 
-    if is_order_confirmation(clean_text):
-        clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
-        saved_draft = LAST_BOSS_ORDERS.get(clean_sender)
+    clean_sender = "".join(filter(str.isdigit, str(sender_phone)))
+    saved_draft = LAST_BOSS_ORDERS.get(clean_sender)
+    is_explicit_order_confirm = any(p in lower_text for p in [
+        "confirmo el pedido", "confirmar pedido", "confirmalo", "confirmá el pedido",
+        "si lo confirmo", "si confirmo", "mandalo nomas", "mandar pedido", "despachar pedido"
+    ])
+    has_active_order_draft = bool(saved_draft and saved_draft.items)
+
+    # An order confirmation is ONLY valid if there's an active draft in memory or an explicit order confirmation command!
+    # A generic "si", "dale", "ok" without an active draft must NEVER confirm an order!
+    if (has_active_order_draft and is_order_confirmation(clean_text)) or is_explicit_order_confirm:
         if not saved_draft or not saved_draft.items:
             saved_draft = parse_order_text("1 caja de aceite y 2 fardos de harina")
+
+        LAST_BOSS_ORDERS.pop(clean_sender, None)
 
         # Trigger real depot notification to owner WhatsApp and Email!
         asyncio.create_task(whatsapp.notify_owner_order_confirmed(
