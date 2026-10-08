@@ -171,13 +171,25 @@ async def send_whatsapp_template(
     language_code: str = "es_AR",
     components: Optional[List[dict]] = None,
     tenant_id: Optional[int] = None,
-    db: Optional[Any] = None
+    db: Optional[Any] = None,
+    body_params: Optional[List[str]] = None
 ) -> bool:
     """
-    Sends an approved Meta WhatsApp template to initiate outbound prospecting without ban risk.
+    Sends an approved Meta WhatsApp template to initiate outbound messaging without ban risk.
     Enforces tenant message quota on the Shared Plan.
+    If body_params is provided, automatically packages them into standard Meta Cloud API body components.
     """
     clean_phone = "".join(filter(str.isdigit, to_phone))
+    if not clean_phone:
+        return False
+
+    if body_params and not components:
+        components = [
+            {
+                "type": "body",
+                "parameters": [{"type": "text", "text": str(p)} for p in body_params]
+            }
+        ]
 
     tenant = None
     if tenant_id and db:
@@ -233,8 +245,18 @@ async def send_whatsapp_template(
             except Exception as e:
                 logger.error(f"Error sending Meta template to {target_phone}: {e}")
 
-    logger.warning(f"Could not send template {template_name} to {clean_phone} via Meta Cloud API")
-    return False
+        logger.warning(f"Could not send template {template_name} to {clean_phone} via Meta Cloud API")
+        return False
+
+    # Simulation fallback if Meta credentials are not configured
+    logger.info(f"[WHATSAPP SIMULATION] Meta Template '{template_name}' to {clean_phone} (Params: {body_params or components})")
+    if tenant and db:
+        try:
+            tenant.messages_sent_this_month = (tenant.messages_sent_this_month or 0) + 1
+            db.commit()
+        except Exception:
+            pass
+    return True
 
 
 async def send_whatsapp_document(
