@@ -3,21 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ficha de Alta de Cliente & Relevamiento Operativo — Sofía AI Agency</title>
+  <title>Puesta en Marcha Digital — Sofía AI Agency</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #0f172a;
-      --primary-light: #1e293b;
+      --bg: #090d16;
+      --card-bg: #111827;
+      --card-border: #1f2937;
       --accent: #2563eb;
       --accent-hover: #1d4ed8;
-      --border: #cbd5e1;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
+      --accent-glow: rgba(37, 99, 235, 0.2);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.15);
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --input-bg: #1f2937;
+      --input-border: #374151;
     }
 
     * {
@@ -27,581 +31,699 @@
     }
 
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       background-color: var(--bg);
-      color: var(--text);
+      color: var(--text-main);
       line-height: 1.5;
-      padding: 24px 16px;
+      padding: 24px 16px 60px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .container {
-      max-width: 900px;
+      width: 100%;
+      max-width: 760px;
       margin: 0 auto;
-      background: var(--surface);
-      padding: 36px 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-      border: 1px solid var(--border);
-    }
-
-    .actions-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 12px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 14px;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: none;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-    .btn-primary:hover {
-      background: var(--accent-hover);
-    }
-
-    .btn-secondary {
-      background: #e2e8f0;
-      color: var(--primary);
-    }
-    .btn-secondary:hover {
-      background: #cbd5e1;
     }
 
     .header {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 24px;
+      text-align: center;
+      margin-bottom: 32px;
+      padding-top: 10px;
     }
 
-    .logo {
-      width: 64px;
-      height: 64px;
-      border-radius: 12px;
-      object-fit: cover;
-    }
-
-    .header-titles h1 {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--primary);
-      text-transform: uppercase;
-      letter-spacing: -0.5px;
-    }
-
-    .header-titles .badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
-    }
-
-    .header-titles p {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .section {
-      margin-bottom: 22px;
-    }
-
-    .section-banner {
-      background: var(--primary);
-      color: white;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 8px 14px;
-      border-radius: 6px 6px 0 0;
-      display: flex;
+    .badge-top {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
+      background: rgba(37, 99, 235, 0.12);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      color: #60a5fa;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
     }
 
-    .section-body {
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      padding: 16px;
-      background: #fafafa;
+    .badge-top span {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3b82f6;
+      box-shadow: 0 0 10px #3b82f6;
     }
 
+    .title {
+      font-size: clamp(26px, 5vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    .form-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: clamp(20px, 4vw, 36px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .step-section {
+      margin-bottom: 32px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .step-section:last-of-type {
+      border-bottom: none;
+      margin-bottom: 20px;
+      padding-bottom: 0;
+    }
+
+    .step-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: #fff;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    /* Rubro Selector Grid */
+    .rubro-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .rubro-btn {
+      background: var(--input-bg);
+      border: 1.5px solid var(--input-border);
+      border-radius: 12px;
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      color: var(--text-main);
+    }
+
+    .rubro-btn .icon {
+      font-size: 24px;
+    }
+
+    .rubro-btn .label {
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+
+    .rubro-btn:hover {
+      border-color: #4b5563;
+      transform: translateY(-2px);
+    }
+
+    .rubro-btn.active {
+      border-color: var(--accent);
+      background: rgba(37, 99, 235, 0.15);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    /* Form Fields */
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 16px;
+      margin-bottom: 16px;
     }
 
-    .grid-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 14px;
-    }
-
-    .grid-4 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 12px;
+    @media (max-width: 600px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .rubro-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .field-group {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
+      margin-bottom: 16px;
     }
 
     .field-group label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #334155;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .field-group input, .field-group textarea, .field-group select {
-      padding: 7px 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
       font-size: 13px;
-      background: white;
-      color: var(--text);
-      font-family: inherit;
+      font-weight: 600;
+      color: #e5e7eb;
     }
 
-    .field-group input:focus, .field-group textarea:focus {
+    .field-group .hint {
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+
+    .field-group input,
+    .field-group select,
+    .field-group textarea {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: white;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .field-group input:focus,
+    .field-group select:focus,
+    .field-group textarea:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     }
 
-    .checkbox-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 13px;
-      margin-top: 4px;
-    }
-
-    .checkbox-row label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      text-transform: none;
-      font-weight: 500;
-    }
-
-    .signatures-block {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px dashed var(--border);
-    }
-
-    .sig-box {
+    /* File Upload Box */
+    .upload-box {
+      border: 2px dashed #374151;
+      border-radius: 14px;
+      padding: 24px 16px;
       text-align: center;
+      background: rgba(17, 24, 39, 0.6);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
     }
 
-    .sig-line {
-      height: 40px;
-      border-bottom: 1.5px solid #0f172a;
+    .upload-box:hover, .upload-box.dragover {
+      border-color: var(--accent);
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    .upload-icon {
+      font-size: 32px;
       margin-bottom: 8px;
     }
 
-    .sig-title {
+    .upload-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 4px;
+    }
+
+    .upload-subtitle {
       font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .file-selected-info {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      color: #34d399;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+
+    /* Pricing Banner Box */
+    .pricing-summary {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(16, 185, 129, 0.08) 100%);
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .pricing-left h4 {
+      font-size: 15px;
       font-weight: 700;
-      color: var(--primary);
+      color: #fff;
+      margin-bottom: 2px;
     }
 
-    .sig-subtitle {
-      font-size: 11px;
-      color: var(--muted);
+    .pricing-left p {
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
-    .legal-clause {
-      margin-top: 16px;
-      font-size: 10.5px;
-      line-height: 1.4;
-      color: #64748b;
-      text-align: justify;
-      background: #f1f5f9;
-      padding: 10px 14px;
+    .pricing-amount {
+      font-size: 24px;
+      font-weight: 800;
+      color: #34d399;
+    }
+
+    .pricing-amount span {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Submit Button */
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 24px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Modal / Success Screen */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 30px 10px;
+    }
+
+    .success-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 20px;
+    }
+
+    .success-title {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .success-desc {
+      font-size: 14.5px;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 28px;
+    }
+
+    .payment-box {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 14px;
+      padding: 20px;
+      max-width: 480px;
+      margin: 0 auto 28px;
+      text-align: left;
+    }
+
+    .payment-box h5 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #93c5fd;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .payment-box p {
+      font-size: 13px;
+      color: #d1d5db;
+      margin-bottom: 6px;
+    }
+
+    .alias-pill {
+      display: inline-block;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 4px 10px;
       border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      font-weight: 700;
     }
 
-    @media print {
-      body {
-        padding: 0;
-        background: white;
-      }
-      .container {
-        box-shadow: none;
-        border: none;
-        padding: 0;
-        max-width: 100%;
-      }
-      .actions-bar {
-        display: none !important;
-      }
-      .section-banner {
-        background: #0f172a !important;
-        color: white !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      .section-body {
-        background: #fafafa !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
+    .btn-whatsapp-direct {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #25D366;
+      color: #0b2e13;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-whatsapp-direct:hover {
+      background: #20ba59;
+      transform: translateY(-2px);
     }
   </style>
 </head>
 <body>
 
-<div class="container">
+  <div class="container">
+    
+    <div class="header">
+      <div class="badge-top">
+        <span></span> Puesta en Marcha en 24 Horas
+      </div>
+      <h1 class="title">Alta y Calibración de Sofía</h1>
+      <p class="subtitle">Completá los datos de tu negocio para que configuremos tus horarios, servicios y aranceles a medida.</p>
+    </div>
 
-  <!-- ACTIONS BAR (Hidden on print) -->
-  <div class="actions-bar">
-    <div style="font-size: 13px; font-weight: 600; color: #475569;">
-      📋 Ficha Oficial de Puesta en Marcha • Sofía AI Agency
+    <div class="form-card">
+      
+      <!-- FORM BODY -->
+      <form id="onboardingForm">
+        
+        <!-- PASO 1: SELECCIÓN DE RUBRO -->
+        <div class="step-section">
+          <div class="step-title">
+            <div class="step-num">1</div>
+            <span>¿De qué rubro es tu negocio o actividad?</span>
+          </div>
+          
+          <input type="hidden" name="business_type" id="businessType" value="salud">
+          
+          <div class="rubro-grid">
+            <div class="rubro-btn active" onclick="selectRubro('salud', this)">
+              <div class="icon">🏥</div>
+              <div class="label">Salud / Turnero</div>
+            </div>
+            <div class="rubro-btn" onclick="selectRubro('gym', this)">
+              <div class="icon">🏋️‍♂️</div>
+              <div class="label">Gimnasio / Padel</div>
+            </div>
+            <div class="rubro-btn" onclick="selectRubro('veterinaria', this)">
+              <div class="icon">🐾</div>
+              <div class="label">Veterinaria</div>
+            </div>
+            <div class="rubro-btn" onclick="selectRubro('taller', this)">
+              <div class="icon">🚗</div>
+              <div class="label">Taller / Service</div>
+            </div>
+            <div class="rubro-btn" onclick="selectRubro('distribuidora', this)">
+              <div class="icon">📦</div>
+              <div class="label">Distribuidora</div>
+            </div>
+            <div class="rubro-btn" onclick="selectRubro('comercio', this)">
+              <div class="icon">🛍️</div>
+              <div class="label">Comercio / Otro</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 2: DATOS DEL NEGOCIO & WHATSAPP -->
+        <div class="step-section">
+          <div class="step-title">
+            <div class="step-num">2</div>
+            <span>Datos Principales & WhatsApp</span>
+          </div>
+
+          <div class="grid-2">
+            <div class="field-group">
+              <label>Nombre del Negocio o Consultorio *</label>
+              <input type="text" name="business_name" required placeholder="Ej: Consultorios Alvear / Iron Gym">
+            </div>
+            <div class="field-group">
+              <label>Titular / Profesional a Cargo *</label>
+              <input type="text" name="owner_name" required placeholder="Ej: Dr. Martín Gómez / Javier Coloma">
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field-group">
+              <label>Celular de WhatsApp Oficial *</label>
+              <input type="tel" name="owner_phone" required placeholder="Ej: 343 453-6447">
+              <span class="hint">El número donde atenderá Sofía y te enviará avisos directos.</span>
+            </div>
+            <div class="field-group">
+              <label>Ciudad y Provincia *</label>
+              <input type="text" name="city" required value="Paraná, Entre Ríos" placeholder="Ej: Paraná, Entre Ríos">
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 3: HORARIOS Y REGLAS OPERATIVAS -->
+        <div class="step-section">
+          <div class="step-title">
+            <div class="step-num">3</div>
+            <span>Horarios de Atención & Modalidad</span>
+          </div>
+
+          <div class="field-group">
+            <label>Días y Horarios de Atención para Turnos o Consultas *</label>
+            <input type="text" name="operating_hours" required placeholder="Ej: Lunes a Viernes de 8:30 a 12:30 y de 16:00 a 20:00 hs">
+            <span class="hint">Sofía respetará estrictamente estos horarios para agendar.</span>
+          </div>
+
+          <div class="grid-2">
+            <div class="field-group">
+              <label>Duración Promedio de cada Turno</label>
+              <select name="appointment_duration">
+                <option value="15 min">15 minutos</option>
+                <option value="30 min" selected>30 minutos (Recomendado)</option>
+                <option value="45 min">45 minutos</option>
+                <option value="60 min">1 hora (60 min)</option>
+                <option value="A demanda">A demanda / Sin turno fijo</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>¿Cobran Seña Previa para Reservar?</label>
+              <select name="requires_deposit" id="requiresDeposit" onchange="toggleDepositField()">
+                <option value="no" selected>No, pagan al asistir al local</option>
+                <option value="si">Sí, seña previa para confirmar</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2" id="depositAmountRow" style="display: none;">
+            <div class="field-group">
+              <label>Monto de la Seña Sugerida ($)</label>
+              <input type="text" name="deposit_amount" placeholder="Ej: $5.000 / 50% de la consulta">
+            </div>
+            <div class="field-group">
+              <label>Contacto o Teléfono para Urgencias</label>
+              <input type="tel" name="emergency_contact" placeholder="Ej: 343 555-1234 (opcional)">
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 4: ARANCELES, PRECIOS Y SUBIDA DE LISTAS -->
+        <div class="step-section">
+          <div class="step-title">
+            <div class="step-num">4</div>
+            <span>Servicios, Aranceles & Lista de Precios</span>
+          </div>
+
+          <div class="field-group">
+            <label>Subí tu Lista de Precios, PDF o Planilla Excel</label>
+            <div class="upload-box" id="dropArea" onclick="document.getElementById('catalogFileInput').click()">
+              <input type="file" name="catalog_file" id="catalogFileInput" style="display: none;" accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.doc,.docx" onchange="handleFileSelected(this)">
+              <div class="upload-icon">📄</div>
+              <div class="upload-title">Hacé clic para seleccionar o arrastrá tu archivo acá</div>
+              <div class="upload-subtitle">Formatos admitidos: PDF, Excel (.xlsx / .csv), fotos de cartelera o Word</div>
+              <div class="file-selected-info" id="fileSelectedInfo">
+                <span>✓ Archivo seleccionado:</span> <span id="fileNameLabel"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>O pegá tus servicios y precios en texto</label>
+            <textarea name="price_notes" rows="3" placeholder="Ej: Consulta clínica $18.000. Limpieza y blanqueamiento $35.000. Pases libres de gimnasio $22.000..."></textarea>
+            <span class="hint">Si tenés dudas, no te preocupes: después de enviar podés mandarnos audios por WhatsApp para sumar más detalles.</span>
+          </div>
+        </div>
+
+        <!-- RESUMEN DE CONDICIONES -->
+        <div class="pricing-summary">
+          <div class="pricing-left">
+            <h4>Abono Mensual Sin Contrato Fijo</h4>
+            <p>Puesta en marcha 100% remota en 24 horas • Soporte continuo</p>
+          </div>
+          <div class="pricing-amount">
+            $30.000 <span>/ mes final</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span>🚀 Confirmar y Activar Puesta en Marcha</span>
+        </button>
+
+      </form>
+
+      <!-- SUCCESS SCREEN -->
+      <div class="success-screen" id="successScreen">
+        <div class="success-icon">✓</div>
+        <h2 class="success-title">¡Información Recibida con Éxito!</h2>
+        <p class="success-desc">Los datos de tu negocio ya están en manos de nuestro equipo técnico. Estamos configurando y calibrando a Sofía para que atienda a tus clientes de forma impecable en 24 horas.</p>
+
+        <div class="payment-box">
+          <h5>💳 Paso Final: Abono Mensual de Activación</h5>
+          <p>Monto: <b>$30.000 finales</b> (Transferencia bancaria o Mercado Pago)</p>
+          <p style="margin-top: 8px;">Alias de Transferencia: <span class="alias-pill">sofia.ia.agency</span></p>
+          <p style="margin-top: 4px; font-size: 12px; color: #9ca3af;">O coordiná el pago y la vinculación oficial directamente con nosotros por WhatsApp:</p>
+        </div>
+
+        <a href="https://wa.me/5493435720312?text=Hola%20Javier,%20ya%20completé%20la%20ficha%20de%20alta%20digital%20de%20Sofía." class="btn-whatsapp-direct" target="_blank">
+          <span>💬 Abrir WhatsApp con Javier para Coordinar</span>
+        </a>
+      </div>
+
     </div>
-    <div class="btn-group">
-      <button class="btn btn-primary" onclick="window.print()">
-        🖨️ Imprimir Ficha
-      </button>
-      <a class="btn btn-secondary" href="/assets/ficha_alta_cliente.pdf" target="_blank" download>
-        📥 Descargar PDF
-      </a>
-      <a class="btn btn-secondary" href="/dashboard">
-        📊 Panel
-      </a>
-    </div>
+
   </div>
 
-  <!-- HEADER -->
-  <div class="header">
-    <img src="/assets/sofia_agency_logo.png" alt="Sofía Logo" class="logo" onerror="this.style.display='none'">
-    <div class="header-titles">
-      <div class="badge">Sofía AI Agency • Implementación Empresarial B2B</div>
-      <h1>Ficha de Alta de Cliente & Relevamiento Operativo</h1>
-      <p>Configuración integral y puesta en marcha del Asistente Comercial Autónomo en WhatsApp • Entre Ríos & Santa Fe</p>
-    </div>
-  </div>
+  <script>
+    function selectRubro(type, btn) {
+      document.getElementById('businessType').value = type;
+      document.querySelectorAll('.rubro-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
 
-  <form id="onboardingForm">
+    function toggleDepositField() {
+      const val = document.getElementById('requiresDeposit').value;
+      const row = document.getElementById('depositAmountRow');
+      row.style.display = val === 'si' ? 'grid' : 'none';
+    }
 
-    <!-- SECCIÓN 1: DATOS DE LA EMPRESA -->
-    <div class="section">
-      <div class="section-banner">
-        <span>1.</span> Datos de la Empresa & Facturación
-      </div>
-      <div class="section-body">
-        <div class="grid-2" style="margin-bottom: 12px;">
-          <div class="field-group">
-            <label>Razón Social / Nombre de Fantasía</label>
-            <input type="text" placeholder="Ej: Distribuidora San Martín S.R.L.">
-          </div>
-          <div class="field-group">
-            <label>CUIT</label>
-            <input type="text" placeholder="30-XXXXXXXX-X">
-          </div>
-        </div>
-        <div class="grid-2" style="margin-bottom: 12px;">
-          <div class="field-group">
-            <label>Dirección Depósito Central / Casa Matriz</label>
-            <input type="text" placeholder="Calle, número y referencias de carga">
-          </div>
-          <div class="field-group">
-            <label>Condición ante IVA</label>
-            <div class="checkbox-row" style="padding-top: 6px;">
-              <label><input type="radio" name="iva" checked> Resp. Inscripto</label>
-              <label><input type="radio" name="iva"> Monotributo</label>
-              <label><input type="radio" name="iva"> Exento</label>
-            </div>
-          </div>
-        </div>
-        <div class="grid-3">
-          <div class="field-group">
-            <label>Localidad & Provincia</label>
-            <input type="text" placeholder="Ej: Paraná, Entre Ríos">
-          </div>
-          <div class="field-group">
-            <label>Código Postal</label>
-            <input type="text" placeholder="3100">
-          </div>
-          <div class="field-group">
-            <label>Teléfono Fijo / Central</label>
-            <input type="text" placeholder="0343-4XXXXXX">
-          </div>
-        </div>
-      </div>
-    </div>
+    function handleFileSelected(input) {
+      const info = document.getElementById('fileSelectedInfo');
+      const label = document.getElementById('fileNameLabel');
+      if (input.files && input.files[0]) {
+        label.textContent = input.files[0].name;
+        info.style.display = 'inline-flex';
+      } else {
+        info.style.display = 'none';
+      }
+    }
 
-    <!-- SECCIÓN 2: LIDERAZGO & DESTINATARIOS -->
-    <div class="section">
-      <div class="section-banner">
-        <span>2.</span> Contactos Clave & Destinatarios de Alertas
-      </div>
-      <div class="section-body">
-        <div class="grid-3" style="margin-bottom: 14px;">
-          <div class="field-group">
-            <label>Titular / Gerente General</label>
-            <input type="text" placeholder="Nombre y Apellido">
-          </div>
-          <div class="field-group">
-            <label>WhatsApp Personal</label>
-            <input type="text" placeholder="+54 9 343 ...">
-          </div>
-          <div class="field-group">
-            <label>Email Ejecutivo</label>
-            <input type="email" placeholder="gerencia@distribuidora.com">
-          </div>
-        </div>
-        <div class="grid-3" style="margin-bottom: 14px;">
-          <div class="field-group">
-            <label>Encargado de Depósito / Despacho <span style="color:#2563eb; font-weight:700;">(Órdenes en vivo)</span></label>
-            <input type="text" placeholder="Nombre del encargado">
-          </div>
-          <div class="field-group">
-            <label>WhatsApp para Alertas de Pedidos</label>
-            <input type="text" placeholder="+54 9 343 ... (Recibe orden al instante)">
-          </div>
-          <div class="field-group">
-            <label>Medio de Recepción</label>
-            <div class="checkbox-row" style="padding-top: 6px;">
-              <label><input type="checkbox" checked> WhatsApp</label>
-              <label><input type="checkbox" checked> Email</label>
-            </div>
-          </div>
-        </div>
-        <div class="grid-3">
-          <div class="field-group">
-            <label>Administración / Facturación</label>
-            <input type="text" placeholder="Nombre responsable">
-          </div>
-          <div class="field-group">
-            <label>WhatsApp Administración</label>
-            <input type="text" placeholder="+54 9 343 ...">
-          </div>
-          <div class="field-group">
-            <label>Email para Respaldo de Pedidos</label>
-            <input type="email" placeholder="pedidos@distribuidora.com">
-          </div>
-        </div>
-      </div>
-    </div>
+    // Drag and Drop support
+    const dropArea = document.getElementById('dropArea');
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropArea.classList.add('dragover');
+      }, false);
+    });
 
-    <!-- SECCIÓN 3: CONFIGURACIÓN DE SOFÍA -->
-    <div class="section">
-      <div class="section-banner">
-        <span>3.</span> Configuración de la Línea de Sofía en WhatsApp (Meta Cloud API)
-      </div>
-      <div class="section-body">
-        <div class="grid-2" style="margin-bottom: 12px;">
-          <div class="field-group">
-            <label>Línea Telefónica Exclusiva (Requisito Obligatorio)</label>
-            <div class="checkbox-row" style="padding-top: 6px;">
-              <label><input type="radio" name="linea" checked> Chip nuevo provisto por el cliente</label>
-              <label><input type="radio" name="linea"> Chip nuevo provisto por la Agencia</label>
-            </div>
-          </div>
-          <div class="field-group">
-            <label>Número de WhatsApp para Sofía</label>
-            <input type="text" placeholder="+54 9 343 XXXXXXX">
-          </div>
-        </div>
-        <div class="field-group">
-          <label>Nombre de Perfil Visible para Clientes</label>
-          <input type="text" placeholder="Ej: Sofía - Distribuidora San Martín / Atención & Pedidos 24hs">
-        </div>
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropArea.classList.remove('dragover');
+      }, false);
+    });
 
-        <div class="legal-clause" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca; margin-top:10px;">
-          ⚠️ <b>Política y Condición Oficial de Meta Cloud API:</b> Está estrictamente prohibido utilizar números personales o líneas activas en la app de WhatsApp de un celular. Meta Cloud API exige una línea dedicada exclusiva que opera 100% en la nube. Intentar conectar números personales causaría el bloqueo automático por parte de Meta y la pérdida del WhatsApp del celular. Sofía opera bajo infraestructura corporativa oficial de Meta, garantizando máxima seguridad y protección contra bloqueos.
-        </div>
-      </div>
-    </div>
+    dropArea.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        document.getElementById('catalogFileInput').files = files;
+        handleFileSelected(document.getElementById('catalogFileInput'));
+      }
+    });
 
-    <!-- SECCIÓN 4: REGLAS COMERCIALES & LOGÍSTICA -->
-    <div class="section">
-      <div class="section-banner">
-        <span>4.</span> Reglas Comerciales & Logística de Reparto
-      </div>
-      <div class="section-body">
-        <div class="grid-2" style="margin-bottom: 12px;">
-          <div class="field-group">
-            <label>Monto Mínimo de Pedido (Flete Bonificado)</label>
-            <input type="text" placeholder="$ 50.000">
-          </div>
-          <div class="field-group">
-            <label>Horario Límite de Corte de Pedidos</label>
-            <input type="text" placeholder="21:00 hs (para salir en el reparto de mañana)">
-          </div>
-        </div>
-        <div class="grid-2" style="margin-bottom: 12px;">
-          <div class="field-group">
-            <label>Zonas de Reparto (Lunes / Miércoles / Viernes)</label>
-            <input type="text" placeholder="Ej: Paraná Centro, San Agustín, Bajada Grande">
-          </div>
-          <div class="field-group">
-            <label>Zonas de Reparto (Martes / Jueves / Sábados)</label>
-            <input type="text" placeholder="Ej: Crespo, Diamante, Oro Verde, Viale, Nogoyá">
-          </div>
-        </div>
-        <div class="field-group">
-          <label>Formas de Pago Habilitadas</label>
-          <div class="checkbox-row">
-            <label><input type="checkbox" checked> Contado contra entrega</label>
-            <label><input type="checkbox" checked> Transferencia bancaria anticipada</label>
-            <label><input type="checkbox"> Cheque diferido (Plazo: _______ días)</label>
-            <label><input type="checkbox"> Cuenta corriente previa calificación</label>
-          </div>
-        </div>
-      </div>
-    </div>
+    // Form Submission
+    document.getElementById('onboardingForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Enviando información y calibrando...</span>';
 
-    <!-- SECCIÓN 5: CATÁLOGO & PROVEEDORES -->
-    <div class="section">
-      <div class="section-banner">
-        <span>5.</span> Catálogo Inicial & Actualización de Proveedores
-      </div>
-      <div class="section-body">
-        <div class="grid-2" style="margin-bottom: 12px;">
-          <div class="field-group">
-            <label>Formato Inicial de la Lista de Precios</label>
-            <div class="checkbox-row">
-              <label><input type="checkbox" checked> Planilla Excel (.xlsx / .csv)</label>
-              <label><input type="checkbox"> PDF oficial de fábrica</label>
-              <label><input type="checkbox"> Google Sheets</label>
-              <label><input type="checkbox"> Sistema de Gestión (Tango, Bejerman, Zeus)</label>
-            </div>
-          </div>
-          <div class="field-group">
-            <label>Cantidad Estimada de Artículos Activos</label>
-            <div class="checkbox-row">
-              <label><input type="radio" name="articulos"> Hasta 200</label>
-              <label><input type="radio" name="articulos" checked> 200 a 1.000</label>
-              <label><input type="radio" name="articulos"> 1.000 a 3.000</label>
-              <label><input type="radio" name="articulos"> Más de 3.000</label>
-            </div>
-          </div>
-        </div>
-        <div class="legal-clause" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe;">
-          💡 <b>Actualización de Aumentos en Segundos:</b> Cada vez que una fábrica o proveedor envíe una lista con aumentos, el cliente simplemente le reenvía el archivo Excel o PDF al chat de WhatsApp de Sofía. Sofía cruza los códigos de artículo o nombres, recalcula los nuevos precios y actualiza el catálogo activo en tiempo real.
-        </div>
-      </div>
-    </div>
+      const formData = new FormData(this);
 
-    <!-- SECCIÓN 6: PROSPECCIÓN OUTBOUND -->
-    <div class="section">
-      <div class="section-banner">
-        <span>6.</span> Radar de Prospección en Google Maps (Outbound)
-      </div>
-      <div class="section-body">
-        <div class="grid-2" style="margin-bottom: 12px;">
-          <div class="field-group">
-            <label>Localidades Prioritarias para Abrir Nuevas Cuentas</label>
-            <input type="text" placeholder="Ej: Paraná, Crespo, Diamante, Victoria, Nogoyá">
-          </div>
-          <div class="field-group">
-            <label>Ritmo de Prospección Diaria Recomendado</label>
-            <div class="checkbox-row" style="padding-top: 6px;">
-              <label><input type="radio" name="ritmo"> Moderado: 15 comercios/día</label>
-              <label><input type="radio" name="ritmo" checked> Estándar: 25 comercios/día</label>
-              <label><input type="radio" name="ritmo"> Agresivo: 40 comercios/día</label>
-            </div>
-          </div>
-        </div>
-        <div class="field-group">
-          <label>Tipos de Comercios a Captar</label>
-          <div class="checkbox-row">
-            <label><input type="checkbox" checked> Kioscos y Maxikioscos</label>
-            <label><input type="checkbox" checked> Almacenes de barrio y Despensas</label>
-            <label><input type="checkbox" checked> Autoservicios y Minimarkets</label>
-            <label><input type="checkbox"> Rotiserías y Locales Gastronómicos</label>
-          </div>
-        </div>
-      </div>
-    </div>
+      try {
+        const response = await fetch('/api/onboarding/submit', {
+          method: 'POST',
+          body: formData
+        });
 
-    <!-- SECCIÓN 7: CONDICIONES COMERCIALES -->
-    <div class="section">
-      <div class="section-banner">
-        <span>7.</span> Planes Comerciales & Conformidad de Activación
-      </div>
-      <div class="section-body">
-        <div class="field-group" style="margin-bottom: 12px;">
-          <label>Selección de Plan Comercial</label>
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
-            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer;">
-              <input type="radio" name="plan" style="margin-top: 2px;">
-              <span><b>Plan 1: Sofía Cazadora</b> — <b style="color: #047857;">PROMO LANZAMIENTO: $39.000 / mes</b> <span style="text-decoration: line-through; color: #94a3b8; font-size: 11px;">(Lista $69.000)</span><br/>
-              <span style="font-size: 11.5px; color: #64748b;">Prospección a demanda en Google Maps (12-15 comercios/día), apertura de cuentas nuevas y alertas directas a tu WhatsApp.</span></span>
-            </label>
-            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer;">
-              <input type="radio" name="plan" style="margin-top: 2px;">
-              <span><b>Plan 2: Sofía Asistente 24/7</b> — <b style="color: #047857;">PROMO LANZAMIENTO: $55.000 / mes</b> <span style="text-decoration: line-through; color: #94a3b8; font-size: 11px;">(Lista $95.000)</span><br/>
-              <span style="font-size: 11.5px; color: #64748b;">Atención continua 24/7/365, envío de lista de precios en Excel, transcripción de notas de voz y comanda automática a depósito.</span></span>
-            </label>
-            <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer; background: #ecfdf5; padding: 6px 10px; border-radius: 6px; border: 1px solid #a7f3d0;">
-              <input type="radio" name="plan" checked style="margin-top: 2px;">
-              <span><b>Plan 3: Sofía Integral 360°</b> ⭐ — <b style="color: #047857;">PROMO LANZAMIENTO: $85.000 / mes</b> <span style="text-decoration: line-through; color: #94a3b8; font-size: 11px;">(Lista $155.000)</span><br/>
-              <span style="font-size: 11.5px; color: #065f46;"><b>Suite Completa:</b> Prospección por cupos en Google Maps + Atención y toma de pedidos 24/7 con marca y línea exclusiva propia.</span></span>
-            </label>
-          </div>
-        </div>
+        const data = await response.json();
 
-        <div class="legal-clause">
-          <b>Compromiso de Puesta en Marcha:</b> La activación de la infraestructura se inicia formalmente una vez recibida la lista de precios base en formato digital y completada la vinculación técnica de la línea en Meta Cloud API. El despliegue y calibración de la Inteligencia Artificial se realiza de forma ágil y secuencial, coordinando de común acuerdo con la empresa la fecha de salida en vivo para garantizar una integración impecable sin interrumpir su operatoria diaria. El servicio incluye la infraestructura en la nube 24/7, transcripción de audios, emisión automática de órdenes al depósito, radar de prospección y soporte técnico continuo.
-        </div>
-      </div>
-    </div>
-
-    <!-- FIRMAS -->
-    <div class="signatures-block">
-      <div class="sig-box">
-        <div class="sig-line"></div>
-        <div class="sig-title">Por la Empresa / Distribuidora</div>
-        <div class="sig-subtitle">Firma, Aclaración y Sello Comercial</div>
-      </div>
-      <div class="sig-box">
-        <div class="sig-line"></div>
-        <div class="sig-title">Por Sofía AI Agency</div>
-        <div class="sig-subtitle">Javier Coloma • Director de Operaciones</div>
-      </div>
-    </div>
-
-  </form>
-
-</div>
-
+        if (response.ok && data.status === 'success') {
+          document.getElementById('onboardingForm').style.display = 'none';
+          document.getElementById('successScreen').style.display = 'block';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          alert('Hubo un error al procesar el formulario: ' + (data.detail || 'Por favor intentalo nuevamente.'));
+          btn.disabled = false;
+          btn.innerHTML = '<span>🚀 Confirmar y Activar Puesta en Marcha</span>';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error de conexión al enviar el formulario. Por favor comprobá tu conexión a internet.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀 Confirmar y Activar Puesta en Marcha</span>';
+      }
+    });
+  </script>
 </body>
 </html>

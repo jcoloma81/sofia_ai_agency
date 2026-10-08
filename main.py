@@ -14,6 +14,7 @@ from app.routers.dashboard import router as dashboard_router, verify_admin_crede
 from app.routers.bridge import router as bridge_router
 from app.routers.tenants import router as tenants_router
 from app.routers.payments import router as payments_router
+from app.routers.onboarding import router as onboarding_router
 from app.config.settings import settings
 
 # Initialize logging
@@ -72,9 +73,11 @@ def serve_propuesta():
     return FileResponse(propuesta_path)
 
 # Ficha de Alta de Cliente & Relevamiento Operativo
+@app.get("/alta", response_class=FileResponse)
 @app.get("/alta-cliente", response_class=FileResponse)
 @app.get("/onboarding", response_class=FileResponse)
 @app.get("/ficha", response_class=FileResponse)
+@app.get("/ficha_alta_cliente.html", response_class=FileResponse)
 def serve_alta_cliente():
     alta_path = os.path.join(os.path.dirname(__file__), "app", "static", "ficha_alta_cliente.html")
     return FileResponse(alta_path)
@@ -190,6 +193,8 @@ app.include_router(bridge_router, prefix="/api/v1/bridge", tags=["Sofía Bridge"
 app.include_router(tenants_router)
 app.include_router(tenants_router, prefix="/api/v1")
 app.include_router(payments_router)
+app.include_router(onboarding_router)
+app.include_router(onboarding_router, prefix="/api/v1")
 
 # Backward compatibility routes
 app.include_router(webhook_router, prefix="/api/v1/prospecting", tags=["Prospecting Compatibility"])
