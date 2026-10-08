@@ -272,9 +272,36 @@ def seed_demo_tenants(db: Session = Depends(get_db)):
     }
 
 @router.post("/cron/run-appointment-reminders")
-async def trigger_appointment_reminders(hours_ahead: int = Query(24), db: Session = Depends(get_db)):
-    count = await appointment_service.scan_and_send_appointment_reminders(db, hours_ahead=hours_ahead)
-    return {"status": "success", "reminders_sent": count}
+async def trigger_appointment_reminders(
+    hours_ahead: Optional[int] = Query(None, description="Optional filter, otherwise executes standard 48h/24h dual-stage scan"),
+    db: Session = Depends(get_db)
+):
+    results = await appointment_service.scan_and_send_appointment_reminders(db, hours_ahead=hours_ahead)
+    return {"status": "success", "results": results}
+
+@router.post("/cron/run-secretary-shield")
+async def trigger_secretary_shield(
+    tenant_id: Optional[int] = Query(None, description="Optional tenant_id to run for a specific clinic"),
+    db: Session = Depends(get_db)
+):
+    """
+    CRON Escudo para la Secretaria (15:00 hs):
+    Dispatches pre-cutoff report to secretary with unconfirmed appointments for tomorrow.
+    """
+    results = await appointment_service.broadcast_secretary_pre_cutoff_reports(db, tenant_id=tenant_id)
+    return {"status": "success", "results": results}
+
+@router.post("/cron/run-cutoff-cancellations")
+async def trigger_cutoff_cancellations(
+    tenant_id: Optional[int] = Query(None, description="Optional tenant_id to run for a specific clinic"),
+    db: Session = Depends(get_db)
+):
+    """
+    CRON Corte Definitivo (18:00 hs):
+    Cancels unconfirmed appointments (unless kept by secretary) and triggers 1-by-1 waitlist cascade.
+    """
+    results = await appointment_service.execute_all_cutoff_auto_cancellations(db, tenant_id=tenant_id)
+    return {"status": "success", "results": results}
 
 @router.post("/cron/run-billing-reminders")
 async def trigger_billing_reminders(db: Session = Depends(get_db)):

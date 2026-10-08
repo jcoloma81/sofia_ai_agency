@@ -412,7 +412,7 @@ class AppointmentService:
         return True
 
     @staticmethod
-    async def scan_and_send_appointment_reminders(db: Session) -> Dict[str, int]:
+    async def scan_and_send_appointment_reminders(db: Session, hours_ahead: Optional[int] = None) -> Dict[str, int]:
         """
         DUAL-STAGE CRON (Runs hourly):
         Stage 1: 48 HORAS ANTES -> First Reminder
@@ -682,6 +682,56 @@ class AppointmentService:
 
         logger.info(f"🏁 Cutoff executed for '{tenant.name}': {cancelled_count} appointments cancelled & offered to waitlist.")
         return cancelled_count
+
+    @staticmethod
+    async def broadcast_secretary_pre_cutoff_reports(
+        db: Session,
+        tenant_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Runs secretary pre-cutoff summary report at 15:00 hs across all healthcare tenants
+        (or for a single tenant if specified).
+        """
+        query = db.query(Tenant).filter(Tenant.status == "active")
+        if tenant_id:
+            query = query.filter(Tenant.id == tenant_id)
+        else:
+            query = query.filter(
+                (Tenant.business_type.in_(["salud", "medicina", "estetica"])) |
+                (Tenant.modules_enabled.like("%turnos%"))
+            )
+        tenants = query.all()
+        sent_count = 0
+        for t in tenants:
+            if t.owner_phone:
+                ok = await AppointmentService.send_secretary_pre_cutoff_report(db, t.id)
+                if ok:
+                    sent_count += 1
+        return {"tenants_processed": len(tenants), "reports_sent": sent_count}
+
+    @staticmethod
+    async def execute_all_cutoff_auto_cancellations(
+        db: Session,
+        tenant_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Executes 18:00 hs cutoff across all healthcare tenants (or for a single tenant).
+        Cancels unconfirmed slots (unless kept by secretary) and triggers 1-by-1 waitlist cascade.
+        """
+        query = db.query(Tenant).filter(Tenant.status == "active")
+        if tenant_id:
+            query = query.filter(Tenant.id == tenant_id)
+        else:
+            query = query.filter(
+                (Tenant.business_type.in_(["salud", "medicina", "estetica"])) |
+                (Tenant.modules_enabled.like("%turnos%"))
+            )
+        tenants = query.all()
+        total_cancelled = 0
+        for t in tenants:
+            c = await AppointmentService.execute_cutoff_auto_cancellations(db, t.id)
+            total_cancelled += c
+        return {"tenants_processed": len(tenants), "appointments_cancelled": total_cancelled}
 
 appointment_service = AppointmentService()
 
