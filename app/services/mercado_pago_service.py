@@ -247,7 +247,7 @@ class MercadoPagoService:
         return {"status": status, "payment_id": payment_id}
 
     @staticmethod
-    def check_outbound_quota(tenant: Tenant) -> Tuple[bool, int, str]:
+    def check_outbound_quota(tenant: Tenant, db: Optional[Session] = None) -> Tuple[bool, int, str]:
         """
         Enforces the 150-message monthly quota for the Shared Central Plan.
         Returns:
@@ -257,6 +257,22 @@ class MercadoPagoService:
         if tenant.plan_type == "enterprise":
             return True, 999999, "enterprise_unlimited"
 
+        # Check if calendar month changed since last reset
+        now = utc_now()
+        if tenant.last_quota_reset:
+            last = tenant.last_quota_reset
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            if (now.year > last.year) or (now.year == last.year and now.month > last.month):
+                tenant.messages_sent_this_month = 0
+                tenant.quota_exhausted_alert_sent = False
+                tenant.last_quota_reset = now
+                if db:
+                    try:
+                        db.commit()
+                    except Exception:
+                        pass
+
         total_quota = (tenant.monthly_message_quota or 150) + (tenant.extra_messages_balance or 0)
         sent = tenant.messages_sent_this_month or 0
         remaining = total_quota - sent
@@ -265,6 +281,36 @@ class MercadoPagoService:
             return True, remaining, "quota_ok"
         else:
             return False, 0, "quota_exhausted"
+
+    @staticmethod
+    def reset_monthly_quotas(db: Session) -> int:
+        """
+        Scans all shared plan tenants and resets messages_sent_this_month = 0
+        if they are entering a new calendar month.
+        """
+        now = utc_now()
+        tenants = db.query(Tenant).filter(Tenant.plan_type == "shared").all()
+        reset_count = 0
+        for tenant in tenants:
+            last = tenant.last_quota_reset
+            needs_reset = False
+            if last:
+                if last.tzinfo is None:
+                    last = last.replace(tzinfo=timezone.utc)
+                if (now.year > last.year) or (now.year == last.year and now.month > last.month):
+                    needs_reset = True
+            else:
+                needs_reset = True
+
+            if needs_reset:
+                tenant.messages_sent_this_month = 0
+                tenant.quota_exhausted_alert_sent = False
+                tenant.last_quota_reset = now
+                reset_count += 1
+
+        db.commit()
+        logger.info(f"🔄 Monthly quota reset executed for {reset_count} tenants.")
+        return reset_count
 
     @staticmethod
     async def handle_quota_exhausted_alert(db: Session, tenant: Tenant) -> Optional[str]:

@@ -308,6 +308,16 @@ async def trigger_billing_reminders(db: Session = Depends(get_db)):
     count = await billing_service.scan_and_send_due_reminders(db)
     return {"status": "success", "billing_reminders_sent": count}
 
+@router.post("/cron/run-monthly-quota-reset")
+async def trigger_monthly_quota_reset(db: Session = Depends(get_db)):
+    """
+    CRON Reset Mensual de Cupo (Día 1 de cada mes):
+    Reinicia el contador de mensajes mensuales consumidos para todos los tenants del Plan Compartido.
+    """
+    from app.services.mercado_pago_service import mercadopago_service
+    count = mercadopago_service.reset_monthly_quotas(db)
+    return {"status": "success", "tenants_quota_reset": count}
+
 @router.post("/{slug}/reactivate")
 async def trigger_tenant_reactivation(slug: str, promo_text: Optional[str] = None, db: Session = Depends(get_db)):
     res = await billing_service.run_dormant_reactivator_campaign(db, slug, promo_text)

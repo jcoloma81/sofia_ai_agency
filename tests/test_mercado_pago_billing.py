@@ -139,3 +139,54 @@ def test_enterprise_plan_has_unlimited_quota():
         db.commit()
     finally:
         db.close()
+
+
+def test_monthly_quota_reset_lifecycle():
+    db = TestingSessionLocal()
+    try:
+        # Create a shared tenant with quota exhausted in previous month
+        slug = f"test_reset_{int(datetime.now(timezone.utc).timestamp())}"
+        past_date = datetime(2026, 1, 15, tzinfo=timezone.utc)
+        tenant = Tenant(
+            slug=slug,
+            name="Past Month Gym",
+            business_type="gimnasio",
+            owner_phone="5493434536447",
+            plan_type="shared",
+            monthly_message_quota=150,
+            messages_sent_this_month=150,
+            extra_messages_balance=25,
+            quota_exhausted_alert_sent=True,
+            last_quota_reset=past_date
+        )
+        db.add(tenant)
+        db.commit()
+        db.refresh(tenant)
+
+        # Calling check_outbound_quota automatically detects past month and resets
+        can_send, remaining, reason = mercadopago_service.check_outbound_quota(tenant, db=db)
+        assert can_send is True
+        assert tenant.messages_sent_this_month == 0
+        assert tenant.quota_exhausted_alert_sent is False
+        assert remaining == 175  # 150 + 25 rollover
+        assert reason == "quota_ok"
+
+        # Now test the CRON endpoint: /api/tenants/cron/run-monthly-quota-reset
+        tenant.last_quota_reset = past_date
+        tenant.messages_sent_this_month = 100
+        db.commit()
+
+        res = client.post("/api/tenants/cron/run-monthly-quota-reset")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "success"
+        assert data["tenants_quota_reset"] >= 1
+
+        db.refresh(tenant)
+        assert tenant.messages_sent_this_month == 0
+
+        db.delete(tenant)
+        db.commit()
+    finally:
+        db.close()
+
