@@ -19,23 +19,39 @@ from app.database.models.prospect import Prospect
 from prospector.scraper import clean_phone_number
 
 NOMINATIM_QUERIES = [
+    # Gimnasios & Fitness
+    ("gimnasio parana entre rios", "Paraná", "gimnasio"),
+    ("crossfit parana entre rios", "Paraná", "gimnasio"),
+    ("gimnasio santa fe argentina", "Santa Fe", "gimnasio"),
+    
+    # Talleres Mecánicos & Lubricentros
+    ("taller mecanico parana entre rios", "Paraná", "taller"),
+    ("lubricentro parana entre rios", "Paraná", "lubricentro"),
+    ("taller mecanico santa fe argentina", "Santa Fe", "taller"),
+    
+    # Veterinarias & Pet Shops
+    ("veterinaria parana entre rios", "Paraná", "veterinaria"),
+    ("clinica veterinaria santa fe argentina", "Santa Fe", "veterinaria"),
+    
+    # Ópticas
+    ("optica parana entre rios", "Paraná", "optica"),
+    ("optica santa fe argentina", "Santa Fe", "optica"),
+    
+    # Consultorios & Clínicas Médicas
+    ("clinica dental parana entre rios", "Paraná", "odontologia"),
+    ("consultorio medico parana entre rios", "Paraná", "consultorio"),
+    ("clinica santa fe argentina", "Santa Fe", "clinica"),
+
+    # Distribuidoras & Mayoristas
     ("distribuidora parana entre rios", "Paraná", "distribuidora"),
     ("mayorista parana entre rios", "Paraná", "mayorista"),
     ("ferreteria parana entre rios", "Paraná", "ferreteria"),
     ("corralon parana entre rios", "Paraná", "corralon"),
-    ("bulonera parana entre rios", "Paraná", "bulonera"),
     ("repuestos parana entre rios", "Paraná", "repuestos"),
-    ("pintureria parana entre rios", "Paraná", "pintureria"),
-    ("electricidad parana entre rios", "Paraná", "electricidad"),
     ("distribuidora santa fe argentina", "Santa Fe", "distribuidora"),
     ("mayorista santa fe argentina", "Santa Fe", "mayorista"),
-    ("ferreteria santa fe argentina", "Santa Fe", "ferreteria"),
-    ("corralon santa fe argentina", "Santa Fe", "corralon"),
-    ("bulonera santa fe argentina", "Santa Fe", "bulonera"),
-    ("repuestos santa fe argentina", "Santa Fe", "repuestos"),
-    ("distribuidora bebidas parana", "Paraná", "bebidas"),
-    ("distribuidora limpieza parana", "Paraná", "limpieza"),
-    ("distribuidora golosinas parana", "Paraná", "golosinas")
+    ("distribuidora bebidas parana", "Paraná", "distribuidora"),
+    ("distribuidora limpieza parana", "Paraná", "distribuidora")
 ]
 
 def seed_agency_leads(target_count: int = 30):

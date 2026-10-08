@@ -1,16 +1,51 @@
 [
   {
     "id": "1",
-    "nombre": "Venta Directa - WhatsApp Oficial (Hardware al Costo)",
+    "nombre": "Paso 1: Rompehielos Curioso (Apertura Universal en Frío)",
     "canal": "WhatsApp",
     "asunto": "",
-    "cuerpo": "Hola, estimados de {{nombre}}, ¿cómo están?\n\nMi nombre es Javier, soy desarrollador de software y creador de Air Control PRO. Les escribo porque, en el sector de alojamientos temporarios, la suba constante e impredecible de las tarifas de luz es una preocupación recurrente. Hoy, el gran dolor de cabeza es que los huéspedes dejan el aire acondicionado prendido a 18 grados todo el día cuando salen a pasear, y las facturas se terminan comiendo toda la ganancia de la estadía.\n\nCreamos Air Control PRO precisamente para resolver esto. Es un sistema que te permite ofrecer 2 Tarifas en tu establecimiento de forma muy simple:\n\n• Tarifa Estándar: La de siempre, con el aire libre.\n• Tarifa Eco-Sustentable: Una tarifa más económica para Booking/Airbnb (ideal para atraer al huésped que busca precio), donde el aire se cobra por hora.\n\nLa clave del sistema:\n• Justicia Comercial: Si el huésped compra 5 horas de aire y decide salir, al apagar el equipo el reloj se pausa automáticamente en nuestro servidor para que no pierda sus minutos. Al regresar, continúa. El huésped solo paga por lo que realmente consume y vos tenés el consumo de luz 100% blindado.\n• Control de Tarifas: Vos decidís el costo de la hora del aire acondicionado y lo configurás a tu gusto de forma directa desde tu celular según los costos de tu zona.\n• Instalación Rápida: Equipamiento comercial Plug & Play alojado en cajas con cerradura física para evitar sabotajes, sin romper paredes ni reformas.\n\nSi les interesa ver cómo funciona, díganme y les comparto por acá el enlace a nuestra web y el dossier en PDF con las tablas de ahorro. También les puedo pasar a hacer una breve visita para mostrarles cómo funciona el sistema de forma presencial y armarles una propuesta a su medida.\n\nSaludos,\nJavier — Air Control PRO"
+    "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia."
   },
   {
     "id": "2",
-    "nombre": "Venta Directa - Email Formal (Hardware al Costo)",
-    "canal": "Email",
-    "asunto": "💡 Protegé tu rentabilidad frente a la suba constante de tarifas en {{nombre}}",
-    "cuerpo": "Estimados de {{nombre}},\n\nEspero que se encuentren muy bien.\n\nLes escribo en relación a la creciente preocupación en el sector hotelero por las tarifas eléctricas en alza constante y sin techo. En el contexto económico actual, el consumo desmedido de climatización representa una de las mayores fugas de rentabilidad en las habitaciones de {{tipo}} en {{ciudad}}.\n\nDesarrollamos Air Control PRO para resolver este problema mediante un modelo de 2 Tarifas (Estándar y Eco-Sustentable), que permite a los establecimientos blindar al 100% el consumo eléctrico sin penalizar la experiencia del huésped.\n\nPuntos clave del sistema:\n• Justicia Comercial: El contador de tiempo de la sesión del huésped se pausa de forma automática al apagar el aire acondicionado con el control remoto original, resguardando su crédito.\n• Gestión de Tarifas: El propietario establece el valor por hora del servicio a su discreción y lo modifica en tiempo real desde su teléfono móvil para ajustarse a los costos de luz locales.\n• Instalación no invasiva: Equipamiento comercial Plug & Play alojado en cajas con cerradura física para evitar sabotajes, sin necesidad de reformas.\n\nQuedo a su entera disposición para compartirles por esta vía nuestro dossier interactivo con la tabla de amortización de la inversión y coordinar una breve visita para mostrarles el sistema funcionando de forma presencial.\n\nSaludos atentos,\nJavier — Air Control PRO"
+    "nombre": "Gimnasios & Fitness — Cobranzas del 1 al 10 y Reactivación de Ex-Socios",
+    "canal": "WhatsApp",
+    "asunto": "",
+    "cuerpo": "Hola gente de {{nombre}}, ¿cómo están? Les escribo muy brevemente porque sabemos que en los gimnasios el día a día se va entre atender el mostrador y correr detrás de las cuotas del 1 al 10.\n\nDesarrollamos a Sofía, una Asistente con Inteligencia Artificial que atiende el WhatsApp de tu gimnasio 24/7, responde dudas de precios u horarios, y envía recordatorios amables con link de pago de Mercado Pago a principio de mes.\n\nPero lo más potente: reactivamos ex-clientes del gimnasio iniciando una campaña automática por WhatsApp para recuperar un porcentaje de esa gente que dejó de ir a tu gym. Vos solo nos sugerís las promociones o beneficios que quieras ofrecer, y en automático Sofía se encarga de contactarlos uno por uno con calidez humana para que vuelvan a entrenar.\n\n¿Te gustaría que te comparta un video cortito de 1 minuto para verla funcionando en vivo?\n\nSaludos,\nJavier — Sofía AI Agency"
+  },
+  {
+    "id": "3",
+    "nombre": "Talleres Mecánicos & Lubricentros — Recordatorio de Próximo Service y Vehículo Listo",
+    "canal": "WhatsApp",
+    "asunto": "",
+    "cuerpo": "Hola estimados de {{nombre}}, ¿cómo están? Les escribo porque en el rubro automotriz el verdadero negocio está en la fidelidad: que los clientes siempre vuelvan a tu taller para su mantenimiento periódico.\n\nCreamos a Sofía, una Asistente con IA que se conecta al WhatsApp de tu taller y hace lo que ningún mecánico tiene tiempo de hacer: le avisa de forma automática a tus clientes cuándo les toca su próximo service (cambio de aceite, filtros, distribución o frenos) para que no se cuelguen ni se vayan a otro taller.\n\nAdemás, les notifica al instante «Tu vehículo ya está listo para retirar» con el detalle del saldo para acelerar el cobro y despejar el taller, atendiendo consultas de turnos y presupuestos las 24 horas.\n\nSi les interesa, les comparto un enlace breve para que vean cómo funciona y cómo implementarlo en su taller sin cambiar ningún programa. ¿Les parece bien?\n\nSaludos atentos,\nJavier — Sofía AI Agency"
+  },
+  {
+    "id": "4",
+    "nombre": "Veterinarias & Pet Shops — Avisos de Vacunación, Desparasitación y Turnos",
+    "canal": "WhatsApp",
+    "asunto": "",
+    "cuerpo": "Hola equipo de {{nombre}}, ¿cómo están? Les escribo con mucho respeto porque sabemos la vocación y la dedicación que exige una veterinaria, donde muchas veces no alcanza el tiempo para hacer el seguimiento personalizado que cada paciente necesita.\n\nDesarrollamos a Sofía, una Asistente con IA para WhatsApp que cuida la salud de las mascotas y la facturación de tu clínica: le avisa de forma automática y cariñosa a los tutores cuándo le toca a su perro o gato la próxima vacuna, desparasitación o control preventivo, asegurando que regresen siempre en fecha exacta y no posterguen la visita.\n\nAl mismo tiempo, coordina turnos médicos o de peluquería canina, responde preguntas frecuentes las 24 horas y erradica los faltazos con confirmaciones previas.\n\n¿Les gustaría que les comparta un video de 1 minuto de cómo interactúa con los dueños de mascotas por WhatsApp?\n\nSaludos cordiales,\nJavier — Sofía AI Agency"
+  },
+  {
+    "id": "5",
+    "nombre": "Ópticas & Salud Visual — Pedido Listo para Retirar y Chequeo Anual",
+    "canal": "WhatsApp",
+    "asunto": "",
+    "cuerpo": "Hola gente de {{nombre}}, ¿cómo están? Les escribo brevemente porque en ópticas el flujo constante de clientes depende de dos factores esenciales: que retiren rápido sus encargos y que vuelvan a renovar sus cristales.\n\nSofía es una Asistente con IA que optimiza tu WhatsApp comercial: le avisa a tu cliente en tiempo real «Tus anteojos ya están listos para retirar en el local» para acelerar el cobro del saldo pendiente, y programa avisos automáticos para el control visual anual o renovación de lentes de contacto para que tus clientes regresen año tras año sin perderlos frente a la competencia.\n\nAdemás, responde consultas de obras sociales, modelos y horarios de atención al instante.\n\n¿Me permiten enviarles un enlace cortito para mostrarles cómo queda funcionando?\n\nSaludos,\nJavier — Sofía AI Agency"
+  },
+  {
+    "id": "6",
+    "nombre": "Consultorios & Clínicas — Rellena-Huecos Automático y Cobro de Señas",
+    "canal": "WhatsApp",
+    "asunto": "",
+    "cuerpo": "Hola estimados de {{nombre}}, ¿cómo están? Les escribo porque en salud y turnos profesionales el gran dolor de cabeza son las cancelaciones a último momento, que dejan horas muertas sin facturar y secretarias desbordadas de mensajes.\n\nCreamos a Sofía, una Asistente con IA que atiende el WhatsApp de tu consultorio 24/7, comprende notas de voz con calidez de recepcionista real y resuelve el problema de raíz: si un paciente cancela su cita, Sofía consulta al instante la lista de espera y rellena el hueco en minutos con otro paciente para que no pierdas esa hora de trabajo.\n\nTambién puede solicitar comprobante de seña o enviar link de Mercado Pago para blindar el ausentismo previo.\n\n¿Les gustaría que les comparta una breve demostración de cómo interactúa con los pacientes por WhatsApp?\n\nSaludos atentos,\nJavier — Sofía AI Agency"
+  },
+  {
+    "id": "7",
+    "nombre": "Distribuidoras & Mayoristas — Toma de Pedidos por Audio, Excel en Vivo y Comparador",
+    "canal": "WhatsApp",
+    "asunto": "",
+    "cuerpo": "Hola gente de {{nombre}}, ¿cómo están? Les escribo porque en distribución y comercio mayorista se pierden horas críticas tomando pedidos desordenados por audios de WhatsApp y actualizando planillas de Excel a mano celda por celda.\n\nDesarrollamos a Sofía, una Asistente con IA pensada para distribuidoras: toma pedidos por nota de voz las 24 horas, actualiza tus planillas de Excel directamente en la pantalla de tu computadora sin tocar el teclado (Windows COM), y cuenta con un Comparador Multi-Proveedor inteligente que te dice en 3 segundos quién tiene el precio más barato de cada artículo para que nunca pagues de más en tus reposiciones.\n\n¿Les interesaría ver una demostración en vivo de cómo impacta los datos en Excel y compara precios en tiempo real?\n\nSaludos cordiales,\nJavier — Sofía AI Agency"
   }
 ]
