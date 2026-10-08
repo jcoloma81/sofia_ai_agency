@@ -196,6 +196,6 @@ Guía definitiva de copys de alta conversión, segmentación y llamados a la acc
 * **Puntos clave:**
   > • Sin contratos atados  
   > • Atiende texto y audios de voz 24/7  
-  > • Configurado en 24 horas  
+  > • Calibrado y probado a medida en pocos días  
 * **Llamado a la acción gigante:**
   > **Tocá el botón de abajo y mandale un audio a Sofía para probarla en vivo 👇**

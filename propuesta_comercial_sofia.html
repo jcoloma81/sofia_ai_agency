@@ -896,12 +896,25 @@
     }
 
     .pricing-setup {
-      font-size: 13px;
-      color: var(--accent-blue);
-      font-weight: 700;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border-color);
+      font-size: 14px;
+      font-weight: 800;
+      color: #FBBF24;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 8px;
+      padding: 9px 14px;
+      margin-bottom: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.3px;
+      width: fit-content;
+    }
+
+    .pricing-card.featured .pricing-setup {
+      color: #34D399;
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.4);
     }
 
     .pricing-features-list {
@@ -1001,6 +1014,72 @@
       line-height: 1.45;
       margin-bottom: 16px;
     }
+
+    /* Demo Rubro Button */
+    .btn-demo-rubro {
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--accent-green);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      width: fit-content;
+    }
+
+    .btn-demo-rubro:hover {
+      background: var(--accent-green);
+      color: #030712;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transform: translateY(-1px);
+    }
+
+    /* Floating WhatsApp Button */
+    .floating-whatsapp {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: #25D366;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+    }
+
+    .floating-whatsapp:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 12px 30px rgba(37, 211, 102, 0.6);
+      color: #fff;
+    }
+
+    .floating-whatsapp-icon {
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .floating-whatsapp {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+    }
   </style>
 
 </head>
@@ -1039,6 +1118,9 @@
           <a href="#precios" class="btn-secondary" data-i18n="nav_precios">
             🏷️ Precios ($30k)
           </a>
+          <a href="/alta" class="btn-secondary" style="border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; background: rgba(37, 99, 235, 0.1);">
+            🚀 Ficha de Alta
+          </a>
           <a href="#descargas" class="btn-secondary" data-i18n="nav_descargas">
             📥 Dossiers PDF
           </a>
@@ -1065,11 +1147,11 @@
       </p>
 
       <div class="hero-cta-group">
-        <a href="/hoja-de-ruta" class="btn-primary" target="_blank" data-i18n="hero_cta_spec">
-          View Technical Specification →
+        <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" class="btn-primary btn-whatsapp" target="_blank" data-i18n="hero_cta_spec">
+          🟢 Probar a Sofía en WhatsApp en Vivo →
         </a>
-        <a href="#architecture" class="btn-secondary" data-i18n="hero_cta_arch">
-          Explore Workflow &amp; Architecture ↓
+        <a href="#rubros" class="btn-secondary" data-i18n="hero_cta_arch">
+          🎯 Ver Demos por Rubro ↓
         </a>
       </div>
 
@@ -1081,8 +1163,8 @@
     <!-- Metrics Bar -->
     <section class="metrics-grid">
       <div class="metric-item">
-        <div class="metric-value accent" data-i18n="metric_latency_val">&lt; 2.2s</div>
-        <div class="metric-label" data-i18n="metric_latency_lbl">Voice-to-Order Latency</div>
+        <div class="metric-value accent" data-i18n="metric_latency_val">Al Instante</div>
+        <div class="metric-label" data-i18n="metric_latency_lbl">Respuesta en Tiempo Real</div>
       </div>
       <div class="metric-item">
         <div class="metric-value" data-i18n="metric_data_val">100%</div>
@@ -1196,40 +1278,6 @@
       </div>
     </section>
 
-    <!-- Architecture Flow Diagram -->
-    <section class="arch-container" id="architecture">
-      <div class="section-header" style="margin-bottom: 24px;">
-        <div class="section-tag" data-i18n="flow_tag">System Dataflow</div>
-        <h3 class="section-title" style="font-size: 26px;" data-i18n="flow_title">End-to-End Orchestration Pipeline</h3>
-      </div>
-
-      <div class="flow-steps">
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_1_num">Step 01 // Intake</div>
-          <div class="step-title" data-i18n="step_1_title">Inbound Webhook</div>
-          <div class="step-desc" data-i18n="step_1_desc">WhatsApp audio note or forwarded catalog PDF ingested via Meta Cloud API webhook into FastAPI.</div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_2_num">Step 02 // Extraction</div>
-          <div class="step-title" data-i18n="step_2_title">Gemini Multimodal LLM</div>
-          <div class="step-desc" data-i18n="step_2_desc">Audio transcribed &amp; mapped to strictly-typed JSON schemas via Pydantic model validation.</div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_3_num">Step 03 // Logic &amp; Rules</div>
-          <div class="step-title" data-i18n="step_3_title">Business Engine</div>
-          <div class="step-desc" data-i18n="step_3_desc">Matches SKUs against database, cross-compares supplier margins, and queues confirmation draft.</div>
-        </div>
-
-        <div class="step-card">
-          <div class="step-num" data-i18n="step_4_num">Step 04 // Execution</div>
-          <div class="step-title" data-i18n="step_4_title">Dispatch &amp; Local Sync</div>
-          <div class="step-desc" data-i18n="step_4_desc">Owner approves via 1 tap. Formal purchase order sent to vendor; local Excel ledger updated instantly.</div>
-        </div>
-      </div>
-    </section>
-
     <!-- Multi-Rubro Industry Solutions -->
     <div class="section-header" id="rubros">
       <div class="section-tag" data-i18n="rubros_tag">Especialización Multi-Rubro</div>
@@ -1245,6 +1293,9 @@
             <div class="rubro-title" data-i18n="rubro_salud_title">Salud, Consultorios &amp; Estética</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_salud_desc">Erradica el 25% de ausentismo con doble recordatorio estratégico (48h/24h), el Escudo para la Secretaria (15:00 a 18:00 hs) y Adelanta-Turnos automático para llenar huecos de cancelaciones.</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Consultorio%20M%C3%A9dico" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Consultorio en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_salud_tag">Turnos &amp; Rellena-Huecos</span>
       </div>
@@ -1256,6 +1307,9 @@
             <div class="rubro-title" data-i18n="rubro_gym_title">Gimnasios, Clubes &amp; Academias</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_gym_desc">Cobranza cordial automática del 1 al 10 con link de Mercado Pago, validación por IA multimodal de fotos de transferencias y reactivador de ex-socios dormidos (+60 días).</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Gimnasio" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Gimnasio en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_gym_tag">Cobranza &amp; Reactivación</span>
       </div>
@@ -1267,6 +1321,9 @@
             <div class="rubro-title" data-i18n="rubro_vet_title">Veterinarias &amp; Prevención</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_vet_desc">Recordatorios programados de vacunación séxtuple, desparasitación, service de autos cada 10.000 km o 1 año y controles periódicos en piloto automático.</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Veterinaria" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Veterinaria en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_vet_tag">Servicios Recurrentes</span>
       </div>
@@ -1278,6 +1335,9 @@
             <div class="rubro-title" data-i18n="rubro_taller_title">Ópticas &amp; Talleres Técnicos</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_taller_desc">Notificación automática «Listo para Retirar» para acelerar el cobro de saldos y despejar depósitos, más atención 24/7 de consultas de estado de orden sin interrumpir el taller.</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Taller%20Mec%C3%A1nico" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Taller en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_taller_tag">Despacho &amp; Saldos</span>
       </div>
@@ -1288,7 +1348,10 @@
             <div class="rubro-icon">🛍️</div>
             <div class="rubro-title" data-i18n="rubro_b2b_title">Comercios, Mayoristas &amp; Modo Director</div>
           </div>
-          <p class="rubro-desc" data-i18n="rubro_b2b_desc">Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp de 5 segundos (aumento de precios, promociones y avisos).</p>
+          <p class="rubro-desc" data-i18n="rubro_b2b_desc">Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp (aumento de precios, promociones y avisos).</p>
+          <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Distribuidora" target="_blank" class="btn-demo-rubro">
+            💬 Probar Demo Mayorista en WhatsApp →
+          </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_b2b_tag">Voz &amp; B2B 24/7</span>
       </div>
@@ -1312,18 +1375,17 @@
             <div class="pricing-price">$30.000</div>
             <div class="pricing-currency">ARS / mes</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_shared_setup">Setup de Instalación: $30.000 ARS (Pago único inicial)</div>
+          <div class="pricing-setup" data-i18n="plan_shared_setup">⚡ Pago Único de Alta &amp; Configuración: $30.000 ARS</div>
 
           <ul class="pricing-features-list">
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_1">Atención entrante 24/7 ILIMITADA en línea oficial verificada</span></li>
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_2"><strong>150 Mensajes Salientes Automáticos incluidos al mes</strong> (turnos, cuotas o retiros)</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_3">QR en acrílico de recepción para inicio automático en 1 segundo</span></li>
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_4">Modo Director por voz desde el WhatsApp del titular</span></li>
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_5">Packs de recarga prepago disponibles si superás los 150 mensajes</span></li>
           </ul>
         </div>
 
-        <a href="https://wa.me/5493435720312?text=Hola%20Javier,%20quiero%20iniciar%20con%20el%20Plan%20Central%20Compartida%20de%20Sofia%20AI" class="btn-secondary" style="width: 100%; text-align: center;" data-i18n="plan_shared_cta">
+        <a href="https://wa.me/5493435720312?text=Hola,%20quiero%20iniciar%20con%20el%20Plan%20Central%20Compartida%20de%20Sofia%20AI" class="btn-secondary" style="width: 100%; text-align: center;" data-i18n="plan_shared_cta">
           Elegir Plan Central →
         </a>
       </div>
@@ -1339,7 +1401,7 @@
             <div class="pricing-price">$30.000</div>
             <div class="pricing-currency">ARS / mes</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_enterprise_setup" style="color: var(--accent-green);">Setup e Implementación Meta: $95.000 ARS (Pago único)</div>
+          <div class="pricing-setup" data-i18n="plan_enterprise_setup">🚀 Pago Único de Alta &amp; Homologación Meta: $80.000 ARS</div>
 
           <ul class="pricing-features-list">
             <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_1"><strong>Número y chip propio exclusivo</strong> del comercio en Meta Cloud API</span></li>
@@ -1350,7 +1412,7 @@
           </ul>
         </div>
 
-        <a href="https://wa.me/5493435720312?text=Hola%20Javier,%20me%20interesa%20el%20Plan%20Enterprise%20con%20Línea%20Propia%20para%20mi%20negocio" class="btn-primary" style="width: 100%; text-align: center;" data-i18n="plan_enterprise_cta">
+        <a href="https://wa.me/5493435720312?text=Hola,%20me%20interesa%20el%20Plan%20Enterprise%20con%20Línea%20Propia%20para%20mi%20negocio" class="btn-primary" style="width: 100%; text-align: center;" data-i18n="plan_enterprise_cta">
           Solicitar Homologación Enterprise →
         </a>
       </div>
@@ -1362,8 +1424,19 @@
         <h4 data-i18n="packs_title">💡 ¿Precisás enviar campañas masivas de reactivación en el Plan Central?</h4>
         <p data-i18n="packs_desc">Podés recargar packs adicionales en cualquier momento: <strong>Pack de 100 Mensajes Extra por solo $4.500 ARS</strong> vía Mercado Pago con acreditación inmediata.</p>
       </div>
-      <a href="https://wa.me/5493435720312?text=Hola%20Javier,%20quiero%20consultar%20por%20un%20pack%20de%20mensajes%20extra%20para%20Sofia%20AI" class="btn-secondary" style="padding: 10px 18px; font-size: 13.5px;" data-i18n="packs_cta">
+      <a href="https://wa.me/5493435720312?text=Hola,%20quiero%20consultar%20por%20un%20pack%20de%20mensajes%20extra%20para%20Sofia%20AI" class="btn-secondary" style="padding: 10px 18px; font-size: 13.5px;" data-i18n="packs_cta">
         Consultar Packs Extra
+      </a>
+    </div>
+
+    <!-- Onboarding Card Callout -->
+    <div style="background: linear-gradient(135deg, rgba(37,99,235,0.15) 0%, rgba(16,185,129,0.1) 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 24px; margin: 24px 0 36px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h4 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px;">🚀 ¿Listo para empezar? Completá el Alta de tu Negocio en 2 minutos</h4>
+        <p style="color: #9ca3af; font-size: 14px; max-width: 600px;">Cargá el nombre de tu negocio, horarios y subí tu lista de precios (PDF, Excel o texto). Iniciamos la calibración personalizada para que en pocos días esté 100% operativa y probada a medida.</p>
+      </div>
+      <a href="/alta" class="btn-primary" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); white-space: nowrap; padding: 12px 24px; font-size: 14px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+        Completar Ficha de Alta Digital →
       </a>
     </div>
 
@@ -1414,17 +1487,6 @@
         </a>
       </div>
 
-      <div class="download-card">
-        <div>
-          <div class="download-header">
-            <span class="download-icon">📐</span>
-            <div class="download-title" data-i18n="doc_blue_title">Blueprint de Arquitectura</div>
-          </div>
-          <p class="download-desc" data-i18n="doc_blue_desc">Especificación técnica profunda de FastAPI, modelos multimodales Gemini, schemas Pydantic y webhooks en producción.</p>
-        </div>
-        <a href="/hoja-de-ruta" class="btn-secondary" target="_blank" style="text-align: center; font-size: 13.5px; padding: 10px 16px;" data-i18n="doc_blue_btn">
-          🔍 Ver Especificación Técnica
-        </a>
       </div>
     </section>
 
@@ -1455,9 +1517,6 @@
         <a href="https://wa.me/5493435720312" class="btn-primary btn-whatsapp" target="_blank" style="padding: 14px 28px; font-size: 15px;" data-i18n="agency_cta_whatsapp">
           Discuss Your Project on WhatsApp →
         </a>
-        <a href="/hoja-de-ruta" class="btn-secondary" target="_blank" style="padding: 14px 24px; font-size: 15px;" data-i18n="agency_cta_blueprint">
-          Explore Architectural Blueprint
-        </a>
       </div>
     </section>
 
@@ -1474,21 +1533,21 @@
   <script>
     const translations = {
       es: {
-        doc_title: "Sofía AI — Motor Autónomo Multi-Agente para WhatsApp y ERP | Caso de Estudio",
-        brand_tag: "Sistemas Autónomos y Flujos Inteligentes",
-        nav_blueprint: "📐 Hoja de Ruta Técnica",
+        doc_title: "Sofía AI — Asistente Inteligente para WhatsApp Oficial | Negocios y Profesionales",
+        brand_tag: "Asistente IA para WhatsApp Oficial",
+        nav_blueprint: "📐 Hoja de Ruta",
         nav_whatsapp: "Hablar por WhatsApp →",
-        hero_badge: "Caso de Estudio Real • Sistema en Producción",
-        hero_title: "Transformando el Caos de WhatsApp en <span>Flujos ERP Automatizados Sin Errores</span>",
-        hero_sub: "Conozca <strong>Sofía AI</strong>: un motor de orquestación multimodal autónomo que procesa audios de voz ruidosos, indexa listas de precios de múltiples proveedores y concilia pedidos comerciales en tiempo real con Python, Google Gemini y la API Cloud de WhatsApp. Diseñado para operaciones reales con cero carga manual de datos.",
-        hero_cta_spec: "Ver Especificación Técnica →",
-        hero_cta_arch: "Explorar Flujo y Arquitectura ↓",
-        metric_latency_val: "< 2.2s",
-        metric_latency_lbl: "Latencia de Audio a Pedido",
+        hero_badge: "Asistente Inteligente para WhatsApp Oficial",
+        hero_title: "La Asistente con Inteligencia Artificial que <span>Atiende tu WhatsApp al Instante y Nunca Duerme</span>",
+        hero_sub: "Respondé dudas, pasá presupuestos y agendá turnos en tiempo real, incluso por notas de voz. Diseñada para consultorios, veterinarias, gimnasios, talleres y comercios que no quieren perder clientes por demoras.",
+        hero_cta_spec: "🟢 Probar a Sofía en WhatsApp en Vivo →",
+        hero_cta_arch: "🎯 Ver Demos por Rubro ↓",
+        metric_latency_val: "Al Instante",
+        metric_latency_lbl: "Respuesta a Consultas y Turnos",
         metric_data_val: "100%",
-        metric_data_lbl: "Eliminación de Carga Manual",
-        metric_catalogs_val: "20+",
-        metric_catalogs_lbl: "Catálogos de Proveedores Sincronizados",
+        metric_data_lbl: "Atención 24/7 Sin Descanso",
+        metric_catalogs_val: "5",
+        metric_catalogs_lbl: "Rubros Comerciales Listos",
         metric_installs_val: "0",
         metric_installs_lbl: "Apps a Instalar por el Cliente",
         problem_title: "Lo que te frena todos los días",
@@ -1566,24 +1625,23 @@
         rubro_taller_desc: "Notificación automática «Listo para Retirar» para acelerar el cobro de saldos y despejar depósitos, más atención 24/7 de consultas de estado de orden sin interrumpir el taller.",
         rubro_taller_tag: "Despacho & Saldos",
         rubro_b2b_title: "Comercios, Mayoristas & Modo Director",
-        rubro_b2b_desc: "Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp de 5 segundos (aumento de precios, promociones y avisos).",
+        rubro_b2b_desc: "Toma de pedidos guiada las 24 horas y control total del negocio para el dueño mediante un simple audio de WhatsApp (aumento de precios, promociones y avisos).",
         rubro_b2b_tag: "Voz & B2B 24/7",
         pricing_tag: "Estructura Comercial Transparente",
         pricing_title: "Abono Mensual Único de $30.000 ARS para Todos",
         pricing_sub: "El mismo costo accesible para cualquier negocio. Sin sorpresas, sin comisiones sobre tus ventas y con cancelación libre.",
         plan_shared_title: "Plan Central Compartida",
         plan_shared_desc: "Ideal para consultorios individuales, profesionales de la salud, estética y comercios barriales.",
-        plan_shared_setup: "Setup de Instalación: $30.000 ARS (Pago único inicial)",
+        plan_shared_setup: "⚡ Pago Único de Alta & Configuración: $30.000 ARS",
         feat_shared_1: "Atención entrante 24/7 ILIMITADA en línea oficial verificada",
         feat_shared_2: "150 Mensajes Salientes Automáticos incluidos al mes (turnos, cuotas o retiros)",
-        feat_shared_3: "QR en acrílico de recepción para inicio automático en 1 segundo",
         feat_shared_4: "Modo Director por voz desde el WhatsApp del titular",
         feat_shared_5: "Packs de recarga prepago disponibles si superás los 150 mensajes",
         plan_shared_cta: "Elegir Plan Central →",
         plan_enterprise_badge: "Más Recomendado",
         plan_enterprise_title: "Plan Enterprise — Línea Propia",
         plan_enterprise_desc: "Para clínicas, gimnasios, ópticas, talleres y distribuidoras que desean su propio número oficial exclusivo.",
-        plan_enterprise_setup: "Setup e Implementación Meta: $95.000 ARS (Pago único)",
+        plan_enterprise_setup: "🚀 Pago Único de Alta & Homologación Meta: $80.000 ARS",
         feat_ent_1: "Número y chip propio exclusivo del comercio en Meta Cloud API",
         feat_ent_2: "Mensajes Salientes ILIMITADOS (Meta debita el consumo a la tarjeta del comercio)",
         feat_ent_3: "Perfil corporativo con logo, catálogo y tilde verde oficial",
@@ -1608,24 +1666,24 @@
         doc_blue_title: "Blueprint de Arquitectura",
         doc_blue_desc: "Especificación técnica profunda de FastAPI, modelos multimodales Gemini, schemas Pydantic y webhooks en producción.",
         doc_blue_btn: "🔍 Ver Especificación Técnica",
-        wa_msg: "Hola Javier, vi la propuesta de Sofia AI y me gustaría comenzar con un plan para mi negocio."
+        wa_msg: "Hola Sofia, quiero ver una demo de cómo atendés para mi negocio"
       },
       pt: {
-        doc_title: "Sofía AI — Motor Autônomo Multiagente para WhatsApp e ERP | Estudo de Caso",
-        brand_tag: "Sistemas Autônomos e Fluxos Inteligentes",
+        doc_title: "Sofía AI — Assistente Inteligente para WhatsApp Oficial | Negócios e Profissionais",
+        brand_tag: "Assistente IA para WhatsApp Oficial",
         nav_blueprint: "📐 Blueprint Técnico",
         nav_whatsapp: "Falar no WhatsApp →",
-        hero_badge: "Estudo de Caso Real • Sistema em Produção",
-        hero_title: "Transformando o Caos do WhatsApp em <span>Fluxos ERP Automatizados Sem Erros</span>",
-        hero_sub: "Conheça a <strong>Sofía AI</strong>: um motor de orquestração multimodal autônomo que processa áudios ruidosos, indexa catálogos de preços de múltiplos fornecedores e reconcilia pedidos comerciais em tempo real usando Python, Google Gemini e WhatsApp Cloud API. Construído para operações reais com zero entrada manual de dados.",
-        hero_cta_spec: "Ver Especificação Técnica →",
-        hero_cta_arch: "Explorar Fluxo e Arquitetura ↓",
-        metric_latency_val: "< 2.2s",
-        metric_latency_lbl: "Latência de Áudio a Pedido",
+        hero_badge: "Assistente Inteligente para WhatsApp Oficial",
+        hero_title: "A Assistente com Inteligência Artificial que <span>Atende seu WhatsApp no Instante e Nunca Dorme</span>",
+        hero_sub: "Responda dúvidas, orçamentos e agende consultas em tempo real, inclusive por áudios de voz. Criada para clínicas, pet shops, academias, oficinas e comércios que não querem perder clientes por demora.",
+        hero_cta_spec: "🟢 Testar a Sofía no WhatsApp ao Vivo →",
+        hero_cta_arch: "🎯 Ver Demos por Setor ↓",
+        metric_latency_val: "No Instante",
+        metric_latency_lbl: "Resposta a Dúvidas e Consultas",
         metric_data_val: "100%",
-        metric_data_lbl: "Eliminação de Digitação Manual",
-        metric_catalogs_val: "20+",
-        metric_catalogs_lbl: "Catálogos de Fornecedores Sincronizados",
+        metric_data_lbl: "Atendimento 24/7 Sem Parar",
+        metric_catalogs_val: "5",
+        metric_catalogs_lbl: "Setores Comerciais Prontos",
         metric_installs_val: "0",
         metric_installs_lbl: "Apps a Instalar pelo Cliente",
         problem_title: "O Gargalo Operacional dos Negócios",
@@ -1684,24 +1742,24 @@
         footer_privacy: "Política de Privacidade",
         footer_terms: "Termos de Serviço",
         footer_docs: "Documentação Técnica",
-        wa_msg: "Olá Javier, vi o estudo de caso da Sofía AI e gostaria de conversar sobre um projeto de automação."
+        wa_msg: "Olá Sofia, quero ver uma demo de como você atende para meu negócio"
       },
       en: {
-        doc_title: "Sofía AI — Autonomous Multi-Agent WhatsApp & ERP Engine | Case Study",
-        brand_tag: "Autonomous Systems & Intelligent Workflows",
-        nav_blueprint: "📐 Architecture Blueprint",
+        doc_title: "Sofía AI — Intelligent Official WhatsApp Assistant for Businesses",
+        brand_tag: "Official WhatsApp AI Assistant",
+        nav_blueprint: "📐 Roadmap",
         nav_whatsapp: "Chat on WhatsApp →",
-        hero_badge: "Production Case Study • Live In-Market System",
-        hero_title: "Turning Messy WhatsApp Chaos Into <span>Zero-Error Automated ERP Pipelines</span>",
-        hero_sub: "Inside <strong>Sofía AI</strong>: an autonomous multimodal orchestration engine that parses noisy voice notes, indexes multi-vendor price catalogs, and reconciles commercial orders in real time using Python, Google Gemini, and WhatsApp Cloud APIs. Built for real-world operations with zero manual data entry.",
-        hero_cta_spec: "View Technical Specification →",
-        hero_cta_arch: "Explore Workflow & Architecture ↓",
-        metric_latency_val: "< 2.2s",
-        metric_latency_lbl: "Voice-to-Order Latency",
+        hero_badge: "Official WhatsApp AI Assistant for Businesses",
+        hero_title: "The AI Assistant that <span>Instantly Handles your WhatsApp 24/7 Without Missing a Lead</span>",
+        hero_sub: "Answer inquiries, share quotes, and schedule appointments in real time, even via voice notes. Purpose-built for clinics, vet shops, gyms, auto shops, and businesses that never want to lose another customer to slow replies.",
+        hero_cta_spec: "🟢 Try Sofía Live on WhatsApp →",
+        hero_cta_arch: "🎯 View Demos by Industry ↓",
+        metric_latency_val: "Instant",
+        metric_latency_lbl: "Real-Time Inquiry Response",
         metric_data_val: "100%",
-        metric_data_lbl: "Data Entry Elimination",
-        metric_catalogs_val: "20+",
-        metric_catalogs_lbl: "Supplier Catalogs Synced",
+        metric_data_lbl: "24/7 Uninterrupted Attention",
+        metric_catalogs_val: "5",
+        metric_catalogs_lbl: "Ready-to-Use Business Sectors",
         metric_installs_val: "0",
         metric_installs_lbl: "Client App Installs Required",
         problem_title: "The Operational Bottleneck",
@@ -1786,17 +1844,16 @@
         pricing_sub: "The exact same accessible rate for any business. Zero hidden fees, zero sales commissions, cancel anytime.",
         plan_shared_title: "Shared Central Plan",
         plan_shared_desc: "Ideal for individual practices, solo healthcare professionals, beauty studios, and local stores.",
-        plan_shared_setup: "Setup & Onboarding: $30,000 ARS (One-time fee)",
+        plan_shared_setup: "⚡ One-Time Setup & Onboarding: $30,000 ARS",
         feat_shared_1: "UNLIMITED 24/7 inbound customer support on official verified line",
         feat_shared_2: "150 Automated Outbound Messages included per month (appointments, dues, pickups)",
-        feat_shared_3: "Reception acrylic QR code for instant 1-second customer chat launch",
         feat_shared_4: "Voice & text Director Mode from owner's personal WhatsApp",
         feat_shared_5: "Prepaid refill packs available instantly if you exceed 150 messages",
         plan_shared_cta: "Choose Shared Central →",
         plan_enterprise_badge: "Most Recommended",
         plan_enterprise_title: "Enterprise Plan — Dedicated Line",
         plan_enterprise_desc: "For clinics, gyms, opticians, automotive centers, and distributors desiring their own exclusive official line.",
-        plan_enterprise_setup: "Meta Homologation & Setup: $95,000 ARS (One-time)",
+        plan_enterprise_setup: "🚀 One-Time Meta Homologation & Setup: $80,000 ARS",
         feat_ent_1: "Exclusive dedicated business number & SIM chip on Meta Cloud API",
         feat_ent_2: "UNLIMITED Outbound Messages (official Meta carrier costs billed to client's card)",
         feat_ent_3: "Official verified enterprise profile with custom logo, catalog & green checkmark",
@@ -1821,7 +1878,7 @@
         doc_blue_title: "Architectural Blueprint",
         doc_blue_desc: "Deep-dive technical specification on FastAPI, Gemini multimodal pipelines, Pydantic schemas, and webhooks.",
         doc_blue_btn: "🔍 View Technical Specification",
-        wa_msg: "Hi Javier, I saw Sofia AI's commercial proposal and I would like to get started with a plan."
+        wa_msg: "Hello, I saw Sofia AI's commercial proposal and I would like to get started with a plan."
       }
     };
 
@@ -1885,17 +1942,23 @@
 
       if (!activeLang) {
         const bl = (navigator.language || navigator.userLanguage || '').toLowerCase();
-        if (bl.startsWith('es')) {
-          activeLang = 'es';
-        } else if (bl.startsWith('pt')) {
+        if (bl.startsWith('pt')) {
           activeLang = 'pt';
-        } else {
+        } else if (bl.startsWith('en')) {
           activeLang = 'en';
+        } else {
+          activeLang = 'es';
         }
       }
 
       setLanguage(activeLang);
     });
   </script>
+
+  <!-- Floating WhatsApp Action -->
+  <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" target="_blank" class="floating-whatsapp" aria-label="Probar a Sofía en WhatsApp">
+    <span class="floating-whatsapp-icon">💬</span>
+    <span>Probar Demo en Vivo</span>
+  </a>
 </body>
 </html>

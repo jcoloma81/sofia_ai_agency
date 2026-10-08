@@ -167,7 +167,7 @@ Guía lista para copiar y pegar: Biografía oficial, historias destacadas y los 
 > 🚫 Sin comisiones sobre tus ventas o turnos.  
 > 🚫 Cancelación libre cuando quieras.  
 >
-> ⚡ **Puesta en marcha:** Dejamos todo configurado en 24 horas con tus horarios, precios y servicios. Vos y tu equipo siguen usando su WhatsApp exactamente como hoy.
+> ⚡ **Puesta en marcha:** Calibramos y testeamos a Sofía en pocos días con tus horarios, precios y servicios reales. Vos y tu equipo siguen usando su WhatsApp con total tranquilidad.
 >
 > 📊 **Hagamos la cuenta:**  
 > • Una sola consulta médica salvada: $15.000 - $25.000.  
