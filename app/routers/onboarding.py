@@ -66,12 +66,16 @@ async def submit_client_onboarding(
     deposit_amount: Optional[str] = Form(None),
     emergency_contact: Optional[str] = Form(None),
     price_notes: Optional[str] = Form(None),
+    line_type: Optional[str] = Form("shared"),
+    dedicated_phone: Optional[str] = Form(None),
+    agenda_status: Optional[str] = Form("libre"),
     catalog_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
     """
     Submits client operational onboarding data, saves tenant record,
-    stores attached price lists (PDF/Excel), and notifies Javier Coloma via WhatsApp.
+    stores attached price lists / appointment agendas (PDF/Excel/photo),
+    and notifies Javier Coloma via WhatsApp.
     """
     clean_name = business_name.strip()
     clean_owner = owner_name.strip()
@@ -81,7 +85,7 @@ async def submit_client_onboarding(
     if not clean_name or not clean_owner or not clean_phone:
         raise HTTPException(status_code=400, detail="Nombre del negocio, titular y teléfono de WhatsApp son obligatorios.")
 
-    # 1. Handle File Upload if provided
+    # 1. Handle File Upload if provided (price list, agenda photo, etc.)
     saved_file_rel = None
     original_filename = None
     if catalog_file and catalog_file.filename:
@@ -101,7 +105,11 @@ async def submit_client_onboarding(
         else:
             logger.warning(f"File extension {ext} not in allowed list for onboarding.")
 
-    # 2. Generate unique slug and knowledge base
+    # 2. Determine line mode (shared vs dedicated)
+    is_dedicated = (line_type or "").lower().strip() in ["dedicated", "propia", "linea_propia", "linea propia"]
+    clean_dedicated = sanitize_phone(dedicated_phone) if dedicated_phone and dedicated_phone.strip() else None
+
+    # 3. Generate unique slug and knowledge base
     slug = generate_safe_slug(clean_name, db)
     
     requires_dep_bool = requires_deposit.lower() in ["si", "sí", "true", "yes", "1"]
@@ -111,6 +119,9 @@ async def submit_client_onboarding(
         "owner_name": clean_owner,
         "owner_phone": clean_phone,
         "city": city.strip(),
+        "line_type": "dedicated" if is_dedicated else "shared",
+        "dedicated_phone": clean_dedicated,
+        "agenda_status": (agenda_status or "libre").strip(),
         "operating_hours": operating_hours.strip(),
         "appointment_duration": appointment_duration or "30 min",
         "requires_deposit": requires_dep_bool,
@@ -122,7 +133,7 @@ async def submit_client_onboarding(
         "submitted_at": datetime.now(timezone.utc).isoformat()
     }
 
-    # 3. Create or update Tenant record
+    # 4. Create or update Tenant record with strict data isolation
     modules = ["turnos_rellena_huecos", "recordatorios", "faq"]
     if clean_type in ["gym", "gimnasio"]:
         modules.append("cobranzas_mp")
@@ -136,8 +147,8 @@ async def submit_client_onboarding(
         deep_link_keyword=slug.capitalize(),
         modules_enabled=json.dumps(modules),
         knowledge_base=json.dumps(kb_data, ensure_ascii=False),
-        plan_type="shared",
-        monthly_message_quota=150,
+        plan_type="dedicated" if is_dedicated else "shared",
+        monthly_message_quota=99999 if is_dedicated else 150,
         active=True
     )
     db.add(tenant)
@@ -182,17 +193,21 @@ async def submit_client_onboarding(
     
     file_info = f"📎 Archivo adjunto: *{original_filename}*" if original_filename else ("📝 Precios cargados por texto" if price_notes else "ℹ️ Sin archivo adjunto")
     deposit_info = f"💰 Seña: ${deposit_amount}" if requires_dep_bool and deposit_amount else ("💰 Seña requerida" if requires_dep_bool else "Pago en el local")
+    line_mode_info = f"📲 Línea Propia Exclusiva" + (f" (+{clean_dedicated})" if clean_dedicated else " (chip nuevo a homologar)") if is_dedicated else "🌐 Central Verificada Compartida (Enlace/QR)"
+    agenda_info = "📅 Agenda: Libre desde cero" if agenda_status == "libre" else f"📅 Agenda: {agenda_status}"
 
     alert_text = (
         f"🎉 *[NUEVA ALTA DE CLIENTE ONLINE]* 🚀\n\n"
         f"{icon} *Negocio:* {clean_name} ({clean_type.capitalize()})\n"
         f"👤 *Titular:* {clean_owner}\n"
-        f"📱 *WhatsApp:* +{clean_phone}\n"
+        f"📱 *WhatsApp Personal Titular:* +{clean_phone}\n"
         f"📍 *Ciudad:* {city.strip()}\n"
+        f"⚙️ *Modalidad Línea:* {line_mode_info}\n"
+        f"{agenda_info}\n"
         f"⏰ *Horarios:* {operating_hours.strip()}\n"
         f"⏱️ *Duración turnos:* {appointment_duration or '30 min'}\n"
         f"{file_info}\n"
-        f"💵 *Modalidad:* {deposit_info}\n"
+        f"💵 *Modalidad Cobro:* {deposit_info}\n"
         f"🏷️ *Abono:* $30.000 finales / mes\n\n"
         f"👉 *Acción:* Revisá la ficha en el Dashboard y coordiná la vinculación de la línea."
     )

@@ -285,6 +285,22 @@
       font-weight: 600;
     }
 
+    /* Meta Requirements Notice Box */
+    .meta-notice-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 10px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #fcd34d;
+    }
+
+    .meta-notice-box strong {
+      color: #fbbf24;
+    }
+
     /* Pricing Banner Box */
     .pricing-summary {
       background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(16, 185, 129, 0.08) 100%);
@@ -504,7 +520,7 @@
         <div class="step-section">
           <div class="step-title">
             <div class="step-num">2</div>
-            <span>Datos Principales & WhatsApp</span>
+            <span>Datos Principales & Modalidad de WhatsApp</span>
           </div>
 
           <div class="grid-2">
@@ -520,13 +536,41 @@
 
           <div class="grid-2">
             <div class="field-group">
-              <label>Celular de WhatsApp Oficial *</label>
+              <label>WhatsApp Personal del Titular (en tu bolsillo) *</label>
               <input type="tel" name="owner_phone" required placeholder="Ej: 343 453-6447">
-              <span class="hint">El número donde atenderá Sofía y te enviará avisos directos.</span>
+              <span class="hint">Tu celular privado donde Sofía te enviará avisos directos de turnos agendados, cancelaciones, señas cobradas y donde podrás dictarle directivas por voz (Modo Jefe).</span>
             </div>
             <div class="field-group">
               <label>Ciudad y Provincia *</label>
               <input type="text" name="city" required value="Paraná, Entre Ríos" placeholder="Ej: Paraná, Entre Ríos">
+            </div>
+          </div>
+
+          <!-- SELECCIÓN DE LÍNEA DE ATENCIÓN Y REQUISITO OBLIGATORIO DE META -->
+          <div class="field-group" style="margin-top: 10px;">
+            <label>Modalidad de Línea de WhatsApp para la Atención al Público *</label>
+            <select name="line_type" id="lineTypeSelect" onchange="toggleLineModeExplanation()">
+              <option value="shared" selected>🌐 Central Verificada de Sofía (Recomendado — Sin compras extra ni configuraciones)</option>
+              <option value="dedicated">📲 Línea Propia Exclusiva de tu Negocio (Requiere chip nuevo o desvinculado)</option>
+            </select>
+            <span class="hint" id="sharedLineHint">Atendemos desde la línea oficial verificada de la agencia. Te generamos un enlace directo (wa.me/...) y código QR personalizado para tu Instagram, Google Maps y cartelera. Vos seguís usando tu celular personal normalmente sin tocar nada.</span>
+          </div>
+
+          <div class="meta-notice-box" id="dedicatedMetaNotice" style="display: none;">
+            <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <span>⚠️</span> <span>Requisito Oficial Obligatorio de Meta (WhatsApp Cloud API):</span>
+            </div>
+            <p>
+              Por arquitectura y políticas de seguridad oficiales de <strong>Meta</strong>, un número de teléfono conectado a la <strong>API de Servidores en la Nube</strong> (donde corre Sofía 24/7) <strong>NO puede estar abierto en simultáneo en la aplicación común de WhatsApp de un celular físico</strong>.
+            </p>
+            <p style="margin-top: 6px;">
+              👉 <strong>¿Cómo se resuelve de forma sencilla?</strong><br>
+              • <strong>Lo más simple y recomendado:</strong> Se utiliza un <strong>chip prepago nuevo</strong> (cuesta ~$1.000 en cualquier kiosco) dedicado exclusivamente a la atención de Sofía.<br>
+              • <strong>O si tenés un número comercial existente:</strong> Se debe eliminar la cuenta de WhatsApp de la app del teléfono antes de homologarlo para que los servidores de Meta tomen el control total.
+            </p>
+            <div style="margin-top: 10px;">
+              <label style="font-size: 12px; color: #f3f4f6; font-weight: 600;">Número de la Línea Propia a homologar (opcional si aún no compraste el chip):</label>
+              <input type="tel" name="dedicated_phone" placeholder="Ej: 343 500-1122 (o dejar vacío para coordinar luego)" style="width: 100%; margin-top: 4px; padding: 8px 12px; font-size: 13px; background: #111827; border: 1px solid #4b5563; border-radius: 8px; color: white;">
             </div>
           </div>
         </div>
@@ -576,20 +620,30 @@
           </div>
         </div>
 
-        <!-- PASO 4: ARANCELES, PRECIOS Y SUBIDA DE LISTAS -->
+        <!-- PASO 4: ARANCELES, PRECIOS Y SUBIDA DE LISTAS / AGENDA -->
         <div class="step-section">
           <div class="step-title">
             <div class="step-num">4</div>
-            <span>Servicios, Aranceles & Lista de Precios</span>
+            <span>Servicios, Precios & Agenda Vigente</span>
           </div>
 
           <div class="field-group">
-            <label>Subí tu Lista de Precios, PDF o Planilla Excel</label>
+            <label>¿Tenés turnos ya agendados o clientes activos para los próximos días?</label>
+            <select name="agenda_status">
+              <option value="libre" selected>🟢 Arranco con la agenda libre desde cero</option>
+              <option value="con_turnos_anotados">📝 Sí, tengo turnos ya dados (subo foto de mi libreta / planilla abajo)</option>
+              <option value="a_demanda_sin_turnos">🏬 No uso turnos fijos (gimnasio / comercio / atención a demanda)</option>
+            </select>
+            <span class="hint">Si ya diste turnos para esta semana o la próxima, Sofía los respetará para que jamás se te superponga ningún horario.</span>
+          </div>
+
+          <div class="field-group">
+            <label>Subí tu Lista de Precios, Agenda Actual o Planilla de Clientes (Opcional)</label>
             <div class="upload-box" id="dropArea" onclick="document.getElementById('catalogFileInput').click()">
               <input type="file" name="catalog_file" id="catalogFileInput" style="display: none;" accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.doc,.docx" onchange="handleFileSelected(this)">
               <div class="upload-icon">📄</div>
               <div class="upload-title">Hacé clic para seleccionar o arrastrá tu archivo acá</div>
-              <div class="upload-subtitle">Formatos admitidos: PDF, Excel (.xlsx / .csv), fotos de cartelera o Word</div>
+              <div class="upload-subtitle">Formatos admitidos: PDF, Excel, fotos del cuaderno de turnos, cartelera o Word</div>
               <div class="file-selected-info" id="fileSelectedInfo">
                 <span>✓ Archivo seleccionado:</span> <span id="fileNameLabel"></span>
               </div>
@@ -597,9 +651,9 @@
           </div>
 
           <div class="field-group">
-            <label>O pegá tus servicios y precios en texto</label>
-            <textarea name="price_notes" rows="3" placeholder="Ej: Consulta clínica $18.000. Limpieza y blanqueamiento $35.000. Pases libres de gimnasio $22.000..."></textarea>
-            <span class="hint">Si tenés dudas, no te preocupes: después de enviar podés mandarnos audios por WhatsApp para sumar más detalles.</span>
+            <label>O pegá tus servicios, aranceles o aclaraciones de turnos en texto</label>
+            <textarea name="price_notes" rows="3" placeholder="Ej: Consulta clínica $18.000. Limpieza $35.000. El lunes de 10 a 11 ya está ocupado..."></textarea>
+            <span class="hint">Si tenés dudas, no te preocupes: después de enviar podés mandarnos audios por WhatsApp para sumar o corregir cualquier detalle.</span>
           </div>
         </div>
 
@@ -653,6 +707,19 @@
       const val = document.getElementById('requiresDeposit').value;
       const row = document.getElementById('depositAmountRow');
       row.style.display = val === 'si' ? 'grid' : 'none';
+    }
+
+    function toggleLineModeExplanation() {
+      const val = document.getElementById('lineTypeSelect').value;
+      const notice = document.getElementById('dedicatedMetaNotice');
+      const hint = document.getElementById('sharedLineHint');
+      if (val === 'dedicated') {
+        notice.style.display = 'block';
+        hint.style.display = 'none';
+      } else {
+        notice.style.display = 'none';
+        hint.style.display = 'block';
+      }
     }
 
     function handleFileSelected(input) {
