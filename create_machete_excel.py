@@ -204,7 +204,7 @@ auto_fit_columns(ws2)
 ws3 = wb.create_sheet(title="Checklist Onboarding y Datos")
 ws3.views.sheetView[0].showGridLines = True
 
-ws3.append(["ESTRUCTURA DE DATOS A PEDIR AL COMERCIO (ONBOARDING EN 24 HORAS)"])
+ws3.append(["ESTRUCTURA DE DATOS A PEDIR AL COMERCIO (PUESTA EN MARCHA ÁGIL)"])
 ws3.merge_cells("A1:E1")
 ws3["A1"].font = Font(name="Segoe UI", size=14, bold=True, color="1E3A8A")
 ws3.row_dimensions[1].height = 28

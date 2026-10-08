@@ -91,7 +91,7 @@ SLIDES = [
           <ul class="benefits-list">
             <li>✓ Sin contratos atados a largo plazo</li>
             <li>✓ Atiende texto y <strong>audios de voz</strong> 24/7</li>
-            <li>✓ Configurado y listo en 24 horas</li>
+            <li>✓ Puesta en marcha ágil en pocos días hábiles</li>
             <li>✓ Alertas en vivo a tu celular</li>
           </ul>
         </div>

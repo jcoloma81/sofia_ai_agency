@@ -304,7 +304,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="footer-zone">
     <div class="footer-left">
       <div class="footer-dot"></div>
-      <span class="footer-text">Activación remota en <strong>24 horas</strong> • 100% en la nube • Cero contratos de permanencia</span>
+      <span class="footer-text">Puesta en marcha ágil en pocos días hábiles • 100% en la nube • Cero contratos de permanencia</span>
     </div>
     <div class="footer-brand">
       <span>⚡</span> SOFÍA AI AGENCY
