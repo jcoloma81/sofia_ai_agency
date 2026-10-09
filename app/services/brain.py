@@ -225,23 +225,44 @@ def detect_meeting_intent(text: str) -> Tuple[bool, Optional[str]]:
     return False, None
 
 STOPWORDS = {
+    # Artículos, preposiciones, pronombres
     "de", "del", "la", "el", "las", "los", "un", "una", "unos", "unas",
     "en", "por", "para", "con", "sin", "sobre", "y", "o", "u", "e",
     "que", "qué", "es", "son", "somos", "fue", "era", "se", "te", "me",
     "nos", "mi", "tu", "su", "sus", "mis", "tus", "al", "ha", "hay",
     "muy", "tan", "mas", "más", "no", "si", "sí", "ya", "hoy", "ayer",
-    "dios", "vida", "paz", "amor", "todo", "toda", "todos", "todas"
+    # Verbos comunes de estado/acción
+    "soy", "eres", "somos", "estoy", "estas", "estás", "esta", "está", "estamos", "estan", "están",
+    "ser", "estar", "tengo", "tiene", "hago", "hace", "voy", "va", "vamos", "van",
+    "vivo", "vive", "quiero", "quiere", "puedo", "puede", "sabe", "creo", "siento",
+    # Saludos, títulos y expresiones
+    "hola", "chau", "adios", "adiós", "buen", "bueno", "buena", "buenos", "buenas",
+    "dia", "día", "dias", "días", "tarde", "tardes", "noche", "noches",
+    # Estados de ánimo, lemas y frases típicas de perfiles de WhatsApp
+    "feliz", "felices", "felicidad", "triste", "alegre", "alegría", "libre", "libertad",
+    "fuerte", "loco", "loca", "lindo", "linda", "bello", "bella", "hermoso", "hermosa",
+    "unico", "único", "unica", "única", "nuevo", "nueva", "viejo", "vieja",
+    "amor", "vida", "luna", "cielo", "mundo", "tiempo",
+    "dios", "jesus", "jesús", "cristo", "fe", "esperanza", "bendicion", "bendición", "bendiciones", "bendecido", "bendecida",
+    "gracias", "siempre", "nunca", "jamas", "jamás", "todo", "toda", "todos", "todas", "nada", "algo",
+    "bien", "mal", "mejor", "peor", "onda", "reina", "rey", "princesa", "bebe", "bebé", "beba",
+    "corazon", "corazón", "alma", "sueño", "sueños", "pasion", "pasión"
 }
 
 BUSINESS_WORDS = {
     "distribuidora", "distribuidor", "distribuciones", "almacen", "almacén",
     "kiosco", "quiosco", "fiambreria", "fiambrería", "rotiseria", "rotisería",
     "ventas", "comercial", "negocio", "local", "tienda", "mayorista", "minorista",
-    "taller", "servicio", "servicios", "srl", "sa", "sas", "admin", "soporte",
+    "taller", "mecanica", "mecánica", "servicio", "servicios", "srl", "sa", "sas", "admin", "soporte",
     "oficial", "envios", "envíos", "delivery", "polleria", "pollería",
     "panaderia", "panadería", "farmacia", "repuestos", "libreria", "librería",
     "carniceria", "carnicería", "verduleria", "verdulería", "autoservicio",
-    "super", "supermercado", "contacto", "info", "general", "oficina"
+    "super", "supermercado", "contacto", "info", "general", "oficina",
+    "estetica", "estética", "spa", "peluqueria", "peluquería", "barberia", "barbería",
+    "consultorio", "clinica", "clínica", "dental", "odontologia", "odontología",
+    "veterinaria", "veterinario", "pet", "petshop", "optica", "óptica",
+    "gym", "gimnasio", "fitness", "crossfit", "padel", "pádel", "futbol", "fútbol",
+    "autos", "motos", "repuestos", "lubricentro", "ferreteria", "ferretería", "corralon", "corralón"
 }
 
 def sanitize_contact_first_name(raw_name: Optional[str]) -> Optional[str]:
