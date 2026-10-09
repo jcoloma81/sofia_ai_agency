@@ -236,3 +236,103 @@ def build_order_html_email(
     </body>
     </html>
     """
+
+def build_operational_event_html_email(
+    business_name: str,
+    event_title: str,
+    details_summary: str,
+    action_needed: str = "Aviso operativo automático",
+    recipient_name: Optional[str] = None
+) -> str:
+    """Generates corporate HTML email template for critical operational events (appointments, cancellations, slot recovery)."""
+    now_str = datetime.now().strftime("%d/%m/%Y a las %H:%M hs")
+    clean_recip = recipient_name or business_name
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px; color: #f8fafc; }}
+            .container {{ max-width: 650px; margin: 0 auto; background: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
+            .header {{ background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; padding: 28px; text-align: center; }}
+            .badge {{ background: #0f172a; color: #38bdf8; padding: 6px 14px; border-radius: 9999px; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }}
+            .content {{ padding: 28px; line-height: 1.6; color: #e2e8f0; }}
+            .details-box {{ background: #111827; border-left: 4px solid #38bdf8; padding: 14px 18px; border-radius: 8px; font-size: 14.5px; color: #f1f5f9; white-space: pre-line; }}
+            .action-box {{ background: rgba(37, 99, 235, 0.15); border: 1px solid #2563eb; border-radius: 10px; padding: 14px; margin-top: 20px; color: #93c5fd; font-size: 14px; }}
+            .footer {{ background: #0b0f19; padding: 18px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #334155; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <span class="badge">🔔 {event_title.upper()}</span>
+                <h2 style="margin: 12px 0 0 0; font-size: 22px;">{business_name}</h2>
+            </div>
+            <div class="content">
+                <p style="font-size: 16px;">Hola <strong>{clean_recip}</strong>, Sofía tiene una notificación operativa importante:</p>
+                <div class="details-box">
+{details_summary}
+                </div>
+                <div class="action-box">
+                    👉 <strong>Acción / Estado:</strong> {action_needed}
+                </div>
+            </div>
+            <div class="footer">
+                Sofía AI Agency • Alertas Operativas Multicanal • {now_str}
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+def build_onboarding_welcome_html_email(
+    business_name: str,
+    owner_name: str,
+    line_type: str,
+    operating_hours: str
+) -> str:
+    """Generates corporate HTML welcome email when a client completes onboarding via /alta."""
+    now_str = datetime.now().strftime("%d/%m/%Y a las %H:%M hs")
+    return f"""
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 24px; color: #f8fafc; }}
+            .container {{ max-width: 650px; margin: 0 auto; background: #1e293b; border-radius: 16px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
+            .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 28px; text-align: center; }}
+            .badge {{ background: #0f172a; color: #34d399; padding: 6px 14px; border-radius: 9999px; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }}
+            .content {{ padding: 28px; line-height: 1.6; color: #e2e8f0; }}
+            .data-card {{ background: #0f172a; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #334155; }}
+            .data-row {{ margin-bottom: 10px; font-size: 15px; }}
+            .data-row b {{ color: #94a3b8; width: 140px; display: inline-block; }}
+            .data-val {{ color: #ffffff; font-weight: 500; }}
+            .footer {{ background: #0b0f19; padding: 18px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #334155; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <span class="badge">🚀 ALTA CONFIRMADA</span>
+                <h2 style="margin: 12px 0 0 0; font-size: 24px;">¡Bienvenido a Sofía AI Agency!</h2>
+            </div>
+            <div class="content">
+                <p style="font-size: 16px;">Hola <strong>{owner_name}</strong>,</p>
+                <p>Recibimos la información de <strong>{business_name}</strong> para la calibración y puesta en marcha de Sofía.</p>
+                <div class="data-card">
+                    <div class="data-row"><b>Negocio:</b> <span class="data-val">{business_name}</span></div>
+                    <div class="data-row"><b>Titular:</b> <span class="data-val">{owner_name}</span></div>
+                    <div class="data-row"><b>Modalidad:</b> <span class="data-val">{line_type}</span></div>
+                    <div class="data-row"><b>Horarios:</b> <span class="data-val">{operating_hours}</span></div>
+                </div>
+                <p>Te enviaremos todas las alertas operativas (turnos confirmados, cancelaciones y resúmenes) tanto a tu <strong>WhatsApp</strong> como a este <strong>correo electrónico</strong> para que tengas doble respaldo siempre.</p>
+            </div>
+            <div class="footer">
+                Sofía AI Agency • Puesta en Marcha Ágil • {now_str}
+            </div>
+        </div>
+    </body>
+    </html>
+    """

@@ -502,18 +502,41 @@ async def send_owner_or_admin_alert(
     event_type: str = "Aviso del Sistema",
     client_title: str = "Cliente",
     details_summary: str = "",
-    template_candidates: Optional[List[str]] = None
+    template_candidates: Optional[List[str]] = None,
+    owner_email: Optional[str] = None
 ) -> bool:
     """
-    Bulletproof Owner/Admin WhatsApp Notification Gateway:
+    Bulletproof Multi-Channel (WhatsApp + Email) Owner/Admin Notification Gateway:
     1. First attempts to deliver via an Official Meta Pre-Approved Template
        (bypassing Meta's 24-hour customer window and guaranteeing delivery 24/7/365).
     2. If template delivery is not available (e.g. pending approval or error),
        falls back to standard WhatsApp message delivery.
+    3. If owner_email is provided, also dispatches a high-priority HTML email
+       for immediate backup and zero-loss notification redundancy.
     """
     clean_phone = "".join(filter(str.isdigit, to_phone))
     if not clean_phone:
         return False
+
+    # Multi-channel backup: Dispatch HTML email alert if owner_email is configured
+    if owner_email and "@" in owner_email:
+        try:
+            from app.services.alerts import send_email_alert, build_operational_event_html_email
+            email_html = build_operational_event_html_email(
+                business_name=business_name,
+                event_title=event_type,
+                details_summary=details_summary or fallback_text,
+                action_needed=client_title,
+                recipient_name=business_name
+            )
+            asyncio.create_task(send_email_alert(
+                subject=f"🔔 [{business_name}] {event_type}",
+                recipient=owner_email.strip(),
+                html_content=email_html
+            ))
+            logger.info(f"📧 Dual-channel email alert queued for {owner_email} ({business_name})")
+        except Exception as email_err:
+            logger.debug(f"Dual email dispatch to {owner_email} failed: {email_err}")
 
     candidates = template_candidates or ["notificacion_operativa_v1", "alerta_nueva_cita_v1", "alerta_nueva_cita_v2"]
 

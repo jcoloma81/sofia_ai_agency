@@ -204,7 +204,8 @@ class AppointmentService:
                 business_name=tenant.name,
                 event_type="Cancelación de Turno",
                 client_title=f"{apt.patient_name} (+{apt.patient_phone})",
-                details_summary=f"Fecha: {date_str}. Motivo: {reason or 'Imprevisto personal'}."
+                details_summary=f"Fecha: {date_str}. Motivo: {reason or 'Imprevisto personal'}.",
+                owner_email=tenant.owner_email
             )
 
         # 3. Offer slot to candidate #1 in waitlist
@@ -289,7 +290,8 @@ class AppointmentService:
                 business_name=apt.tenant.name,
                 event_type="Hueco Reasignado",
                 client_title=f"{cand.patient_name} (+{cand.patient_phone})",
-                details_summary=f"Turno {date_str} reasignado exitosamente."
+                details_summary=f"Turno {date_str} reasignado exitosamente.",
+                owner_email=apt.tenant.owner_email
             )
 
         return True
@@ -405,7 +407,8 @@ class AppointmentService:
                 business_name=tenant.name,
                 event_type="Turno Adelantado Exitoso",
                 client_title=f"{vacant_apt.patient_name}",
-                details_summary=f"Adelantado a mañana {new_date_str}. Queda libre {old_date_str}."
+                details_summary=f"Adelantado a mañana {new_date_str}. Queda libre {old_date_str}.",
+                owner_email=tenant.owner_email
             )
 
         logger.info(f"✅ Fast-track successful: {vacant_apt.patient_name} moved from {old_date_str} to {new_date_str}")
@@ -433,7 +436,8 @@ class AppointmentService:
                 business_name=vacant_apt.tenant.name,
                 event_type="Adelanta-Turnos Declinado",
                 client_title="Paciente futuro",
-                details_summary=f"Turno de mañana {v_date_str} queda disponible."
+                details_summary=f"Turno de mañana {v_date_str} queda disponible.",
+                owner_email=vacant_apt.tenant.owner_email
             )
         return True
 
@@ -605,7 +609,8 @@ class AppointmentService:
             business_name=tenant.name,
             event_type="Reporte Turnos Mañana",
             client_title="Secretaría",
-            details_summary=f"{len(unconfirmed)} turnos sin confirmar para mañana."
+            details_summary=f"{len(unconfirmed)} turnos sin confirmar para mañana.",
+            owner_email=tenant.owner_email
         )
         logger.info(f"🛡️ Escudo Secretaria: Report sent to {tenant.owner_phone} for '{tenant.name}' ({len(unconfirmed)} unconfirmed).")
         return True
@@ -715,7 +720,8 @@ class AppointmentService:
                 business_name=tenant.name,
                 event_type="Corte 18:00 hs Ejecutado",
                 client_title="Secretaría",
-                details_summary=f"{cancelled_count} turnos cancelados y en lista de espera."
+                details_summary=f"{cancelled_count} turnos cancelados y en lista de espera.",
+                owner_email=tenant.owner_email
             )
 
         logger.info(f"🏁 Cutoff executed for '{tenant.name}': {cancelled_count} appointments cancelled & offered to waitlist.")

@@ -27,15 +27,17 @@ def test_onboarding_page_routes_serve_html():
         assert "Puesta en Marcha Digital" in response.text
         assert "sofia.ia.agency" in response.text
         assert "30.000" in response.text
-        # Verify Meta Cloud policy notice and personal phone distinction are present
+        # Verify Meta Cloud policy notice, personal phone distinction and email alert field are present
         assert "Requisito Oficial Obligatorio de Meta" in response.text
         assert "WhatsApp Personal del Titular" in response.text
+        assert "owner_email" in response.text
+        assert "E-mail para Alertas y Respaldo" in response.text
         assert "Agenda Vigente" in response.text
 
 def test_onboarding_submit_success_with_file_and_agenda(db):
     """
     Test submitting onboarding data with all fields, attached price list/agenda PDF file,
-    and agenda status. Verifies Tenant and Prospect are created/updated and file is persisted.
+    owner_email for dual-channel alerts, and agenda status. Verifies Tenant and Prospect are created/updated.
     """
     # Clean previous tenant if any
     db.query(Tenant).filter(Tenant.slug.like("estetica_bella%")).delete()
@@ -50,6 +52,7 @@ def test_onboarding_submit_success_with_file_and_agenda(db):
         "business_type": "salud",
         "owner_name": "Lic. Florencia Gómez",
         "owner_phone": "3434112233",
+        "owner_email": "florencia@esteticabella.com",
         "city": "Paraná, Entre Ríos",
         "operating_hours": "Lunes a Viernes de 9:00 a 19:00 hs",
         "appointment_duration": "45 min",
@@ -75,6 +78,7 @@ def test_onboarding_submit_success_with_file_and_agenda(db):
     assert tenant.name == "Estética Bella Paraná"
     assert tenant.business_type == "salud"
     assert tenant.owner_phone.startswith("5493434112233")
+    assert tenant.owner_email == "florencia@esteticabella.com"
     assert tenant.plan_type == "shared"
     assert tenant.monthly_message_quota == 150
     assert tenant.active is True
@@ -82,6 +86,7 @@ def test_onboarding_submit_success_with_file_and_agenda(db):
     # Verify Knowledge Base JSON contains parsed parameters
     kb = json.loads(tenant.knowledge_base)
     assert kb["owner_name"] == "Lic. Florencia Gómez"
+    assert kb["owner_email"] == "florencia@esteticabella.com"
     assert kb["requires_deposit"] is True
     assert kb["deposit_amount"] == "5000"
     assert kb["appointment_duration"] == "45 min"

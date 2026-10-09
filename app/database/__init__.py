@@ -97,6 +97,8 @@ def run_auto_migrations(db_engine):
                 res_tenants = conn.execute(text("PRAGMA table_info(tenants)")).fetchall()
                 t_cols = [r[1] for r in res_tenants]
                 if t_cols:
+                    if "owner_email" not in t_cols:
+                        conn.execute(text("ALTER TABLE tenants ADD COLUMN owner_email VARCHAR"))
                     if "plan_type" not in t_cols:
                         conn.execute(text("ALTER TABLE tenants ADD COLUMN plan_type VARCHAR DEFAULT 'shared'"))
                     if "monthly_message_quota" not in t_cols:
@@ -151,6 +153,7 @@ def run_auto_migrations(db_engine):
                     CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone);
                     CREATE INDEX IF NOT EXISTS ix_prospects_parent_merchant_phone ON prospects (parent_merchant_phone);
 
+                    ALTER TABLE tenants ADD COLUMN IF NOT EXISTS owner_email VARCHAR;
                     ALTER TABLE tenants ADD COLUMN IF NOT EXISTS plan_type VARCHAR DEFAULT 'shared';
                     ALTER TABLE tenants ADD COLUMN IF NOT EXISTS monthly_message_quota INTEGER DEFAULT 150;
                     ALTER TABLE tenants ADD COLUMN IF NOT EXISTS messages_sent_this_month INTEGER DEFAULT 0;

@@ -20,6 +20,7 @@ class Tenant(Base):
     business_type = Column(String, nullable=False, index=True)     # "salud", "gimnasio", "optica", "inmobiliaria", "taller", "comercio"
     owner_phone = Column(String, index=True, nullable=False)       # e.g. "5493434536447" (Owner/Doctor notification recipient)
     owner_name = Column(String, nullable=True)                     # e.g. "Dra. Silvina Gómez"
+    owner_email = Column(String, index=True, nullable=True)        # e.g. "doctor@miclinica.com" (Backup notifications via email)
     logo_url = Column(String, nullable=True)                       # Public URL of the HD logo/banner image
     branding_header = Column(Text, nullable=True)                  # Formatted header text prepended to outbound messages
     deep_link_keyword = Column(String, unique=True, index=True)    # e.g. "Clinica_Alvear", "Iron_Gym" (case-insensitive)

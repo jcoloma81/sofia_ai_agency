@@ -59,6 +59,7 @@ async def submit_client_onboarding(
     business_type: str = Form(...),
     owner_name: str = Form(...),
     owner_phone: str = Form(...),
+    owner_email: Optional[str] = Form(None),
     city: str = Form("Paraná"),
     operating_hours: str = Form(...),
     appointment_duration: Optional[str] = Form("30 min"),
@@ -81,6 +82,7 @@ async def submit_client_onboarding(
     clean_owner = owner_name.strip()
     clean_phone = sanitize_phone(owner_phone)
     clean_type = business_type.lower().strip()
+    clean_email = (owner_email or "").strip().lower() or None
     
     if not clean_name or not clean_owner or not clean_phone:
         raise HTTPException(status_code=400, detail="Nombre del negocio, titular y teléfono de WhatsApp son obligatorios.")
@@ -118,6 +120,7 @@ async def submit_client_onboarding(
         "business_type": clean_type,
         "owner_name": clean_owner,
         "owner_phone": clean_phone,
+        "owner_email": clean_email,
         "city": city.strip(),
         "line_type": "dedicated" if is_dedicated else "shared",
         "dedicated_phone": clean_dedicated,
@@ -144,6 +147,7 @@ async def submit_client_onboarding(
         business_type=clean_type,
         owner_phone=clean_phone,
         owner_name=clean_owner,
+        owner_email=clean_email,
         deep_link_keyword=slug.capitalize(),
         modules_enabled=json.dumps(modules),
         knowledge_base=json.dumps(kb_data, ensure_ascii=False),
@@ -201,6 +205,7 @@ async def submit_client_onboarding(
         f"{icon} *Negocio:* {clean_name} ({clean_type.capitalize()})\n"
         f"👤 *Titular:* {clean_owner}\n"
         f"📱 *WhatsApp Personal Titular:* +{clean_phone}\n"
+        f"📧 *E-mail:* {clean_email or 'No especificado'}\n"
         f"📍 *Ciudad:* {city.strip()}\n"
         f"⚙️ *Modalidad Línea:* {line_mode_info}\n"
         f"{agenda_info}\n"
@@ -213,8 +218,35 @@ async def submit_client_onboarding(
     )
 
     if boss_phone:
-        asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=alert_text))
-        logger.info(f"📲 Alert dispatched to boss ({boss_phone}) for new tenant {clean_name} ({slug})")
+        asyncio.create_task(whatsapp.send_owner_or_admin_alert(
+            to_phone=boss_phone,
+            fallback_text=alert_text,
+            business_name="Sofía AI Agency",
+            event_type="Nueva Alta de Cliente Online",
+            client_title=f"{clean_name} ({clean_owner})",
+            details_summary=f"Titular: {clean_owner} | Tel: +{clean_phone} | Email: {clean_email or 'N/A'}",
+            owner_email=settings.MAIL_USERNAME or settings.MAIL_FROM or "colomajavier@gmail.com"
+        ))
+        logger.info(f"📲 Multi-channel alert dispatched to boss ({boss_phone}) for new tenant {clean_name} ({slug})")
+
+    # Send client welcome / confirmation email if email is provided
+    if clean_email and "@" in clean_email:
+        try:
+            from app.services.alerts import send_email_alert, build_onboarding_welcome_html_email
+            client_welcome_html = build_onboarding_welcome_html_email(
+                business_name=clean_name,
+                owner_name=clean_owner,
+                line_type=line_mode_info,
+                operating_hours=operating_hours.strip()
+            )
+            asyncio.create_task(send_email_alert(
+                subject=f"🚀 ¡Bienvenido a Sofía AI Agency! (Alta de {clean_name})",
+                recipient=clean_email,
+                html_content=client_welcome_html
+            ))
+            logger.info(f"📧 Confirmation welcome email sent to client {clean_email}")
+        except Exception as welcome_err:
+            logger.debug(f"Welcome email dispatch failed: {welcome_err}")
 
     return {
         "status": "success",
