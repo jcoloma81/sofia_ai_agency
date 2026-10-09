@@ -4,6 +4,7 @@
     "nombre": "Gimnasios & Fitness — Cuotas y Reactivación",
     "rubro": "gimnasio",
     "canal": "WhatsApp",
+    "meta_template_name": "pitch_gimnasio_v1",
     "asunto": "",
     "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para aliviar la recepción y administración de gimnasios.\n\nSe llama Sofía y funciona como una mano derecha para el equipo del mostrador: responde dudas frecuentes de precios u horarios las 24 horas, se encarga del trabajo incómodo de recordar cuotas del 1 al 10 con link de Mercado Pago, y activa una campaña automática para volver a contactar con promociones a los ex-alumnos que dejaron de venir, sin que nadie en el gimnasio tenga que perder horas mandando mensajes uno por uno a mano.\n\nSi sentís que esto puede solucionar estos problemas en tu negocio y ayudarte a recuperar socios, respondeme por acá y coordinamos una charla breve para explicarte cómo lo incorporaríamos a tu medida y mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
   },
@@ -12,6 +13,7 @@
     "nombre": "Talleres Mecánicos & Lubricentros — Próximo Service y Auto Listo",
     "rubro": "taller",
     "canal": "WhatsApp",
+    "meta_template_name": "pitch_taller_v1",
     "asunto": "",
     "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para talleres mecánicos y lubricentros.\n\nSe llama Sofía y funciona como un apoyo para que nadie tenga que parar de trabajar con las manos ocupadas para contestar el celular: atiende presupuestos y turnos las 24 horas, avisa automáticamente a los clientes cuando su auto está listo para retirar con el saldo, y se encarga del seguimiento que ningún taller llega a hacer por falta de tiempo: avisarles cuándo les toca el próximo service (aceite, filtros o distribución) para que siempre vuelvan a tu taller.\n\nSi sentís que esto puede solucionar estos problemas en tu taller y ayudarte a fidelizar clientes, respondeme por acá y coordinamos una charla breve para explicarte cómo lo incorporaríamos a tu medida y mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
   },
@@ -20,6 +22,7 @@
     "nombre": "Veterinarias & Pet Shops — Vacunación y Controles en Fecha",
     "rubro": "veterinaria",
     "canal": "WhatsApp",
+    "meta_template_name": "pitch_veterinaria_v1",
     "asunto": "",
     "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para aliviar la atención en veterinarias y pet shops.\n\nSe llama Sofía y funciona como una aliada para veterinarios y recepcionistas: coordina turnos y responde dudas frecuentes las 24 horas para que el mostrador no colapse, y se encarga del seguimiento preventivo que muchas veces no da el tiempo físico de hacer: le avisa con calidez a los tutores cuándo le toca a su mascota la próxima vacuna, antipulgas o control periódico, asegurando que siempre vuelvan en fecha.\n\nSi sentís que esto puede solucionar estos problemas en tu veterinaria y asegurarte visitas periódicas, respondeme por acá y coordinamos una charla breve para explicarte cómo lo incorporaríamos a tu medida y mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
   },
@@ -28,6 +31,7 @@
     "nombre": "Ópticas & Salud Visual — Pedido Listo y Control Anual",
     "rubro": "optica",
     "canal": "WhatsApp",
+    "meta_template_name": "pitch_optica_v1",
     "asunto": "",
     "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para agilizar la atención en ópticas.\n\nSe llama Sofía y funciona como una mano derecha en el local: atiende dudas las 24 horas, le avisa en el momento exacto a los clientes cuando sus anteojos están listos para retirar (ahorrándole decenas de llamadas al personal), y programa recordatorios automáticos de control visual anual o renovación de lentes de contacto para que tus clientes siempre regresen año tras año.\n\nSi sentís que esto puede solucionar estos problemas en tu óptica y ayudarte a despejar trabajos pendientes, respondeme por acá y coordinamos una charla breve para explicarte cómo lo incorporaríamos a tu medida y mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
   },
@@ -36,6 +40,7 @@
     "nombre": "Consultorios Médicos & Odontología — Rellena-Huecos y Señas",
     "rubro": "consultorio",
     "canal": "WhatsApp",
+    "meta_template_name": "pitch_consultorio_v1",
     "asunto": "",
     "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para aliviar la recepción en consultorios médicos y clínicas odontológicas.\n\nSe llama Sofía y funciona como una mano derecha para las secretarias y el equipo: atiende las dudas repetitivas de horarios y filtra los audios largos de los pacientes para que la recepción no viva desbordada en el mostrador. Y resuelve lo más estresante del día: si un paciente cancela a último momento, Sofía busca en la lista de espera para rellenar el hueco en minutos y proteger la agenda de los profesionales.\n\nSi sentís que esto puede solucionar estos problemas en tu consultorio y ayudarte a blindar tu agenda, respondeme por acá y coordinamos una charla breve para explicarte cómo lo incorporaríamos a tu medida y mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
   },
@@ -44,6 +49,7 @@
     "nombre": "Distribuidoras & Comercios — Excel en Vivo y Comparador",
     "rubro": "distribuidora",
     "canal": "WhatsApp",
+    "meta_template_name": "pitch_distribuidora_v1",
     "asunto": "",
     "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para sacarle el trabajo pesado al equipo de distribuidoras, mayoristas y comercios.\n\nSe llama Sofía y funciona como una aliada para empleados y vendedores: pasa en limpio los pedidos desordenados que mandan los clientes por audios de WhatsApp, actualiza listas de precios de Excel en pantalla sin que nadie tenga que perder horas cargando celdas a mano, y cruza las listas de proveedores en 3 segundos para mostrar siempre el costo más barato.\n\nSi sentís que esto puede solucionar estos problemas en tu comercio y ahorrarte horas de trabajo manual, respondeme por acá y coordinamos una charla breve para explicarte cómo lo incorporaríamos a tu medida y mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
   }
