@@ -600,7 +600,7 @@ def test_rule_based_fallback_engine():
 
 @pytest.mark.asyncio
 async def test_dual_alert_dispatch():
-    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_wa, \
+    with patch("app.services.whatsapp.send_owner_or_admin_alert", new_callable=AsyncMock) as mock_wa, \
          patch("app.services.whatsapp.send_email_alert", new_callable=AsyncMock) as mock_email:
         mock_wa.return_value = True
         mock_email.return_value = True

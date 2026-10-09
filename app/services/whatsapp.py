@@ -495,6 +495,53 @@ async def send_whatsapp_interactive_buttons(
     return await _send_single_whatsapp_message(clean_phone, fallback_text)
 
 
+async def send_owner_or_admin_alert(
+    to_phone: str,
+    fallback_text: str,
+    business_name: str = "Sofía AI Agency",
+    event_type: str = "Aviso del Sistema",
+    client_title: str = "Cliente",
+    details_summary: str = "",
+    template_candidates: Optional[List[str]] = None
+) -> bool:
+    """
+    Bulletproof Owner/Admin WhatsApp Notification Gateway:
+    1. First attempts to deliver via an Official Meta Pre-Approved Template
+       (bypassing Meta's 24-hour customer window and guaranteeing delivery 24/7/365).
+    2. If template delivery is not available (e.g. pending approval or error),
+       falls back to standard WhatsApp message delivery.
+    """
+    clean_phone = "".join(filter(str.isdigit, to_phone))
+    if not clean_phone:
+        return False
+
+    candidates = template_candidates or ["notificacion_operativa_v1", "alerta_nueva_cita_v1", "alerta_nueva_cita_v2"]
+
+    for tmpl in candidates:
+        try:
+            body_params = [
+                str(business_name)[:60],
+                str(event_type)[:60],
+                str(client_title)[:80],
+                str(details_summary)[:200]
+            ]
+            sent = await send_whatsapp_template(
+                to_phone=clean_phone,
+                template_name=tmpl,
+                language_code="es_AR",
+                body_params=body_params
+            )
+            if sent:
+                logger.info(f"✅ Owner/Admin alert delivered via Meta Template '{tmpl}' to {clean_phone}")
+                return True
+        except Exception as e:
+            logger.debug(f"Template '{tmpl}' attempt failed for {clean_phone}: {e}")
+
+    # Fallback to direct message
+    logger.info(f"Dispatching owner alert to {clean_phone} via standard message channel")
+    return await send_whatsapp_message(to_phone=clean_phone, text=fallback_text)
+
+
 async def notify_javier_meeting_scheduled(
     prospect_name: str,
     contact_name: Optional[str],
@@ -506,7 +553,7 @@ async def notify_javier_meeting_scheduled(
 ) -> None:
     """
     Dual Alert System for Javier Coloma:
-    1. WhatsApp immediate message to his private line (+54 9 343 453-6447).
+    1. WhatsApp immediate message to his private line (+54 9 343 453-6447) via Template or direct message.
     2. High-priority corporate HTML email to his inbox.
     """
     alert_phone = settings.WHATSAPP_ALERT_PHONE or "5493434536447"
@@ -546,7 +593,14 @@ async def notify_javier_meeting_scheduled(
             f"📅 *Agendar en 1 clic en Google Calendar:*\n{cal_link}"
         )
 
-    await send_whatsapp_message(to_phone=alert_phone, text=wa_alert_text)
+    await send_owner_or_admin_alert(
+        to_phone=alert_phone,
+        fallback_text=wa_alert_text,
+        business_name="Sofía AI Agency" if campaign == "ai_agency" else "Air Control",
+        event_type="Reunión Confirmada",
+        client_title=f"{prospect_name} ({contact_str}) - +{phone}",
+        details_summary=f"Horario: {meeting_details}. {city_str}. Último mensaje: {last_message}"
+    )
     logger.info(f"WhatsApp appointment notification dispatched to Javier ({alert_phone}) for {prospect_name}")
 
     # 2. Corporate HTML Email Alert
@@ -607,7 +661,14 @@ async def notify_owner_order_confirmed(
 
     # Slight delay so confirmation reply arrives first in chat
     await asyncio.sleep(1.5)
-    await send_whatsapp_message(to_phone=alert_phone, text=wa_text)
+    await send_owner_or_admin_alert(
+        to_phone=alert_phone,
+        fallback_text=wa_text,
+        business_name="Sofía AI Agency",
+        event_type="Nuevo Pedido",
+        client_title=f"{client_name} (+{phone})",
+        details_summary=f"Total: {order_draft.formatted_total()}. {city_str}."
+    )
     logger.info(f"Order alert dispatched to owner ({alert_phone}) for {client_name}")
 
     try:
@@ -652,7 +713,14 @@ async def notify_owner_demo_requested(
     )
 
     await asyncio.sleep(1.0)
-    await send_whatsapp_message(to_phone=alert_phone, text=wa_text)
+    await send_owner_or_admin_alert(
+        to_phone=alert_phone,
+        fallback_text=wa_text,
+        business_name="Sofía AI Agency",
+        event_type="Solicitud de Demo",
+        client_title=f"{contact_str} (+{phone})",
+        details_summary=incoming_text.strip()
+    )
     logger.info(f"Demo request alert dispatched to owner ({alert_phone}) for {phone}")
 
 async def send_whatsapp_audio(

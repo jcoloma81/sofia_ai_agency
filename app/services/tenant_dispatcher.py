@@ -156,7 +156,14 @@ class TenantDispatcher:
                             f"🎯 Acción: Aceptó la promo ({cust.service_or_product or 'Verano'}).\n"
                             f"👉 Contactalo para concretar el cobro."
                         )
-                        await whatsapp.send_whatsapp_message(tenant.owner_phone, owner_alert)
+                        await whatsapp.send_owner_or_admin_alert(
+                            to_phone=tenant.owner_phone,
+                            fallback_text=owner_alert,
+                            business_name=tenant.name,
+                            event_type="Cliente Reactivado (Promo)",
+                            client_title=f"{cust.customer_name} (+{cust.customer_phone})",
+                            details_summary=f"Aceptó la promo: {cust.service_or_product or 'Verano'}."
+                        )
                     return True, reply
             except Exception as e:
                 logger.error(f"Error claiming promo {btn_id}: {e}")

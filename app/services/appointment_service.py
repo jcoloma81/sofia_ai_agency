@@ -198,7 +198,14 @@ class AppointmentService:
                 f"Motivo: {reason or 'Imprevisto personal'}.\n\n"
                 f"🚀 *Sofía está activando la Lista de Espera de a 1 paciente para cubrir el hueco sin doble reserva.*"
             )
-            await whatsapp.send_whatsapp_message(tenant.owner_phone, owner_alert)
+            await whatsapp.send_owner_or_admin_alert(
+                to_phone=tenant.owner_phone,
+                fallback_text=owner_alert,
+                business_name=tenant.name,
+                event_type="Cancelación de Turno",
+                client_title=f"{apt.patient_name} (+{apt.patient_phone})",
+                details_summary=f"Fecha: {date_str}. Motivo: {reason or 'Imprevisto personal'}."
+            )
 
         # 3. Offer slot to candidate #1 in waitlist
         cand = await AppointmentService.offer_slot_to_next_candidate(db, apt.id)
@@ -276,7 +283,14 @@ class AppointmentService:
                 f"fue reasignado exitosamente a *{cand.patient_name}* (Cel: +{cand.patient_phone}).\n\n"
                 f"💰 *Cero pérdida de facturación para la clínica.*"
             )
-            await whatsapp.send_whatsapp_message(apt.tenant.owner_phone, owner_msg)
+            await whatsapp.send_owner_or_admin_alert(
+                to_phone=apt.tenant.owner_phone,
+                fallback_text=owner_msg,
+                business_name=apt.tenant.name,
+                event_type="Hueco Reasignado",
+                client_title=f"{cand.patient_name} (+{cand.patient_phone})",
+                details_summary=f"Turno {date_str} reasignado exitosamente."
+            )
 
         return True
 
@@ -385,7 +399,14 @@ class AppointmentService:
                 f"El paciente *{vacant_apt.patient_name}* aceptó adelantar su turno para *MAÑANA {new_date_str}* ({vacant_apt.doctor_or_service}).\n"
                 f"📅 Su turno original del *{old_date_str}* quedó LIBRE en agenda para nuevos pacientes."
             )
-            await whatsapp.send_whatsapp_message(tenant.owner_phone, owner_msg)
+            await whatsapp.send_owner_or_admin_alert(
+                to_phone=tenant.owner_phone,
+                fallback_text=owner_msg,
+                business_name=tenant.name,
+                event_type="Turno Adelantado Exitoso",
+                client_title=f"{vacant_apt.patient_name}",
+                details_summary=f"Adelantado a mañana {new_date_str}. Queda libre {old_date_str}."
+            )
 
         logger.info(f"✅ Fast-track successful: {vacant_apt.patient_name} moved from {old_date_str} to {new_date_str}")
         return True
@@ -405,9 +426,14 @@ class AppointmentService:
         vacant_apt = db.query(Appointment).filter(Appointment.id == vacant_apt_id).first()
         if vacant_apt and vacant_apt.tenant and vacant_apt.tenant.owner_phone:
             v_date_str = vacant_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
-            await whatsapp.send_whatsapp_message(
-                vacant_apt.tenant.owner_phone,
-                f"ℹ️ *Adelanta-Turnos:* El paciente futuro prefirió mantener su fecha. El turno de mañana {v_date_str} queda libre para sobreturnos."
+            decline_msg = f"ℹ️ *Adelanta-Turnos:* El paciente futuro prefirió mantener su fecha. El turno de mañana {v_date_str} queda libre para sobreturnos."
+            await whatsapp.send_owner_or_admin_alert(
+                to_phone=vacant_apt.tenant.owner_phone,
+                fallback_text=decline_msg,
+                business_name=vacant_apt.tenant.name,
+                event_type="Adelanta-Turnos Declinado",
+                client_title="Paciente futuro",
+                details_summary=f"Turno de mañana {v_date_str} queda disponible."
             )
         return True
 
@@ -573,7 +599,14 @@ class AppointmentService:
             f"• Si no respondés nada: a las 18:00 hs Sofía cancela con aviso de no concurrencia y activa la lista de espera."
         )
 
-        await whatsapp.send_whatsapp_message(tenant.owner_phone, report_msg)
+        await whatsapp.send_owner_or_admin_alert(
+            to_phone=tenant.owner_phone,
+            fallback_text=report_msg,
+            business_name=tenant.name,
+            event_type="Reporte Turnos Mañana",
+            client_title="Secretaría",
+            details_summary=f"{len(unconfirmed)} turnos sin confirmar para mañana."
+        )
         logger.info(f"🛡️ Escudo Secretaria: Report sent to {tenant.owner_phone} for '{tenant.name}' ({len(unconfirmed)} unconfirmed).")
         return True
 
@@ -675,9 +708,14 @@ class AppointmentService:
             cancelled_count += 1
 
         if cancelled_count > 0 and tenant.owner_phone:
-            await whatsapp.send_whatsapp_message(
-                tenant.owner_phone,
-                f"🎯 *Corte de las 18:00 hs completado:* Se cancelaron formalmente {cancelled_count} turnos sin confirmar y se activó la lista de espera de a 1 paciente."
+            cutoff_alert = f"🎯 *Corte de las 18:00 hs completado:* Se cancelaron formalmente {cancelled_count} turnos sin confirmar y se activó la lista de espera de a 1 paciente."
+            await whatsapp.send_owner_or_admin_alert(
+                to_phone=tenant.owner_phone,
+                fallback_text=cutoff_alert,
+                business_name=tenant.name,
+                event_type="Corte 18:00 hs Ejecutado",
+                client_title="Secretaría",
+                details_summary=f"{cancelled_count} turnos cancelados y en lista de espera."
             )
 
         logger.info(f"🏁 Cutoff executed for '{tenant.name}': {cancelled_count} appointments cancelled & offered to waitlist.")

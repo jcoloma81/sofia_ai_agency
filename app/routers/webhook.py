@@ -122,7 +122,25 @@ async def receive_whatsapp_webhook(
                 meta_contacts = value.get("contacts", [])
 
         if not incoming_meta_msg:
-            # It was a status update (sent, delivered, read) or non-message event from Meta
+            # Inspect delivery status updates (e.g. Meta Error 131047: 24h window closed)
+            try:
+                entries_list = body.get("entry", []) if body.get("object") == "whatsapp_business_account" else [body]
+                for ent in entries_list:
+                    changes_list = ent.get("changes", [ent]) if isinstance(ent, dict) else []
+                    for ch in changes_list:
+                        val = ch.get("value", ch) if isinstance(ch, dict) else {}
+                        statuses = val.get("statuses", []) if isinstance(val, dict) else []
+                        for st in statuses:
+                            if isinstance(st, dict) and st.get("status") == "failed":
+                                errs = st.get("errors", [])
+                                recip = st.get("recipient_id", "")
+                                for err in errs:
+                                    logger.warning(
+                                        f"⚠️ [META DELIVERY FAILED] Recipient: {recip} | Code: {err.get('code')} | Details: {err.get('message')}"
+                                    )
+            except Exception as status_err:
+                logger.debug(f"Error inspecting webhook status: {status_err}")
+
             logger.info("Meta webhook event received (status update or non-message event)")
             return {"status": "success", "reason": "Meta status or non-message event received"}
 
