@@ -110,7 +110,23 @@ async def launch_outreach(limit: int = 5, dry_run: bool = False, delay_seconds: 
             print("   " + "\n   ".join(pitch.split("\n")[:4]) + "\n   ...")
         else:
             print("   📤 Enviando WhatsApp vía Gateway...")
-            sent = await whatsapp_service.send_whatsapp_message(to_phone=clean_phone, text=pitch)
+            sent = False
+            meta_tpl = selected_tpl.get("meta_template_name")
+            if meta_tpl:
+                try:
+                    sent = await whatsapp_service.send_whatsapp_template(
+                        to_phone=clean_phone,
+                        template_name=meta_tpl,
+                        language_code="es_AR",
+                        body_params=[clean_company]
+                    )
+                    if sent:
+                        print(f"   🎯 Envio exitoso mediante Plantilla Oficial de Meta '{meta_tpl}'.")
+                except Exception as tmpl_err:
+                    print(f"   ⚠️ Plantilla '{meta_tpl}' no disponible aún, usando fallback: {tmpl_err}")
+
+            if not sent:
+                sent = await whatsapp_service.send_whatsapp_message(to_phone=clean_phone, text=pitch)
             if sent:
                 lead.status = "contacted"
                 lead.updated_at = datetime.utcnow()

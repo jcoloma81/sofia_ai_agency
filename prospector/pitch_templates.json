@@ -37,12 +37,12 @@
   },
   {
     "id": "5",
-    "nombre": "Consultorios Médicos & Odontología — Rellena-Huecos y Señas",
+    "nombre": "Consultorios Médicos & Odontología — Recordatorios 48h/24h y Rellena-Huecos",
     "rubro": "consultorio",
     "canal": "WhatsApp",
-    "meta_template_name": "pitch_consultorio_v1",
+    "meta_template_name": "pitch_consultorio_v2",
     "asunto": "",
-    "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para aliviar la recepción en consultorios médicos y clínicas odontológicas.\n\nSe llama Sofía y funciona como una mano derecha para las secretarias y el equipo: atiende las dudas repetitivas de horarios y filtra los audios largos de los pacientes para que la recepción no viva desbordada en el mostrador. Y resuelve lo más estresante del día: si un paciente cancela a último momento, Sofía busca en la lista de espera para rellenar el hueco en minutos y proteger la agenda de los profesionales.\n\nSi sentís que esto puede solucionar estos problemas en tu consultorio y ayudarte a blindar tu agenda, respondeme por acá y coordinamos una charla breve para explicarte cómo lo incorporaríamos a tu medida y mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
+    "cuerpo": "Hola buenas! ¿Este es el WhatsApp de {{nombre}}? Disculpá la molestia.\n\nTe escribo porque creamos un sistema con Inteligencia Artificial para WhatsApp pensado para consultorios médicos y clínicas odontológicas.\n\nSe llama Sofía y funciona como una mano derecha para el equipo y secretarias, atacando el mayor dolor del consultorio: el ausentismo y los turnos vacíos:\n\n• Recordatorios automáticos 48hs y 24hs antes: le pregunta al paciente si asiste y despeja la duda para confirmar la agenda.\n• Rellena huecos en minutos: si alguien cancela, Sofía busca al instante en la lista de espera y reasigna el turno libre para que el profesional no pierda horas muertas ni facturación.\n• Atención 24/7: responde dudas frecuentes y coordina turnos a cualquier hora para que la recepción no viva desbordada en el mostrador.\n\nSi te interesa ver cómo blindar la agenda de tu consultorio con esto, respondeme por acá y coordinamos una charla breve de 10 minutos para mostrártelo funcionando en vivo.\n\nSaludos,\nJavier — Sofía AI Agency"
   },
   {
     "id": "6",
