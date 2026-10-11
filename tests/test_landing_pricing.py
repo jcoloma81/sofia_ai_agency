@@ -15,16 +15,23 @@ def test_landing_page_pricing_and_rubros_sections():
     assert "Veterinarias" in html
     assert "Ópticas &amp; Talleres" in html or "Ópticas & Talleres" in html
 
-    # 2. Pricing Section ($30.000 ARS Policy)
+    # 2. Alivio Operativo Section (Pitch de Batalla)
+    assert 'id="alivio-turnos"' in html
+    assert "Desligate del Agendamiento" in html
+    assert "Turneros Web Clásicos" in html
+    assert "Con Sofía AI (Autogestión Nativa en WhatsApp)" in html
+
+    # 3. Pricing Section ($30.000 Shared / $45.000 Enterprise)
     assert 'id="precios"' in html
     assert "$30.000" in html
+    assert "$45.000" in html
     assert "Plan Central Compartida" in html
     assert "Plan Enterprise" in html
     assert "150 Mensajes Salientes" in html
     assert "$80.000" in html
     assert "Pack de 100 Mensajes Extra por solo $4.500 ARS" in html
 
-    # 3. Downloads Section
+    # 4. Downloads Section
     assert 'id="descargas"' in html
     assert "/descargar-guia-pdf" in html
     assert "/descargar-modo-jefe-pdf" in html

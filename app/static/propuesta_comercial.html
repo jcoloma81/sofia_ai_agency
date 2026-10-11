@@ -415,6 +415,145 @@
       margin-top: 2px;
     }
 
+    /* Banner de Alivio Operativo & Autogestión de Turnos */
+    .alivio-section {
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.75) 100%);
+      border: 1.5px solid rgba(16, 185, 129, 0.35);
+      border-radius: 24px;
+      padding: clamp(28px, 4.5vw, 48px) clamp(20px, 3.5vw, 36px);
+      margin-bottom: clamp(48px, 7vw, 72px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35), 0 0 32px rgba(16, 185, 129, 0.08);
+      position: relative;
+    }
+
+    .alivio-header {
+      text-align: center;
+      max-width: 880px;
+      margin: 0 auto clamp(28px, 4vw, 40px) auto;
+    }
+
+    .badge-alivio {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      color: var(--accent-green);
+      padding: 6px 18px;
+      border-radius: 50px;
+      font-size: clamp(10.5px, 2.2vw, 12px);
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .alivio-main-title {
+      font-size: clamp(24px, 4.2vw, 36px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #fff;
+      line-height: 1.22;
+      margin-bottom: 16px;
+    }
+
+    .alivio-main-title span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .alivio-main-sub {
+      font-size: clamp(14px, 2.2vw, 16.5px);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .alivio-comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .alivio-card {
+      background: var(--bg-card);
+      border-radius: 18px;
+      padding: clamp(20px, 3vw, 28px);
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .alivio-card.card-friction {
+      border-top: 4px solid #EF4444;
+      background: rgba(239, 68, 68, 0.04);
+    }
+
+    .alivio-card.card-sofia {
+      border-top: 4px solid var(--accent-green);
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.1) 0%, rgba(17, 24, 39, 0.95) 100%);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .alivio-card-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .alivio-card-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .alivio-card-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+
+    .alivio-card-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #EF4444;
+    }
+
+    .alivio-card-tag.tag-sofia {
+      color: var(--accent-green);
+    }
+
+    .alivio-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .alivio-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: #D1D5DB;
+      line-height: 1.5;
+    }
+
+    .alivio-cta-container {
+      text-align: center;
+      margin-top: 12px;
+    }
+
     /* Core Capabilities Grid */
     .features-grid {
       display: grid;
@@ -626,6 +765,10 @@
     }
 
     @media (max-width: 860px) {
+      .alivio-comparison-grid {
+        grid-template-columns: 1fr;
+      }
+
       .top-bar {
         flex-direction: column;
         align-items: stretch;
@@ -1180,6 +1323,87 @@
       </div>
     </section>
 
+    <!-- PITCH DE BATALLA: ALIVIO OPERATIVO & AUTOGESTIÓN DE TURNOS -->
+    <section class="alivio-section" id="alivio-turnos">
+      <div class="alivio-header">
+        <div class="badge-alivio" data-i18n="alivio_badge">
+          🩺 ALIVIO OPERATIVO INMEDIATO PARA CONSULTORIOS &amp; PROFESIONALES
+        </div>
+        <h2 class="alivio-main-title" data-i18n-html="alivio_title">
+          Desligate del Agendamiento: Tus Pacientes Toman Turnos Solos por <span>WhatsApp las 24 hs</span>
+        </h2>
+        <p class="alivio-main-sub" data-i18n="alivio_sub">
+          Recuperá 2 a 3 horas diarias de tu vida. Mientras atendés o descansás, Sofía atiende con calidez rioplatense (texto y audios), responde dudas clínicas y llena tu agenda en automático sin que toques el teléfono.
+        </p>
+      </div>
+
+      <div class="alivio-comparison-grid">
+        <!-- Tarjeta Turneros Web Clásicos -->
+        <div class="alivio-card card-friction">
+          <div class="alivio-card-top">
+            <span class="alivio-card-icon">⚠️</span>
+            <div>
+              <h4 class="alivio-card-title" data-i18n="alivio_trad_title">Turneros Web Clásicos (Apps &amp; Links Externos)</h4>
+              <span class="alivio-card-tag" data-i18n="alivio_trad_tag">Alta Fricción &amp; Abandono</span>
+            </div>
+          </div>
+          <ul class="alivio-list">
+            <li>
+              <span class="icon-fail">✕</span>
+              <div data-i18n-html="alivio_trad_1"><strong>Fricción de salida:</strong> Obligan al paciente a salir de WhatsApp, abrir un navegador web y registrarse.</div>
+            </li>
+            <li>
+              <span class="icon-fail">✕</span>
+              <div data-i18n-html="alivio_trad_2"><strong>Pérdida de pacientes:</strong> La gente mayor o apurada se marea con calendarios web y vuelve a escribirte al chat.</div>
+            </li>
+            <li>
+              <span class="icon-fail">✕</span>
+              <div data-i18n-html="alivio_trad_3"><strong>Cero respuestas a dudas:</strong> No responden si atendés su obra social, cuánto sale la consulta o cómo prepararse para un estudio.</div>
+            </li>
+            <li>
+              <span class="icon-fail">✕</span>
+              <div data-i18n-html="alivio_trad_4"><strong>Huecos vacíos pasivos:</strong> Si alguien cancela, el turno queda perdido esperando que otro entre a la web de casualidad.</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Tarjeta Sofía AI -->
+        <div class="alivio-card card-sofia">
+          <div class="alivio-card-top">
+            <span class="alivio-card-icon">✨</span>
+            <div>
+              <h4 class="alivio-card-title" data-i18n="alivio_sofia_title">Con Sofía AI (Autogestión Nativa en WhatsApp)</h4>
+              <span class="alivio-card-tag tag-sofia" data-i18n="alivio_sofia_tag">100% Adopción • Cero Fricción</span>
+            </div>
+          </div>
+          <ul class="alivio-list">
+            <li>
+              <span class="icon-success">✓</span>
+              <div data-i18n-html="alivio_sofia_1"><strong>Hablar como con una persona:</strong> El paciente manda un audio o texto común y Sofía le ofrece los turnos libres en 3 segundos.</div>
+            </li>
+            <li>
+              <span class="icon-success">✓</span>
+              <div data-i18n-html="alivio_sofia_2"><strong>100% de la gente lo usa:</strong> Todo el mundo ya tiene WhatsApp abierto. Cero apps nuevas que instalar ni cuentas que crear.</div>
+            </li>
+            <li>
+              <span class="icon-success">✓</span>
+              <div data-i18n-html="alivio_sofia_3"><strong>Secretaria integral 24/7:</strong> Informa aranceles, obras sociales, requisitos de ayuno, ubicación y cobra la seña por Mercado Pago.</div>
+            </li>
+            <li>
+              <span class="icon-success">✓</span>
+              <div data-i18n-html="alivio_sofia_4"><strong>Rescate activo (Rellena-Huecos):</strong> Si alguien cancela, sale proactivamente a la lista de espera y salva la facturación en minutos.</div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="alivio-cta-container">
+        <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Consultorio%20M%C3%A9dico" target="_blank" class="btn-primary btn-whatsapp" data-i18n="alivio_cta">
+          💬 Probar Demostración de Autogestión de Turnos en WhatsApp →
+        </a>
+      </div>
+    </section>
+
     <!-- Problem vs Solution -->
     <section class="comparison-grid">
       <div class="box-card problem">
@@ -1360,8 +1584,8 @@
     <!-- Official Pricing & Plans Section -->
     <div class="section-header" id="precios">
       <div class="section-tag" data-i18n="pricing_tag">Estructura Comercial Transparente</div>
-      <h2 class="section-title" data-i18n="pricing_title">Abono Mensual Único de $30.000 ARS para Todos</h2>
-      <p class="section-sub" data-i18n="pricing_sub">El mismo costo accesible para cualquier negocio. Sin sorpresas, sin comisiones sobre tus ventas y con cancelación libre.</p>
+      <h2 class="section-title" data-i18n="pricing_title">Planes Transparentes y Accesibles para Cada Negocio</h2>
+      <p class="section-sub" data-i18n="pricing_sub">Elegí entre Central Compartida ($30.000/mes) o Línea Propia Exclusiva ($45.000/mes). Sin comisiones sobre tus ventas y con cancelación libre.</p>
     </div>
 
     <section class="pricing-grid">
@@ -1398,7 +1622,7 @@
           <p class="pricing-plan-desc" data-i18n="plan_enterprise_desc">Para clínicas, gimnasios, ópticas, talleres y distribuidoras que desean su propio número oficial exclusivo.</p>
           
           <div class="pricing-price-wrap">
-            <div class="pricing-price">$30.000</div>
+            <div class="pricing-price">$45.000</div>
             <div class="pricing-currency">ARS / mes</div>
           </div>
           <div class="pricing-setup" data-i18n="plan_enterprise_setup">🚀 Pago Único de Alta &amp; Homologación Meta: $80.000 ARS</div>
@@ -1550,6 +1774,22 @@
         metric_catalogs_lbl: "Cero Carga Manual (COM)",
         metric_installs_val: "Mejor Precio",
         metric_installs_lbl: "Comparador Multi-Proveedor",
+        alivio_badge: "🩺 ALIVIO OPERATIVO INMEDIATO PARA CONSULTORIOS & PROFESIONALES",
+        alivio_title: "Desligate del Agendamiento: Tus Pacientes Toman Turnos Solos por <span>WhatsApp las 24 hs</span>",
+        alivio_sub: "Recuperá 2 a 3 horas diarias de tu vida. Mientras atendés o descansás, Sofía atiende con calidez rioplatense (texto y audios), responde dudas clínicas y llena tu agenda en automático sin que toques el teléfono.",
+        alivio_trad_title: "Turneros Web Clásicos (Apps & Links Externos)",
+        alivio_trad_tag: "Alta Fricción & Abandono",
+        alivio_trad_1: "<strong>Fricción de salida:</strong> Obligan al paciente a salir de WhatsApp, abrir un navegador web y registrarse.",
+        alivio_trad_2: "<strong>Pérdida de pacientes:</strong> La gente mayor o apurada se marea con calendarios web y vuelve a escribirte al chat.",
+        alivio_trad_3: "<strong>Cero respuestas a dudas:</strong> No responden si atendés su obra social, cuánto sale la consulta o cómo prepararse para un estudio.",
+        alivio_trad_4: "<strong>Huecos vacíos pasivos:</strong> Si alguien cancela, el turno queda perdido esperando que otro entre a la web de casualidad.",
+        alivio_sofia_title: "Con Sofía AI (Autogestión Nativa en WhatsApp)",
+        alivio_sofia_tag: "100% Adopción • Cero Fricción",
+        alivio_sofia_1: "<strong>Hablar como con una persona:</strong> El paciente manda un audio o texto común y Sofía le ofrece los turnos libres en 3 segundos.",
+        alivio_sofia_2: "<strong>100% de la gente lo usa:</strong> Todo el mundo ya tiene WhatsApp abierto. Cero apps nuevas que instalar ni cuentas que crear.",
+        alivio_sofia_3: "<strong>Secretaria integral 24/7:</strong> Informa aranceles, obras sociales, requisitos de ayuno, ubicación y cobra la seña por Mercado Pago.",
+        alivio_sofia_4: "<strong>Rescate activo (Rellena-Huecos):</strong> Si alguien cancela, sale proactivamente a la lista de espera y salva la facturación en minutos.",
+        alivio_cta: "💬 Probar Demostración de Autogestión de Turnos en WhatsApp →",
         problem_title: "Lo que te frena y te hace perder dinero todos los días",
         problem_1: "<strong>Turnos caídos y horas muertas sin facturar:</strong> Pacientes o clientes que cancelan a último momento y tu recepcionista no llega a cubrirlos, dejando horas vacías.",
         problem_2: "<strong>Ex-socios y clientes que se enfrían:</strong> Decenas de personas que dejaron de asistir a tu gimnasio o comercio y nadie vuelve a contactar por falta de tiempo.",
@@ -1628,8 +1868,8 @@
         rubro_b2b_desc: "Toma de pedidos por audio, actualización de planillas de Excel en pantalla sin tocar la PC (Windows COM) y comparador inteligente que te avisa al instante qué proveedor tiene el mejor precio.",
         rubro_b2b_tag: "Excel en Vivo • Comparador Multi-Proveedor",
         pricing_tag: "Estructura Comercial Transparente",
-        pricing_title: "Abono Mensual Único de $30.000 ARS para Todos",
-        pricing_sub: "El mismo costo accesible para cualquier negocio. Sin sorpresas, sin comisiones sobre tus ventas y con cancelación libre.",
+        pricing_title: "Planes Transparentes y Accesibles para Cada Negocio",
+        pricing_sub: "Elegí entre Central Compartida ($30.000/mes) o Línea Propia Exclusiva ($45.000/mes). Sin comisiones sobre tus ventas y con cancelación libre.",
         plan_shared_title: "Plan Central Compartida",
         plan_shared_desc: "Ideal para consultorios individuales, profesionales de la salud, estética y comercios barriales.",
         plan_shared_setup: "⚡ Pago Único de Alta & Configuración: $30.000 ARS",
@@ -1686,6 +1926,22 @@
         metric_catalogs_lbl: "Setores Comerciais Prontos",
         metric_installs_val: "0",
         metric_installs_lbl: "Apps a Instalar pelo Cliente",
+        alivio_badge: "🩺 ALÍVIO OPERACIONAL IMEDIATO PARA CONSULTÓRIOS E PROFISSIONAIS",
+        alivio_title: "Livre-se do Agendamento: Seus Pacientes Marcam Consultas Sozinhos pelo <span>WhatsApp 24h</span>",
+        alivio_sub: "Recupere de 2 a 3 horas diárias. Enquanto você atende ou descansa, Sofía atende com rapidez e simpatia (áudios e texto), tira dúvidas clínicas e preenche sua agenda no piloto automático.",
+        alivio_trad_title: "Sistemas Web Tradicionais (Apps e Links Externos)",
+        alivio_trad_tag: "Alta Fricção e Abandono",
+        alivio_trad_1: "<strong>Fricção de saída:</strong> Forçam o paciente a sair do WhatsApp, abrir o navegador e se cadastrar.",
+        alivio_trad_2: "<strong>Perda de pacientes:</strong> Idosos ou pessoas com pressa desistem em calendários web e voltam a mandar mensagens.",
+        alivio_trad_3: "<strong>Zero respostas a dúvidas:</strong> Não respondem convênios atendidos, valores de consulta ou preparo para exames.",
+        alivio_trad_4: "<strong>Horários vazios passivos:</strong> Se alguém cancela, o horário fica vago esperando alguém entrar por acaso.",
+        alivio_sofia_title: "Com Sofía AI (Autogestão Nativa no WhatsApp)",
+        alivio_sofia_tag: "100% Adoção • Zero Fricção",
+        alivio_sofia_1: "<strong>Conversa humana:</strong> O paciente manda áudio ou mensagem normal e Sofía oferece os horários livres em 3 segundos.",
+        alivio_sofia_2: "<strong>100% de adesão:</strong> Todo mundo já usa WhatsApp. Nenhuma instalação de app ou login necessário.",
+        alivio_sofia_3: "<strong>Secretária completa 24/7:</strong> Informa valores, convênios, preparo para exames, localização e cobra sinal pelo Mercado Pago.",
+        alivio_sofia_4: "<strong>Resgate ativo (Tapa-Buracos):</strong> Se alguém cancela, busca ativamente na lista de espera e salva o faturamento em minutos.",
+        alivio_cta: "💬 Testar Demonstração de Agendamento no WhatsApp →",
         problem_title: "O Gargalo Operacional dos Negócios",
         problem_1: "<strong>Mensagens que esfriam a qualquer hora:</strong> Clientes ou pacientes que escrevem à noite ou quando você está atendendo; se demorar para responder, vão para a concorrência.",
         problem_2: "<strong>Cancelamentos e horários vazios na agenda:</strong> Agendamentos desmarcados em cima da hora que sua recepção não consegue cobrir, deixando horas ociosas sem faturar.",
@@ -1762,6 +2018,22 @@
         metric_catalogs_lbl: "Ready-to-Use Business Sectors",
         metric_installs_val: "0",
         metric_installs_lbl: "Client App Installs Required",
+        alivio_badge: "🩺 IMMEDIATE OPERATIONAL RELIEF FOR CLINICS & PROFESSIONALS",
+        alivio_title: "Free Yourself from Scheduling: Patients Book Appointments on <span>WhatsApp 24/7</span>",
+        alivio_sub: "Reclaim 2 to 3 hours of your day. While you focus on patients or rest, Sofia handles voice and text messages, resolves common questions, and fills your calendar on autopilot without touching your phone.",
+        alivio_trad_title: "Traditional Web Schedulers (Apps & External Links)",
+        alivio_trad_tag: "High Friction & Drop-Off",
+        alivio_trad_1: "<strong>Exit friction:</strong> They force patients to leave WhatsApp, open a web browser, and fill forms.",
+        alivio_trad_2: "<strong>Lost bookings:</strong> Seniors or busy clients get confused by web calendars and return to messaging you.",
+        alivio_trad_3: "<strong>Zero query answers:</strong> They can't answer insurance questions, pricing, or exam preparations.",
+        alivio_trad_4: "<strong>Passive empty slots:</strong> If a client cancels, the slot stays empty waiting for someone to browse the site.",
+        alivio_sofia_title: "With Sofia AI (Native WhatsApp Self-Booking)",
+        alivio_sofia_tag: "100% Adoption • Zero Friction",
+        alivio_sofia_1: "<strong>Talk like a real receptionist:</strong> Patients send voice notes or text, and Sofia offers available slots in 3 seconds.",
+        alivio_sofia_2: "<strong>100% adoption rate:</strong> Everyone already uses WhatsApp. No new apps to install, no passwords or logins.",
+        alivio_sofia_3: "<strong>Comprehensive 24/7 assistant:</strong> Explains insurance, fees, preparation instructions, directions, and collects deposits.",
+        alivio_sofia_4: "<strong>Proactive rescue (Slot-Filler):</strong> When someone cancels, Sofia alerts waitlist candidates and salvages revenue in minutes.",
+        alivio_cta: "💬 Try Live Appointment Self-Booking on WhatsApp →",
         problem_title: "The Operational Bottleneck",
         problem_1: "<strong>Inquiries Going Cold:</strong> Potential clients message late at night or during peak rush; if you don't answer immediately, they book with your competitor.",
         problem_2: "<strong>Late Cancellations & Dead Calendar Gaps:</strong> Clients canceling last-minute with your reception unable to backfill in time, leaving hours of lost revenue.",
@@ -1840,8 +2112,8 @@
         rubro_b2b_desc: "Guided 24/7 order placement and executive business control for owners via simple 5-second WhatsApp voice notes (price increases, promotions, announcements).",
         rubro_b2b_tag: "Voice & B2B 24/7",
         pricing_tag: "Transparent Pricing Model",
-        pricing_title: "Unified Monthly SaaS at $30,000 ARS for Everyone",
-        pricing_sub: "The exact same accessible rate for any business. Zero hidden fees, zero sales commissions, cancel anytime.",
+        pricing_title: "Transparent and Accessible Plans for Every Business",
+        pricing_sub: "Choose between Shared Central ($30,000/mo) or Dedicated Official Line ($45,000/mo). Zero commission on sales and free cancellation.",
         plan_shared_title: "Shared Central Plan",
         plan_shared_desc: "Ideal for individual practices, solo healthcare professionals, beauty studios, and local stores.",
         plan_shared_setup: "⚡ One-Time Setup & Onboarding: $30,000 ARS",

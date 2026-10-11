@@ -724,8 +724,8 @@ ESTADO DEL SISTEMA EN TIEMPO REAL:
 
     candidate_models = [
         "gemini-flash-lite-latest",
-        "gemini-3.5-flash-lite",
-        "gemini-3.6-flash"
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite"
     ]
     for model_name in candidate_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
@@ -845,7 +845,7 @@ async def parse_client_onboarding_intent(text: str) -> dict:
             "- notes: cualquier detalle adicional mencionado o null\n"
             "Respondé ÚNICAMENTE un JSON válido."
         )
-        for m_name in ["gemini-3.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"]:
+        for m_name in ["gemini-3.6-flash", "gemini-flash-lite-latest", "gemini-flash-latest"]:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={gemini_key}"
             try:
                 async with httpx.AsyncClient(timeout=4.5) as client:

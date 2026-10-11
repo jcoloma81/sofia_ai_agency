@@ -514,10 +514,9 @@ async def transcribe_audio_gemini(audio_b64: str, audio_mime_type: Optional[str]
 
     candidate_models = [
         "gemini-flash-lite-latest",
+        "gemini-3.6-flash",
         "gemini-3.5-flash-lite",
-        "gemini-3.5-transcribe",
-        "gemini-3.5-flash",
-        "gemini-3.6-flash"
+        "gemini-3.5-transcribe"
     ]
     for model_name in candidate_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
@@ -689,9 +688,8 @@ async def generate_ai_response(
 
         candidate_models = [
             "gemini-flash-lite-latest",
-            "gemini-3.5-flash-lite",
-            "gemini-3.5-flash",
-            "gemini-3.6-flash"
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite"
         ]
         for model_name in candidate_models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
