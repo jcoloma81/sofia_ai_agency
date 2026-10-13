@@ -708,6 +708,169 @@ async def test_boss_prospect_simulation_mode_switch(db):
     assert boss_lead.status == "in_conversation"
 
 
+@pytest.mark.asyncio
+async def test_parse_clinic_demo_onboarding_intent():
+    from app.services.boss_mode import parse_clinic_demo_onboarding_intent
+
+    # Test full text
+    msg1 = "Sofía, da de alta para la demo al doctor Carlos González, su número es 343 456 7890, clínica San Martín"
+    parsed1 = await parse_clinic_demo_onboarding_intent(msg1)
+    assert parsed1["is_clinic_demo"] is True
+    assert "Carlos González" in parsed1["doctor_name"]
+    assert "3434567890" in parsed1["doctor_phone"]
+
+    # Test short voice note format
+    msg2 = "alta doctor Martín Rossi 3435730520"
+    parsed2 = await parse_clinic_demo_onboarding_intent(msg2)
+    assert parsed2["is_clinic_demo"] is True
+    assert "Martín Rossi" in parsed2["doctor_name"]
+    assert "3435730520" in parsed2["doctor_phone"]
+
+    # Non-clinic text
+    msg3 = "pasame la lista de precios de ferreteria"
+    parsed3 = await parse_clinic_demo_onboarding_intent(msg3)
+    assert parsed3["is_clinic_demo"] is False
+
+
+@pytest.mark.asyncio
+async def test_setup_doctor_live_demo(db):
+    from app.services.tenant_service import tenant_service
+    from app.models.tenant import Tenant, WaitlistEntry, TenantSession
+    from unittest.mock import patch, AsyncMock
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        res = await tenant_service.setup_doctor_live_demo(
+            db=db,
+            doctor_name="Dr. Carlos González",
+            doctor_phone="3434567890",
+            clinic_name="Clínica San Martín (Demo)",
+            boss_phone="5493434536447",
+            secondary_phone="5493435730520",
+            send_welcome_whatsapp=True
+        )
+
+        assert res["status"] == "success"
+        assert res["doctor_name"] == "Dr. Carlos González"
+        assert res["doctor_phone"] == "5493434567890"
+
+        # Verify Tenant in DB
+        tenant = db.query(Tenant).filter(Tenant.id == res["tenant_id"]).first()
+        assert tenant is not None
+        assert tenant.name == "Clínica San Martín (Demo)"
+        assert tenant.owner_phone == "5493434567890"
+
+        # Verify Waitlist candidate Laura has boss phone
+        wl = db.query(WaitlistEntry).filter(WaitlistEntry.id == res["waitlist_id"]).first()
+        assert wl is not None
+        assert wl.patient_name == "Laura Benítez"
+        assert wl.patient_phone == "5493434536447"
+        assert wl.status == "activa"
+
+        # Verify welcome message sent to Doctor
+        mock_msg.assert_called()
+        welcome_call = mock_msg.call_args[1]
+        assert welcome_call["to_phone"] == "5493434567890"
+        assert "bienvenida a *Sofía AI*" in welcome_call["text"]
+
+
+@pytest.mark.asyncio
+async def test_process_boss_message_clinic_demo_onboarding(db):
+    from unittest.mock import patch, AsyncMock
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        handled, reply, action = await process_boss_message(
+            db=db,
+            sender_phone="5493434536447",
+            text="Sofía, da de alta al Dr. Carlos González, número 343 456 7890, clínica San Martín"
+        )
+
+        assert handled is True
+        assert action == "clinic_demo_activated"
+        assert "DEMO DE CONSULTORIO ACTIVADA EN VIVO" in reply
+        assert "Dr. Carlos González" in reply
+        assert "5493434567890" in reply
+        assert mock_msg.called
+
+
+@pytest.mark.asyncio
+async def test_webhook_boss_phone_appointment_button_bypass(db):
+    from fastapi.testclient import TestClient
+    from main import app
+    from app.database import get_db
+    from datetime import datetime, timezone
+    from app.services.tenant_service import tenant_service
+    from app.models.tenant import Appointment, WaitlistEntry
+    from unittest.mock import patch, AsyncMock
+
+    def override_get_db():
+        try:
+            yield db
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    client = TestClient(app)
+
+    # Setup demo tenant with appointment and waitlist
+    res = await tenant_service.setup_doctor_live_demo(
+        db=db,
+        doctor_name="Dr. Carlos González",
+        doctor_phone="3434567890",
+        boss_phone="5493434536447",
+        secondary_phone="5493435730520",
+        send_welcome_whatsapp=False
+    )
+    tenant_id = res["tenant_id"]
+
+    apt = Appointment(
+        tenant_id=tenant_id,
+        patient_name="Martín Paciente",
+        patient_phone="5493435730520",
+        doctor_or_service="Dr. Carlos González",
+        appointment_date=datetime.now(timezone.utc),
+        status="cancelado"
+    )
+    db.add(apt)
+    db.commit()
+    db.refresh(apt)
+
+    wl = db.query(WaitlistEntry).filter(WaitlistEntry.tenant_id == tenant_id).first()
+    wl.status = "notificado_oferta"
+    wl.offered_appointment_id = apt.id
+    db.commit()
+
+    with patch("app.services.whatsapp.send_owner_or_admin_alert", new_callable=AsyncMock) as mock_alert, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock):
+
+        payload = {
+            "object": "whatsapp_business_account",
+            "entry": [{
+                "changes": [{
+                    "value": {
+                        "messages": [{
+                            "from": "5493434536447",  # Boss phone tapping the button!
+                            "type": "interactive",
+                            "interactive": {
+                                "type": "button_reply",
+                                "button_reply": {
+                                    "id": f"claim_apt_{apt.id}_{wl.id}",
+                                    "title": "TOMAR TURNO"
+                                }
+                            }
+                        }]
+                    }
+                }]
+            }]
+        }
+
+        resp = client.post("/webhook", json=payload)
+        assert resp.status_code == 200
+        db.refresh(apt)
+        assert apt.status == "rellenado_con_exito"
+        assert mock_alert.called
+
+
+
 
 
 

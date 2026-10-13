@@ -27,7 +27,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.tenant import Tenant, Appointment, WaitlistEntry
 from app.services.appointment_service import AppointmentService
-from app.services.tenant_service import tenant_service
+from app.services.tenant_service import tenant_service, TenantService
 from app.services import whatsapp
 from app.config.settings import settings
 

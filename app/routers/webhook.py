@@ -162,11 +162,11 @@ async def receive_whatsapp_webhook(
             message = incoming_meta_msg.get("text", {}).get("body", "")
         elif msg_type == "interactive":
             interactive = incoming_meta_msg.get("interactive", {})
-            if interactive.get("type") == "button_reply":
+            if interactive.get("type") == "button_reply" or "button_reply" in interactive:
                 b_reply = interactive.get("button_reply", {})
                 message = b_reply.get("title", "")
                 button_id = b_reply.get("id")
-            elif interactive.get("type") == "list_reply":
+            elif interactive.get("type") == "list_reply" or "list_reply" in interactive:
                 l_reply = interactive.get("list_reply", {})
                 message = l_reply.get("title", "")
                 button_id = l_reply.get("id")
@@ -414,7 +414,14 @@ async def receive_whatsapp_webhook(
         return {"status": "ignored", "reason": "Missing phone or message"}
 
     # Executive command check from Javier's personal alert line (Modo Jefe)
-    if is_boss_number(clean_phone):
+    is_appointment_button = bool(button_id and (
+        button_id.startswith("claim_apt_") or
+        button_id.startswith("reject_apt_") or
+        button_id.startswith("confirm_apt_") or
+        button_id.startswith("cancel_apt_") or
+        button_id.startswith("fast_track_")
+    ))
+    if is_boss_number(clean_phone) and not is_appointment_button:
         boss_record = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
 
         # Check if boss is running a live Prospect Simulation

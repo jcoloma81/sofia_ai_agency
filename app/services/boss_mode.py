@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 LAST_BOSS_ORDERS = {}
 LAST_ONBOARDED_CLIENT = {}
+LAST_CLINIC_DEMO = {}
 
 SUPPLIER_DRAFTS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "supplier_draft_orders.json")
 
@@ -808,6 +809,9 @@ async def parse_client_onboarding_intent(text: str) -> dict:
     if any(d in lower for d in disqualifiers):
         return {"is_onboarding": False}
 
+    if any(m in lower for m in ["doctor", "dr.", "dr ", "dra.", "dra ", "clínica", "clinica", "consultorio", "médico", "medico", "odontólogo", "odontologo"]):
+        return {"is_onboarding": False}
+
     onboarding_verbs = [
         "cargá al cliente", "cargar cliente", "cargá el cliente", "cargar el cliente",
         "cargá a este cliente", "carga este cliente", "cargame este cliente", "cargá este cliente",
@@ -912,6 +916,90 @@ async def parse_client_onboarding_intent(text: str) -> dict:
         }
 
     return {"is_onboarding": False}
+
+
+async def parse_clinic_demo_onboarding_intent(text: str) -> dict:
+    """
+    Detects if Javier is setting up or reconfiguring a live clinic/doctor demo via WhatsApp (voice note or text).
+    Extracts doctor_name, doctor_phone, and clinic_name.
+    """
+    clean = text.strip()
+    lower = clean.lower()
+
+    # Keywords that trigger clinic demo onboarding
+    demo_clinic_triggers = [
+        "alta", "dar de alta", "cargá", "carga", "anotá", "anota", "registrá", "registra",
+        "prepará", "prepara", "iniciar demo", "demo clinica", "demo clínica", "demo consultorio",
+        "demo doctor", "demo médico", "demo medico"
+    ]
+    medical_words = [
+        "doctor", "dr.", "dr ", "dra.", "dra ", "médico", "medico", "médica", "medica",
+        "odontólogo", "odontologo", "odontología", "odontologia", "clínica", "clinica", "consultorio", "sanatorio"
+    ]
+
+    is_candidate = any(t in lower for t in demo_clinic_triggers) and any(m in lower for m in medical_words)
+    if not is_candidate:
+        if any(lower.startswith(p) for p in ["doctor ", "dr. ", "dr ", "dra. ", "dra ", "clinica ", "clínica "]):
+            digits = re.findall(r'\d{8,14}', clean.replace("-", "").replace(" ", "").replace("+", ""))
+            if digits:
+                is_candidate = True
+
+    if not is_candidate:
+        return {"is_clinic_demo": False}
+
+    # Extract with Gemini if key available
+    gemini_key = settings.GEMINI_API_KEY
+    if gemini_key:
+        prompt = (
+            "El director general (Javier) le habla a su asistente Sofía por WhatsApp para configurar y dar de alta "
+            "una demostración en vivo de consultorio médico / clínica para un doctor o clínica real.\n"
+            f"Mensaje recibido:\n\"{clean}\"\n\n"
+            "Analizá si el mensaje contiene la intención de dar de alta o preparar la demo para un médico o clínica.\n"
+            "Extraé en formato JSON con estas claves exactas:\n"
+            "- is_clinic_demo: true (si Javier quiere activar/configurar la demo de clínica) o false\n"
+            "- doctor_name: nombre del profesional (ej: 'Dr. Carlos González', 'Dra. María Paz') o null\n"
+            "- doctor_phone: número de teléfono del médico mencionado (ej: '3434567890') o null\n"
+            "- clinic_name: nombre de la clínica o consultorio mencionado (ej: 'Clínica San Martín') o null\n"
+            "Respondé ÚNICAMENTE un JSON válido."
+        )
+        for m_name in ["gemini-3.6-flash", "gemini-flash-lite-latest", "gemini-flash-latest"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={gemini_key}"
+            try:
+                async with httpx.AsyncClient(timeout=4.5) as client:
+                    res = await client.post(
+                        url,
+                        json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"response_mime_type": "application/json"}}
+                    )
+                    if res.status_code == 200:
+                        cand = res.json().get("candidates", [])
+                        if cand and "content" in cand[0]:
+                            parts = cand[0]["content"].get("parts", [])
+                            if parts:
+                                parsed = json.loads(parts[0].get("text", "{}"))
+                                if isinstance(parsed, dict) and parsed.get("is_clinic_demo"):
+                                    return parsed
+            except Exception as e:
+                logger.warning(f"Gemini clinic demo parse error with {m_name}: {e}")
+
+    # Deterministic regex fallback
+    digits = re.findall(r'\d{8,14}', clean.replace("-", "").replace(" ", "").replace("+", ""))
+    raw_phone = digits[0] if digits else None
+
+    doc_match = re.search(r'(?:doctor|doctora|dr\.?|dra\.?)\s+([A-ZÁÉÍÓÚa-záéíóú]+(?:\s+[A-ZÁÉÍÓÚa-záéíóú]+)?)', clean, re.IGNORECASE)
+    doc_name = doc_match.group(1).title() if doc_match else "Dr. Carlos González"
+    if not doc_name.lower().startswith("dr"):
+        doc_name = f"Dr. {doc_name}"
+
+    clinic_match = re.search(r'(?:clínica|clinica|consultorios?|sanatorio)\s+([A-ZÁÉÍÓÚa-záéíóú]+(?:\s+[A-ZÁÉÍÓÚa-záéíóú]+)?)', clean, re.IGNORECASE)
+    clinic_name = f"Clínica {clinic_match.group(1).title()}" if clinic_match else "Consultorios Médicos San Martín (Demo)"
+
+    return {
+        "is_clinic_demo": True,
+        "doctor_name": doc_name,
+        "doctor_phone": raw_phone,
+        "clinic_name": clinic_name
+    }
+
 
 async def parse_supplier_registration_intent(text: str) -> dict:
     """
@@ -1966,6 +2054,48 @@ async def process_boss_message(
             else:
                 return True, f"📄 Recibí el archivo PDF `{doc_name}` pero no pude extraer listas de precios automáticas. Verificá que contenga texto o tablas legibles.", "catalog_pdf_error"
 
+    # 1.25 Clinical Live Demo Setup on-the-fly via WhatsApp Audio or Text
+    clinic_demo_data = await parse_clinic_demo_onboarding_intent(clean_text)
+    if clinic_demo_data.get("is_clinic_demo"):
+        raw_phone = clinic_demo_data.get("doctor_phone")
+        doc_name = clinic_demo_data.get("doctor_name") or "Dr. Carlos González"
+        clinic_name = clinic_demo_data.get("clinic_name") or "Consultorios Médicos San Martín (Demo)"
+
+        if not raw_phone or len(raw_phone) < 8:
+            LAST_CLINIC_DEMO.clear()
+            LAST_CLINIC_DEMO.update({
+                "doctor_name": doc_name,
+                "clinic_name": clinic_name
+            })
+            return True, (
+                f"🏥 *¡Alta de Clínica para Demo en proceso!*\n\n"
+                f"Tengo los datos del *{doc_name}* ({clinic_name}), pero me falta su número de celular para conectar las alertas.\n\n"
+                f"💡 Pasámelo diciendo por ejemplo: `el teléfono es 343 456 7890`"
+            ), "clinic_demo_needs_phone"
+
+        from app.services.tenant_service import tenant_service
+        res = await tenant_service.setup_doctor_live_demo(
+            db=db,
+            doctor_name=doc_name,
+            doctor_phone=raw_phone,
+            clinic_name=clinic_name,
+            boss_phone=clean_sender,
+            send_welcome_whatsapp=True
+        )
+        LAST_CLINIC_DEMO.clear()
+
+        reply = (
+            f"🚀 *¡DEMO DE CONSULTORIO ACTIVADA EN VIVO!* 🏥\n\n"
+            f"👨‍⚕️ *Profesional:* {res['doctor_name']}\n"
+            f"📱 *Celular del Doctor:* +{res['doctor_phone']}\n"
+            f"🏥 *Clínica:* {res['clinic_name']}\n\n"
+            f"📲 *Mensaje de bienvenida enviado con éxito al WhatsApp del médico.*\n"
+            f"A partir de este momento, todas las alertas ejecutivas (nuevos turnos agendados, cancelaciones y huecos rescatados) le llegarán directo a su teléfono en tiempo real.\n\n"
+            f"🎯 *Próximo paso de la demo:*\n"
+            f"Escribile a Sofía desde tu otro celular como paciente (ej: _«Hola, quiero turno para hoy a las 17 con {res['doctor_name']}»_)."
+        )
+        return True, reply, "clinic_demo_activated"
+
     # 1.3 Client Onboarding on-the-fly via WhatsApp Audio or Text
     onboarding_data = await parse_client_onboarding_intent(clean_text)
     if onboarding_data.get("is_onboarding"):
@@ -2187,6 +2317,42 @@ async def process_boss_message(
             f"5️⃣ {g5}"
         )
         return True, reply, action_name
+
+    # Pending clinic demo phone follow-up
+    if LAST_CLINIC_DEMO.get("doctor_name") and not LAST_CLINIC_DEMO.get("doctor_phone"):
+        cand_digits = re.findall(r'\d{8,14}', clean_text.replace("-", "").replace(" ", "").replace("+", ""))
+        is_phone_reply = bool(cand_digits) and (
+            len(clean_text) <= 30 or
+            any(k in lower_text for k in ["el numero", "el número", "telefono", "teléfono", "celular", "celu", "es el"])
+        ) and not any(k in lower_text for k in ["pausar", "activar", "rubro", "modo", "pedido", "resumen"])
+
+        if is_phone_reply:
+            from app.services.tenant_service import tenant_service
+            raw_phone = cand_digits[0]
+            doc_name = LAST_CLINIC_DEMO["doctor_name"]
+            clinic_name = LAST_CLINIC_DEMO.get("clinic_name", "Consultorios Médicos San Martín (Demo)")
+
+            res = await tenant_service.setup_doctor_live_demo(
+                db=db,
+                doctor_name=doc_name,
+                doctor_phone=raw_phone,
+                clinic_name=clinic_name,
+                boss_phone=clean_sender,
+                send_welcome_whatsapp=True
+            )
+            LAST_CLINIC_DEMO.clear()
+
+            reply = (
+                f"🚀 *¡DEMO DE CONSULTORIO ACTIVADA EN VIVO!* 🏥\n\n"
+                f"👨‍⚕️ *Profesional:* {res['doctor_name']}\n"
+                f"📱 *Celular del Doctor:* +{res['doctor_phone']}\n"
+                f"🏥 *Clínica:* {res['clinic_name']}\n\n"
+                f"📲 *Mensaje de bienvenida enviado con éxito al WhatsApp del médico.*\n"
+                f"A partir de este momento, todas las alertas ejecutivas (nuevos turnos agendados, cancelaciones y huecos rescatados) le llegarán directo a su teléfono en tiempo real.\n\n"
+                f"🎯 *Próximo paso de la demo:*\n"
+                f"Escribile a Sofía desde tu otro celular como paciente (ej: _«Hola, quiero turno para hoy a las 17 con {res['doctor_name']}»_)."
+            )
+            return True, reply, "clinic_demo_activated"
 
     # Pending onboarding phone follow-up
     if LAST_ONBOARDED_CLIENT.get("business_name") and not LAST_ONBOARDED_CLIENT.get("phone"):

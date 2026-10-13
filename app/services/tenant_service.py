@@ -189,4 +189,121 @@ REGLAS DE OPERACIÓN:
 """
         return prompt.strip()
 
+    @staticmethod
+    async def setup_doctor_live_demo(
+        db: Session,
+        doctor_name: str,
+        doctor_phone: str,
+        clinic_name: str = "Consultorios Médicos San Martín (Demo)",
+        boss_phone: Optional[str] = None,
+        secondary_phone: Optional[str] = None,
+        slug: str = "demo_consultorio",
+        send_welcome_whatsapp: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Activates or reconfigures a live clinical demo on-the-fly from WhatsApp (Modo Jefe) or CLI:
+        1. Updates or creates the demo tenant with the doctor's name, clinic name, and phone.
+        2. Clears past demo appointments and waitlist entries for a 100% clean slate.
+        3. Pre-registers Javier's personal phone in the waitlist as 'Laura Benítez' (activa).
+        4. Binds the secondary phone session directly to this clinic tenant.
+        5. Sends an official welcome WhatsApp alert to the doctor's real phone.
+        """
+        from app.services.boss_mode import normalize_argentine_phone
+
+        clean_doc_phone = "".join(filter(str.isdigit, doctor_phone))
+        norm_doc_phone = normalize_argentine_phone(clean_doc_phone)
+
+        # Normalize boss and secondary phones
+        default_boss = "".join(filter(str.isdigit, str(settings.WHATSAPP_ALERT_PHONE or "5493434536447")))
+        actual_boss = "".join(filter(str.isdigit, boss_phone)) if boss_phone else default_boss
+        actual_sec = "".join(filter(str.isdigit, secondary_phone)) if secondary_phone else "5493435730520"
+
+        # Format doctor title nicely if needed
+        clean_doc_name = doctor_name.strip()
+        if not any(clean_doc_name.lower().startswith(p) for p in ["dr.", "dr ", "dra.", "dra ", "doctor", "doctora"]):
+            clean_doc_name = f"Dr. {clean_doc_name}"
+
+        # 1. Get or create Tenant
+        tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
+        if not tenant:
+            tenant = Tenant(
+                slug=slug,
+                name=clinic_name,
+                business_type="salud",
+                owner_name=clean_doc_name,
+                owner_phone=norm_doc_phone,
+                branding_header=f"🏥 *{clinic_name}*",
+                modules_enabled='["turnos_rellena_huecos", "recordatorios", "faq"]',
+                knowledge_base=json.dumps({
+                    "especialidad": "Medicina General y Odontología",
+                    "horarios": "Lunes a Viernes 08:00 a 20:00 hs",
+                    "profesional": clean_doc_name
+                }, ensure_ascii=False),
+                active=True
+            )
+            db.add(tenant)
+            db.commit()
+            db.refresh(tenant)
+        else:
+            tenant.name = clinic_name
+            tenant.owner_name = clean_doc_name
+            tenant.owner_phone = norm_doc_phone
+            tenant.branding_header = f"🏥 *{clinic_name}*"
+            tenant.active = True
+            tenant.knowledge_base = json.dumps({
+                "especialidad": "Medicina General y Odontología",
+                "horarios": "Lunes a Viernes 08:00 a 20:00 hs",
+                "profesional": clean_doc_name
+            }, ensure_ascii=False)
+            db.commit()
+            db.refresh(tenant)
+
+        # 2. Clean past appointments & waitlist
+        db.query(Appointment).filter(Appointment.tenant_id == tenant.id).delete()
+        db.query(WaitlistEntry).filter(WaitlistEntry.tenant_id == tenant.id).delete()
+        db.commit()
+
+        # 3. Pre-register Javier's personal phone in waitlist as Laura Benítez
+        wl_entry = WaitlistEntry(
+            tenant_id=tenant.id,
+            patient_name="Laura Benítez",
+            patient_phone=actual_boss,
+            doctor_or_service=f"{clean_doc_name} - Odontología",
+            preferred_time_range="Por la tarde",
+            status="activa"
+        )
+        db.add(wl_entry)
+        db.commit()
+        db.refresh(wl_entry)
+
+        # 4. Pre-bind active session for secondary phone and boss phone
+        TenantService.set_active_session(db, actual_sec, tenant.slug)
+        TenantService.set_active_session(db, actual_boss, tenant.slug)
+
+        # 5. Send Welcome WhatsApp Message to the Doctor
+        if send_welcome_whatsapp and norm_doc_phone:
+            welcome_text = (
+                f"🏥 *{clinic_name}*\n\n"
+                f"¡Hola *{clean_doc_name}*! Te damos la bienvenida a *Sofía AI*.\n\n"
+                f"A partir de este momento, este celular queda conectado como la *línea ejecutiva* de tu consultorio.\n\n"
+                f"Vas a recibir acá en tiempo real las notificaciones de nuevos turnos agendados, cancelaciones imprevistas y vacantes recuperadas automáticamente."
+            )
+            try:
+                await whatsapp.send_whatsapp_message(to_phone=norm_doc_phone, text=welcome_text)
+                logger.info(f"📲 Sent welcome WhatsApp alert to Doctor {clean_doc_name} (+{norm_doc_phone})")
+            except Exception as e:
+                logger.error(f"Error sending welcome WhatsApp to doctor: {e}")
+
+        return {
+            "status": "success",
+            "tenant_id": tenant.id,
+            "tenant_slug": tenant.slug,
+            "clinic_name": clinic_name,
+            "doctor_name": clean_doc_name,
+            "doctor_phone": norm_doc_phone,
+            "waitlist_phone": actual_boss,
+            "waitlist_id": wl_entry.id,
+            "patient_phone": actual_sec
+        }
+
 tenant_service = TenantService()
