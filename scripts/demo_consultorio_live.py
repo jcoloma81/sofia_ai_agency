@@ -595,14 +595,15 @@ async def run_interactive_wizard():
 
     db.close()
 
-    db.close()
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Sofía AI Agency — Live Healthcare Demo Runner")
     parser.add_argument("--setup", action="store_true", help="Only setup the demo scene and exit")
+    parser.add_argument("--book", action="store_true", help="Simulate autonomous booking and exit")
     parser.add_argument("--cancel", action="store_true", help="Simulate cancellation for active demo appointment")
     parser.add_argument("--claim", action="store_true", help="Simulate claim for offered waitlist entry")
+    parser.add_argument("--reject", action="store_true", help="Simulate rejection for offered waitlist entry")
+    parser.add_argument("--view-db", action="store_true", help="Display live database tables and exit")
     parser.add_argument("--clean", action="store_true", help="Clean up demo scenario and exit")
     parser.add_argument("--doctor-phone", type=str, default="5493434536447", help="Doctor notification phone")
     parser.add_argument("--doctor-name", type=str, default="Dr. Pablo Rossi", help="Doctor name")
@@ -616,7 +617,7 @@ def parse_args():
 async def main():
     args = parse_args()
 
-    if args.non_interactive or args.setup or args.cancel or args.claim or args.clean:
+    if args.non_interactive or args.setup or args.cancel or args.claim or args.reject or args.book or args.view_db or args.clean:
         db = SessionLocal()
         tenant = get_or_create_demo_tenant(
             db=db,
@@ -630,6 +631,16 @@ async def main():
             print("✅ Demo scenario cleaned.")
             db.close()
             return
+
+        if args.book:
+            apt = await simulate_autonomous_booking_step(
+                db=db,
+                tenant_id=tenant.id,
+                patient_name="Martín Gómez",
+                patient_phone=args.patient_phone,
+                doctor_name=f"{args.doctor_name} - Odontología"
+            )
+            print(f"✅ Booking executed: Apt #{apt.id} for {apt.patient_name}")
 
         if args.setup:
             apt, wl = setup_demo_scenario(
@@ -652,6 +663,17 @@ async def main():
             else:
                 print("❌ No active appointment to cancel.")
 
+        if args.reject:
+            wl = db.query(WaitlistEntry).filter(
+                WaitlistEntry.tenant_id == tenant.id,
+                WaitlistEntry.status == "notificado_oferta"
+            ).order_by(WaitlistEntry.id.desc()).first()
+            if wl and wl.offered_appointment_id:
+                success = await execute_reject_step(db, wl.offered_appointment_id, wl.id)
+                print(f"✅ Rejection executed: {success}")
+            else:
+                print("❌ No pending offer to reject.")
+
         if args.claim:
             wl = db.query(WaitlistEntry).filter(
                 WaitlistEntry.tenant_id == tenant.id,
@@ -662,6 +684,9 @@ async def main():
                 print(f"✅ Claim executed: {success}")
             else:
                 print("❌ No pending offer to claim.")
+
+        if args.view_db:
+            display_live_database(db, tenant.id)
 
         db.close()
         return
