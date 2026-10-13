@@ -12,29 +12,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <title>Sofía AI — Portada de Facebook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   }
   body {
     width: 1640px;
     height: 924px;
-    background-color: #070B14;
+    background-color: #0B0D10;
     background-image: 
-      radial-gradient(circle at 18% 25%, rgba(16, 185, 129, 0.16) 0%, transparent 45%),
-      radial-gradient(circle at 82% 70%, rgba(59, 130, 246, 0.14) 0%, transparent 45%),
-      radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
-    color: #F8FAFC;
+      radial-gradient(circle at 15% 20%, rgba(5, 150, 105, 0.07) 0%, transparent 45%),
+      radial-gradient(circle at 85% 75%, rgba(15, 23, 42, 0.5) 0%, transparent 50%);
+    color: #F4F3EE;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
     overflow: hidden;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 44px 70px 38px 70px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   /* Header Section */
@@ -49,40 +49,50 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1.5px solid rgba(16, 185, 129, 0.45);
-    color: #10B981;
-    padding: 8px 24px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #D1D5DB;
+    padding: 7px 22px;
     border-radius: 9999px;
-    font-size: 13.5px;
-    font-weight: 800;
-    letter-spacing: 1.4px;
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
     margin-bottom: 14px;
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+  }
+
+  .badge-pill .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #059669;
   }
 
   .main-title {
-    font-size: 47px;
-    font-weight: 900;
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 48px;
+    font-weight: 600;
     line-height: 1.15;
-    letter-spacing: -1.2px;
-    margin-bottom: 10px;
-    max-width: 1360px;
+    letter-spacing: -0.8px;
+    margin-bottom: 12px;
+    max-width: 1380px;
+    color: #F4F3EE;
   }
 
-  .main-title .gradient-text {
-    background: linear-gradient(135deg, #10B981 0%, #38BDF8 50%, #818CF8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .main-title span {
+    font-family: 'Newsreader', Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    color: #059669;
   }
 
   .subtitle {
-    font-size: 20px;
-    color: #94A3B8;
-    font-weight: 500;
-    line-height: 1.4;
-    max-width: 1100px;
+    font-size: 19px;
+    color: #9FA6B2;
+    font-weight: 400;
+    line-height: 1.45;
+    max-width: 1120px;
     margin-bottom: 24px;
   }
 
@@ -97,90 +107,84 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   }
 
   .feature-card {
-    background: rgba(15, 23, 42, 0.75);
-    border: 1.5px solid rgba(51, 65, 85, 0.7);
-    border-radius: 20px;
+    background: #13161C;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 16px;
     padding: 22px 26px;
     display: flex;
     align-items: flex-start;
     gap: 20px;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
 
   .feature-card.highlight {
-    border-color: rgba(16, 185, 129, 0.5);
-    background: rgba(15, 23, 42, 0.88);
+    border-color: rgba(5, 150, 105, 0.4);
+    background: #151922;
   }
 
   .icon-wrapper {
-    width: 58px;
-    height: 58px;
-    border-radius: 16px;
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
     flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #9FA6B2;
   }
 
-  .icon-green {
-    background: rgba(16, 185, 129, 0.15);
-    border: 1.5px solid rgba(16, 185, 129, 0.4);
-    box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
-  }
-
-  .icon-blue {
-    background: rgba(56, 189, 248, 0.15);
-    border: 1.5px solid rgba(56, 189, 248, 0.4);
-    box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
-  }
-
-  .icon-purple {
-    background: rgba(168, 85, 247, 0.15);
-    border: 1.5px solid rgba(168, 85, 247, 0.4);
-    box-shadow: 0 0 16px rgba(168, 85, 247, 0.25);
-  }
-
-  .icon-amber {
-    background: rgba(245, 158, 11, 0.15);
-    border: 1.5px solid rgba(245, 158, 11, 0.4);
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+  .feature-card.highlight .icon-wrapper {
+    color: #6EE7B7;
+    border-color: rgba(5, 150, 105, 0.3);
+    background: rgba(5, 150, 105, 0.1);
   }
 
   .card-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
   .card-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: #FFFFFF;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 18.5px;
+    font-weight: 700;
+    color: #F4F3EE;
     letter-spacing: -0.3px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   .card-title .tag-pill {
-    font-size: 11px;
-    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     padding: 3px 8px;
-    border-radius: 6px;
-    background: rgba(16, 185, 129, 0.2);
-    color: #34D399;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #9FA6B2;
+  }
+
+  .feature-card.highlight .card-title .tag-pill {
+    background: rgba(5, 150, 105, 0.12);
+    border-color: rgba(5, 150, 105, 0.3);
+    color: #6EE7B7;
   }
 
   .card-desc {
-    font-size: 15px;
-    color: #CBD5E1;
-    line-height: 1.42;
-    font-weight: 500;
+    font-size: 14.5px;
+    color: #9FA6B2;
+    line-height: 1.45;
+    font-weight: 400;
   }
 
   /* Bottom Bar */
@@ -189,42 +193,56 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     justify-content: space-between;
     align-items: center;
     padding-top: 16px;
-    border-top: 1px solid rgba(51, 65, 85, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     width: 100%;
   }
 
   .footer-left {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
 
   .footer-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: #10B981;
-    box-shadow: 0 0 12px #10B981;
+    background: #059669;
   }
 
   .footer-text {
-    font-size: 15px;
-    color: #94A3B8;
-    font-weight: 600;
+    font-size: 13.5px;
+    color: #9FA6B2;
+    font-weight: 500;
   }
 
   .footer-text strong {
-    color: #F1F5F9;
+    color: #F4F3EE;
   }
 
   .footer-brand {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    color: #10B981;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #F4F3EE;
+  }
+
+  .footer-brand .brand-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #13161C;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Newsreader', serif;
+    font-size: 13px;
+    color: #F4F3EE;
   }
 </style>
 </head>
@@ -232,70 +250,69 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <div class="header-zone">
     <div class="badge-pill">
-      <span>⚡</span> TECNOLOGÍA AUTÓNOMA CON IA • EN TU WHATSAPP 24/7
+      <span class="pulse-dot"></span> PROTOCOLO DE OPERACIÓN CLÍNICA • INFRAESTRUCTURA AGÉNTICA
     </div>
     <h1 class="main-title">
-      Olvidate de los chatbots tradicionales.<br>
-      <span class="gradient-text">Tu negocio necesita una empleada con IA que resuelva todo.</span>
+      Sustitución de Chatbots Rígidos: <span>Infraestructura Agéntica 24/7 en WhatsApp</span>
     </h1>
     <p class="subtitle">
-      El sistema que vive dentro de WhatsApp: comprende notas de voz, opera tu agenda y recupera cancelaciones en tiempo real.
+      Comprensión de lenguaje natural rioplatense (texto y audios), rescate autónomo de turnos caídos en 90 segundos y supervisión ejecutiva directa en tu celular.
     </p>
   </div>
 
   <div class="cards-grid">
     <!-- Card 1 -->
     <div class="feature-card highlight">
-      <div class="icon-wrapper icon-green">🎙️</div>
+      <div class="icon-wrapper">01</div>
       <div class="card-content">
         <div class="card-title">
-          COMPRENDE NOTAS DE VOZ
-          <span class="tag-pill">IA Multimodal</span>
+          RESCATE AUTÓNOMO DE HUECOS
+          <span class="tag-pill">Protocolo Clínico</span>
         </div>
         <p class="card-desc">
-          Tus clientes le mandan audios desordenados como a una recepcionista real, y Sofía entiende pedidos, fechas y consultas al instante.
+          Ante una cancelación, contacta al instante a los pacientes en lista de espera y reasigna el turno en menos de 90 segundos, protegiendo tu facturación.
         </p>
       </div>
     </div>
 
     <!-- Card 2 -->
-    <div class="feature-card highlight">
-      <div class="icon-wrapper icon-blue">🔄</div>
+    <div class="feature-card">
+      <div class="icon-wrapper">02</div>
       <div class="card-content">
         <div class="card-title">
-          RELLENA TURNOS CAÍDOS SOLA
-          <span class="tag-pill" style="background: rgba(56, 189, 248, 0.2); color: #38BDF8;">Cero Ausentismo</span>
+          COMPRENSIÓN MULTIMODAL NATIVA
+          <span class="tag-pill">Audio &amp; Texto</span>
         </div>
         <p class="card-desc">
-          Si alguien cancela, detecta el hueco libre y contacta de inmediato a la lista de espera para reocupar el turno. No perdés facturación.
+          Tus pacientes envían notas de voz espontáneas como a una secretaria real. Sofía interpreta el motivo de consulta, disponibilidad y responde con calidez.
         </p>
       </div>
     </div>
 
     <!-- Card 3 -->
     <div class="feature-card">
-      <div class="icon-wrapper icon-purple">📱</div>
+      <div class="icon-wrapper">03</div>
       <div class="card-content">
         <div class="card-title">
-          UN CONTACTO DIRECTO EN WHATSAPP
-          <span class="tag-pill" style="background: rgba(168, 85, 247, 0.2); color: #C084FC;">Cero Apps</span>
+          SUPERVISIÓN EJECUTIVA (MODO DUEÑO)
+          <span class="tag-pill">Control Directo</span>
         </div>
         <p class="card-desc">
-          Sin descargar aplicaciones, sin registros ni webs lentas. Tus clientes le escriben directo al número que ya usan todos los días.
+          Alertas médicas ejecutivas y directivas por audio directamente en tu WhatsApp personal. Modificá aranceles o pausá la atención sin tocar la computadora.
         </p>
       </div>
     </div>
 
     <!-- Card 4 -->
     <div class="feature-card">
-      <div class="icon-wrapper icon-amber">👑</div>
+      <div class="icon-wrapper">04</div>
       <div class="card-content">
         <div class="card-title">
-          MODO DUEÑO POR VOZ
-          <span class="tag-pill" style="background: rgba(245, 158, 11, 0.2); color: #FBBF24;">Control Total</span>
+          BASE DE CONOCIMIENTO IN-CONTEXT
+          <span class="tag-pill">Cero Alucinación</span>
         </div>
         <p class="card-desc">
-          Le hablás por audio desde tu WhatsApp personal para ver turnos del día, reportes de ventas o darle directivas, sin tocar la PC.
+          Obras sociales, aranceles y requisitos clínicos inyectados directamente en el contexto de Gemini. Cero bases vectoriales frágiles y 100% de precisión.
         </p>
       </div>
     </div>
@@ -304,10 +321,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="footer-zone">
     <div class="footer-left">
       <div class="footer-dot"></div>
-      <span class="footer-text">Puesta en marcha ágil en pocos días hábiles • 100% en la nube • Cero contratos de permanencia</span>
+      <span class="footer-text"><strong>Laboratorio de Calibración a Medida</strong> • Meta Cloud API Oficial Verificada • Aislamiento Multi-Tenant</span>
     </div>
     <div class="footer-brand">
-      <span>⚡</span> SOFÍA AI AGENCY
+      <div class="brand-badge">S</div> SOFÍA AI SYSTEMS
     </div>
   </div>
 
@@ -316,7 +333,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 """
 
 def generate_cover():
-    print(f"🎨 Generando nueva portada de Facebook (1640x924 px)...")
+    print("🎨 Generando portada sobria estilo Entropy Editorial (1640x924 px)...")
     with open(HTML_TEMP_PATH, "w", encoding="utf-8") as f:
         f.write(HTML_TEMPLATE)
 
@@ -337,7 +354,7 @@ def generate_cover():
     im_cropped.save(OUTPUT_PATH, optimize=True)
     
     size_kb = os.path.getsize(OUTPUT_PATH) / 1024
-    print(f"✅ Portada generada con éxito: {OUTPUT_PATH} ({size_kb:.1f} KB, 1640x924 px)")
+    print(f"✅ Portada sobria generada con éxito: {OUTPUT_PATH} ({size_kb:.1f} KB, 1640x924 px)")
 
 if __name__ == "__main__":
     generate_cover()
