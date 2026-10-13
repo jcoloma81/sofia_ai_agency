@@ -229,7 +229,25 @@ class AppointmentService:
         if cand:
             cand.status = "rechazado"
             db.commit()
-            msg = f"Entendido {cand.patient_name}. Mantendremos tu lugar en lista de espera para futuras vacantes."
+
+            # Check if patient already has a future confirmed appointment
+            existing_apt = db.query(Appointment).filter(
+                Appointment.patient_phone == cand.patient_phone,
+                Appointment.status == "agendado"
+            ).order_by(Appointment.appointment_date.asc()).first()
+
+            if existing_apt:
+                e_date_str = existing_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+                msg = (
+                    f"¡Dale, no te preocupes {cand.patient_name}! Entendido que este horario no te queda cómodo.\n\n"
+                    f"Despreocupate que tu turno agendado del *{e_date_str}* sigue *100% firme y confirmado tal cual estaba*. ¡Nos vemos ese día! 🙌"
+                )
+            else:
+                msg = (
+                    f"¡Dale, no te preocupes {cand.patient_name}! Entendido que este horario no te queda cómodo.\n\n"
+                    f"Despreocupate que tu lugar en nuestra lista de espera *se mantiene tal cual estaba*, con prioridad para cuando se libere la próxima vacante. ¡Te avisamos apenas surja otro hueco! 🙌"
+                )
+
             if cand.tenant:
                 await tenant_service.send_branded_notification(cand.tenant, cand.patient_phone, msg)
 
@@ -423,7 +441,10 @@ class AppointmentService:
         future_apt = db.query(Appointment).filter(Appointment.id == future_apt_id).first()
         if future_apt and future_apt.tenant:
             date_str = future_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
-            msg = f"Comprendido {future_apt.patient_name}. Tu turno del *{date_str}* se mantiene exactamente igual. ¡Nos vemos ese día!"
+            msg = (
+                f"¡Dale, no te preocupes {future_apt.patient_name}! Entendido que preferís mantener tu fecha original.\n\n"
+                f"Tu turno agendado del *{date_str}* sigue *100% firme y confirmado tal cual estaba*. ¡Nos vemos ese día! 🙌"
+            )
             await tenant_service.send_branded_notification(future_apt.tenant, future_apt.patient_phone, msg)
 
         vacant_apt = db.query(Appointment).filter(Appointment.id == vacant_apt_id).first()
