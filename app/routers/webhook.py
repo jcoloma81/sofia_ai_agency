@@ -494,6 +494,24 @@ async def receive_whatsapp_webhook(
     from app.services.tenant_dispatcher import tenant_dispatcher
 
     tenant, cleaned_msg = tenant_service.resolve_incoming_tenant(db, clean_phone, message)
+    if not tenant and button_id:
+        try:
+            from app.models.tenant import Appointment
+            parts = button_id.split("_")
+            if (button_id.startswith("claim_apt_") or button_id.startswith("reject_apt_") or
+                button_id.startswith("cancel_apt_") or button_id.startswith("confirm_apt_")):
+                apt_id = int(parts[2])
+                apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+                if apt and apt.tenant:
+                    tenant = apt.tenant
+            elif button_id.startswith("fast_track_"):
+                apt_id = int(parts[3])
+                apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+                if apt and apt.tenant:
+                    tenant = apt.tenant
+        except Exception as b_err:
+            logger.error(f"Error resolving tenant from button_id {button_id}: {b_err}")
+
     if tenant:
         logger.info(f"🏢 Enterprise Tenant resolved: '{tenant.name}' ({tenant.slug}) for phone {clean_phone}")
         handled, tenant_reply = await tenant_dispatcher.process_tenant_message(

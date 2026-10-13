@@ -542,12 +542,20 @@ async def send_owner_or_admin_alert(
 
     for tmpl in candidates:
         try:
-            body_params = [
-                str(business_name)[:60],
-                str(event_type)[:60],
-                str(client_title)[:80],
-                str(details_summary)[:200]
-            ]
+            if tmpl in ["alerta_nueva_cita_v1", "alerta_nueva_cita_v2"]:
+                body_params = [
+                    str(client_title)[:60],
+                    str(details_summary)[:60],
+                    str(clean_phone)[:30],
+                    f"{event_type} - {business_name}"[:60]
+                ]
+            else:
+                body_params = [
+                    str(business_name)[:60],
+                    str(event_type)[:60],
+                    str(client_title)[:80],
+                    str(details_summary)[:200]
+                ]
             sent = await send_whatsapp_template(
                 to_phone=clean_phone,
                 template_name=tmpl,
@@ -622,7 +630,8 @@ async def notify_javier_meeting_scheduled(
         business_name="Sofía AI Agency" if campaign == "ai_agency" else "Air Control",
         event_type="Reunión Confirmada",
         client_title=f"{prospect_name} ({contact_str}) - +{phone}",
-        details_summary=f"Horario: {meeting_details}. {city_str}. Último mensaje: {last_message}"
+        details_summary=f"Horario: {meeting_details}. {city_str}. Último mensaje: {last_message}",
+        template_candidates=["alerta_nueva_cita_v1", "notificacion_operativa_v1"]
     )
     logger.info(f"WhatsApp appointment notification dispatched to Javier ({alert_phone}) for {prospect_name}")
 

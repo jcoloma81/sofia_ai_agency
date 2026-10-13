@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Tuple, Dict, Any
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from app.models.tenant import Tenant, TenantSession, Appointment, MembershipPayment
+from app.models.tenant import Tenant, TenantSession, Appointment, MembershipPayment, WaitlistEntry
 from app.services import whatsapp
 from app.config.settings import settings
 
@@ -61,13 +61,25 @@ class TenantService:
                 db.commit()
                 return t, message_text
 
-        # 3. Check if phone is an existing patient or member
-        recent_apt = db.query(Appointment).filter(Appointment.patient_phone == clean_phone).order_by(Appointment.id.desc()).first()
+        # Phone candidate variants (with/without country/mobile prefix '9')
+        cand_phones = [clean_phone]
+        if clean_phone.startswith("549"):
+            cand_phones.append("54" + clean_phone[3:])
+        elif clean_phone.startswith("54") and not clean_phone.startswith("549"):
+            cand_phones.append("549" + clean_phone[2:])
+
+        # 3. Check if phone is an existing patient, waitlist candidate, or member
+        recent_apt = db.query(Appointment).filter(Appointment.patient_phone.in_(cand_phones)).order_by(Appointment.id.desc()).first()
         if recent_apt and recent_apt.tenant:
             TenantService.set_active_session(db, clean_phone, recent_apt.tenant.slug)
             return recent_apt.tenant, message_text
 
-        recent_mem = db.query(MembershipPayment).filter(MembershipPayment.member_phone == clean_phone).order_by(MembershipPayment.id.desc()).first()
+        recent_wl = db.query(WaitlistEntry).filter(WaitlistEntry.patient_phone.in_(cand_phones)).order_by(WaitlistEntry.id.desc()).first()
+        if recent_wl and recent_wl.tenant:
+            TenantService.set_active_session(db, clean_phone, recent_wl.tenant.slug)
+            return recent_wl.tenant, message_text
+
+        recent_mem = db.query(MembershipPayment).filter(MembershipPayment.member_phone.in_(cand_phones)).order_by(MembershipPayment.id.desc()).first()
         if recent_mem and recent_mem.tenant:
             TenantService.set_active_session(db, clean_phone, recent_mem.tenant.slug)
             return recent_mem.tenant, message_text

@@ -116,9 +116,9 @@ def setup_demo_scenario(
     tenant_id: int,
     doctor_name: str = "Dr. Pablo Rossi - Odontología",
     patient_name: str = "Martín Gómez",
-    patient_phone: str = "5493434536447",
+    patient_phone: str = "5491145678901",
     waitlist_patient_name: str = "Laura Benítez",
-    waitlist_patient_phone: str = "5493434536447",
+    waitlist_patient_phone: str = "5493435730520",
     appointment_time: Optional[datetime] = None
 ) -> Tuple[Appointment, WaitlistEntry]:
     """
@@ -209,9 +209,9 @@ async def run_interactive_wizard():
     doctor_phone = "5493434536447"
     doctor_email = "dr.rossi@consultoriosdemo.com"
     patient_name = "Martín Gómez"
-    patient_phone = "5493434536447"
+    patient_phone = "5491145678901"
     waitlist_name = "Laura Benítez"
-    waitlist_phone = "5493434536447"
+    waitlist_phone = "5493435730520"
 
     tenant = get_or_create_demo_tenant(
         db=db,
@@ -421,8 +421,8 @@ def parse_args():
     parser.add_argument("--doctor-phone", type=str, default="5493434536447", help="Doctor notification phone")
     parser.add_argument("--doctor-name", type=str, default="Dr. Pablo Rossi", help="Doctor name")
     parser.add_argument("--clinic-name", type=str, default="Consultorios Médicos San Martín (Demo)", help="Clinic name")
-    parser.add_argument("--patient-phone", type=str, default="5493434536447", help="Patient phone")
-    parser.add_argument("--waitlist-phone", type=str, default="5493434536447", help="Waitlist candidate phone")
+    parser.add_argument("--patient-phone", type=str, default="5491145678901", help="Patient phone")
+    parser.add_argument("--waitlist-phone", type=str, default="5493435730520", help="Waitlist candidate phone")
     parser.add_argument("--non-interactive", action="store_true", help="Run without user prompts (for tests/automation)")
     return parser.parse_args()
 
