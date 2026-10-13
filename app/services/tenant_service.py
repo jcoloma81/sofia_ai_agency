@@ -145,10 +145,29 @@ class TenantService:
         except Exception:
             kb_formatted = kb_text
 
+        turnos_protocol = ""
+        if "turnos_rellena_huecos" in tenant.modules_enabled or tenant.business_type in ["salud", "medicina", "estetica"]:
+            turnos_protocol = """
+PROTOCOLO CLÍNICO DE AGENDAMIENTO AUTÓNOMO:
+- Si el paciente solicita un turno ('quiero turno', 'tenés turno para hoy a las 17', 'necesito turno', 'agendame'):
+  1. Si indica su nombre (o ya lo conocés) y el día/horario que desea (o acepta uno sugerido):
+     Confirmale el turno con calidez rioplatense, indicando fecha, hora y el nombre del profesional.
+     Y al FINAL de tu respuesta, en una línea separada, agregá EXACTAMENTE:
+     [AGENDAR_TURNO: {"paciente": "Nombre del Paciente", "fecha_hora": "YYYY-MM-DDTHH:MM:00", "servicio": "Profesional o Especialidad"}]
+     (Usá la fecha actual de referencia para calcular el ISO YYYY-MM-DDTHH:MM:00).
+  2. Si no indicó su nombre o el horario exacto, pedíselo amablemente para poder agendarlo.
+- Si el paciente indica que no podrá asistir o pide cancelar su turno:
+  Confirmale que procedés a cancelar su turno para que no se preocupe y agrega al final:
+  [CANCEL_APPOINTMENT_INTENT]
+"""
+
+        now_ref = utc_now().strftime("%A %d de %B de %Y, %H:%M hs (UTC)")
+
         prompt = f"""
 Sos Sofía, la secretaria ejecutiva y asistente oficial de '{tenant.name}'.
 Rubro del negocio: {tenant.business_type.upper()}.
 Módulos habilitados: {tenant.modules_enabled}.
+Fecha actual de referencia: {now_ref}.
 
 PAUTAS DE COMUNICACIÓN Y TONO:
 - Sé extremadamente amable, cálida, ejecutiva y profesional.
@@ -164,7 +183,7 @@ BASE DE CONOCIMIENTO OFICIAL DEL COMERCIO/CLÍNICA:
 REGLAS DE OPERACIÓN:
 1. Respondé dudas sobre horarios, precios, especialidades, ubicación y formas de pago basándote ESTRICTAMENTE en la base de conocimiento arriba.
 2. Si te preguntan algo que no figura en la base de conocimiento, no inventes: deciles que vas a consultar con la administración y que te dejen su consulta.
-3. Si el usuario desea agendar, cancelar o confirmar un turno, guialo con empatía.
+3. Si el usuario desea agendar, cancelar o confirmar un turno, guialo con empatía.{turnos_protocol}
 4. Si el usuario envía una foto o comprobante de transferencia, confirmale la recepción amablemente.
 5. Mantené las respuestas concisas (ideales para leer rápido en WhatsApp).
 """

@@ -282,6 +282,63 @@ class TenantDispatcher:
         if not ai_reply:
             ai_reply = f"Hola, te comunicaste con {tenant.name}. En breve un asesor te responderá."
 
+        # Handle autonomous appointment booking
+        if "[AGENDAR_TURNO:" in ai_reply:
+            booking_match = re.search(r'\[AGENDAR_TURNO:\s*(\{.*?\})\]', ai_reply, re.DOTALL)
+            if booking_match:
+                try:
+                    booking_data = json.loads(booking_match.group(1))
+                    ai_reply = re.sub(r'\[AGENDAR_TURNO:\s*\{.*?\}\]', '', ai_reply).strip()
+
+                    p_name = booking_data.get("paciente") or f"Paciente (+{clean_phone})"
+                    doc_service = booking_data.get("servicio") or tenant.owner_name or "Consulta Médica"
+                    dt_str = booking_data.get("fecha_hora")
+
+                    apt_dt = None
+                    if dt_str:
+                        try:
+                            apt_dt = datetime.fromisoformat(dt_str)
+                            if apt_dt.tzinfo is None:
+                                apt_dt = apt_dt.replace(tzinfo=timezone.utc)
+                        except Exception:
+                            apt_dt = None
+                    if not apt_dt:
+                        apt_dt = utc_now() + timedelta(days=1)
+                        apt_dt = apt_dt.replace(hour=17, minute=0, second=0, microsecond=0)
+
+                    new_apt = appointment_service.create_appointment(
+                        db=db,
+                        tenant_id=tenant.id,
+                        patient_name=p_name,
+                        patient_phone=clean_phone,
+                        doctor_or_service=doc_service,
+                        appointment_date=apt_dt,
+                        notes="Agendado autónomamente por WhatsApp"
+                    )
+                    logger.info(f"📅 Nuevo turno #{new_apt.id} agendado autónomamente para '{p_name}' ({apt_dt})")
+
+                    # Send executive alert to Doctor / Owner
+                    if tenant.owner_phone:
+                        doc_date_str = new_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+                        owner_alert = (
+                            f"📅 *NUEVO TURNO AGENDADO (Autónomo)*\n\n"
+                            f"👤 Paciente: *{new_apt.patient_name}*\n"
+                            f"📱 Celular: +{clean_phone}\n"
+                            f"👨‍⚕️ Profesional: *{new_apt.doctor_or_service}*\n"
+                            f"📅 Fecha: *{doc_date_str}*\n\n"
+                            f"✨ Agendado 100% de forma autónoma por WhatsApp."
+                        )
+                        await whatsapp.send_owner_or_admin_alert(
+                            to_phone=tenant.owner_phone,
+                            fallback_text=owner_alert,
+                            business_name=tenant.name,
+                            event_type="Nuevo Turno Agendado (Autónomo)",
+                            client_title=f"{new_apt.patient_name} (+{clean_phone})",
+                            details_summary=f"Turno: {doc_date_str} ({new_apt.doctor_or_service})"
+                        )
+                except Exception as b_err:
+                    logger.error(f"Error parsing [AGENDAR_TURNO]: {b_err}")
+
         # Handle automatic cancellation if Gemini detected explicit cancellation intent
         if active_apt and "[CANCEL_APPOINTMENT_INTENT]" in ai_reply:
             ai_reply = ai_reply.replace("[CANCEL_APPOINTMENT_INTENT]", "").strip()

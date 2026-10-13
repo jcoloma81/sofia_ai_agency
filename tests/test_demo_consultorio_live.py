@@ -9,6 +9,9 @@ from scripts.demo_consultorio_live import (
     setup_demo_scenario,
     execute_cancellation_step,
     execute_claim_step,
+    execute_reject_step,
+    simulate_autonomous_booking_step,
+    display_live_database,
     clean_demo_scenario,
     main
 )
@@ -172,3 +175,59 @@ async def test_cli_flags_non_interactive():
     with patch("sys.argv", ["demo_consultorio_live.py", "--clean", "--non-interactive"]), \
          patch("app.database.SessionLocal", side_effect=TestingSessionLocal):
         await main()
+
+
+@pytest.mark.asyncio
+async def test_simulate_autonomous_booking_step(db):
+    tenant = get_or_create_demo_tenant(db=db, slug="demo_auton_book_test")
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_owner_or_admin_alert", new_callable=AsyncMock) as mock_alert:
+        apt = await simulate_autonomous_booking_step(
+            db=db,
+            tenant_id=tenant.id,
+            patient_name="Carlos Tevez",
+            patient_phone="5493435555555",
+            doctor_name="Dra. Gómez"
+        )
+        assert apt.id is not None
+        assert apt.patient_name == "Carlos Tevez"
+        assert apt.status == "agendado"
+        assert mock_msg.called
+        assert mock_alert.called
+
+
+@pytest.mark.asyncio
+async def test_full_live_demo_flow_cancellation_and_reject(db):
+    tenant = get_or_create_demo_tenant(db=db, slug="demo_reject_flow_test")
+    apt, wl = setup_demo_scenario(
+        db=db,
+        tenant_id=tenant.id,
+        doctor_name="Dr. Rossi",
+        patient_name="Martín Paciente",
+        waitlist_patient_name="Laura Candidata"
+    )
+
+    # 1. Cancel
+    with patch("app.services.whatsapp.send_owner_or_admin_alert", new_callable=AsyncMock), \
+         patch("app.services.whatsapp.send_whatsapp_interactive_buttons", new_callable=AsyncMock), \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock):
+        await execute_cancellation_step(db, apt.id)
+
+    # 2. Reject
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        success = await execute_reject_step(db, apt.id, wl.id)
+        assert success is True
+        db.refresh(wl)
+        assert wl.status == "rechazado"
+        assert mock_msg.called
+
+
+def test_display_live_database(db, capsys):
+    tenant = get_or_create_demo_tenant(db=db, slug="demo_db_display_test")
+    setup_demo_scenario(db=db, tenant_id=tenant.id)
+    display_live_database(db, tenant.id)
+    captured = capsys.readouterr()
+    assert "BASE DE DATOS EN VIVO" in captured.out
+    assert "APPOINTMENTS" in captured.out
+    assert "WAITLIST_ENTRIES" in captured.out
+

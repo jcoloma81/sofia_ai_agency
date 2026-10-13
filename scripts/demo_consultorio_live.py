@@ -190,6 +190,115 @@ async def execute_claim_step(
     return await AppointmentService.claim_waitlist_slot(db, appointment_id, waitlist_id)
 
 
+async def execute_reject_step(
+    db: Session,
+    appointment_id: int,
+    waitlist_id: int
+) -> bool:
+    """
+    Simulates the waitlist candidate tapping 'NO, PASO':
+    - Keeps their priority in waitlist
+    - Sends warm rioplatense response to candidate
+    - Passes the slot to next candidate / fast-track
+    """
+    return await AppointmentService.reject_waitlist_slot(db, appointment_id, waitlist_id)
+
+
+async def simulate_autonomous_booking_step(
+    db: Session,
+    tenant_id: int,
+    patient_name: str = "Martín Gómez",
+    patient_phone: str = "5491145678901",
+    doctor_name: str = "Dr. Pablo Rossi - Odontología",
+    appointment_time: Optional[datetime] = None
+) -> Appointment:
+    """
+    Simulates the patient requesting an appointment via WhatsApp autonomously:
+    - Creates Appointment record in DB
+    - Sends WhatsApp confirmation to patient
+    - Sends Executive Alert to Doctor / Owner
+    """
+    if not appointment_time:
+        today = utc_now().date()
+        appointment_time = datetime(today.year, today.month, today.day, 17, 0, tzinfo=timezone.utc)
+
+    apt = AppointmentService.create_appointment(
+        db=db,
+        tenant_id=tenant_id,
+        patient_name=patient_name,
+        patient_phone=patient_phone,
+        doctor_or_service=doctor_name,
+        appointment_date=appointment_time,
+        notes="Turno agendado de forma 100% autónoma por WhatsApp"
+    )
+
+    tenant = apt.tenant
+    date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+
+    # Send confirmation to patient
+    confirm_msg = (
+        f"¡Hola *{patient_name}*! Tu turno con *{doctor_name}* quedó agendado con éxito para el día *{date_str}*.\n\n"
+        f"📍 Te esperamos en el consultorio. Si tenés alguna duda previa o imprevisto, avisanos por este mismo medio."
+    )
+    await tenant_service.send_branded_notification(tenant, patient_phone, confirm_msg)
+
+    # Send executive alert to Doctor
+    if tenant and tenant.owner_phone:
+        owner_alert = (
+            f"📅 *NUEVO TURNO AGENDADO (Autónomo)*\n\n"
+            f"👤 Paciente: *{patient_name}*\n"
+            f"📱 Celular: +{patient_phone}\n"
+            f"👨‍⚕️ Profesional: *{doctor_name}*\n"
+            f"📅 Fecha: *{date_str}*\n\n"
+            f"✨ Agendado 100% de forma autónoma por WhatsApp sin intervención de la secretaria."
+        )
+        await whatsapp.send_owner_or_admin_alert(
+            to_phone=tenant.owner_phone,
+            fallback_text=owner_alert,
+            business_name=tenant.name,
+            event_type="Nuevo Turno Agendado (Autónomo)",
+            client_title=f"{patient_name} (+{patient_phone})",
+            details_summary=f"Turno: {date_str} ({doctor_name})"
+        )
+
+    return apt
+
+
+def display_live_database(db: Session, tenant_id: int):
+    """
+    Displays the current database state in a clean, high-contrast terminal table
+    so the doctor/client can see real-time updates in Google Meet or in person.
+    """
+    apts = db.query(Appointment).filter(Appointment.tenant_id == tenant_id).order_by(Appointment.id.asc()).all()
+    wls = db.query(WaitlistEntry).filter(WaitlistEntry.tenant_id == tenant_id).order_by(WaitlistEntry.id.asc()).all()
+
+    print(f"\n{CYAN}{BOLD}========================================================================{RESET}")
+    print(f"{CYAN}{BOLD}   📊 BASE DE DATOS EN VIVO — AGENDA & LISTA DE ESPERA (SQLITE / POSTGRES) {RESET}")
+    print(f"{CYAN}{BOLD}========================================================================{RESET}")
+
+    print(f"\n{BOLD}1. TABLA: APPOINTMENTS (Turnos Registrados):{RESET}")
+    if not apts:
+        print(f"   {YELLOW}(No hay turnos registrados en este momento){RESET}")
+    else:
+        print(f"   {'ID':<5} | {'PACIENTE':<18} | {'TELÉFONO':<15} | {'FECHA / HORA':<18} | {'ESTADO':<22}")
+        print(f"   {'-'*5}-+-{'-'*18}-+-{'-'*15}-+-{'-'*18}-+-{'-'*22}")
+        for a in apts:
+            d_str = a.appointment_date.strftime("%d/%m %H:%M hs")
+            st_color = GREEN if a.status in ["agendado", "confirmado", "rellenado_con_exito"] else (RED if a.status == "cancelado" else YELLOW)
+            print(f"   #{a.id:<4} | {a.patient_name:<18} | +{a.patient_phone:<14} | {d_str:<18} | {st_color}{a.status:<22}{RESET}")
+
+    print(f"\n{BOLD}2. TABLA: WAITLIST_ENTRIES (Lista de Espera Activa):{RESET}")
+    if not wls:
+        print(f"   {YELLOW}(No hay pacientes en lista de espera en este momento){RESET}")
+    else:
+        print(f"   {'ID':<5} | {'PACIENTE':<18} | {'TELÉFONO':<15} | {'PREFERENCIA':<18} | {'ESTADO':<22}")
+        print(f"   {'-'*5}-+-{'-'*18}-+-{'-'*15}-+-{'-'*18}-+-{'-'*22}")
+        for w in wls:
+            st_color = GREEN if w.status == "turno_tomado" else (YELLOW if w.status == "notificado_oferta" else (RED if w.status == "rechazado" else CYAN))
+            print(f"   #{w.id:<4} | {w.patient_name:<18} | +{w.patient_phone:<14} | {w.preferred_time_range[:18]:<18} | {st_color}{w.status:<22}{RESET}")
+    print(f"{CYAN}========================================================================{RESET}\n")
+
+
 def print_status_box(title: str, lines: list, color: str = GREEN):
     print(f"\n{color}{BOLD}┌────────────────────────────────────────────────────────────────────────┐{RESET}")
     print(f"{color}{BOLD}│ {title.ljust(70)} │{RESET}")
@@ -231,17 +340,19 @@ async def run_interactive_wizard():
         print(f"  • {BOLD}Paciente Activo:{RESET} {patient_name} (+{patient_phone})")
         print(f"  • {BOLD}Paciente Lista Espera:{RESET} {waitlist_name} (+{waitlist_phone})\n")
 
-        print(f"{BOLD}Menú de Opciones:{RESET}")
-        print(f"  {GREEN}[1]{RESET} 📋 Preparar y Resetear Escenario Demo (Crear Turno 17:00 hs + Lista Espera)")
-        print(f"  {YELLOW}[2]{RESET} ⚠️ Simular Cancelación de Turno (Martín cancela -> Alerta Dr + Oferta a Laura)")
-        print(f"  {MAGENTA}[3]{RESET} 🎯 Simular Rescate de Turno (Laura acepta -> Hueco cubierto + Alerta Triunfal)")
-        print(f"  {CYAN}[4]{RESET} 🚀 MODO SHOW EN VIVO COMPLETO (Paso a paso guiado con [ENTER])")
-        print(f"  {BOLD}[5]{RESET} ⚙️ Personalizar Datos (Nombre del Doctor / Teléfonos para la reunión)")
-        print(f"  {BOLD}[6]{RESET} 🧹 Limpiar Escenario (Borrar turnos de demo)")
+        print(f"{BOLD}Menú de Opciones para la Demostración:{RESET}")
+        print(f"  {CYAN}[1]{RESET} 📊 Ver Base de Datos en Pantalla en Vivo (Agenda & Lista de Espera)")
+        print(f"  {GREEN}[2]{RESET} 💬 Simular Paciente Agendando de Forma Autónoma (Paso 1 -> Crea Turno en DB + Alerta Dr)")
+        print(f"  {YELLOW}[3]{RESET} ⚠️ Simular Cancelación de Turno (Paso 2 -> Turno Cancelado + Alerta Dr + Oferta a Laura)")
+        print(f"  {MAGENTA}[4]{RESET} 🙅 Simular Rechazo de Adelantamiento ('NO, PASO' con respuesta cálida rioplatense)")
+        print(f"  {GREEN}[5]{RESET} 🎯 Simular Aceptación de Adelantamiento ('TOMAR TURNO' -> Turno Rescatado + Alerta Triunfal)")
+        print(f"  {CYAN}[6]{RESET} 🚀 MODO SHOW COMPLETO PASO A PASO (Guiado con [ENTER] para reunión)")
+        print(f"  {BOLD}[7]{RESET} ⚙️ Personalizar Datos (Nombre del Doctor / Teléfonos para la reunión)")
+        print(f"  {BOLD}[8]{RESET} 🧹 Limpiar Escenario (Borrar turnos de demo)")
         print(f"  {RED}[0]{RESET} ❌ Salir")
 
         try:
-            choice = input(f"\n{BOLD}Seleccioná una opción [0-6]: {RESET}").strip()
+            choice = input(f"\n{BOLD}Seleccioná una opción [0-8]: {RESET}").strip()
         except (KeyboardInterrupt, EOFError):
             print("\n👋 Saliendo de la demo.")
             break
@@ -251,43 +362,62 @@ async def run_interactive_wizard():
             break
 
         elif choice == "1":
-            print(f"\n⏳ {CYAN}Inicializando escenario en la base de datos...{RESET}")
-            current_apt, current_wl = setup_demo_scenario(
+            display_live_database(db, tenant.id)
+
+        elif choice == "2":
+            print(f"\n⏳ {CYAN}Simulando paciente solicitando turno por WhatsApp...{RESET}")
+            current_apt = await simulate_autonomous_booking_step(
                 db=db,
                 tenant_id=tenant.id,
-                doctor_name=f"{doctor_name} - Odontología",
                 patient_name=patient_name,
                 patient_phone=patient_phone,
-                waitlist_patient_name=waitlist_name,
-                waitlist_patient_phone=waitlist_phone
+                doctor_name=f"{doctor_name} - Odontología"
             )
+            # Ensure waitlist candidate exists too
+            current_wl = db.query(WaitlistEntry).filter(
+                WaitlistEntry.tenant_id == tenant.id,
+                WaitlistEntry.patient_phone == "".join(filter(str.isdigit, waitlist_phone))
+            ).first()
+            if not current_wl:
+                current_wl = WaitlistEntry(
+                    tenant_id=tenant.id,
+                    patient_name=waitlist_name,
+                    patient_phone="".join(filter(str.isdigit, waitlist_phone)),
+                    doctor_or_service=f"{doctor_name} - Odontología",
+                    preferred_time_range="Por la tarde",
+                    status="activa"
+                )
+                db.add(current_wl)
+                db.commit()
+                db.refresh(current_wl)
+
             date_str = current_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
             print_status_box(
-                "✅ ESCENARIO DEMO PREPARADO CON ÉXITO",
+                "📅 TURNO AGENDADO DE FORMA 100% AUTÓNOMA",
                 [
-                    f"1. Turno #{current_apt.id} agendado para '{patient_name}' a las {date_str}.",
-                    f"2. Paciente #{current_wl.id} '{waitlist_name}' registrada en Lista de Espera.",
-                    f"3. Consultorio '{tenant.name}' listo para la llamada."
+                    f"1. Paciente '{patient_name}' agendó para {date_str}.",
+                    f"2. Estado en BD: 'agendado'. Creado en la tabla Appointments.",
+                    f"3. Confirmación con pautas enviada al WhatsApp del paciente.",
+                    f"4. ALERTA EJECUTIVA despachada al celular del Doctor (+{doctor_phone})."
                 ],
                 GREEN
             )
+            display_live_database(db, tenant.id)
 
-        elif choice == "2":
+        elif choice == "3":
             if not current_apt:
-                # Find most recent
                 current_apt = db.query(Appointment).filter(
                     Appointment.tenant_id == tenant.id,
                     Appointment.status == "agendado"
                 ).order_by(Appointment.id.desc()).first()
 
             if not current_apt:
-                print(f"{RED}❌ No hay turnos agendados en el escenario. Ejecutá la opción [1] primero.{RESET}")
+                print(f"{RED}❌ No hay turnos agendados en el escenario. Ejecutá la opción [2] primero.{RESET}")
                 continue
 
             print(f"\n⏳ {YELLOW}Ejecutando cancelación y activando Lista de Espera autónoma...{RESET}")
             res = await execute_cancellation_step(db, current_apt.id, reason="Imprevisto laboral de último momento")
             
-            # Refresh entries
             db.refresh(current_apt)
             current_wl = db.query(WaitlistEntry).filter(
                 WaitlistEntry.tenant_id == tenant.id,
@@ -298,29 +428,63 @@ async def run_interactive_wizard():
                 "⚠️ CANCELACIÓN PROCESADA & RESCATE ACTIVADO",
                 [
                     f"• Turno #{current_apt.id} marcado como 'cancelado'.",
-                    f"• Alerta de Cancelación despachada a +{doctor_phone} ({doctor_email}).",
+                    f"• Alerta de Cancelación despachada a +{doctor_phone}.",
                     f"• Paciente ofrecido: '{res.get('candidate_offered')}' (+{waitlist_phone}).",
-                    f"• Mensaje interactivo de WhatsApp enviado con botones de confirmación."
+                    f"• Mensaje interactivo enviado a Laura con botones: [TOMAR TURNO] y [NO, PASO]."
                 ],
                 YELLOW
             )
+            display_live_database(db, tenant.id)
 
-        elif choice == "3":
+        elif choice == "4":
+            # Simulate Reject ("NO, PASO")
             if not current_apt or not current_wl:
-                # Find offered waitlist entry
                 current_wl = db.query(WaitlistEntry).filter(
                     WaitlistEntry.tenant_id == tenant.id,
                     WaitlistEntry.status == "notificado_oferta"
                 ).order_by(WaitlistEntry.id.desc()).first()
-
                 if current_wl:
                     current_apt = db.query(Appointment).filter(Appointment.id == current_wl.offered_appointment_id).first()
 
             if not current_apt or not current_wl:
-                print(f"{RED}❌ No hay ninguna oferta de turno pendiente para tomar. Ejecutá [1] y [2] primero.{RESET}")
+                print(f"{RED}❌ No hay oferta de turno pendiente para rechazar. Ejecutá [2] y [3] primero.{RESET}")
                 continue
 
-            print(f"\n⏳ {MAGENTA}Simulando aceptación del paciente en lista de espera...{RESET}")
+            print(f"\n⏳ {MAGENTA}Simulando paciente tocando 'NO, PASO' en WhatsApp...{RESET}")
+            await execute_reject_step(db, current_apt.id, current_wl.id)
+            db.refresh(current_wl)
+
+            print_status_box(
+                "🙅 RECHAZO CORDIAL PROCESADO ('NO, PASO')",
+                [
+                    f"• Laura Benítez declinó la oferta para las 17:00 hs.",
+                    f"• Sofía le respondió con calidez rioplatense tranquilizadora:",
+                    f"  '¡Dale, no te preocupes Laura! Tu lugar en lista de espera se mantiene...'",
+                    f"• Estado en BD: 'rechazado' para este hueco, lista de espera protegida.",
+                    f"• Sofía pasa inmediatamente a ofrecer el hueco al siguiente en fila."
+                ],
+                MAGENTA
+            )
+            display_live_database(db, tenant.id)
+
+        elif choice == "5":
+            # Simulate Claim ("TOMAR TURNO")
+            if not current_apt or not current_wl:
+                current_wl = db.query(WaitlistEntry).filter(
+                    WaitlistEntry.tenant_id == tenant.id,
+                    WaitlistEntry.status.in_(["notificado_oferta", "activa"])
+                ).order_by(WaitlistEntry.id.desc()).first()
+                if current_wl:
+                    current_apt = db.query(Appointment).filter(
+                        Appointment.tenant_id == tenant.id,
+                        Appointment.status.in_(["cancelado", "agendado"])
+                    ).order_by(Appointment.id.desc()).first()
+
+            if not current_apt or not current_wl:
+                print(f"{RED}❌ No hay ninguna oferta de turno pendiente para tomar. Ejecutá [2] y [3] primero.{RESET}")
+                continue
+
+            print(f"\n⏳ {GREEN}Simulando paciente tocando 'TOMAR TURNO' en WhatsApp...{RESET}")
             success = await execute_claim_step(db, current_apt.id, current_wl.id)
 
             if success:
@@ -330,53 +494,72 @@ async def run_interactive_wizard():
                     "🎉 ¡TURNO RESCATADO CON ÉXITO!",
                     [
                         f"• Turno de las {date_str} reasignado a '{current_wl.patient_name}'.",
-                        f"• Estado del turno: 'rellenado_con_exito'.",
-                        f"• Confirmación enviada al paciente por WhatsApp.",
+                        f"• Estado en BD: 'rellenado_con_exito'.",
+                        f"• Confirmación oficial enviada al WhatsApp de Laura.",
                         f"• ALERTA TRIUNFAL enviada al Doctor: 'Cero pérdida de facturación'."
                     ],
-                    MAGENTA
+                    GREEN
                 )
+                display_live_database(db, tenant.id)
             else:
                 print(f"{RED}❌ No se pudo completar la asignación del turno.{RESET}")
 
-        elif choice == "4":
+        elif choice == "6":
             # Guided show mode
-            print(f"\n{CYAN}{BOLD}🎬 INICIANDO MODO SHOW EN VIVO...{RESET}")
-            print(f"Podés hablar en el Meet y presionar [ENTER] en cada punto para que los mensajes caigan en vivo.\n")
+            print(f"\n{CYAN}{BOLD}🎬 INICIANDO MODO SHOW EN VIVO PASO A PASO...{RESET}")
+            print(f"Ideal para Google Meet: presioná [ENTER] en cada paso para guiar el relato.\n")
 
-            # Paso 1: Setup
-            current_apt, current_wl = setup_demo_scenario(
+            clean_demo_scenario(db, tenant.id)
+            display_live_database(db, tenant.id)
+            input(f"{BOLD}👉 Mostrá la base de datos limpia al cliente y presioná [ENTER] para que el paciente agende solo...{RESET}")
+
+            # Paso 1: Agendamiento autónomo
+            print(f"\n{GREEN}▶ PASO 1 (Autogestión de Entrada):{RESET}")
+            current_apt = await simulate_autonomous_booking_step(
                 db=db,
                 tenant_id=tenant.id,
-                doctor_name=f"{doctor_name} - Odontología",
                 patient_name=patient_name,
                 patient_phone=patient_phone,
-                waitlist_patient_name=waitlist_name,
-                waitlist_patient_phone=waitlist_phone
+                doctor_name=f"{doctor_name} - Odontología"
             )
+            # Add Laura to waitlist
+            current_wl = WaitlistEntry(
+                tenant_id=tenant.id,
+                patient_name=waitlist_name,
+                patient_phone="".join(filter(str.isdigit, waitlist_phone)),
+                doctor_or_service=f"{doctor_name} - Odontología",
+                preferred_time_range="Por la tarde",
+                status="activa"
+            )
+            db.add(current_wl)
+            db.commit()
+            db.refresh(current_wl)
+
             date_str = current_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
-            print(f"{GREEN}▶ PASO 1 (Escenario Inicial):{RESET}")
-            print(f"  El paciente {patient_name} tiene turno confirmado hoy a las {date_str}.")
-            print(f"  La paciente {waitlist_name} está registrada en lista de espera.")
-            input(f"\n{BOLD}👉 Explicá la agenda inicial al cliente y presioná [ENTER] para simular la cancelación...{RESET}")
+            print(f"  El paciente {patient_name} agendó por WhatsApp hoy a las {date_str}.")
+            print(f"  Alerta médica de nuevo turno recibida en el celular del Dr. Rossi (+{doctor_phone}).")
+            display_live_database(db, tenant.id)
+            input(f"\n{BOLD}👉 Explicá la alerta médica y presioná [ENTER] para simular la cancelación inesperada...{RESET}")
 
             # Paso 2: Cancelación
             print(f"\n{YELLOW}▶ PASO 2 (El Problema - Turno Cancelado):{RESET}")
             res = await execute_cancellation_step(db, current_apt.id, reason="Imprevisto personal de último momento")
             print(f"  🚨 {patient_name} acaba de cancelar su turno de las {date_str}.")
             print(f"  📲 Alerta de cancelación enviada al Doctor (+{doctor_phone}).")
-            print(f"  🚀 Sofía le acaba de enviar la oferta de WhatsApp a {waitlist_name}.")
-            input(f"\n{BOLD}👉 Mostrá la pantalla/alerta recibida y presioná [ENTER] para que Laura acepte el turno...{RESET}")
+            print(f"  🚀 Sofía le acaba de enviar la oferta con botones a {waitlist_name} (+{waitlist_phone}).")
+            display_live_database(db, tenant.id)
+            input(f"\n{BOLD}👉 Mostrá los botones interactivos en el celular de Laura y presioná [ENTER] para que acepte...{RESET}")
 
             # Paso 3: Aceptación
-            print(f"\n{MAGENTA}▶ PASO 3 (La Solución - Rescate Autónomo):{RESET}")
+            print(f"\n{GREEN}▶ PASO 3 (La Solución - Rescate Autónomo):{RESET}")
             await execute_claim_step(db, current_apt.id, current_wl.id)
             print(f"  🎉 {waitlist_name} aceptó el turno.")
-            print(f"  ✅ Turno confirmado y reasignado en la agenda.")
-            print(f"  💰 Alerta de Facturación Protegida enviada al Doctor.")
-            print(f"\n{GREEN}{BOLD}✨ Fin del Show: El cliente vio el turno recuperarse en tiempo real.{RESET}\n")
+            print(f"  ✅ Turno confirmado y reasignado en la agenda en la fila #{current_apt.id}.")
+            print(f"  💰 Alerta de Facturación Protegida recibida en el celular del Doctor.")
+            display_live_database(db, tenant.id)
+            print(f"\n{GREEN}{BOLD}✨ Fin del Show: El cliente vio el ciclo completo (Agendamiento -> Cancelación -> Rescate) en tiempo real.{RESET}\n")
 
-        elif choice == "5":
+        elif choice == "7":
             print(f"\n{BOLD}⚙️ Personalización de Datos para la Demostración:{RESET}")
             new_clinic = input(f"Nombre de la Clínica [{clinic_name}]: ").strip()
             if new_clinic:
@@ -403,11 +586,14 @@ async def run_interactive_wizard():
             )
             print(f"\n{GREEN}✅ Datos actualizados correctamente.{RESET}\n")
 
-        elif choice == "6":
+        elif choice == "8":
             clean_demo_scenario(db, tenant.id)
             current_apt = None
             current_wl = None
             print(f"\n{GREEN}🧹 Escenario limpiado. Base de datos sin turnos de demo.{RESET}\n")
+            display_live_database(db, tenant.id)
+
+    db.close()
 
     db.close()
 
