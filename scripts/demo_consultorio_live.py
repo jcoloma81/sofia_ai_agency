@@ -159,6 +159,11 @@ def setup_demo_scenario(
     db.commit()
     db.refresh(wl)
 
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant:
+        TenantService.set_active_session(db, patient_phone, tenant.slug)
+        TenantService.set_active_session(db, waitlist_patient_phone, tenant.slug)
+
     return apt, wl
 
 
@@ -233,6 +238,8 @@ async def simulate_autonomous_booking_step(
     )
 
     tenant = apt.tenant
+    if tenant:
+        TenantService.set_active_session(db, patient_phone, tenant.slug)
     date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
 
     # Send confirmation to patient
