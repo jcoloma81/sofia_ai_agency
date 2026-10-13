@@ -72,6 +72,13 @@ def serve_propuesta():
     propuesta_path = os.path.join(os.path.dirname(__file__), "app", "static", "propuesta_comercial.html")
     return FileResponse(propuesta_path)
 
+# Interactive Style Lab & Entropy Showcase
+@app.get("/estilos", response_class=FileResponse)
+@app.get("/preview-estilos", response_class=FileResponse)
+def serve_preview_estilos():
+    preview_path = os.path.join(os.path.dirname(__file__), "app", "static", "preview_estilos.html")
+    return FileResponse(preview_path)
+
 # Ficha de Alta de Cliente & Relevamiento Operativo
 @app.get("/alta", response_class=FileResponse)
 @app.get("/alta-cliente", response_class=FileResponse)

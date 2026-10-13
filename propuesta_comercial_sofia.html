@@ -7,30 +7,36 @@
   <title data-i18n="doc_title">Sofía AI — Autonomous Multi-Agent WhatsApp &amp; ERP Engine | Case Study</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #0B0F19;
-      --bg-card: #111827;
-      --bg-card-hover: #162032;
-      --border-color: #1F2937;
-      --border-highlight: #10B981;
-      --text-primary: #F9FAFB;
-      --text-secondary: #9CA3AF;
-      --text-muted: #6B7280;
-      --accent-green: #10B981;
-      --accent-green-glow: rgba(16, 185, 129, 0.18);
-      --accent-blue: #3B82F6;
-      --accent-purple: #8B5CF6;
-      --accent-gradient: linear-gradient(135deg, #10B981 0%, #3B82F6 50%, #8B5CF6 100%);
-      --code-bg: #030712;
+      --bg-main: #0D0F12;
+      --bg-card: #14171C;
+      --bg-card-hover: #191D24;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(5, 150, 105, 0.35);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text-primary: #F4F3EE;
+      --text-secondary: #9FA6B2;
+      --text-muted: #646B79;
+      --accent-green: #059669;
+      --accent-green-glow: rgba(5, 150, 105, 0.12);
+      --accent-amber: #D97706;
+      --accent-amber-glow: rgba(217, 119, 6, 0.12);
+      --accent-blue: #2563EB;
+      --accent-purple: #059669;
+      --accent-gradient: linear-gradient(180deg, #059669 0%, #047857 100%);
+      --code-bg: #090A0D;
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font-body);
     }
 
     html {
@@ -79,30 +85,34 @@
     .brand-icon {
       width: 44px;
       height: 44px;
-      background: var(--accent-gradient);
-      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 0 24px rgba(16, 185, 129, 0.35);
+      font-size: 20px;
+      font-family: var(--font-display);
+      font-weight: 700;
       flex-shrink: 0;
+      color: #F4F3EE;
     }
 
     .brand-name {
       font-size: 20px;
-      font-weight: 800;
-      color: #fff;
-      letter-spacing: -0.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
       line-height: 1.2;
     }
 
     .brand-tag {
-      font-size: 11px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
+      letter-spacing: 1px;
       color: var(--accent-green);
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .nav-right {
@@ -116,12 +126,11 @@
     .lang-switcher {
       display: inline-flex;
       align-items: center;
-      background: rgba(17, 24, 39, 0.85);
-      border: 1px solid rgba(55, 65, 81, 0.7);
-      border-radius: 12px;
+      background: rgba(20, 23, 28, 0.95);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
       padding: 3px;
       gap: 2px;
-      backdrop-filter: blur(8px);
     }
 
     .lang-btn {
@@ -129,7 +138,7 @@
       border: none;
       color: var(--text-secondary);
       padding: 6px 12px;
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.3px;
@@ -139,17 +148,18 @@
       gap: 6px;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
+      font-family: var(--font-body);
     }
 
     .lang-btn:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .lang-btn.active {
-      background: var(--accent-gradient);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
     }
 
     .nav-actions {
@@ -159,11 +169,11 @@
     }
 
     .btn-secondary {
-      background: #1F2937;
-      color: #E5E7EB;
-      border: 1px solid #374151;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
       padding: 10px 18px;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 13px;
       font-weight: 600;
       text-decoration: none;
@@ -173,33 +183,41 @@
       justify-content: center;
       gap: 8px;
       white-space: nowrap;
+      font-family: var(--font-body);
     }
 
     .btn-secondary:hover {
-      background: #374151;
-      color: #fff;
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.26);
+      color: #FFFFFF;
+      transform: translateY(-1px);
     }
 
     .btn-primary {
-      background: var(--accent-gradient);
-      color: #fff;
+      background: #065F46;
+      color: #F4F3EE;
       padding: 10px 20px;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       text-decoration: none;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       white-space: nowrap;
+      font-family: var(--font-body);
+      border: 1px solid rgba(52, 211, 153, 0.25);
     }
 
     .btn-primary:hover {
+      background: #047857;
+      border-color: rgba(52, 211, 153, 0.45);
+      color: #FFFFFF;
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
     }
 
     /* Hero Section */
@@ -214,14 +232,15 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: var(--accent-green);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #D1D5DB;
       padding: 6px 16px;
-      border-radius: 50px;
-      font-size: clamp(10.5px, 2.4vw, 12px);
-      font-weight: 700;
-      letter-spacing: 0.5px;
+      border-radius: 999px;
+      font-size: clamp(10.5px, 2.4vw, 11.5px);
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
       margin-bottom: 24px;
       max-width: 100%;
@@ -231,45 +250,51 @@
     }
 
     .pulse-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--accent-green);
-      box-shadow: 0 0 10px var(--accent-green);
-      animation: pulse 2s infinite;
+      animation: pulse 2.5s infinite;
       flex-shrink: 0;
     }
 
     @keyframes pulse {
       0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.2); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 1; }
       100% { transform: scale(0.95); opacity: 0.8; }
     }
 
     .hero-title {
-      font-size: clamp(26px, 5.2vw, 46px);
-      font-weight: 800;
-      letter-spacing: -1.2px;
-      line-height: 1.18;
-      margin-bottom: 20px;
-      max-width: 960px;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5.5vw, 52px);
+      font-weight: 600;
+      letter-spacing: -0.8px;
+      line-height: 1.15;
+      margin-bottom: 22px;
+      max-width: 980px;
       margin-left: auto;
       margin-right: auto;
       word-break: break-word;
+      text-wrap: balance;
+      color: var(--text-primary);
     }
 
     .hero-title span {
-      background: var(--accent-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 400;
+      color: var(--accent-green);
+      background: none;
+      -webkit-text-fill-color: initial;
     }
 
     .hero-sub {
-      font-size: clamp(15px, 2.5vw, 18px);
+      font-size: clamp(15px, 2.2vw, 17.5px);
       color: var(--text-secondary);
       max-width: 820px;
       margin: 0 auto 36px auto;
       line-height: 1.6;
+      text-wrap: pretty;
     }
 
     .hero-cta-group {
@@ -287,8 +312,8 @@
       margin-bottom: clamp(44px, 6vw, 64px);
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: clamp(20px, 3.5vw, 32px);
+      border-radius: 14px;
+      padding: clamp(20px, 3.5vw, 30px);
     }
 
     .metric-item {
@@ -296,25 +321,28 @@
     }
 
     .metric-value {
-      font-size: clamp(28px, 4.5vw, 38px);
-      font-weight: 800;
-      color: #fff;
-      letter-spacing: -1px;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4.2vw, 36px);
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
       margin-bottom: 4px;
+      line-height: 1.15;
     }
 
     .metric-value.accent {
-      background: var(--accent-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--accent-green);
+      background: none;
+      -webkit-text-fill-color: initial;
     }
 
     .metric-label {
-      font-size: clamp(11.5px, 1.8vw, 13px);
+      font-family: var(--font-mono);
+      font-size: clamp(10.5px, 1.6vw, 12px);
       color: var(--text-secondary);
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
 
     /* Section Headers */
@@ -324,20 +352,23 @@
     }
 
     .section-tag {
-      font-size: 12px;
-      color: var(--accent-blue);
-      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent-green);
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.2px;
       margin-bottom: 8px;
     }
 
     .section-title {
-      font-size: clamp(22px, 3.8vw, 32px);
-      font-weight: 800;
-      letter-spacing: -0.8px;
-      color: #fff;
-      line-height: 1.25;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3.8vw, 36px);
+      font-weight: 600;
+      letter-spacing: -0.6px;
+      color: var(--text-primary);
+      line-height: 1.2;
+      text-wrap: balance;
     }
 
     .section-sub {
@@ -358,18 +389,21 @@
 
     .box-card {
       background: var(--bg-card);
-      border-radius: 18px;
+      border-radius: 12px;
       padding: clamp(20px, 3.5vw, 32px);
       border: 1px solid var(--border-color);
     }
 
     .box-card.problem {
-      border-top: 4px solid #EF4444;
+      border: 1px solid rgba(239, 68, 68, 0.22);
+      border-top: 3px solid #EF4444;
+      background: rgba(239, 68, 68, 0.02);
     }
 
     .box-card.solution {
-      border-top: 4px solid var(--accent-green);
-      background: linear-gradient(180deg, #131E30 0%, #111827 100%);
+      border: 1px solid rgba(5, 150, 105, 0.28);
+      border-top: 3px solid var(--accent-green);
+      background: rgba(5, 150, 105, 0.03);
     }
 
     .box-header {
@@ -380,9 +414,10 @@
     }
 
     .box-title {
-      font-size: clamp(18px, 2.8vw, 20px);
-      font-weight: 800;
-      color: #fff;
+      font-family: var(--font-display);
+      font-size: clamp(19px, 2.8vw, 22px);
+      font-weight: 600;
+      color: var(--text-primary);
     }
 
     .list-items {
@@ -417,12 +452,12 @@
 
     /* Banner de Alivio Operativo & Autogestión de Turnos */
     .alivio-section {
-      background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.75) 100%);
-      border: 1.5px solid rgba(16, 185, 129, 0.35);
-      border-radius: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-highlight);
+      border-radius: 16px;
       padding: clamp(28px, 4.5vw, 48px) clamp(20px, 3.5vw, 36px);
       margin-bottom: clamp(48px, 7vw, 72px);
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35), 0 0 32px rgba(16, 185, 129, 0.08);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
       position: relative;
     }
 
@@ -436,31 +471,37 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.45);
-      color: var(--accent-green);
-      padding: 6px 18px;
-      border-radius: 50px;
-      font-size: clamp(10.5px, 2.2vw, 12px);
-      font-weight: 800;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #D1D5DB;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: clamp(10px, 2vw, 11px);
+      font-weight: 600;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       margin-bottom: 18px;
     }
 
     .alivio-main-title {
-      font-size: clamp(24px, 4.2vw, 36px);
-      font-weight: 800;
-      letter-spacing: -1px;
-      color: #fff;
-      line-height: 1.22;
+      font-family: var(--font-display);
+      font-size: clamp(26px, 4.2vw, 38px);
+      font-weight: 600;
+      letter-spacing: -0.6px;
+      color: var(--text-primary);
+      line-height: 1.18;
       margin-bottom: 16px;
+      text-wrap: balance;
     }
 
     .alivio-main-title span {
-      background: var(--accent-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-family: var(--font-display);
+      font-style: italic;
+      font-weight: 400;
+      color: var(--accent-green);
+      background: none;
+      -webkit-text-fill-color: initial;
     }
 
     .alivio-main-sub {
@@ -478,7 +519,7 @@
 
     .alivio-card {
       background: var(--bg-card);
-      border-radius: 18px;
+      border-radius: 12px;
       padding: clamp(20px, 3vw, 28px);
       border: 1px solid var(--border-color);
       display: flex;
@@ -486,15 +527,16 @@
     }
 
     .alivio-card.card-friction {
-      border-top: 4px solid #EF4444;
-      background: rgba(239, 68, 68, 0.04);
+      border: 1px solid rgba(239, 68, 68, 0.22);
+      border-top: 3px solid #EF4444;
+      background: rgba(239, 68, 68, 0.02);
     }
 
     .alivio-card.card-sofia {
-      border-top: 4px solid var(--accent-green);
-      background: linear-gradient(180deg, rgba(16, 185, 129, 0.1) 0%, rgba(17, 24, 39, 0.95) 100%);
-      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12);
-      border-color: rgba(16, 185, 129, 0.35);
+      border: 1px solid rgba(5, 150, 105, 0.3);
+      border-top: 3px solid var(--accent-green);
+      background: rgba(5, 150, 105, 0.03);
+      box-shadow: none;
     }
 
     .alivio-card-top {
@@ -503,25 +545,27 @@
       gap: 14px;
       margin-bottom: 20px;
       padding-bottom: 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .alivio-card-icon {
-      font-size: 28px;
+      font-size: 26px;
       flex-shrink: 0;
     }
 
     .alivio-card-title {
-      font-size: 17px;
-      font-weight: 800;
-      color: #fff;
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--text-primary);
       line-height: 1.25;
       margin-bottom: 4px;
     }
 
     .alivio-card-tag {
-      font-size: 11px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       color: #EF4444;
@@ -565,34 +609,38 @@
     .feature-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
+      border-radius: 12px;
       padding: clamp(20px, 3vw, 28px) clamp(18px, 2.5vw, 24px);
       transition: transform 0.2s, border-color 0.2s;
     }
 
     .feature-card:hover {
-      transform: translateY(-4px);
-      border-color: #374151;
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
     }
 
     .feature-icon-wrapper {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.25);
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
       margin-bottom: 20px;
+      color: #9FA6B2;
     }
 
     .feature-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 10px;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
     }
 
     .feature-desc {
@@ -702,9 +750,9 @@
 
     /* Deliverables Callout */
     .agency-card {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(59, 130, 246, 0.12) 100%);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      border-radius: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: 16px;
       padding: clamp(24px, 4.5vw, 44px);
       text-align: center;
       margin-bottom: clamp(40px, 6vw, 60px);
@@ -898,7 +946,7 @@
     .rubro-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 18px;
+      border-radius: 12px;
       padding: clamp(20px, 3.5vw, 26px);
       transition: transform 0.2s, border-color 0.2s;
       display: flex;
@@ -907,8 +955,8 @@
     }
 
     .rubro-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent-green);
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
     }
 
     .rubro-header {
@@ -919,44 +967,49 @@
     }
 
     .rubro-icon {
-      font-size: 30px;
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      color: #9FA6B2;
     }
 
     .rubro-title {
-      font-size: 17px;
-      font-weight: 800;
-      color: #fff;
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--text-primary);
       line-height: 1.25;
     }
 
     .rubro-desc {
       font-size: 13.5px;
       color: var(--text-secondary);
-      line-height: 1.5;
+      line-height: 1.55;
       margin-bottom: 16px;
     }
 
     .rubro-tag {
       display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--accent-green);
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      padding: 4px 10px;
-      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #A7F3D0;
+      background: rgba(5, 150, 105, 0.1);
+      border: 1px solid rgba(5, 150, 105, 0.25);
+      padding: 3px 8px;
+      border-radius: 4px;
       align-self: flex-start;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
 
     /* Pricing Section */
@@ -976,7 +1029,7 @@
     .pricing-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 20px;
+      border-radius: 14px;
       padding: clamp(24px, 4vw, 36px);
       display: flex;
       flex-direction: column;
@@ -985,29 +1038,32 @@
     }
 
     .pricing-card.featured {
-      border: 2px solid var(--accent-green);
-      background: linear-gradient(180deg, #13242B 0%, #111827 100%);
-      box-shadow: 0 0 35px rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(5, 150, 105, 0.45);
+      background: #14171E;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
     }
 
     .pricing-badge-popular {
       position: absolute;
-      top: -13px;
+      top: -12px;
       right: 24px;
-      background: var(--accent-green);
-      color: #030712;
-      font-size: 11px;
-      font-weight: 800;
+      background: #065F46;
+      color: #F4F3EE;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      padding: 4px 12px;
-      border-radius: 20px;
+      padding: 4px 10px;
+      border-radius: 4px;
     }
 
     .pricing-plan-name {
-      font-size: 20px;
-      font-weight: 800;
-      color: #fff;
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 6px;
     }
 
@@ -1015,7 +1071,7 @@
       font-size: 13.5px;
       color: var(--text-secondary);
       margin-bottom: 20px;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
     .pricing-price-wrap {
@@ -1026,9 +1082,10 @@
     }
 
     .pricing-price {
-      font-size: clamp(34px, 5vw, 44px);
-      font-weight: 800;
-      color: #fff;
+      font-family: var(--font-mono);
+      font-size: clamp(32px, 4.5vw, 42px);
+      font-weight: 700;
+      color: var(--text-primary);
       letter-spacing: -1px;
     }
 
@@ -1039,13 +1096,14 @@
     }
 
     .pricing-setup {
-      font-size: 14px;
-      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 600;
       color: #FBBF24;
-      background: rgba(251, 191, 36, 0.1);
-      border: 1px solid rgba(251, 191, 36, 0.35);
-      border-radius: 8px;
-      padding: 9px 14px;
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: 6px;
+      padding: 8px 12px;
       margin-bottom: 22px;
       display: inline-flex;
       align-items: center;
@@ -1055,9 +1113,9 @@
     }
 
     .pricing-card.featured .pricing-setup {
-      color: #34D399;
-      background: rgba(16, 185, 129, 0.14);
-      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6EE7B7;
+      background: rgba(5, 150, 105, 0.1);
+      border: 1px solid rgba(5, 150, 105, 0.3);
     }
 
     .pricing-features-list {
@@ -1070,7 +1128,7 @@
       align-items: flex-start;
       gap: 10px;
       font-size: 13.5px;
-      color: #E5E7EB;
+      color: #D1D5DB;
       margin-bottom: 12px;
       line-height: 1.45;
     }
@@ -1085,9 +1143,9 @@
 
     /* Packs Extra Callout */
     .packs-callout {
-      background: rgba(31, 41, 55, 0.6);
-      border: 1px dashed var(--accent-blue);
-      border-radius: 16px;
+      background: rgba(20, 23, 28, 0.6);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
       padding: 20px 24px;
       display: flex;
       align-items: center;
@@ -1098,9 +1156,10 @@
     }
 
     .packs-text h4 {
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 4px;
     }
 
@@ -1121,7 +1180,7 @@
     .download-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
+      border-radius: 12px;
       padding: 24px;
       display: flex;
       flex-direction: column;
@@ -1130,8 +1189,8 @@
     }
 
     .download-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
     }
 
     .download-header {
@@ -1142,13 +1201,22 @@
     }
 
     .download-icon {
-      font-size: 26px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #9FA6B2;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
     }
 
     .download-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
     }
 
     .download-desc {
@@ -1164,22 +1232,24 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      color: var(--accent-green);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #D1D5DB;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       padding: 8px 14px;
-      border-radius: 8px;
+      border-radius: 6px;
       text-decoration: none;
       transition: all 0.2s ease;
       width: fit-content;
+      font-family: var(--font-body);
     }
 
     .btn-demo-rubro:hover {
-      background: var(--accent-green);
-      color: #030712;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      background: #065F46;
+      border-color: rgba(52, 211, 153, 0.35);
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
       transform: translateY(-1px);
     }
 
@@ -1189,28 +1259,31 @@
       bottom: 24px;
       right: 24px;
       z-index: 9999;
-      background: #25D366;
-      color: #fff;
+      background: #065F46;
+      color: #F4F3EE;
+      border: 1px solid rgba(255, 255, 255, 0.18);
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 20px;
-      border-radius: 50px;
+      padding: 11px 20px;
+      border-radius: 999px;
       text-decoration: none;
-      font-weight: 700;
-      font-size: 14px;
-      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
-      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+      font-weight: 600;
+      font-size: 13.5px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .floating-whatsapp:hover {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 12px 30px rgba(37, 211, 102, 0.6);
-      color: #fff;
+      background: #047857;
+      color: #FFFFFF;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75);
     }
 
     .floating-whatsapp-icon {
-      font-size: 20px;
+      font-size: 11px;
+      color: #34D399;
       display: flex;
       align-items: center;
     }
@@ -1233,7 +1306,7 @@
     <!-- Header Navigation -->
     <header class="top-bar">
       <a href="/" class="brand-logo">
-        <div class="brand-icon">⚡</div>
+        <div class="brand-icon">S</div>
         <div>
           <div class="brand-name">Sofia AI</div>
           <div class="brand-tag" data-i18n="brand_tag">Autonomous Systems &amp; Intelligent Workflows</div>
@@ -1244,31 +1317,31 @@
         <!-- Multilingual Switcher -->
         <div class="lang-switcher" role="group" aria-label="Language Selector">
           <button type="button" class="lang-btn" data-lang="es" onclick="setLanguage('es')">
-            <span>🇦🇷</span> ES
+            ES
           </button>
           <button type="button" class="lang-btn" data-lang="pt" onclick="setLanguage('pt')">
-            <span>🇧🇷</span> PT
+            PT
           </button>
           <button type="button" class="lang-btn" data-lang="en" onclick="setLanguage('en')">
-            <span>🇺🇸</span> EN
+            EN
           </button>
         </div>
 
         <div class="nav-actions">
           <a href="#rubros" class="btn-secondary" data-i18n="nav_rubros">
-            🏢 Rubros
+            Rubros
           </a>
           <a href="#precios" class="btn-secondary" data-i18n="nav_precios">
-            🏷️ Precios ($30k)
+            Precios ($30k)
           </a>
-          <a href="/alta" class="btn-secondary" style="border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; background: rgba(37, 99, 235, 0.1);">
-            🚀 Ficha de Alta
+          <a href="/alta" class="btn-secondary">
+            Ficha de Alta
           </a>
           <a href="#descargas" class="btn-secondary" data-i18n="nav_descargas">
-            📥 Dossiers PDF
+            Dossiers PDF
           </a>
           <a href="https://wa.me/5493435720312" class="btn-primary btn-whatsapp" target="_blank" data-i18n="nav_whatsapp">
-            Chat on WhatsApp →
+            Hablar por WhatsApp →
           </a>
         </div>
       </div>
@@ -1278,23 +1351,23 @@
     <section class="hero">
       <div class="badge-pill">
         <span class="pulse-dot"></span>
-        <span data-i18n="hero_badge">⚡ LA EJECUTIVA CON IA QUE REVOLUCIONA TU NEGOCIO • DE WHATSAPP A TU COMPUTADORA</span>
+        <span data-i18n="hero_badge">● PROTOCOLO CLÍNICO V2 • INFRAESTRUCTURA AGÉNTICA PARA WHATSAPP</span>
       </div>
 
       <h1 class="hero-title" data-i18n-html="hero_title">
-        Atiende tu WhatsApp, Rescata Turnos Caídos y <span>Actualiza tu Excel con el Proveedor Más Barato sin Tocar la PC</span>
+        Infraestructura Agéntica para Consultorios y PyMEs: <span>Rescate de Huecos de Agenda y Operación 24/7 en WhatsApp</span>
       </h1>
 
       <p class="hero-sub" data-i18n-html="hero_sub">
-        Diseñada para consultorios médicos, gimnasios, talleres y comercios que pierden plata por demoras o listas desactualizadas. Sofía responde en 3 segundos por nota de voz, rellena huecos de agenda en automático, cobra cuotas y cruza las listas de todos tus proveedores para decirte siempre quién tiene el mejor precio.
+        Sustitución de fricción en turnos médicos y gestión comercial. Sofía procesa lenguaje natural con fluidez humana (texto y notas de voz), reasigna turnos caídos a lista de espera en menos de 90 segundos y opera con supervisión ejecutiva directa en tu celular personal.
       </p>
 
       <div class="hero-cta-group">
         <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" class="btn-primary btn-whatsapp" target="_blank" data-i18n="hero_cta_spec">
-          🟢 Probar a Sofía en WhatsApp en Vivo →
+          Probar en WhatsApp en Vivo →
         </a>
         <a href="#rubros" class="btn-secondary" data-i18n="hero_cta_arch">
-          🎯 Ver Demos por Rubro ↓
+          Ver Demos por Rubro ↓
         </a>
       </div>
 
@@ -1327,7 +1400,7 @@
     <section class="alivio-section" id="alivio-turnos">
       <div class="alivio-header">
         <div class="badge-alivio" data-i18n="alivio_badge">
-          🩺 ALIVIO OPERATIVO INMEDIATO PARA CONSULTORIOS &amp; PROFESIONALES
+          PROTOCOLO CLÍNICO DE RECUPERACIÓN • CONSULTORIOS &amp; PROFESIONALES
         </div>
         <h2 class="alivio-main-title" data-i18n-html="alivio_title">
           Desligate del Agendamiento: Tus Pacientes Toman Turnos Solos por <span>WhatsApp las 24 hs</span>
@@ -1341,7 +1414,7 @@
         <!-- Tarjeta Turneros Web Clásicos -->
         <div class="alivio-card card-friction">
           <div class="alivio-card-top">
-            <span class="alivio-card-icon">⚠️</span>
+            <span class="alivio-card-icon icon-fail" style="font-size: 20px;">✕</span>
             <div>
               <h4 class="alivio-card-title" data-i18n="alivio_trad_title">Turneros Web Clásicos (Apps &amp; Links Externos)</h4>
               <span class="alivio-card-tag" data-i18n="alivio_trad_tag">Alta Fricción &amp; Abandono</span>
@@ -1370,7 +1443,7 @@
         <!-- Tarjeta Sofía AI -->
         <div class="alivio-card card-sofia">
           <div class="alivio-card-top">
-            <span class="alivio-card-icon">✨</span>
+            <span class="alivio-card-icon icon-success" style="font-size: 20px;">✓</span>
             <div>
               <h4 class="alivio-card-title" data-i18n="alivio_sofia_title">Con Sofía AI (Autogestión Nativa en WhatsApp)</h4>
               <span class="alivio-card-tag tag-sofia" data-i18n="alivio_sofia_tag">100% Adopción • Cero Fricción</span>
@@ -1399,7 +1472,7 @@
 
       <div class="alivio-cta-container">
         <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Consultorio%20M%C3%A9dico" target="_blank" class="btn-primary btn-whatsapp" data-i18n="alivio_cta">
-          💬 Probar Demostración de Autogestión de Turnos en WhatsApp →
+          Probar Demostración de Autogestión en WhatsApp →
         </a>
       </div>
     </section>
@@ -1408,7 +1481,7 @@
     <section class="comparison-grid">
       <div class="box-card problem">
         <div class="box-header">
-          <span style="font-size: 24px;">🛑</span>
+          <span class="icon-fail" style="font-size: 20px;">✕</span>
           <h3 class="box-title" data-i18n="problem_title">Lo que te frena y te hace perder dinero todos los días</h3>
         </div>
         <ul class="list-items">
@@ -1433,7 +1506,7 @@
 
       <div class="box-card solution">
         <div class="box-header">
-          <span style="font-size: 24px;">🚀</span>
+          <span class="icon-success" style="font-size: 20px;">✓</span>
           <h3 class="box-title" data-i18n="solution_title">Tu negocio en piloto automático con Sofía AI</h3>
         </div>
         <ul class="list-items">
@@ -1466,37 +1539,37 @@
 
     <section class="features-grid">
       <div class="feature-card">
-        <div class="feature-icon-wrapper">⏰</div>
+        <div class="feature-icon-wrapper">01</div>
         <h4 class="feature-title" data-i18n="feat_1_title">Recordatorios Escalonados (48h y 24h)</h4>
         <p class="feature-desc" data-i18n="feat_1_desc">Sofía contacta a cada paciente o cliente con anticipación para pedir confirmación con un solo toque. Si confirman, el turno queda asegurado; si avisan que no pueden, el sistema actúa de inmediato.</p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon-wrapper">🔄</div>
+        <div class="feature-icon-wrapper">02</div>
         <h4 class="feature-title" data-i18n="feat_2_title">Relleno Automático de Huecos y Cancelaciones</h4>
         <p class="feature-desc" data-i18n="feat_2_desc">Cuando alguien cancela o libera un turno, Sofía no deja la hora vacía: consulta al instante la lista de espera o avisa a clientes habituales para cubrir ese lugar en minutos, protegiendo tu facturación.</p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon-wrapper">🎙️</div>
+        <div class="feature-icon-wrapper">03</div>
         <h4 class="feature-title" data-i18n="feat_3_title">Comprensión Total de Audios de WhatsApp</h4>
         <p class="feature-desc" data-i18n="feat_3_desc">Tus clientes le mandan notas de voz desordenadas como a una recepcionista real. Sofía interpreta el pedido, servicio u horario en 3 segundos y responde con calidez humana las 24 horas del día.</p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon-wrapper">📊</div>
+        <div class="feature-icon-wrapper">04</div>
         <h4 class="feature-title" data-i18n="feat_4_title">Actualización de Excel en Pantalla (Windows COM)</h4>
         <p class="feature-desc" data-i18n="feat_4_desc">Mandale un audio o archivo por WhatsApp y Sofía impacta las celdas directamente en la pantalla de tu computadora. Cero programas raros ni carga manual de datos.</p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon-wrapper">💳</div>
+        <div class="feature-icon-wrapper">05</div>
         <h4 class="feature-title" data-i18n="feat_5_title">Cobro Automático de Señas y Cuotas</h4>
         <p class="feature-desc" data-i18n="feat_5_desc">Para erradicar faltazos o moras, envía links oficiales de Mercado Pago para señar turnos o cobrar mensualidades del 1 al 10. Te notifica en tiempo real a tu celular cada vez que ingresa un pago.</p>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon-wrapper">👑</div>
+        <div class="feature-icon-wrapper">06</div>
         <h4 class="feature-title" data-i18n="feat_6_title">Modo Jefe & Comparador de Proveedores</h4>
         <p class="feature-desc" data-i18n="feat_6_desc">Pedile reportes por audio y preguntale quién tiene el mejor precio de tus proveedores. Sofía cruza las listas al instante y te prepara la orden de compra lista para enviar.</p>
       </div>
@@ -1513,12 +1586,12 @@
       <div class="rubro-card">
         <div>
           <div class="rubro-header">
-            <div class="rubro-icon">🏥</div>
+            <div class="rubro-icon">01</div>
             <div class="rubro-title" data-i18n="rubro_salud_title">Salud, Consultorios &amp; Estética</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_salud_desc">Erradica el 25% de ausentismo con doble recordatorio estratégico (48h/24h), el Escudo para la Secretaria (15:00 a 18:00 hs) y Adelanta-Turnos automático para llenar huecos de cancelaciones.</p>
           <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Consultorio%20M%C3%A9dico" target="_blank" class="btn-demo-rubro">
-            💬 Probar Demo Consultorio en WhatsApp →
+            Probar Demo Consultorio en WhatsApp →
           </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_salud_tag">Turnos &amp; Rellena-Huecos</span>
@@ -1527,12 +1600,12 @@
       <div class="rubro-card">
         <div>
           <div class="rubro-header">
-            <div class="rubro-icon">🏋️‍♂️</div>
+            <div class="rubro-icon">02</div>
             <div class="rubro-title" data-i18n="rubro_gym_title">Gimnasios, Clubes &amp; Academias</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_gym_desc">Cobranza cordial automática del 1 al 10 con link de Mercado Pago, validación por IA multimodal de fotos de transferencias y reactivador de ex-socios dormidos (+60 días).</p>
           <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Gimnasio" target="_blank" class="btn-demo-rubro">
-            💬 Probar Demo Gimnasio en WhatsApp →
+            Probar Demo Gimnasio en WhatsApp →
           </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_gym_tag">Cobranza &amp; Reactivación</span>
@@ -1541,12 +1614,12 @@
       <div class="rubro-card">
         <div>
           <div class="rubro-header">
-            <div class="rubro-icon">🐾</div>
+            <div class="rubro-icon">03</div>
             <div class="rubro-title" data-i18n="rubro_vet_title">Veterinarias &amp; Prevención</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_vet_desc">Recordatorios programados de vacunación séxtuple, desparasitación, service de autos cada 10.000 km o 1 año y controles periódicos en piloto automático.</p>
           <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Veterinaria" target="_blank" class="btn-demo-rubro">
-            💬 Probar Demo Veterinaria en WhatsApp →
+            Probar Demo Veterinaria en WhatsApp →
           </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_vet_tag">Servicios Recurrentes</span>
@@ -1555,12 +1628,12 @@
       <div class="rubro-card">
         <div>
           <div class="rubro-header">
-            <div class="rubro-icon">👓</div>
+            <div class="rubro-icon">04</div>
             <div class="rubro-title" data-i18n="rubro_taller_title">Ópticas &amp; Talleres Técnicos</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_taller_desc">Notificación automática «Listo para Retirar» para acelerar el cobro de saldos y despejar depósitos, más atención 24/7 de consultas de estado de orden sin interrumpir el taller.</p>
           <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Taller%20Mec%C3%A1nico" target="_blank" class="btn-demo-rubro">
-            💬 Probar Demo Taller en WhatsApp →
+            Probar Demo Taller en WhatsApp →
           </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_taller_tag">Despacho &amp; Saldos</span>
@@ -1569,12 +1642,12 @@
       <div class="rubro-card">
         <div>
           <div class="rubro-header">
-            <div class="rubro-icon">🛍️</div>
+            <div class="rubro-icon">05</div>
             <div class="rubro-title" data-i18n="rubro_b2b_title">Comercios, Distribuidoras &amp; Excel en Vivo</div>
           </div>
           <p class="rubro-desc" data-i18n="rubro_b2b_desc">Toma de pedidos por audio, actualización de planillas de Excel en pantalla sin tocar la PC (Windows COM) y comparador inteligente que te avisa al instante qué proveedor tiene el mejor precio.</p>
           <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20probar%20la%20demo%20de%20Distribuidora" target="_blank" class="btn-demo-rubro">
-            💬 Probar Demo Mayorista en WhatsApp →
+            Probar Demo Mayorista en WhatsApp →
           </a>
         </div>
         <span class="rubro-tag" data-i18n="rubro_b2b_tag">Excel en Vivo • Comparador Multi-Proveedor</span>
@@ -1599,7 +1672,7 @@
             <div class="pricing-price">$30.000</div>
             <div class="pricing-currency">ARS / mes</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_shared_setup">⚡ Pago Único de Alta &amp; Configuración: $30.000 ARS</div>
+          <div class="pricing-setup" data-i18n="plan_shared_setup">Laboratorio de Calibración &amp; Onboarding: $30.000 ARS</div>
 
           <ul class="pricing-features-list">
             <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_1">Atención entrante 24/7 ILIMITADA en línea oficial verificada</span></li>
@@ -1625,7 +1698,7 @@
             <div class="pricing-price">$45.000</div>
             <div class="pricing-currency">ARS / mes</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_enterprise_setup">🚀 Pago Único de Alta &amp; Homologación Meta: $80.000 ARS</div>
+          <div class="pricing-setup" data-i18n="plan_enterprise_setup">Homologación Meta &amp; Laboratorio de Calibración: $80.000 ARS</div>
 
           <ul class="pricing-features-list">
             <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_1"><strong>Número y chip propio exclusivo</strong> del comercio en Meta Cloud API</span></li>
@@ -1645,7 +1718,7 @@
     <!-- Packs Extra Callout -->
     <div class="packs-callout">
       <div class="packs-text">
-        <h4 data-i18n="packs_title">💡 ¿Precisás enviar campañas masivas de reactivación en el Plan Central?</h4>
+        <h4 data-i18n="packs_title">¿Precisás enviar campañas masivas de reactivación en el Plan Central?</h4>
         <p data-i18n="packs_desc">Podés recargar packs adicionales en cualquier momento: <strong>Pack de 100 Mensajes Extra por solo $4.500 ARS</strong> vía Mercado Pago con acreditación inmediata.</p>
       </div>
       <a href="https://wa.me/5493435720312?text=Hola,%20quiero%20consultar%20por%20un%20pack%20de%20mensajes%20extra%20para%20Sofia%20AI" class="btn-secondary" style="padding: 10px 18px; font-size: 13.5px;" data-i18n="packs_cta">
@@ -1654,12 +1727,12 @@
     </div>
 
     <!-- Onboarding Card Callout -->
-    <div style="background: linear-gradient(135deg, rgba(37,99,235,0.15) 0%, rgba(16,185,129,0.1) 100%); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 24px; margin: 24px 0 36px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 14px; padding: 24px; margin: 24px 0 36px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
       <div>
-        <h4 style="font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px;">🚀 ¿Listo para empezar? Completá el Alta de tu Negocio en 2 minutos</h4>
-        <p style="color: #9ca3af; font-size: 14px; max-width: 600px;">Cargá el nombre de tu negocio, horarios y subí tu lista de precios (PDF, Excel o texto). Iniciamos la calibración personalizada para que en pocos días esté 100% operativa y probada a medida.</p>
+        <h4 style="font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">¿Listo para empezar? Completá el Alta de tu Negocio en 2 minutos</h4>
+        <p style="color: var(--text-secondary); font-size: 13.5px; max-width: 620px; line-height: 1.55;">Cargá el nombre de tu negocio, horarios y subí tu lista de precios (PDF, Excel o texto). Iniciamos la calibración personalizada para que en pocos días esté 100% operativa y probada a medida.</p>
       </div>
-      <a href="/alta" class="btn-primary" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); white-space: nowrap; padding: 12px 24px; font-size: 14px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+      <a href="/alta" class="btn-primary" style="white-space: nowrap; padding: 11px 22px; font-size: 13.5px; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
         Completar Ficha de Alta Digital →
       </a>
     </div>
@@ -1675,39 +1748,39 @@
       <div class="download-card">
         <div>
           <div class="download-header">
-            <span class="download-icon">📄</span>
+            <span class="download-icon">PDF</span>
             <div class="download-title" data-i18n="doc_manual_title">Manual Comercial Multi-Rubro</div>
           </div>
           <p class="download-desc" data-i18n="doc_manual_desc">Dossier oficial de 5 páginas con los flujos de salud, cronología anti-ausentismo, módulos de cobranza, talleres y modo director.</p>
         </div>
         <a href="/descargar-guia-pdf" class="btn-primary" style="text-align: center; font-size: 13.5px; padding: 10px 16px;" data-i18n="doc_manual_btn">
-          📥 Descargar Dossier PDF (5 Págs)
+          Descargar Dossier PDF (5 Págs) ↓
         </a>
       </div>
 
       <div class="download-card">
         <div>
           <div class="download-header">
-            <span class="download-icon">👑</span>
+            <span class="download-icon">PDF</span>
             <div class="download-title" data-i18n="doc_costos_title">Guía de Control en Modo Jefe</div>
           </div>
           <p class="download-desc" data-i18n="doc_costos_desc">Manual de autogestión para dueños: cómo enviar directivas y audios a Sofía, supervisar turnos y recibir métricas en tiempo real.</p>
         </div>
         <a href="/descargar-modo-jefe-pdf" class="btn-secondary" style="text-align: center; font-size: 13.5px; padding: 10px 16px;" data-i18n="doc_costos_btn">
-          📥 Descargar Guía Modo Jefe PDF (2 Págs)
+          Descargar Guía Modo Jefe PDF (2 Págs) ↓
         </a>
       </div>
 
       <div class="download-card">
         <div>
           <div class="download-header">
-            <span class="download-icon">💬</span>
+            <span class="download-icon">PDF</span>
             <div class="download-title" data-i18n="doc_templates_title">Catálogo Visual de Plantillas</div>
           </div>
           <p class="download-desc" data-i18n="doc_templates_desc">Folleto visual de 2 páginas con las 6 plantillas oficiales de WhatsApp, botones interactivos y ejemplos reales por rubro.</p>
         </div>
         <a href="/descargar-catalogo-pdf" class="btn-primary" style="text-align: center; font-size: 13.5px; padding: 10px 16px;" data-i18n="doc_templates_btn">
-          📥 Descargar Catálogo PDF (2 Págs)
+          Descargar Catálogo PDF (2 Págs) ↓
         </a>
       </div>
 
@@ -1757,26 +1830,26 @@
   <script>
     const translations = {
       es: {
-        doc_title: "Sofía AI — Asistente Inteligente para WhatsApp Oficial | Negocios y Profesionales",
-        brand_tag: "Asistente IA para WhatsApp Oficial",
-        nav_blueprint: "📐 Hoja de Ruta",
+        doc_title: "Sofía AI — Infraestructura Agéntica para WhatsApp Oficial | Negocios y Profesionales",
+        brand_tag: "Infraestructura Agéntica para WhatsApp Oficial",
+        nav_blueprint: "Hoja de Ruta",
         nav_whatsapp: "Hablar por WhatsApp →",
-        hero_badge: "⚡ LA EJECUTIVA CON IA QUE REVOLUCIONA TU NEGOCIO • DE WHATSAPP A TU COMPUTADORA",
-        hero_title: "Atiende tu WhatsApp, Rescata Turnos Caídos y <span>Actualiza tu Excel con el Proveedor Más Barato sin Tocar la PC</span>",
-        hero_sub: "Diseñada para consultorios médicos, gimnasios, talleres y comercios que pierden plata por demoras o listas desactualizadas. Sofía responde en 3 segundos por nota de voz, rellena huecos de agenda en automático, cobra cuotas y cruza las listas de todos tus proveedores para decirte siempre quién tiene el mejor precio.",
-        hero_cta_spec: "🟢 Probar a Sofía en WhatsApp en Vivo →",
-        hero_cta_arch: "🎯 Ver Demos por Rubro ↓",
-        metric_latency_val: "3 Segundos",
-        metric_latency_lbl: "Atención por Audios 24/7",
-        metric_data_val: "0 Huecos",
-        metric_data_lbl: "Rellena-Huecos Automático",
-        metric_catalogs_val: "Excel en Pantalla",
-        metric_catalogs_lbl: "Cero Carga Manual (COM)",
-        metric_installs_val: "Mejor Precio",
-        metric_installs_lbl: "Comparador Multi-Proveedor",
-        alivio_badge: "🩺 ALIVIO OPERATIVO INMEDIATO PARA CONSULTORIOS & PROFESIONALES",
+        hero_badge: "● PROTOCOLO DE OPERACIÓN CLÍNICO V2 • INFRAESTRUCTURA AGÉNTICA PARA WHATSAPP",
+        hero_title: "Infraestructura Agéntica para Consultorios y PyMEs: <span>Rescate de Huecos de Agenda y Operación 24/7 en WhatsApp</span>",
+        hero_sub: "Sustitución de fricción en turnos médicos y gestión comercial. Sofía procesa lenguaje natural con fluidez humana (texto y notas de voz), reasigna turnos caídos a lista de espera en menos de 90 segundos y opera con supervisión ejecutiva directa en el celular del titular.",
+        hero_cta_spec: "Probar en WhatsApp en Vivo →",
+        hero_cta_arch: "Ver Demos por Rubro ↓",
+        metric_latency_val: "< 1.8s",
+        metric_latency_lbl: "Latencia Multimodal 24/7",
+        metric_data_val: "90 seg",
+        metric_data_lbl: "Rescate Autónomo de Huecos",
+        metric_catalogs_val: "In-Context",
+        metric_catalogs_lbl: "Base de Conocimiento Inyectada",
+        metric_installs_val: "Modo Dueño",
+        metric_installs_lbl: "Supervisión Ejecutiva Directa",
+        alivio_badge: "PROTOCOLO CLÍNICO DE RECUPERACIÓN • CONSULTORIOS & PROFESIONALES",
         alivio_title: "Desligate del Agendamiento: Tus Pacientes Toman Turnos Solos por <span>WhatsApp las 24 hs</span>",
-        alivio_sub: "Recuperá 2 a 3 horas diarias de tu vida. Mientras atendés o descansás, Sofía atiende con calidez humana (texto y audios), responde dudas clínicas y llena tu agenda en automático sin que toques el teléfono.",
+        alivio_sub: "Eliminación sistemática de horas ociosas. Mientras realizás consultas o descansás, el protocolo atiende con calidez humana y trato profesional (texto y notas de voz), evacúa dudas sobre obras sociales y cubre cancelaciones en tiempo real.",
         alivio_trad_title: "Turneros Web Clásicos (Apps & Links Externos)",
         alivio_trad_tag: "Alta Fricción & Abandono",
         alivio_trad_1: "<strong>Fricción de salida:</strong> Obligan al paciente a salir de WhatsApp, abrir un navegador web y registrarse.",
@@ -1789,7 +1862,7 @@
         alivio_sofia_2: "<strong>100% de la gente lo usa:</strong> Todo el mundo ya tiene WhatsApp abierto. Cero apps nuevas que instalar ni cuentas que crear.",
         alivio_sofia_3: "<strong>Secretaria integral 24/7:</strong> Informa aranceles, obras sociales, requisitos de ayuno, ubicación y cobra la seña por Mercado Pago.",
         alivio_sofia_4: "<strong>Rescate activo (Rellena-Huecos):</strong> Si alguien cancela, sale proactivamente a la lista de espera y salva la facturación en minutos.",
-        alivio_cta: "💬 Probar Demostración de Autogestión de Turnos en WhatsApp →",
+        alivio_cta: "Probar Demostración de Autogestión en WhatsApp →",
         problem_title: "Lo que te frena y te hace perder dinero todos los días",
         problem_1: "<strong>Turnos caídos y horas muertas sin facturar:</strong> Pacientes o clientes que cancelan a último momento y tu recepcionista no llega a cubrirlos, dejando horas vacías.",
         problem_2: "<strong>Ex-socios y clientes que se enfrían:</strong> Decenas de personas que dejaron de asistir a tu gimnasio o comercio y nadie vuelve a contactar por falta de tiempo.",
@@ -1800,9 +1873,9 @@
         solution_2: "<strong>Reactivador masivo y cobranzas con Mercado Pago:</strong> Cobra cuotas con link de pago o audita fotos de transferencias, y reactiva ex-socios con una sola nota de voz del dueño.",
         solution_3: "<strong>Magia en pantalla con Excel (Bridge + Windows COM):</strong> Mandale un audio desde tu auto o tirale el Excel nuevo por WhatsApp y mirá cómo tus celdas se actualizan solas sin tocar el teclado.",
         solution_4: "<strong>Comparador Multi-Proveedor inteligente:</strong> Preguntale a Sofía quién tiene el producto más barato y la IA cruza todas las listas para darte el mejor costo en 3 segundos.",
-        pillars_tag: "Superpoderes Operativos de Sofía",
+        pillars_tag: "HABILIDADES DE ACCIÓN & PROTOCOLOS OPERATIVOS",
         pillars_title: "Tu Agenda Llena y tu Negocio Atendido las 24 Horas",
-        pillars_sub: "Automatización de alto impacto: recordatorios que reducen el ausentismo a cero, rescate automático de huecos y atención cálida por WhatsApp.",
+        pillars_sub: "Automatización de alta precisión: protocolos de recordatorio escalonado, rescate de huecos en 90 segundos y supervisión ejecutiva (Modo Dueño).",
         feat_1_title: "Recordatorios Escalonados (48h y 24h)",
         feat_1_desc: "Sofía contacta a cada paciente o cliente con anticipación para pedir confirmación con un solo toque. Si confirman, el turno queda asegurado; si avisan que no pueden, el sistema actúa de inmediato.",
         feat_2_title: "Relleno Automático de Huecos y Cancelaciones",
@@ -1814,7 +1887,7 @@
         feat_5_title: "Cobro Automático de Señas y Cuotas",
         feat_5_desc: "Para erradicar faltazos o moras, envía links oficiales de Mercado Pago para señar turnos o cobrar mensualidades del 1 al 10. Te notifica en tiempo real a tu celular cada vez que ingresa un pago.",
         feat_6_title: "Modo Jefe & Comparador de Proveedores",
-        feat_6_desc: "Pedile reportes por audio y preguntale quién tiene el mejor precio de tus proveedores. Sofía cruza las listas al instante y te prepara la orden de compra lista para enviar.",
+        feat_6_desc: "Supervisión Ejecutiva desde tu WhatsApp personal: pedile reportes por audio y preguntale quién tiene el mejor precio de tus proveedores para preparar órdenes de compra.",
         flow_tag: "Flujo de Datos del Sistema",
         flow_title: "Tubería de Orquestación Extremo a Extremo",
         step_1_num: "Paso 01 // Entrada",
@@ -1846,9 +1919,9 @@
         footer_privacy: "Política de Privacidad",
         footer_terms: "Términos de Servicio",
         footer_docs: "Documentación Técnica",
-        nav_rubros: "🏢 Rubros",
-        nav_precios: "🏷️ Precios ($30k)",
-        nav_descargas: "📥 Dossiers PDF",
+        nav_rubros: "Rubros",
+        nav_precios: "Precios ($30k)",
+        nav_descargas: "Dossiers PDF",
         rubros_tag: "Especialización Multi-Rubro",
         rubros_title: "Una Central Inteligente para Cada Tipo de Negocio",
         rubros_sub: "Sofía adapta sus flujos y reglas operativas a las necesidades exactas de cada sector comercial.",
@@ -1872,7 +1945,7 @@
         pricing_sub: "Elegí entre Central Compartida ($30.000/mes) o Línea Propia Exclusiva ($45.000/mes). Sin comisiones sobre tus ventas y con cancelación libre.",
         plan_shared_title: "Plan Central Compartida",
         plan_shared_desc: "Ideal para consultorios individuales, profesionales de la salud, estética y comercios barriales.",
-        plan_shared_setup: "⚡ Pago Único de Alta & Configuración: $30.000 ARS",
+        plan_shared_setup: "Laboratorio de Calibración & Onboarding: $30.000 ARS",
         feat_shared_1: "Atención entrante 24/7 ILIMITADA en línea oficial verificada",
         feat_shared_2: "150 Mensajes Salientes Automáticos incluidos al mes (turnos, cuotas o retiros)",
         feat_shared_4: "Modo Director por voz desde el WhatsApp del titular",
@@ -1881,14 +1954,14 @@
         plan_enterprise_badge: "Más Recomendado",
         plan_enterprise_title: "Plan Enterprise — Línea Propia",
         plan_enterprise_desc: "Para clínicas, gimnasios, ópticas, talleres y distribuidoras que desean su propio número oficial exclusivo.",
-        plan_enterprise_setup: "🚀 Pago Único de Alta & Homologación Meta: $80.000 ARS",
+        plan_enterprise_setup: "Homologación Meta & Laboratorio de Calibración: $80.000 ARS",
         feat_ent_1: "Número y chip propio exclusivo del comercio en Meta Cloud API",
         feat_ent_2: "Mensajes Salientes ILIMITADOS (Meta debita el consumo a la tarjeta del comercio)",
         feat_ent_3: "Perfil corporativo con logo, catálogo y tilde verde oficial",
         feat_ent_4: "Soporte multi-secretaria con integración al grupo de WhatsApp de recepción",
         feat_ent_5: "Aislamiento total de riesgo y reputación de línea garantizada",
         plan_enterprise_cta: "Solicitar Homologación Enterprise →",
-        packs_title: "💡 ¿Precisás enviar campañas masivas de reactivación en el Plan Central?",
+        packs_title: "¿Precisás enviar campañas masivas de reactivación en el Plan Central?",
         packs_desc: "Podés recargar packs adicionales en cualquier momento: Pack de 100 Mensajes Extra por solo $4.500 ARS vía Mercado Pago con acreditación inmediata.",
         packs_cta: "Consultar Packs Extra",
         docs_tag: "Documentación Oficial",
@@ -1896,28 +1969,28 @@
         docs_sub: "Descargá el material ejecutivo preparado para analizar en tu equipo o compartir con tus socios.",
         doc_manual_title: "Manual Comercial Multi-Rubro",
         doc_manual_desc: "Dossier oficial de 5 páginas con los flujos de salud, cronología anti-ausentismo, módulos de cobranza, talleres y modo director.",
-        doc_manual_btn: "📥 Descargar Dossier PDF (5 Págs)",
+        doc_manual_btn: "Descargar Dossier PDF (5 Págs) ↓",
         doc_costos_title: "Guía de Control en Modo Jefe",
         doc_costos_desc: "Manual de autogestión para dueños: cómo enviar directivas y audios a Sofía, supervisar turnos y recibir métricas en tiempo real.",
-        doc_costos_btn: "📥 Descargar Guía Modo Jefe PDF (2 Págs)",
+        doc_costos_btn: "Descargar Guía Modo Jefe PDF (2 Págs) ↓",
         doc_templates_title: "Catálogo Visual de Plantillas",
         doc_templates_desc: "Folleto visual de 2 páginas con las 6 plantillas oficiales de WhatsApp, botones interactivos y ejemplos reales por rubro.",
-        doc_templates_btn: "📥 Descargar Catálogo PDF (2 Págs)",
+        doc_templates_btn: "Descargar Catálogo PDF (2 Págs) ↓",
         doc_blue_title: "Blueprint de Arquitectura",
         doc_blue_desc: "Especificación técnica profunda de FastAPI, modelos multimodales Gemini, schemas Pydantic y webhooks en producción.",
-        doc_blue_btn: "🔍 Ver Especificación Técnica",
+        doc_blue_btn: "Ver Especificación Técnica →",
         wa_msg: "Hola Sofia, quiero ver una demo de cómo atendés para mi negocio"
       },
       pt: {
         doc_title: "Sofía AI — Assistente Inteligente para WhatsApp Oficial | Negócios e Profissionais",
         brand_tag: "Assistente IA para WhatsApp Oficial",
-        nav_blueprint: "📐 Blueprint Técnico",
+        nav_blueprint: "Blueprint Técnico",
         nav_whatsapp: "Falar no WhatsApp →",
         hero_badge: "Assistente Inteligente para WhatsApp Oficial",
         hero_title: "A Assistente com Inteligência Artificial que <span>Atende seu WhatsApp no Instante e Nunca Dorme</span>",
         hero_sub: "Responda dúvidas, orçamentos e agende consultas em tempo real, inclusive por áudios de voz. Criada para clínicas, pet shops, academias, oficinas e comércios que não querem perder clientes por demora.",
-        hero_cta_spec: "🟢 Testar a Sofía no WhatsApp ao Vivo →",
-        hero_cta_arch: "🎯 Ver Demos por Setor ↓",
+        hero_cta_spec: "Testar no WhatsApp ao Vivo →",
+        hero_cta_arch: "Ver Demos por Setor ↓",
         metric_latency_val: "No Instante",
         metric_latency_lbl: "Resposta a Dúvidas e Consultas",
         metric_data_val: "100%",
@@ -1926,7 +1999,7 @@
         metric_catalogs_lbl: "Setores Comerciais Prontos",
         metric_installs_val: "0",
         metric_installs_lbl: "Apps a Instalar pelo Cliente",
-        alivio_badge: "🩺 ALÍVIO OPERACIONAL IMEDIATO PARA CONSULTÓRIOS E PROFISSIONAIS",
+        alivio_badge: "ALÍVIO OPERACIONAL IMEDIATO PARA CONSULTÓRIOS E PROFISSIONAIS",
         alivio_title: "Livre-se do Agendamento: Seus Pacientes Marcam Consultas Sozinhos pelo <span>WhatsApp 24h</span>",
         alivio_sub: "Recupere de 2 a 3 horas diárias. Enquanto você atende ou descansa, Sofía atende com rapidez e simpatia (áudios e texto), tira dúvidas clínicas e preenche sua agenda no piloto automático.",
         alivio_trad_title: "Sistemas Web Tradicionais (Apps e Links Externos)",
@@ -1941,7 +2014,7 @@
         alivio_sofia_2: "<strong>100% de adesão:</strong> Todo mundo já usa WhatsApp. Nenhuma instalação de app ou login necessário.",
         alivio_sofia_3: "<strong>Secretária completa 24/7:</strong> Informa valores, convênios, preparo para exames, localização e cobra sinal pelo Mercado Pago.",
         alivio_sofia_4: "<strong>Resgate ativo (Tapa-Buracos):</strong> Se alguém cancela, busca ativamente na lista de espera e salva o faturamento em minutos.",
-        alivio_cta: "💬 Testar Demonstração de Agendamento no WhatsApp →",
+        alivio_cta: "Testar Demonstração de Agendamento no WhatsApp →",
         problem_title: "O Gargalo Operacional dos Negócios",
         problem_1: "<strong>Mensagens que esfriam a qualquer hora:</strong> Clientes ou pacientes que escrevem à noite ou quando você está atendendo; se demorar para responder, vão para a concorrência.",
         problem_2: "<strong>Cancelamentos e horários vazios na agenda:</strong> Agendamentos desmarcados em cima da hora que sua recepção não consegue cobrir, deixando horas ociosas sem faturar.",
@@ -2003,13 +2076,13 @@
       en: {
         doc_title: "Sofía AI — Intelligent Official WhatsApp Assistant for Businesses",
         brand_tag: "Official WhatsApp AI Assistant",
-        nav_blueprint: "📐 Roadmap",
+        nav_blueprint: "Technical Roadmap",
         nav_whatsapp: "Chat on WhatsApp →",
         hero_badge: "Official WhatsApp AI Assistant for Businesses",
         hero_title: "The AI Assistant that <span>Instantly Handles your WhatsApp 24/7 Without Missing a Lead</span>",
         hero_sub: "Answer inquiries, share quotes, and schedule appointments in real time, even via voice notes. Purpose-built for clinics, vet shops, gyms, auto shops, and businesses that never want to lose another customer to slow replies.",
-        hero_cta_spec: "🟢 Try Sofía Live on WhatsApp →",
-        hero_cta_arch: "🎯 View Demos by Industry ↓",
+        hero_cta_spec: "Try Live on WhatsApp →",
+        hero_cta_arch: "View Demos by Industry ↓",
         metric_latency_val: "Instant",
         metric_latency_lbl: "Real-Time Inquiry Response",
         metric_data_val: "100%",
@@ -2018,7 +2091,7 @@
         metric_catalogs_lbl: "Ready-to-Use Business Sectors",
         metric_installs_val: "0",
         metric_installs_lbl: "Client App Installs Required",
-        alivio_badge: "🩺 IMMEDIATE OPERATIONAL RELIEF FOR CLINICS & PROFESSIONALS",
+        alivio_badge: "IMMEDIATE OPERATIONAL RELIEF FOR CLINICS & PROFESSIONALS",
         alivio_title: "Free Yourself from Scheduling: Patients Book Appointments on <span>WhatsApp 24/7</span>",
         alivio_sub: "Reclaim 2 to 3 hours of your day. While you focus on patients or rest, Sofia handles voice and text messages, resolves common questions, and fills your calendar on autopilot without touching your phone.",
         alivio_trad_title: "Traditional Web Schedulers (Apps & External Links)",
@@ -2033,7 +2106,7 @@
         alivio_sofia_2: "<strong>100% adoption rate:</strong> Everyone already uses WhatsApp. No new apps to install, no passwords or logins.",
         alivio_sofia_3: "<strong>Comprehensive 24/7 assistant:</strong> Explains insurance, fees, preparation instructions, directions, and collects deposits.",
         alivio_sofia_4: "<strong>Proactive rescue (Slot-Filler):</strong> When someone cancels, Sofia alerts waitlist candidates and salvages revenue in minutes.",
-        alivio_cta: "💬 Try Live Appointment Self-Booking on WhatsApp →",
+        alivio_cta: "Try Live Appointment Self-Booking on WhatsApp →",
         problem_title: "The Operational Bottleneck",
         problem_1: "<strong>Inquiries Going Cold:</strong> Potential clients message late at night or during peak rush; if you don't answer immediately, they book with your competitor.",
         problem_2: "<strong>Late Cancellations & Dead Calendar Gaps:</strong> Clients canceling last-minute with your reception unable to backfill in time, leaving hours of lost revenue.",
@@ -2090,9 +2163,9 @@
         footer_privacy: "Privacy Policy",
         footer_terms: "Terms of Service",
         footer_docs: "Technical Documentation",
-        nav_rubros: "🏢 Sectors",
-        nav_precios: "🏷️ Pricing ($30k)",
-        nav_descargas: "📥 PDF Dossiers",
+        nav_rubros: "Sectors",
+        nav_precios: "Pricing ($30k)",
+        nav_descargas: "PDF Dossiers",
         rubros_tag: "Multi-Industry Specialization",
         rubros_title: "One Intelligent Central for Every Business Type",
         rubros_sub: "Sofia tailors workflows and operational rules to the precise requirements of each commercial vertical.",
@@ -2116,7 +2189,7 @@
         pricing_sub: "Choose between Shared Central ($30,000/mo) or Dedicated Official Line ($45,000/mo). Zero commission on sales and free cancellation.",
         plan_shared_title: "Shared Central Plan",
         plan_shared_desc: "Ideal for individual practices, solo healthcare professionals, beauty studios, and local stores.",
-        plan_shared_setup: "⚡ One-Time Setup & Onboarding: $30,000 ARS",
+        plan_shared_setup: "Calibration Lab & Onboarding: $30,000 ARS",
         feat_shared_1: "UNLIMITED 24/7 inbound customer support on official verified line",
         feat_shared_2: "150 Automated Outbound Messages included per month (appointments, dues, pickups)",
         feat_shared_4: "Voice & text Director Mode from owner's personal WhatsApp",
@@ -2125,14 +2198,14 @@
         plan_enterprise_badge: "Most Recommended",
         plan_enterprise_title: "Enterprise Plan — Dedicated Line",
         plan_enterprise_desc: "For clinics, gyms, opticians, automotive centers, and distributors desiring their own exclusive official line.",
-        plan_enterprise_setup: "🚀 One-Time Meta Homologation & Setup: $80,000 ARS",
+        plan_enterprise_setup: "Meta Homologation & Calibration Lab: $80,000 ARS",
         feat_ent_1: "Exclusive dedicated business number & SIM chip on Meta Cloud API",
         feat_ent_2: "UNLIMITED Outbound Messages (official Meta carrier costs billed to client's card)",
         feat_ent_3: "Official verified enterprise profile with custom logo, catalog & green checkmark",
         feat_ent_4: "Multi-secretary receptionist support with internal WhatsApp group sync",
         feat_ent_5: "Zero credit/reputation risk bleed across accounts with complete isolation",
         plan_enterprise_cta: "Request Enterprise Homologation →",
-        packs_title: "💡 Need to run larger customer reactivation broadcasts on the Shared Plan?",
+        packs_title: "Need to run larger customer reactivation broadcasts on the Shared Plan?",
         packs_desc: "Purchase additional quota at any time: 100 Extra Messages Pack for just $4,500 ARS with instant Mercado Pago activation.",
         packs_cta: "Inquire About Extra Packs",
         docs_tag: "Official Documentation",
@@ -2140,16 +2213,16 @@
         docs_sub: "Download executive documentation to analyze with your leadership team and business partners.",
         doc_manual_title: "Multi-Industry Commercial Manual",
         doc_manual_desc: "Official 5-page dossier covering healthcare flows, anti-no-show timelines, billing engines, and director mode.",
-        doc_manual_btn: "📥 Download Dossier PDF (5 Pages)",
+        doc_manual_btn: "Download Dossier PDF (5 Pages) ↓",
         doc_costos_title: "Boss Mode Control Guide",
         doc_costos_desc: "Self-management manual for business owners: issuing voice directives to Sofia, monitoring appointments, and tracking real-time metrics.",
-        doc_costos_btn: "📥 Download Boss Mode Guide PDF (2 Pages)",
+        doc_costos_btn: "Download Boss Mode Guide PDF (2 Pages) ↓",
         doc_templates_title: "Visual Template Catalog",
         doc_templates_desc: "2-page visual brochure with 6 official WhatsApp templates, interactive buttons, and real-world industry examples.",
-        doc_templates_btn: "📥 Download Catalog PDF (2 Pages)",
+        doc_templates_btn: "Download Catalog PDF (2 Pages) ↓",
         doc_blue_title: "Architectural Blueprint",
         doc_blue_desc: "Deep-dive technical specification on FastAPI, Gemini multimodal pipelines, Pydantic schemas, and webhooks.",
-        doc_blue_btn: "🔍 View Technical Specification",
+        doc_blue_btn: "View Technical Specification →",
         wa_msg: "Hello, I saw Sofia AI's commercial proposal and I would like to get started with a plan."
       }
     };
@@ -2229,7 +2302,7 @@
 
   <!-- Floating WhatsApp Action -->
   <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" target="_blank" class="floating-whatsapp" aria-label="Probar a Sofía en WhatsApp">
-    <span class="floating-whatsapp-icon">💬</span>
+    <span class="floating-whatsapp-icon">●</span>
     <span>Probar Demo en Vivo</span>
   </a>
 </body>
