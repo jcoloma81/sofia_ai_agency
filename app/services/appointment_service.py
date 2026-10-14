@@ -536,6 +536,17 @@ class AppointmentService:
             if not tenant:
                 continue
 
+            # Anti-Spam / Smart UX: Only send 48h heads-up if booked >= 7 days in advance.
+            # If booked recently (< 7 days), patient has it fresh in mind, so we skip 48h and let Stage 2 (24h) handle confirmation.
+            if apt.created_at:
+                anticipation_days = (apt.appointment_date - apt.created_at).total_seconds() / 86400.0
+                if anticipation_days < 7.0:
+                    logger.info(
+                        f"⏩ Skipping 48h reminder for '{apt.patient_name}' (Turno #{apt.id}): "
+                        f"Booked with {anticipation_days:.1f} days anticipation (< 7 days). Will receive 24h confirmation."
+                    )
+                    continue
+
             date_str = apt.appointment_date.strftime("%A %d/%m a las %H:%M hs")
             body_text = (
                 f"Hola *{apt.patient_name}*! Te recordamos con anticipación que faltan *2 días* para tu turno "

@@ -29,10 +29,81 @@ Base.metadata.create_all(bind=engine)
 run_auto_migrations(engine)
 
 
+import asyncio
+from contextlib import asynccontextmanager
+
+async def appointment_cron_worker():
+    """
+    Autonomous 24/7 background worker running on Render.
+    Every 30 minutes, it:
+    1. Runs scan_and_send_appointment_reminders (handles 48h & 24h dual-stage reminders, waitlist timeouts).
+    2. Runs secretary shield and cutoff cancellations at appropriate local times.
+    """
+    logger.info("⏰ Appointment cron background worker initialized.")
+    # Small initial wait to allow server startup and DB initialization
+    await asyncio.sleep(20)
+
+    while True:
+        try:
+            from app.database import SessionLocal
+            from app.services.appointment_service import AppointmentService
+
+            db = SessionLocal()
+            try:
+                # 1. Dual-stage reminders & waitlist timeout sweeps
+                results = await AppointmentService.scan_and_send_appointment_reminders(db)
+                if results.get("reminders_48h") or results.get("reminders_24h") or results.get("timeouts_processed"):
+                    logger.info(f"⏰ Cron Reminders Dispatched: {results}")
+
+                # 2. Daily secretary shield (17:30 hs) and cutoff (18:00 hs)
+                # Evaluated based on Argentina local time (UTC-3)
+                now_utc = datetime.now(timezone.utc)
+                local_hour = (now_utc.hour - 3) % 24
+                local_minute = now_utc.minute
+
+                # Secretary pre-cutoff shield window: 17:30 - 17:59
+                if local_hour == 17 and 30 <= local_minute <= 59:
+                    await AppointmentService.broadcast_secretary_pre_cutoff_reports(db)
+
+                # Cutoff cancellations window: 18:00 - 18:30
+                if local_hour == 18 and 0 <= local_minute <= 30:
+                    await AppointmentService.execute_all_cutoff_auto_cancellations(db)
+
+            except Exception as e:
+                logger.error(f"Error executing appointment cron check: {e}")
+            finally:
+                db.close()
+
+            # Sleep 30 minutes before next sweep
+            await asyncio.sleep(1800)
+        except asyncio.CancelledError:
+            logger.info("⏰ Appointment cron background worker stopped.")
+            break
+        except Exception as e:
+            logger.error(f"Unexpected error in appointment cron worker loop: {e}")
+            await asyncio.sleep(60)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    cron_task = asyncio.create_task(appointment_cron_worker())
+    logger.info("🚀 Background appointment cron worker launched.")
+    try:
+        yield
+    finally:
+        cron_task.cancel()
+        try:
+            await cron_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("🛑 Background appointment cron worker stopped.")
+
+
 app = FastAPI(
     title="Sofía AI Agency — Autonomous WhatsApp & Multi-Industry Business Platform",
     description="Autonomous multi-industry and B2B WhatsApp platform powered by Google Gemini 1.5 Multimodal, Official Meta WhatsApp Cloud API, and Mercado Pago.",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # CORS configuration
