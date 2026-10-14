@@ -296,8 +296,17 @@ REGLAS DE OPERACIÓN:
                 f"Vas a recibir acá en tiempo real las notificaciones de nuevos turnos agendados, cancelaciones imprevistas y vacantes recuperadas automáticamente."
             )
             try:
-                await whatsapp.send_whatsapp_message(to_phone=norm_doc_phone, text=welcome_text)
-                logger.info(f"📲 Sent welcome WhatsApp alert to Doctor {clean_doc_name} (+{norm_doc_phone})")
+                # 1. Attempt sending official Meta Utility Template (bypasses 24h window)
+                sent_template = await whatsapp.send_whatsapp_template(
+                    to_phone=norm_doc_phone,
+                    template_name="activacion_linea_ejecutiva_v1",
+                    language_code="es_AR",
+                    body_params=[clean_doc_name, clinic_name]
+                )
+                if not sent_template:
+                    # 2. Fallback to direct text (works if 24h window is open or in simulation)
+                    await whatsapp.send_whatsapp_message(to_phone=norm_doc_phone, text=welcome_text)
+                logger.info(f"📲 Sent welcome WhatsApp alert to Doctor {clean_doc_name} (+{norm_doc_phone}) (template={sent_template})")
             except Exception as e:
                 logger.error(f"Error sending welcome WhatsApp to doctor: {e}")
 
