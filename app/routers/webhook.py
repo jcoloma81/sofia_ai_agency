@@ -533,6 +533,54 @@ async def receive_whatsapp_webhook(
         if handled:
             return {"status": "success", "tenant": tenant.slug, "reply": tenant_reply}
 
+    # -------------------------------------------------------------
+    # NON-HEALTHCARE VERTICAL DEMO INQUIRY ROUTER (EQUIPO DE VENTAS)
+    # -------------------------------------------------------------
+    msg_low = message.lower().strip()
+    is_vertical_sales_inquiry = any(
+        kw in msg_low for kw in [
+            "gimnasio", "gimnasios", "clubes",
+            "veterinaria", "veterinarias",
+            "taller mecánico", "taller mecanico", "talleres y ópticas", "talleres y opticas",
+            "distribuidora", "distribuidoras", "mayorista", "mayoristas"
+        ]
+    ) and any(
+        trigger in msg_low for trigger in [
+            "demo", "interesa", "mostrarte una demo", "equipo de ventas", "probar la demo", "ver una demo", "solicitar demo", "equipo"
+        ]
+    )
+
+    if is_vertical_sales_inquiry:
+        sector_name = "tu rubro"
+        if any(w in msg_low for w in ["gimnasio", "club"]):
+            sector_name = "Gimnasios y Clubes"
+        elif "veterinaria" in msg_low:
+            sector_name = "Veterinarias y Prevención"
+        elif any(w in msg_low for w in ["taller", "optica", "óptica"]):
+            sector_name = "Talleres Técnicos y Ópticas"
+        elif any(w in msg_low for w in ["distribuidora", "mayorista"]):
+            sector_name = "Distribuidoras Mayoristas y Excel en Vivo"
+
+        reply_text = (
+            f"¡Hola! Muchas gracias por escribirnos y por tu interés en *Sofía AI*.\n\n"
+            f"Actualmente esta línea central en vivo está operando con prioridad para *Clínicas y Consultorios Médicos* para garantizar la privacidad y blindaje de las agendas.\n\n"
+            f"¡Pero despreocupate! *Alguien de nuestro equipo de ventas se va a comunicar en breve con vos para mostrarte una demo sobre {sector_name} :)* 🙌"
+        )
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=reply_text)
+
+        # Notify Javier (Sales Alert)
+        if settings.WHATSAPP_ALERT_PHONE:
+            sales_alert = (
+                f"🔥 *NUEVO LEAD DE VENTAS (Landing Sofía)*\n\n"
+                f"📱 Celular: +{clean_phone}\n"
+                f"🏢 Sector de Interés: *{sector_name}*\n"
+                f"💬 Mensaje: \"{message}\"\n\n"
+                f"👉 Ya le confirmamos que alguien del equipo de ventas se comunicará a la brevedad."
+            )
+            await whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=sales_alert)
+
+        return {"status": "success", "action": "lead_sales_routed", "reply": reply_text}
+
     # Find or create prospect (supporting multi-merchant shared suppliers)
     from app.services.boss_mode import normalize_argentine_phone
 
