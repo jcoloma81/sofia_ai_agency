@@ -870,6 +870,94 @@ async def test_webhook_boss_phone_appointment_button_bypass(db):
         assert mock_alert.called
 
 
+@pytest.mark.asyncio
+async def test_claim_waitlist_slot_guards(db):
+    from app.services.appointment_service import AppointmentService
+    from app.models.tenant import Tenant, Appointment, WaitlistEntry
+    from datetime import datetime, timezone, timedelta
+    from unittest.mock import patch, AsyncMock
+
+    # Setup tenant
+    tenant = Tenant(
+        name="Clínica Test",
+        slug="clinica_test_guards",
+        business_type="consultorio",
+        owner_phone="5493434536447"
+    )
+    db.add(tenant)
+    db.commit()
+    db.refresh(tenant)
+
+    # 1. Test Guard: Candidate already rejected ('rechazado')
+    apt1 = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Paciente Base",
+        patient_phone="5491145678901",
+        doctor_or_service="Dr. Test",
+        appointment_date=datetime.now(timezone.utc) + timedelta(days=1),
+        status="cancelado"
+    )
+    db.add(apt1)
+    db.commit()
+
+    wl_rej = WaitlistEntry(
+        tenant_id=tenant.id,
+        patient_name="Laura Rechazó",
+        patient_phone="5493434536447",
+        doctor_or_service="Dr. Test",
+        status="rechazado",
+        offered_appointment_id=apt1.id
+    )
+    db.add(wl_rej)
+    db.commit()
+
+    with patch("app.services.tenant_service.TenantService.send_branded_notification", new_callable=AsyncMock) as mock_notify:
+        claimed = await AppointmentService.claim_waitlist_slot(db, apt1.id, wl_rej.id)
+        assert claimed is False
+        mock_notify.assert_called_once()
+        assert "anteriormente seleccionaste que no podías" in mock_notify.call_args[0][2]
+
+    # 2. Test Guard: Candidate offer expired
+    wl_exp = WaitlistEntry(
+        tenant_id=tenant.id,
+        patient_name="Martín Vencido",
+        patient_phone="5493435730520",
+        doctor_or_service="Dr. Test",
+        status="expirada",
+        offered_appointment_id=apt1.id
+    )
+    db.add(wl_exp)
+    db.commit()
+
+    with patch("app.services.tenant_service.TenantService.send_branded_notification", new_callable=AsyncMock) as mock_notify:
+        claimed = await AppointmentService.claim_waitlist_slot(db, apt1.id, wl_exp.id)
+        assert claimed is False
+        mock_notify.assert_called_once()
+        assert "ventana de prioridad para confirmar este turno ha vencido" in mock_notify.call_args[0][2]
+
+    # 3. Test Guard: Slot already claimed by someone else ('rellenado_con_exito')
+    apt1.status = "rellenado_con_exito"
+    db.commit()
+
+    wl_valid = WaitlistEntry(
+        tenant_id=tenant.id,
+        patient_name="Pedro Tarde",
+        patient_phone="5493439999999",
+        doctor_or_service="Dr. Test",
+        status="notificado_oferta",
+        offered_appointment_id=apt1.id
+    )
+    db.add(wl_valid)
+    db.commit()
+
+    with patch("app.services.tenant_service.TenantService.send_branded_notification", new_callable=AsyncMock) as mock_notify:
+        claimed = await AppointmentService.claim_waitlist_slot(db, apt1.id, wl_valid.id)
+        assert claimed is False
+        mock_notify.assert_called_once()
+        assert "ya fue cubierto por otro paciente" in mock_notify.call_args[0][2]
+
+
+
 
 
 

@@ -268,10 +268,43 @@ class AppointmentService:
         if not apt or not cand:
             return False
 
+        # 1. Cerrojo de turno ya ocupado / rellenado
         if apt.status == "rellenado_con_exito":
             msg = (
-                f"Hola {cand.patient_name}, el turno ya fue cubierto. "
-                f"Te mantendremos primero en lista de espera ante la próxima vacante."
+                f"Hola *{cand.patient_name}*, el turno ya fue cubierto por otro paciente. "
+                f"Despreocupate que te mantendremos con máxima prioridad en la lista de espera ante la próxima vacante. 🙌"
+            )
+            await tenant_service.send_branded_notification(apt.tenant, cand.patient_phone, msg)
+            return False
+
+        # 2. Cerrojo de paciente que previamente rechazó ('NO, PASO')
+        if cand.status == "rechazado":
+            msg = (
+                f"Hola *{cand.patient_name}*, anteriormente seleccionaste que no podías en este horario "
+                f"y el turno fue derivado al siguiente paciente en lista de espera.\n\n"
+                f"¡Despreocupate que tu lugar con prioridad se mantiene firme para la próxima vacante! 🙌"
+            )
+            await tenant_service.send_branded_notification(apt.tenant, cand.patient_phone, msg)
+            return False
+
+        # 3. Cerrojo de ventana de prioridad expirada
+        now = utc_now()
+        if cand.status == "expirada" or (cand.expires_at and cand.expires_at <= now):
+            cand.status = "expirada"
+            db.commit()
+            msg = (
+                f"Hola *{cand.patient_name}*, la ventana de prioridad para confirmar este turno ha vencido "
+                f"y fue ofrecido al siguiente paciente en fila.\n\n"
+                f"¡Despreocupate que seguís en nuestra lista de espera para el próximo hueco que se libere! 🙌"
+            )
+            await tenant_service.send_branded_notification(apt.tenant, cand.patient_phone, msg)
+            return False
+
+        # 4. Cerrojo de oferta no activa
+        if cand.status != "notificado_oferta":
+            msg = (
+                f"Hola *{cand.patient_name}*, esta opción de turno ya no está activa. "
+                f"Seguís en nuestra lista de espera con prioridad para la próxima vacante. 🙌"
             )
             await tenant_service.send_branded_notification(apt.tenant, cand.patient_phone, msg)
             return False
@@ -388,9 +421,18 @@ class AppointmentService:
             return False
 
         tenant = vacant_apt.tenant
-        now = utc_now()
         new_date_str = vacant_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
         old_date_str = future_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+
+        if vacant_apt.status == "rellenado_con_exito":
+            msg = (
+                f"Hola *{future_apt.patient_name}*, el turno de mañana ({new_date_str}) ya fue cubierto por otro paciente.\n\n"
+                f"Despreocupate que tu turno original del *{old_date_str}* sigue *100% firme y confirmado*. ¡Nos vemos ese día! 🙌"
+            )
+            await tenant_service.send_branded_notification(tenant, future_apt.patient_phone, msg)
+            return False
+
+        now = utc_now()
 
         # 1. Update vacant slot with patient details
         vacant_apt.patient_name = future_apt.patient_name
