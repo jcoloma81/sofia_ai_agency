@@ -74,6 +74,12 @@ class TenantService:
             TenantService.set_active_session(db, clean_phone, recent_apt.tenant.slug)
             return recent_apt.tenant, message_text
 
+        # Check if phone is owner/doctor of a tenant
+        owner_tenant = db.query(Tenant).filter(Tenant.owner_phone.in_(cand_phones), Tenant.active == True).order_by(Tenant.id.desc()).first()
+        if owner_tenant:
+            TenantService.set_active_session(db, clean_phone, owner_tenant.slug)
+            return owner_tenant, message_text
+
         recent_wl = db.query(WaitlistEntry).filter(WaitlistEntry.patient_phone.in_(cand_phones)).order_by(WaitlistEntry.id.desc()).first()
         if recent_wl and recent_wl.tenant:
             TenantService.set_active_session(db, clean_phone, recent_wl.tenant.slug)
@@ -276,7 +282,8 @@ REGLAS DE OPERACIÓN:
         db.commit()
         db.refresh(wl_entry)
 
-        # 4. Pre-bind active session for secondary phone and boss phone
+        # 4. Pre-bind active session for doctor, secondary phone and boss phone
+        TenantService.set_active_session(db, norm_doc_phone, tenant.slug)
         TenantService.set_active_session(db, actual_sec, tenant.slug)
         TenantService.set_active_session(db, actual_boss, tenant.slug)
 
