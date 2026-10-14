@@ -86,17 +86,23 @@ async def appointment_cron_worker():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    cron_task = asyncio.create_task(appointment_cron_worker())
-    logger.info("🚀 Background appointment cron worker launched.")
+    cron_enabled = os.getenv("ENABLE_CRON_WORKER", "true").lower() in ("true", "1", "yes")
+    cron_task = None
+    if cron_enabled:
+        cron_task = asyncio.create_task(appointment_cron_worker())
+        logger.info("🚀 Background appointment cron worker launched.")
+    else:
+        logger.info("ℹ️ Background appointment cron worker disabled by configuration.")
     try:
         yield
     finally:
-        cron_task.cancel()
-        try:
-            await cron_task
-        except asyncio.CancelledError:
-            pass
-        logger.info("🛑 Background appointment cron worker stopped.")
+        if cron_task:
+            cron_task.cancel()
+            try:
+                await cron_task
+            except asyncio.CancelledError:
+                pass
+            logger.info("🛑 Background appointment cron worker stopped.")
 
 
 app = FastAPI(
