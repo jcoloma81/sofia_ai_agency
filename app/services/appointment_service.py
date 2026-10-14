@@ -203,7 +203,7 @@ class AppointmentService:
         db.commit()
 
         tenant = apt.tenant
-        date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+        date_str = format_appointment_datetime(apt.appointment_date)
 
         # 1. Acknowledge cancellation to original patient
         cancel_msg = (
