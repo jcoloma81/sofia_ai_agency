@@ -11,6 +11,28 @@ logger = logging.getLogger(__name__)
 def utc_now():
     return datetime.now(timezone.utc)
 
+def format_appointment_datetime(dt: datetime, include_day_name: bool = False) -> str:
+    """
+    Bulletproof Spanish date formatter for Argentina (UTC-3).
+    Converts UTC datetime to Argentina local time and translates day names to Spanish.
+    """
+    if not dt:
+        return ""
+    if dt.tzinfo is not None:
+        local_dt = dt.astimezone(timezone(timedelta(hours=-3)))
+    else:
+        local_dt = dt - timedelta(hours=3)
+
+    day_names = {
+        0: "Lunes", 1: "Martes", 2: "Miércoles", 3: "Jueves",
+        4: "Viernes", 5: "Sábado", 6: "Domingo"
+    }
+    time_str = local_dt.strftime("%d/%m a las %H:%M hs")
+    if include_day_name:
+        day_es = day_names.get(local_dt.weekday(), "")
+        return f"{day_es} {time_str}"
+    return time_str
+
 class AppointmentService:
     """
     Automated Medical & Professional Appointment Engine:
@@ -547,7 +569,7 @@ class AppointmentService:
                     )
                     continue
 
-            date_str = apt.appointment_date.strftime("%A %d/%m a las %H:%M hs")
+            date_str = format_appointment_datetime(apt.appointment_date, include_day_name=True)
             body_text = (
                 f"Hola *{apt.patient_name}*! Te recordamos con anticipación que faltan *2 días* para tu turno "
                 f"el día *{date_str}* con *{apt.doctor_or_service}* en *{tenant.name}*.\n\n"
@@ -581,7 +603,7 @@ class AppointmentService:
             if not tenant:
                 continue
 
-            date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+            date_str = format_appointment_datetime(apt.appointment_date)
             body_text = (
                 f"Hola *{apt.patient_name}*! Te recordamos que *MAÑANA* es tu turno "
                 f"el día *{date_str}* con *{apt.doctor_or_service}* en *{tenant.name}*.\n\n"
