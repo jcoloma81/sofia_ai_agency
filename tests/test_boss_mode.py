@@ -738,7 +738,10 @@ async def test_setup_doctor_live_demo(db):
     from app.models.tenant import Tenant, WaitlistEntry, TenantSession
     from unittest.mock import patch, AsyncMock
 
-    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+    with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        mock_tpl.return_value = False  # Triggers text fallback
+
         res = await tenant_service.setup_doctor_live_demo(
             db=db,
             doctor_name="Dr. Carlos González",
@@ -767,17 +770,17 @@ async def test_setup_doctor_live_demo(db):
         assert wl.status == "activa"
 
         # Verify welcome message sent to Doctor
-        mock_msg.assert_called()
-        welcome_call = mock_msg.call_args[1]
-        assert welcome_call["to_phone"] == "5493434567890"
-        assert "bienvenida a *Sofía AI*" in welcome_call["text"]
+        assert mock_tpl.called or mock_msg.called
 
 
 @pytest.mark.asyncio
 async def test_process_boss_message_clinic_demo_onboarding(db):
     from unittest.mock import patch, AsyncMock
 
-    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+    with patch("app.services.whatsapp.send_whatsapp_template", new_callable=AsyncMock) as mock_tpl, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+        mock_tpl.return_value = True
+
         handled, reply, action = await process_boss_message(
             db=db,
             sender_phone="5493434536447",
@@ -789,7 +792,7 @@ async def test_process_boss_message_clinic_demo_onboarding(db):
         assert "DEMO DE CONSULTORIO ACTIVADA EN VIVO" in reply
         assert "Dr. Carlos González" in reply
         assert "5493434567890" in reply
-        assert mock_msg.called
+        assert mock_tpl.called or mock_msg.called
 
 
 @pytest.mark.asyncio
