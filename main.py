@@ -51,22 +51,22 @@ async def appointment_cron_worker():
 
             db = SessionLocal()
             try:
-                # 1. Dual-stage reminders & waitlist timeout sweeps
-                results = await AppointmentService.scan_and_send_appointment_reminders(db)
-                if results.get("reminders_48h") or results.get("reminders_24h") or results.get("timeouts_processed"):
-                    logger.info(f"⏰ Cron Reminders Dispatched: {results}")
-
-                # 2. Daily secretary shield (17:30 hs) and cutoff (18:00 hs)
                 # Evaluated based on Argentina local time (UTC-3)
                 now_utc = datetime.now(timezone.utc)
                 local_hour = (now_utc.hour - 3) % 24
                 local_minute = now_utc.minute
 
-                # Secretary pre-cutoff shield window: 17:30 - 17:59
+                # 1. Dual-stage reminders (08:00 to 20:00 hs Argentina so all tomorrow slots receive reminders at 8 AM)
+                if 8 <= local_hour <= 20:
+                    results = await AppointmentService.scan_and_send_appointment_reminders(db)
+                    if results.get("reminders_48h") or results.get("reminders_24h") or results.get("timeouts_processed"):
+                        logger.info(f"⏰ Cron Reminders Dispatched: {results}")
+
+                # 2. Secretary pre-cutoff shield window: 17:30 - 17:59
                 if local_hour == 17 and 30 <= local_minute <= 59:
                     await AppointmentService.broadcast_secretary_pre_cutoff_reports(db)
 
-                # Cutoff waitlist cascade window: 18:00 hs onwards (idempotent: only processes status in agendado/recordatorio_*)
+                # 3. Cutoff waitlist cascade window: 18:00 hs onwards (idempotent: only processes status in agendado/recordatorio_*)
                 if local_hour >= 18:
                     await AppointmentService.execute_all_cutoff_auto_cancellations(db)
 

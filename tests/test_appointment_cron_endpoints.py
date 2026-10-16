@@ -163,3 +163,111 @@ async def test_cutoff_18hs_first_to_confirm_wins_and_timezone(db):
         assert mock_notify.call_count == 1
         assert "asignado a otro paciente en lista de espera" in mock_notify.call_args[0][2]
 
+
+@pytest.mark.asyncio
+async def test_morning_calendar_day_reminders_and_recent_booking_autoconfirm(db):
+    """
+    Tests:
+    1. Booking made < 36h before slot (e.g. booked 24h before for tomorrow 07:00 AM):
+       Auto-confirmed ('confirmado'), NO 24h reminder sent.
+    2. Bookings made >= 48h before slot (e.g. 3 days ago) for tomorrow at 07:00 AM AND 19:00 hs:
+       BOTH receive the 24h interactive reminder in the same morning sweep regardless of slot hour.
+    3. Booking made >= 7 days ago for 2 days ahead (pasado mañana):
+       Receives the 48h heads-up reminder.
+    """
+    from datetime import datetime, timezone, timedelta
+    from app.models.tenant import Tenant, Appointment
+    from app.services.appointment_service import AppointmentService
+
+    tenant = Tenant(
+        slug="test_clinica_morning_rem",
+        name="Clínica Mañana Test",
+        business_type="salud",
+        owner_phone="5493434000002",
+        active=True
+    )
+    db.add(tenant)
+    db.commit()
+    db.refresh(tenant)
+
+    now = datetime.now(timezone.utc)
+    local_now = now - timedelta(hours=3)
+    tomorrow_base = local_now + timedelta(days=1)
+    day_after_base = local_now + timedelta(days=2)
+
+    # A. Recent booking (booked 20h before tomorrow 07:00 AM Argentina = 10:00 UTC)
+    slot_7am_utc = tomorrow_base.replace(hour=10, minute=0, second=0, microsecond=0)
+    apt_recent = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Paciente Reciente 24h",
+        patient_phone="5493434111111",
+        doctor_or_service="Dr. González",
+        appointment_date=slot_7am_utc,
+        created_at=slot_7am_utc - timedelta(hours=20),
+        status="agendado"
+    )
+
+    # B. Booked 3 days ago (72h before) for tomorrow 07:00 AM Argentina (10:00 UTC)
+    apt_7am_48h = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Paciente 7AM (Sacó hace 3 días)",
+        patient_phone="5493434222222",
+        doctor_or_service="Dr. González",
+        appointment_date=slot_7am_utc,
+        created_at=slot_7am_utc - timedelta(days=3),
+        status="agendado"
+    )
+
+    # C. Booked 4 days ago for tomorrow 19:00 hs Argentina (22:00 UTC)
+    slot_19hs_utc = tomorrow_base.replace(hour=22, minute=0, second=0, microsecond=0)
+    apt_19hs_48h = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Paciente 19HS (Sacó hace 4 días)",
+        patient_phone="5493434333333",
+        doctor_or_service="Dr. González",
+        appointment_date=slot_19hs_utc,
+        created_at=slot_19hs_utc - timedelta(days=4),
+        status="agendado"
+    )
+
+    # D. Booked 10 days ago for 2 days ahead (pasado mañana 18:00 hs Argentina = 21:00 UTC)
+    slot_2days_utc = day_after_base.replace(hour=21, minute=0, second=0, microsecond=0)
+    apt_2days_10d = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Paciente 48h (Sacó hace 10 días)",
+        patient_phone="5493434444444",
+        doctor_or_service="Dr. González",
+        appointment_date=slot_2days_utc,
+        created_at=slot_2days_utc - timedelta(days=10),
+        status="agendado"
+    )
+
+    db.add_all([apt_recent, apt_7am_48h, apt_19hs_48h, apt_2days_10d])
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_interactive_buttons", new_callable=AsyncMock) as mock_btns, \
+         patch("app.services.tenant_service.TenantService.send_branded_notification", new_callable=AsyncMock) as mock_notify:
+
+        mock_btns.return_value = True
+        mock_notify.return_value = True
+
+        stats = await AppointmentService.scan_and_send_appointment_reminders(db)
+
+        db.refresh(apt_recent)
+        db.refresh(apt_7am_48h)
+        db.refresh(apt_19hs_48h)
+        db.refresh(apt_2days_10d)
+
+        # 1. Recent booking (<36h) was auto-confirmed WITHOUT sending 24h reminder
+        assert apt_recent.status == "confirmado"
+
+        # 2. Both 7:00 AM and 19:00 hs tomorrow bookings (made >=48h ago) received 24h interactive buttons!
+        assert apt_7am_48h.status == "recordatorio_24h"
+        assert apt_19hs_48h.status == "recordatorio_24h"
+        assert stats["reminders_24h"] >= 2
+
+        # 3. 2-days-ahead booking (made 10 days ago) received 48h natural reminder!
+        assert apt_2days_10d.status == "recordatorio_48h"
+        assert stats["reminders_48h"] >= 1
+
+

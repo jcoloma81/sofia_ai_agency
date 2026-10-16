@@ -33,6 +33,14 @@ def format_appointment_datetime(dt: datetime, include_day_name: bool = False) ->
         return f"{day_es} {time_str}"
     return time_str
 
+def _get_booking_anticipation_hours(apt: Appointment) -> Optional[float]:
+    """Returns how many hours in advance the appointment was booked relative to its slot date."""
+    if not apt.created_at or not apt.appointment_date:
+        return None
+    apt_dt = apt.appointment_date.replace(tzinfo=timezone.utc) if apt.appointment_date.tzinfo is None else apt.appointment_date
+    created_dt = apt.created_at.replace(tzinfo=timezone.utc) if apt.created_at.tzinfo is None else apt.created_at
+    return (apt_dt - created_dt).total_seconds() / 3600.0
+
 class AppointmentService:
     """
     Automated Medical & Professional Appointment Engine:
@@ -577,22 +585,26 @@ class AppointmentService:
     @staticmethod
     async def scan_and_send_appointment_reminders(db: Session, hours_ahead: Optional[int] = None) -> Dict[str, int]:
         """
-        DUAL-STAGE CRON (Runs hourly):
-        Stage 1: 48 HORAS ANTES -> First Reminder
-        Stage 2: 24 HORAS ANTES -> Urgent Confirmation / Cancellation & Gap Filling
+        DUAL-STAGE CRON (Dispatched in the morning from 08:00 hs Argentina):
+        Stage 1: PASADO MAÑANA (2 calendar days ahead) -> First Reminder (only if booked >= 7 days in advance)
+        Stage 2: MAÑANA (1 calendar day ahead, all slots from 07:00 AM to 23:00 hs) ->
+                 - If booked < 36h before slot (very recent booking): auto-confirmed, no reminder needed.
+                 - If booked >= 36h (48h+ before slot): sends interactive confirmation early in the morning
+                   so patient has all day until 18:00 hs to confirm.
         Stage 3: Waitlist Timeout Sweeper -> Passes unresponded slots to candidate #2
         """
         now = utc_now()
+        local_now = now - timedelta(hours=3)
         reminders_48h_sent = 0
         reminders_24h_sent = 0
         timeouts_processed = 0
 
         # -------------------------------------------------------------
-        # STAGE 1: 48 HORAS ANTES (Between 46h and 52h before slot)
-        # Recordatorio natural y amable, sin exigir confirmación aún
+        # STAGE 1: PASADO MAÑANA (Full calendar day 2 days ahead in Argentina)
+        # Recordatorio natural y amable a la mañana, sin exigir confirmación aún
         # -------------------------------------------------------------
-        start_48h = now + timedelta(hours=46)
-        end_48h = now + timedelta(hours=52)
+        start_48h = (local_now + timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_48h = (local_now + timedelta(days=2)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
 
         apts_48h = db.query(Appointment).filter(
             Appointment.status == "agendado",
@@ -606,16 +618,14 @@ class AppointmentService:
             if not tenant:
                 continue
 
-            # Anti-Spam / Smart UX: Only send 48h heads-up if booked >= 7 days in advance.
-            # If booked recently (< 7 days), patient has it fresh in mind, so we skip 48h and let Stage 2 (24h) handle confirmation.
-            if apt.created_at:
-                anticipation_days = (apt.appointment_date - apt.created_at).total_seconds() / 86400.0
-                if anticipation_days < 7.0:
-                    logger.info(
-                        f"⏩ Skipping 48h reminder for '{apt.patient_name}' (Turno #{apt.id}): "
-                        f"Booked with {anticipation_days:.1f} days anticipation (< 7 days). Will receive 24h confirmation."
-                    )
-                    continue
+            # Anti-Spam / Smart UX: Only send 48h heads-up if booked >= 7 days (168h) in advance.
+            anticipation_hours = _get_booking_anticipation_hours(apt)
+            if anticipation_hours is not None and anticipation_hours < 168.0:
+                logger.info(
+                    f"⏩ Skipping 48h reminder for '{apt.patient_name}' (Turno #{apt.id}): "
+                    f"Booked with {anticipation_hours / 24.0:.1f} days anticipation (< 7 days). Will evaluate at 24h stage."
+                )
+                continue
 
             date_str = format_appointment_datetime(apt.appointment_date, include_day_name=True)
             body_text = (
@@ -634,10 +644,11 @@ class AppointmentService:
                 reminders_48h_sent += 1
 
         # -------------------------------------------------------------
-        # STAGE 2: 24 HORAS ANTES (Between 22h and 26h before slot)
+        # STAGE 2: MAÑANA (Full calendar day tomorrow in Argentina, from 7 AM to night)
+        # Sent early in the morning regardless of slot hour so patient has until 18:00 hs!
         # -------------------------------------------------------------
-        start_24h = now + timedelta(hours=22)
-        end_24h = now + timedelta(hours=26)
+        start_24h = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_24h = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
 
         apts_24h = db.query(Appointment).filter(
             Appointment.status.in_(["agendado", "recordatorio_48h"]),
@@ -649,6 +660,20 @@ class AppointmentService:
         for apt in apts_24h:
             tenant = apt.tenant
             if not tenant:
+                continue
+
+            # Regla "Es un RECORDATORIO": Si el paciente sacó el turno hace muy poquito (< 36 horas antes del turno,
+            # ej: sacó turno ayer u hoy para mañana a las 7 AM / 8 AM / 18 hs), NO se va a olvidar porque lo acaba de pedir.
+            # Lo damos por confirmado automáticamente y no lo molestamos con recordatorio.
+            anticipation_hours = _get_booking_anticipation_hours(apt)
+            if apt.status == "agendado" and anticipation_hours is not None and anticipation_hours < 36.0:
+                apt.status = "confirmado"
+                apt.confirmation_received_at = now
+                db.commit()
+                logger.info(
+                    f"✅ Auto-confirming recent booking for '{apt.patient_name}' (Turno #{apt.id}): "
+                    f"Booked {anticipation_hours:.1f}h before slot (< 36h). Skipping 24h reminder."
+                )
                 continue
 
             date_str = format_appointment_datetime(apt.appointment_date)
@@ -721,12 +746,22 @@ class AppointmentService:
         start_tomorrow = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         end_tomorrow = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
 
-        unconfirmed = db.query(Appointment).filter(
+        candidates = db.query(Appointment).filter(
             Appointment.tenant_id == tenant.id,
             Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h"]),
             Appointment.appointment_date >= start_tomorrow,
             Appointment.appointment_date <= end_tomorrow
         ).order_by(Appointment.appointment_date.asc()).all()
+
+        unconfirmed = []
+        for apt in candidates:
+            anticipation_hours = _get_booking_anticipation_hours(apt)
+            if apt.status == "agendado" and anticipation_hours is not None and anticipation_hours < 36.0:
+                apt.status = "confirmado"
+                apt.confirmation_received_at = now
+                db.commit()
+                continue
+            unconfirmed.append(apt)
 
         if not unconfirmed:
             logger.info(f"✅ All appointments for tomorrow in '{tenant.name}' are confirmed! No secretary alert needed.")
@@ -845,6 +880,13 @@ class AppointmentService:
 
         offered_count = 0
         for apt in to_offer:
+            anticipation_hours = _get_booking_anticipation_hours(apt)
+            if apt.status == "agendado" and anticipation_hours is not None and anticipation_hours < 36.0:
+                apt.status = "confirmado"
+                apt.confirmation_received_at = now
+                db.commit()
+                continue
+
             apt.status = "en_oferta_lista_espera"
             db.commit()
 
