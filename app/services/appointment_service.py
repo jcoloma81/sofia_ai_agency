@@ -90,17 +90,44 @@ class AppointmentService:
         return entry
 
     @staticmethod
-    async def confirm_appointment(db: Session, appointment_id: int) -> bool:
+    async def confirm_appointment(db: Session, appointment_id: int, sender_phone: Optional[str] = None) -> bool:
         apt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
         if not apt:
             return False
+
+        # Cerrojo: Si el turno ya fue cubierto por alguien de la lista de espera
+        if apt.status == "rellenado_con_exito":
+            if apt.tenant:
+                date_str = format_appointment_datetime(apt.appointment_date)
+                msg = (
+                    f"⚠️ Hola! Te informamos que al haber pasado el horario límite de confirmación (18:00 hs), "
+                    f"el turno del *{date_str}* ya fue asignado a otro paciente en lista de espera.\n\n"
+                    f"Si deseás agendar una nueva fecha, escribinos por este medio y te buscamos lugar enseguida. 🙌"
+                )
+                target_phone = sender_phone or apt.patient_phone
+                if target_phone:
+                    await tenant_service.send_branded_notification(apt.tenant, target_phone, msg)
+            return False
+
+        # Si el turno estaba 'en_oferta_lista_espera' o 'cancelado' pero NADIE de la lista lo tomó aún,
+        # el paciente titular que confirma tarde GANA el turno (Cero Sillas Vacías)
+        # y anulamos cualquier oferta abierta en la lista de espera para este turno.
+        active_offers = db.query(WaitlistEntry).filter(
+            WaitlistEntry.offered_appointment_id == apt.id,
+            WaitlistEntry.status == "notificado_oferta"
+        ).all()
+        for off in active_offers:
+            off.status = "activa"  # Vuelve a estar activo en fila para el próximo hueco
+            off.offered_appointment_id = None
+            off.expires_at = None
+
         apt.status = "confirmado"
         apt.confirmation_received_at = utc_now()
         db.commit()
 
         # Send confirmation acknowledgment to patient
         if apt.tenant:
-            date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+            date_str = format_appointment_datetime(apt.appointment_date)
             msg = (
                 f"✅ *¡Turno confirmado con éxito!*\n\n"
                 f"👤 Paciente: *{apt.patient_name}*\n"
@@ -124,11 +151,11 @@ class AppointmentService:
         Gives a generous 2-hour window (120 minutes) for the candidate to respond.
         """
         apt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-        if not apt or apt.status == "rellenado_con_exito":
+        if not apt or apt.status in ("rellenado_con_exito", "confirmado"):
             return None
 
         tenant = apt.tenant
-        date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+        date_str = format_appointment_datetime(apt.appointment_date)
 
         # Query next candidate (FIFO: oldest registered first)
         next_cand = db.query(WaitlistEntry).filter(
@@ -147,7 +174,7 @@ class AppointmentService:
             if tenant and tenant.owner_phone:
                 await whatsapp.send_whatsapp_message(
                     tenant.owner_phone,
-                    f"ℹ️ *Aviso Turno Libre:* Se liberó el turno del {date_str} ({apt.doctor_or_service}). No hay pacientes en lista de espera ni turnos futuros para adelantar. Queda libre para sobreturnos de mostrador."
+                    f"ℹ️ *Aviso Turno Libre:* Se liberó el turno del {date_str} ({apt.doctor_or_service}). No hay pacientes en lista de espera ni turnos futuros para adelantar. Queda disponible (o a la espera de que el paciente original confirme tarde)."
                 )
             return None
 
@@ -259,7 +286,7 @@ class AppointmentService:
             ).order_by(Appointment.appointment_date.asc()).first()
 
             if existing_apt:
-                e_date_str = existing_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+                e_date_str = format_appointment_datetime(existing_apt.appointment_date)
                 msg = (
                     f"¡Dale, no te preocupes {cand.patient_name}! Entendido que este horario no te queda cómodo.\n\n"
                     f"Despreocupate que tu turno agendado del *{e_date_str}* sigue *100% firme y confirmado tal cual estaba*. ¡Nos vemos ese día! 🙌"
@@ -290,8 +317,8 @@ class AppointmentService:
         if not apt or not cand:
             return False
 
-        # 1. Cerrojo de turno ya ocupado / rellenado
-        if apt.status == "rellenado_con_exito":
+        # 1. Cerrojo de turno ya ocupado / rellenado o confirmado por el titular antes de que respondieran
+        if apt.status in ("rellenado_con_exito", "confirmado"):
             msg = (
                 f"Hola *{cand.patient_name}*, el turno ya fue cubierto por otro paciente. "
                 f"Despreocupate que te mantendremos con máxima prioridad en la lista de espera ante la próxima vacante. 🙌"
@@ -311,7 +338,8 @@ class AppointmentService:
 
         # 3. Cerrojo de ventana de prioridad expirada
         now = utc_now()
-        if cand.status == "expirada" or (cand.expires_at and cand.expires_at <= now):
+        exp_dt = cand.expires_at.replace(tzinfo=timezone.utc) if (cand.expires_at and cand.expires_at.tzinfo is None) else cand.expires_at
+        if cand.status == "expirada" or (exp_dt and exp_dt <= now):
             cand.status = "expirada"
             db.commit()
             msg = (
@@ -331,16 +359,36 @@ class AppointmentService:
             await tenant_service.send_branded_notification(apt.tenant, cand.patient_phone, msg)
             return False
 
+        # Guardamos datos del titular original por si venía del corte de las 18:00 hs
+        original_patient_name = apt.patient_name
+        original_patient_phone = apt.patient_phone
+        was_cutoff_offer = (apt.status == "en_oferta_lista_espera")
+
         # Assign slot
         apt.patient_name = cand.patient_name
         apt.patient_phone = cand.patient_phone
         apt.status = "rellenado_con_exito"
         apt.confirmation_received_at = utc_now()
+        apt.notes = f"Original: {original_patient_name} ({original_patient_phone})"
         cand.status = "turno_tomado"
         db.commit()
 
-        # Success notification to patient
-        date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+        date_str = format_appointment_datetime(apt.appointment_date)
+
+        # Si venía del corte de las 18:00 hs, recién AHORA que otro paciente tomó el turno,
+        # le avisamos al titular original que su turno fue reasignado por falta de confirmación.
+        if was_cutoff_offer and original_patient_phone and original_patient_phone != cand.patient_phone:
+            patient_notice = (
+                f"⚠️ *AVISO OFICIAL DE TURNO LIBERADO POR FALTA DE CONFIRMACIÓN*\n\n"
+                f"Hola *{original_patient_name}*, te informamos que al no haber recibido tu confirmación "
+                f"antes del horario límite (18:00 hs), tu turno de mañana *{date_str}* con *{apt.doctor_or_service}* "
+                f"ha sido *reasignado a un paciente en lista de espera*.\n\n"
+                f"❌ *Por favor NO concurras al consultorio mañana*, ya que el horario fue otorgado a otra persona.\n\n"
+                f"Si deseás solicitar un nuevo turno para otra fecha, respondé a este mensaje y te buscaremos lugar con gusto."
+            )
+            await tenant_service.send_branded_notification(apt.tenant, original_patient_phone, patient_notice)
+
+        # Success notification to new patient
         success_msg = (
             f"🎉 *¡FELICITACIONES! TURNO ASIGNADO*\n\n"
             f"Hola {cand.patient_name}, el turno del *{date_str}* con *{apt.doctor_or_service}* "
@@ -353,7 +401,7 @@ class AppointmentService:
         if apt.tenant and apt.tenant.owner_phone:
             owner_msg = (
                 f"🎯 *¡HUECO CUBIERTO CON ÉXITO POR SOFÍA!*\n\n"
-                f"El turno del *{date_str}* ({apt.doctor_or_service}) que se había caído "
+                f"El turno del *{date_str}* ({apt.doctor_or_service}) que se había liberado "
                 f"fue reasignado exitosamente a *{cand.patient_name}* (Cel: +{cand.patient_phone}).\n\n"
                 f"💰 *Cero pérdida de facturación para la clínica.*"
             )
@@ -386,7 +434,7 @@ class AppointmentService:
 
         tenant = apt.tenant
         now = utc_now()
-        date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+        date_str = format_appointment_datetime(apt.appointment_date)
 
         # Find future patient with same doctor/service between 2 and 14 days ahead
         start_future = now + timedelta(days=2)
@@ -404,7 +452,7 @@ class AppointmentService:
         if not future_apt:
             return None
 
-        future_date_str = future_apt.appointment_date.strftime("%A %d/%m a las %H:%M hs")
+        future_date_str = format_appointment_datetime(future_apt.appointment_date, include_day_name=True)
         time_desc = "2 horas" if timeout_minutes == 120 else f"{timeout_minutes} minutos"
 
         offer_text = (
@@ -443,10 +491,10 @@ class AppointmentService:
             return False
 
         tenant = vacant_apt.tenant
-        new_date_str = vacant_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
-        old_date_str = future_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+        new_date_str = format_appointment_datetime(vacant_apt.appointment_date)
+        old_date_str = format_appointment_datetime(future_apt.appointment_date)
 
-        if vacant_apt.status == "rellenado_con_exito":
+        if vacant_apt.status in ("rellenado_con_exito", "confirmado"):
             msg = (
                 f"Hola *{future_apt.patient_name}*, el turno de mañana ({new_date_str}) ya fue cubierto por otro paciente.\n\n"
                 f"Despreocupate que tu turno original del *{old_date_str}* sigue *100% firme y confirmado*. ¡Nos vemos ese día! 🙌"
@@ -504,7 +552,7 @@ class AppointmentService:
         """
         future_apt = db.query(Appointment).filter(Appointment.id == future_apt_id).first()
         if future_apt and future_apt.tenant:
-            date_str = future_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+            date_str = format_appointment_datetime(future_apt.appointment_date)
             msg = (
                 f"¡Dale, no te preocupes {future_apt.patient_name}! Entendido que preferís mantener tu fecha original.\n\n"
                 f"Tu turno agendado del *{date_str}* sigue *100% firme y confirmado tal cual estaba*. ¡Nos vemos ese día! 🙌"
@@ -513,7 +561,7 @@ class AppointmentService:
 
         vacant_apt = db.query(Appointment).filter(Appointment.id == vacant_apt_id).first()
         if vacant_apt and vacant_apt.tenant and vacant_apt.tenant.owner_phone:
-            v_date_str = vacant_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+            v_date_str = format_appointment_datetime(vacant_apt.appointment_date)
             decline_msg = f"ℹ️ *Adelanta-Turnos:* El paciente futuro prefirió mantener su fecha. El turno de mañana {v_date_str} queda libre para sobreturnos."
             await whatsapp.send_owner_or_admin_alert(
                 to_phone=vacant_apt.tenant.owner_phone,
@@ -668,8 +716,10 @@ class AppointmentService:
             return False
 
         now = utc_now()
-        start_tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        end_tomorrow = (now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0)
+        # Calculate tomorrow window in Argentina time (UTC-3) while also covering UTC naive dates
+        local_now = now - timedelta(hours=3)
+        start_tomorrow = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_tomorrow = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
 
         unconfirmed = db.query(Appointment).filter(
             Appointment.tenant_id == tenant.id,
@@ -684,19 +734,19 @@ class AppointmentService:
 
         lines = []
         for i, apt in enumerate(unconfirmed, 1):
-            t_str = apt.appointment_date.strftime("%H:%M hs")
+            t_str = format_appointment_datetime(apt.appointment_date)
             lines.append(f"{i}. 👤 *{apt.patient_name}* — {t_str} ({apt.doctor_or_service}) [ID: {apt.id}]")
 
         list_text = "\n".join(lines)
         report_msg = (
             f"📋 *REPORTE DE TURNOS SIN CONFIRMAR (Para Mañana)*\n\n"
-            f"Hola! De los avisos enviados hoy a las 9 AM, aún quedan *{len(unconfirmed)} turnos* pendientes de confirmación:\n\n"
+            f"Hola! Aún quedan *{len(unconfirmed)} turnos* de mañana pendientes de confirmación:\n\n"
             f"{list_text}\n\n"
-            f"⏰ *A las 18:00 hs* se cancelarán formalmente y se ofrecerán a la lista de espera (tenés 3 horas de margen para llamar o avisar).\n\n"
+            f"⏰ *A las 18:00 hs* se activará la lista de espera para ofrecer estos lugares.\n\n"
             f"👉 *Control de la Secretaría:*\n"
             f"• Si querés proteger a alguno: *«mantener a [Nombre]»* o *«mantener #{unconfirmed[0].id}»*.\n"
             f"• Si querés proteger a todos: *«mantener todos»*.\n"
-            f"• Si no respondés nada: a las 18:00 hs Sofía cancela con aviso de no concurrencia y activa la lista de espera."
+            f"• Si no respondés nada: a las 18:00 hs Sofía activa la lista de espera de a 1 paciente."
         )
 
         await whatsapp.send_owner_or_admin_alert(
@@ -729,8 +779,9 @@ class AppointmentService:
             target_apt = db.query(Appointment).filter(Appointment.id == apt_id, Appointment.tenant_id == tenant_id).first()
         elif clean_q == "todos":
             now = utc_now()
-            start_tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_tomorrow = (now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0)
+            local_now = now - timedelta(hours=3)
+            start_tomorrow = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_tomorrow = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
             all_pending = db.query(Appointment).filter(
                 Appointment.tenant_id == tenant.id,
                 Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h"]),
@@ -743,7 +794,7 @@ class AppointmentService:
             if tenant.owner_phone:
                 await whatsapp.send_whatsapp_message(
                     tenant.owner_phone,
-                    f"✅ *¡Entendido!* Se mantuvieron los {len(all_pending)} turnos de mañana. Ninguno será cancelado a las 18 hs."
+                    f"✅ *¡Entendido!* Se mantuvieron los {len(all_pending)} turnos de mañana. Ninguno será ofrecido a la lista de espera a las 18 hs."
                 )
             return all_pending[0] if all_pending else None
         else:
@@ -756,7 +807,7 @@ class AppointmentService:
         if target_apt:
             target_apt.status = "mantenido_por_secretaria"
             db.commit()
-            t_str = target_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+            t_str = format_appointment_datetime(target_apt.appointment_date)
             if tenant.owner_phone:
                 await whatsapp.send_whatsapp_message(
                     tenant.owner_phone,
@@ -768,60 +819,56 @@ class AppointmentService:
     @staticmethod
     async def execute_cutoff_auto_cancellations(db: Session, tenant_id: int) -> int:
         """
-        CUTOFF AT 18:00 HS:
-        Formally cancels all still-unconfirmed appointments for tomorrow
-        (excluding those held by the secretary), notifies patients NOT to show up,
-        and cascades to the waitlist 1-by-1.
+        CUTOFF AT 18:00 HS ("CERO SILLAS VACÍAS" / EL PRIMERO QUE CONFIRMA SE LO QUEDA):
+        1. Marks unconfirmed appointments for tomorrow as 'en_oferta_lista_espera'.
+        2. Does NOT kick out the original patient prematurely; instead starts offering the slot
+           1-by-1 to the waitlist.
+        3. Whichever patient confirms first (either someone in the waitlist clicking TOMAR TURNO,
+           or the original patient clicking SÍ, CONFIRMO late while the slot is still unclaimed)
+           gets the appointment!
         """
         tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         if not tenant:
             return 0
 
         now = utc_now()
-        start_tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-        end_tomorrow = (now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0)
+        local_now = now - timedelta(hours=3)
+        start_tomorrow = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_tomorrow = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
 
-        to_cancel = db.query(Appointment).filter(
+        to_offer = db.query(Appointment).filter(
             Appointment.tenant_id == tenant.id,
             Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h"]),
             Appointment.appointment_date >= start_tomorrow,
             Appointment.appointment_date <= end_tomorrow
         ).all()
 
-        cancelled_count = 0
-        for apt in to_cancel:
-            apt.status = "cancelado"
+        offered_count = 0
+        for apt in to_offer:
+            apt.status = "en_oferta_lista_espera"
             db.commit()
-
-            date_str = apt.appointment_date.strftime("%d/%m a las %H:%M hs")
-            patient_notice = (
-                f"⚠️ *AVISO OFICIAL DE TURNO LIBERADO POR FALTA DE CONFIRMACIÓN*\n\n"
-                f"Hola *{apt.patient_name}*, te informamos que al no haber recibido tu confirmación "
-                f"antes del horario límite (18:00 hs), tu turno de mañana *{date_str}* con *{apt.doctor_or_service}* "
-                f"ha sido *cancelado y reasignado a un paciente en lista de espera*.\n\n"
-                f"❌ *Por favor NO concurras al consultorio mañana*, ya que el horario fue otorgado a otra persona.\n\n"
-                f"Si deseás solicitar un nuevo turno para otra fecha, respondé a este mensaje y te buscaremos lugar con gusto."
-            )
-            await tenant_service.send_branded_notification(tenant, apt.patient_phone, patient_notice)
 
             # Trigger strictly 1-by-1 waitlist cascade with 2h timeout
             await AppointmentService.offer_slot_to_next_candidate(db, apt.id, timeout_minutes=120)
-            cancelled_count += 1
+            offered_count += 1
 
-        if cancelled_count > 0 and tenant.owner_phone:
-            cutoff_alert = f"🎯 *Corte de las 18:00 hs completado:* Se cancelaron formalmente {cancelled_count} turnos sin confirmar y se activó la lista de espera de a 1 paciente."
+        if offered_count > 0 and tenant.owner_phone:
+            cutoff_alert = (
+                f"🎯 *Corte de las 18:00 hs activado:* Se pusieron en oferta {offered_count} turnos de mañana aún sin confirmar "
+                f"hacia la lista de espera (de a 1 paciente por vez). El primero que confirme (de la lista o el titular si responde antes que otro lo tome) se queda con el lugar."
+            )
             await whatsapp.send_owner_or_admin_alert(
                 to_phone=tenant.owner_phone,
                 fallback_text=cutoff_alert,
                 business_name=tenant.name,
                 event_type="Corte 18:00 hs Ejecutado",
                 client_title="Secretaría",
-                details_summary=f"{cancelled_count} turnos cancelados y en lista de espera.",
+                details_summary=f"{offered_count} turnos abiertos a lista de espera.",
                 owner_email=tenant.owner_email
             )
 
-        logger.info(f"🏁 Cutoff executed for '{tenant.name}': {cancelled_count} appointments cancelled & offered to waitlist.")
-        return cancelled_count
+        logger.info(f"🏁 Cutoff executed for '{tenant.name}': {offered_count} appointments opened to waitlist cascade.")
+        return offered_count
 
     @staticmethod
     async def broadcast_secretary_pre_cutoff_reports(
@@ -829,10 +876,10 @@ class AppointmentService:
         tenant_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Runs secretary pre-cutoff summary report at 15:00 hs across all healthcare tenants
+        Runs secretary pre-cutoff summary report at 17:30 hs across all healthcare tenants
         (or for a single tenant if specified).
         """
-        query = db.query(Tenant).filter(Tenant.status == "active")
+        query = db.query(Tenant).filter(Tenant.active == True)
         if tenant_id:
             query = query.filter(Tenant.id == tenant_id)
         else:
@@ -856,9 +903,9 @@ class AppointmentService:
     ) -> Dict[str, Any]:
         """
         Executes 18:00 hs cutoff across all healthcare tenants (or for a single tenant).
-        Cancels unconfirmed slots (unless kept by secretary) and triggers 1-by-1 waitlist cascade.
+        Opens unconfirmed slots (unless kept by secretary) to the 1-by-1 waitlist cascade.
         """
-        query = db.query(Tenant).filter(Tenant.status == "active")
+        query = db.query(Tenant).filter(Tenant.active == True)
         if tenant_id:
             query = query.filter(Tenant.id == tenant_id)
         else:

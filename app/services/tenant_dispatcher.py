@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.tenant import Tenant, TenantSession, Appointment, WaitlistEntry, MembershipPayment, InactiveCustomer
 from app.services.tenant_service import tenant_service
-from app.services.appointment_service import appointment_service
+from app.services.appointment_service import appointment_service, format_appointment_datetime
 from app.services.billing_service import billing_service
 from app.services import whatsapp
 from app.config.settings import settings
@@ -72,9 +72,8 @@ class TenantDispatcher:
         if btn_id.startswith("confirm_apt_"):
             try:
                 apt_id = int(btn_id.split("confirm_apt_")[1])
-                confirmed = await appointment_service.confirm_appointment(db, apt_id)
-                if confirmed:
-                    return True, "Turno confirmado con éxito."
+                confirmed = await appointment_service.confirm_appointment(db, apt_id, sender_phone=clean_phone)
+                return True, "Turno confirmado con éxito." if confirmed else "Turno ya cubierto por lista de espera."
             except Exception as e:
                 logger.error(f"Error handling confirm button {btn_id}: {e}")
 
@@ -239,11 +238,11 @@ class TenantDispatcher:
         active_apt = db.query(Appointment).filter(
             Appointment.tenant_id == tenant.id,
             Appointment.patient_phone == clean_phone,
-            Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h", "confirmado"])
+            Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera", "confirmado"])
         ).order_by(Appointment.appointment_date.asc()).first()
 
         if active_apt:
-            date_fmt = active_apt.appointment_date.strftime("%A %d/%m a las %H:%M hs")
+            date_fmt = format_appointment_datetime(active_apt.appointment_date, include_day_name=True)
             system_prompt += (
                 f"\n\nDATOS DEL PACIENTE QUE TE ESTÁ ESCRIBIENDO:\n"
                 f"- Nombre: {active_apt.patient_name}\n"
@@ -319,7 +318,7 @@ class TenantDispatcher:
 
                     # Send executive alert to Doctor / Owner
                     if tenant.owner_phone:
-                        doc_date_str = new_apt.appointment_date.strftime("%d/%m a las %H:%M hs")
+                        doc_date_str = format_appointment_datetime(new_apt.appointment_date)
                         owner_alert = (
                             f"📅 *NUEVO TURNO AGENDADO (Autónomo)*\n\n"
                             f"👤 Paciente: *{new_apt.patient_name}*\n"
@@ -377,8 +376,9 @@ class TenantDispatcher:
         ])
         if is_query_slots:
             now = utc_now()
-            start_tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_tomorrow = (now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0)
+            local_now = now - timedelta(hours=3)
+            start_tomorrow = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_tomorrow = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
             tomorrow_apts = db.query(Appointment).filter(
                 Appointment.tenant_id == tenant.id,
                 Appointment.appointment_date >= start_tomorrow,
@@ -393,7 +393,7 @@ class TenantDispatcher:
             lines = []
             vacant_cnt = 0
             for a in tomorrow_apts:
-                t_str = a.appointment_date.strftime("%H:%M hs")
+                t_str = format_appointment_datetime(a.appointment_date)
                 if a.status in ["cancelado", "liberado_por_adelanto"]:
                     vacant_cnt += 1
                     lines.append(f"• ⚠️ *{t_str}* — LIBRE (Cancelado por {a.patient_name})")

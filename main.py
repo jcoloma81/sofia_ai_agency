@@ -66,8 +66,8 @@ async def appointment_cron_worker():
                 if local_hour == 17 and 30 <= local_minute <= 59:
                     await AppointmentService.broadcast_secretary_pre_cutoff_reports(db)
 
-                # Cutoff cancellations window: 18:00 - 18:30
-                if local_hour == 18 and 0 <= local_minute <= 30:
+                # Cutoff waitlist cascade window: 18:00 hs onwards (idempotent: only processes status in agendado/recordatorio_*)
+                if local_hour >= 18:
                     await AppointmentService.execute_all_cutoff_auto_cancellations(db)
 
             except Exception as e:
