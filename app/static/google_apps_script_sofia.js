@@ -32,7 +32,7 @@ function onOpen() {
  */
 function sincronizarConSofia() {
   const sheet = SpreadsheetApp.getActiveSheet();
-  const data = sheet.getDataRange().getValues();
+  const data = sheet.getDataRange().getDisplayValues();
 
   if (data.length < 2) {
     SpreadsheetApp.getUi().alert("⚠️ La planilla no tiene datos suficientes para sincronizar.");
