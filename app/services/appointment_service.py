@@ -476,17 +476,29 @@ class AppointmentService:
         date_str = format_appointment_datetime(apt.appointment_date)
 
         # Find future patient with same doctor/service between 2 and 14 days ahead
+        # excluding patients who already declined or expired in WaitlistEntry
         start_future = now + timedelta(days=2)
         end_future = now + timedelta(days=14)
 
-        future_apt = db.query(Appointment).filter(
+        already_contacted_phones = [
+            r[0] for r in db.query(WaitlistEntry.patient_phone).filter(
+                WaitlistEntry.tenant_id == tenant.id,
+                WaitlistEntry.status.in_(["rechazado", "expirada", "notificado_oferta", "turno_tomado"])
+            ).all() if r[0]
+        ]
+
+        q_future = db.query(Appointment).filter(
             Appointment.tenant_id == tenant.id,
             Appointment.doctor_or_service == apt.doctor_or_service,
             Appointment.appointment_date >= start_future,
             Appointment.appointment_date <= end_future,
             Appointment.status.in_(["agendado", "confirmado"]),
             Appointment.id != apt.id
-        ).order_by(Appointment.appointment_date.asc()).first()
+        )
+        if already_contacted_phones:
+            q_future = q_future.filter(~Appointment.patient_phone.in_(already_contacted_phones))
+
+        future_apt = q_future.order_by(Appointment.appointment_date.asc()).first()
 
         if not future_apt:
             return None

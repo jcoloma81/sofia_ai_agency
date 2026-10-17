@@ -226,6 +226,20 @@ class TenantDispatcher:
                 if wl and wl.offered_appointment_id:
                     await appointment_service.reject_waitlist_slot(db, wl.offered_appointment_id, wl.id)
                     return True, "Turno rechazado, pasado al siguiente candidato."
+                # If already rejected or came from fast-track, still confirm their original appointment stays firm!
+                existing_apt = db.query(Appointment).filter(
+                    Appointment.tenant_id == tenant.id,
+                    Appointment.patient_phone == clean_phone,
+                    Appointment.status.in_(["agendado", "confirmado"])
+                ).order_by(Appointment.appointment_date.asc()).first()
+                if existing_apt:
+                    e_date_str = format_appointment_datetime(existing_apt.appointment_date)
+                    ack = (
+                        f"¡Dale, no te preocupes {existing_apt.patient_name}! Entendido que preferís mantener tu fecha original.\n\n"
+                        f"Tu turno agendado del *{e_date_str}* sigue *100% firme y confirmado tal cual estaba*. ¡Nos vemos ese día! 🙌"
+                    )
+                    await tenant_service.send_branded_notification(tenant, clean_phone, ack)
+                    return True, "Fecha original mantenida."
 
             recent_apt = db.query(Appointment).filter(
                 Appointment.tenant_id == tenant.id,
