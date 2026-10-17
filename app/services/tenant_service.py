@@ -52,7 +52,23 @@ class TenantService:
                 TenantService.set_active_session(db, clean_phone, t.slug)
                 return t, message_text
 
-        # 2. Check active session (persisted within last 48 hours)
+        # Phone candidate variants (with/without country/mobile prefix '9')
+        cand_phones = [clean_phone]
+        if clean_phone.startswith("549"):
+            cand_phones.append("54" + clean_phone[3:])
+        elif clean_phone.startswith("54") and not clean_phone.startswith("549"):
+            cand_phones.append("549" + clean_phone[2:])
+
+        # 2. Priority check: if phone has an active waitlist offer ('notificado_oferta'), route to that clinic!
+        active_wl_offer = db.query(WaitlistEntry).filter(
+            WaitlistEntry.patient_phone.in_(cand_phones),
+            WaitlistEntry.status == "notificado_oferta"
+        ).order_by(WaitlistEntry.id.desc()).first()
+        if active_wl_offer and active_wl_offer.tenant and active_wl_offer.tenant.active:
+            TenantService.set_active_session(db, clean_phone, active_wl_offer.tenant.slug)
+            return active_wl_offer.tenant, message_text
+
+        # 3. Check active session (persisted within last 48 hours)
         session = db.query(TenantSession).filter(TenantSession.phone == clean_phone).first()
         if session:
             t = TenantService.get_tenant_by_slug(db, session.tenant_slug)
@@ -61,32 +77,25 @@ class TenantService:
                 db.commit()
                 return t, message_text
 
-        # Phone candidate variants (with/without country/mobile prefix '9')
-        cand_phones = [clean_phone]
-        if clean_phone.startswith("549"):
-            cand_phones.append("54" + clean_phone[3:])
-        elif clean_phone.startswith("54") and not clean_phone.startswith("549"):
-            cand_phones.append("549" + clean_phone[2:])
-
-        # 3. Check if phone is an existing patient, waitlist candidate, or member
+        # 4. Check if phone is an existing patient, waitlist candidate, or member
         recent_apt = db.query(Appointment).filter(Appointment.patient_phone.in_(cand_phones)).order_by(Appointment.id.desc()).first()
-        if recent_apt and recent_apt.tenant:
+        if recent_apt and recent_apt.tenant and recent_apt.tenant.active:
             TenantService.set_active_session(db, clean_phone, recent_apt.tenant.slug)
             return recent_apt.tenant, message_text
 
+        recent_wl = db.query(WaitlistEntry).filter(WaitlistEntry.patient_phone.in_(cand_phones)).order_by(WaitlistEntry.id.desc()).first()
+        if recent_wl and recent_wl.tenant and recent_wl.tenant.active:
+            TenantService.set_active_session(db, clean_phone, recent_wl.tenant.slug)
+            return recent_wl.tenant, message_text
+
         # Check if phone is owner/doctor of a tenant
-        owner_tenant = db.query(Tenant).filter(Tenant.owner_phone.in_(cand_phones), Tenant.active == True).order_by(Tenant.id.desc()).first()
+        owner_tenant = db.query(Tenant).filter(Tenant.owner_phone.in_(cand_phones), Tenant.active == True).order_by(Tenant.id.asc()).first()
         if owner_tenant:
             TenantService.set_active_session(db, clean_phone, owner_tenant.slug)
             return owner_tenant, message_text
 
-        recent_wl = db.query(WaitlistEntry).filter(WaitlistEntry.patient_phone.in_(cand_phones)).order_by(WaitlistEntry.id.desc()).first()
-        if recent_wl and recent_wl.tenant:
-            TenantService.set_active_session(db, clean_phone, recent_wl.tenant.slug)
-            return recent_wl.tenant, message_text
-
         recent_mem = db.query(MembershipPayment).filter(MembershipPayment.member_phone.in_(cand_phones)).order_by(MembershipPayment.id.desc()).first()
-        if recent_mem and recent_mem.tenant:
+        if recent_mem and recent_mem.tenant and recent_mem.tenant.active:
             TenantService.set_active_session(db, clean_phone, recent_mem.tenant.slug)
             return recent_mem.tenant, message_text
 

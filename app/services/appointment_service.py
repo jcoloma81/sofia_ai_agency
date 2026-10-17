@@ -193,6 +193,8 @@ class AppointmentService:
         next_cand.offered_at = now
         next_cand.expires_at = now + timedelta(minutes=timeout_minutes)
         db.commit()
+        if tenant:
+            tenant_service.set_active_session(db, next_cand.patient_phone, tenant.slug)
 
         time_desc = "2 horas" if timeout_minutes == 120 else f"{timeout_minutes} minutos"
 
