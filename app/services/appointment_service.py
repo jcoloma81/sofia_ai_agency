@@ -410,6 +410,19 @@ class AppointmentService:
         apt.confirmation_received_at = utc_now()
         apt.notes = f"Original: {original_patient_name} ({original_patient_phone})"
         cand.status = "turno_tomado"
+
+        # If this waitlist candidate also had a later future appointment booked, free it up so they aren't double-booked
+        later_apts = db.query(Appointment).filter(
+            Appointment.tenant_id == apt.tenant_id,
+            Appointment.patient_phone == cand.patient_phone,
+            Appointment.id != apt.id,
+            Appointment.appointment_date > apt.appointment_date,
+            Appointment.status.in_(["agendado", "confirmado"])
+        ).all()
+        for l_apt in later_apts:
+            l_apt.status = "liberado_por_adelanto"
+            l_apt.notes = f"Liberado porque adelantó al turno #{apt.id}"
+
         db.commit()
 
         date_str = format_appointment_datetime(apt.appointment_date)

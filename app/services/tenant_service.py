@@ -140,11 +140,10 @@ class TenantService:
         with_logo: bool = False
     ) -> bool:
         """
-        Dispatches a branded WhatsApp message with the Tenant's brand header and optional HD logo.
+        Dispatches a branded WhatsApp message with the Tenant's brand header.
+        Always uses reliable text delivery so external image URLs never block confirmation messages.
         """
         full_text = TenantService.format_branded_message(tenant, body_text)
-        if with_logo and tenant.logo_url:
-            return await whatsapp.send_whatsapp_image(to_phone, tenant.logo_url, caption=full_text)
         return await whatsapp.send_whatsapp_message(to_phone, full_text)
 
     @staticmethod
