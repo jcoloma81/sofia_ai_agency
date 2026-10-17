@@ -167,9 +167,17 @@ class AppointmentService:
         date_str = format_appointment_datetime(apt.appointment_date)
 
         # Query next candidate (FIFO: oldest registered first)
+        # Includes 'activa' OR candidates who declined/expired on a DIFFERENT slot (offered_appointment_id != apt.id)
+        from sqlalchemy import or_
         next_cand = db.query(WaitlistEntry).filter(
             WaitlistEntry.tenant_id == tenant.id,
-            WaitlistEntry.status == "activa"
+            or_(
+                WaitlistEntry.status == "activa",
+                (
+                    WaitlistEntry.status.in_(["rechazado", "expirada"]) &
+                    (WaitlistEntry.offered_appointment_id != apt.id)
+                )
+            )
         ).order_by(WaitlistEntry.id.asc()).first()
 
         if not next_cand:
@@ -494,10 +502,17 @@ class AppointmentService:
         start_future = now + timedelta(days=2)
         end_future = now + timedelta(days=14)
 
+        from sqlalchemy import or_
         already_contacted_phones = [
             r[0] for r in db.query(WaitlistEntry.patient_phone).filter(
                 WaitlistEntry.tenant_id == tenant.id,
-                WaitlistEntry.status.in_(["rechazado", "expirada", "notificado_oferta", "turno_tomado"])
+                or_(
+                    WaitlistEntry.status.in_(["notificado_oferta", "turno_tomado"]),
+                    (
+                        WaitlistEntry.status.in_(["rechazado", "expirada"]) &
+                        (WaitlistEntry.offered_appointment_id == apt.id)
+                    )
+                )
             ).all() if r[0]
         ]
 
