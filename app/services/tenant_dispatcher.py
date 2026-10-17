@@ -41,13 +41,35 @@ class TenantDispatcher:
         clean_phone = "".join(filter(str.isdigit, phone))
         msg_clean = message.strip()
         msg_lower = msg_clean.lower()
+        btn_id = interactive_button_id or ""
+
+        template_btn_texts = {
+            "sí adelantar turno", "si adelantar turno",
+            "mantener turno actual",
+            "confirmo asistencia",
+            "reprogramar",
+            "no podré asistir", "no podre asistir",
+            "tomar turno", "no, paso", "no paso",
+            "sí, confirmo", "si, confirmo", "no, reprogramar"
+        }
+        is_patient_btn = bool(
+            (btn_id and (
+                btn_id.startswith("claim_apt_") or
+                btn_id.startswith("reject_apt_") or
+                btn_id.startswith("confirm_apt_") or
+                btn_id.startswith("cancel_apt_") or
+                btn_id.startswith("fast_track_") or
+                btn_id.startswith("claim_promo_") or
+                btn_id.strip().lower() in template_btn_texts
+            )) or (msg_lower in template_btn_texts)
+        )
 
         # -------------------------------------------------------------
         # 0. HANDLE SECRETARY COMMANDS (ESCUDO PARA LA SECRETARIA)
         # -------------------------------------------------------------
         owner_digits = "".join(filter(str.isdigit, tenant.owner_phone or ""))
-        if clean_phone == owner_digits:
-            if msg_lower.startswith("mantener"):
+        if clean_phone == owner_digits and not is_patient_btn:
+            if msg_lower.startswith("mantener") and msg_lower != "mantener turno actual":
                 held = await appointment_service.hold_appointment_by_secretary(db, tenant.id, msg_clean)
                 return True, "Comando de secretaría procesado: Turno conservado."
             elif msg_lower in ["liberar", "liberar turnos", "liberar huecos", "cortar"]:
@@ -66,7 +88,6 @@ class TenantDispatcher:
         # -------------------------------------------------------------
         # 1. HANDLE INTERACTIVE BUTTON CLICKS
         # -------------------------------------------------------------
-        btn_id = interactive_button_id or ""
 
         # A. Confirm Appointment Button
         if btn_id.startswith("confirm_apt_"):
@@ -175,36 +196,53 @@ class TenantDispatcher:
             return True, "Comprobante procesado."
 
         # -------------------------------------------------------------
-        # 3. TEXT INTENT DETECTION: APPOINTMENTS (SALUD / TURNOS)
+        # 3. TEXT & TEMPLATE BUTTON INTENT DETECTION: APPOINTMENTS (SALUD / TURNOS)
         # -------------------------------------------------------------
         if "turnos_rellena_huecos" in tenant.modules_enabled or tenant.business_type in ["salud", "medicina", "estetica"]:
-            recent_apt = db.query(Appointment).filter(
-                Appointment.tenant_id == tenant.id,
-                Appointment.patient_phone == clean_phone,
-                Appointment.status.in_(["agendado", "recordatorio_enviado"])
-            ).order_by(Appointment.id.desc()).first()
+            # A. Template / Quick-Reply Waitlist Claim ("Sí adelantar turno" / "TOMAR TURNO")
+            if msg_lower in ["sí adelantar turno", "si adelantar turno", "tomar turno"] or "tomar turno" in msg_lower or "quiero el turno" in msg_lower or "lo tomo" in msg_lower:
+                wl = db.query(WaitlistEntry).filter(
+                    WaitlistEntry.tenant_id == tenant.id,
+                    WaitlistEntry.patient_phone == clean_phone,
+                    WaitlistEntry.status == "notificado_oferta"
+                ).order_by(WaitlistEntry.id.desc()).first()
+                if not wl:
+                    wl = db.query(WaitlistEntry).filter(
+                        WaitlistEntry.tenant_id == tenant.id,
+                        WaitlistEntry.patient_phone == clean_phone,
+                        WaitlistEntry.offered_appointment_id != None
+                    ).order_by(WaitlistEntry.id.desc()).first()
+                if wl and wl.offered_appointment_id:
+                    await appointment_service.claim_waitlist_slot(db, wl.offered_appointment_id, wl.id)
+                    return True, "Turno tomado de lista de espera."
 
-            if recent_apt:
-                # Cancellation intent
-                if any(w in msg_lower for w in ["no puedo", "no llego", "cancelo", "cancelar", "imposible ir", "reprogramar", "enfermo", "fiebre"]):
-                    await appointment_service.cancel_and_fill_gap(db, recent_apt.id, reason=msg_clean)
-                    return True, "Turno cancelado."
-
-                # Confirmation intent
-                if any(w in msg_lower for w in ["confirmo", "si confirmo", "voy", "ahi estare", "ahi voy", "perfecto voy", "si voy"]):
-                    await appointment_service.confirm_appointment(db, recent_apt.id)
-                    return True, "Turno confirmado."
-
-            # Check waitlist claim in text
-            if "tomar turno" in msg_lower or "quiero el turno" in msg_lower or "lo tomo" in msg_lower:
+            # B. Template / Quick-Reply Waitlist Decline ("Mantener turno actual" / "NO, PASO")
+            if msg_lower in ["mantener turno actual", "no, paso", "no paso", "no, mantener fecha"]:
                 wl = db.query(WaitlistEntry).filter(
                     WaitlistEntry.tenant_id == tenant.id,
                     WaitlistEntry.patient_phone == clean_phone,
                     WaitlistEntry.status == "notificado_oferta"
                 ).order_by(WaitlistEntry.id.desc()).first()
                 if wl and wl.offered_appointment_id:
-                    await appointment_service.claim_waitlist_slot(db, wl.offered_appointment_id, wl.id)
-                    return True, "Turno tomado de lista de espera."
+                    await appointment_service.reject_waitlist_slot(db, wl.offered_appointment_id, wl.id)
+                    return True, "Turno rechazado, pasado al siguiente candidato."
+
+            recent_apt = db.query(Appointment).filter(
+                Appointment.tenant_id == tenant.id,
+                Appointment.patient_phone == clean_phone,
+                Appointment.status.in_(["agendado", "recordatorio_enviado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera"])
+            ).order_by(Appointment.appointment_date.asc()).first()
+
+            if recent_apt:
+                # Cancellation intent ("Reprogramar", "No podré asistir", etc.)
+                if any(w in msg_lower for w in ["no puedo", "no podré", "no podre", "no llego", "cancelo", "cancelar", "imposible ir", "reprogramar", "enfermo", "fiebre"]):
+                    await appointment_service.cancel_and_fill_gap(db, recent_apt.id, reason=msg_clean)
+                    return True, "Turno cancelado."
+
+                # Confirmation intent ("Confirmo asistencia", "SÍ, CONFIRMO", etc.)
+                if any(w in msg_lower for w in ["confirmo", "si confirmo", "sí, confirmo", "si, confirmo", "voy", "ahi estare", "ahi voy", "perfecto voy", "si voy"]):
+                    await appointment_service.confirm_appointment(db, recent_apt.id, sender_phone=clean_phone)
+                    return True, "Turno confirmado."
 
         # -------------------------------------------------------------
         # 4. TEXT INTENT DETECTION: PROMOS / REACTIVATION

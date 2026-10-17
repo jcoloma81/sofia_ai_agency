@@ -196,6 +196,26 @@ class AppointmentService:
 
         time_desc = "2 horas" if timeout_minutes == 120 else f"{timeout_minutes} minutos"
 
+        # Check if candidate also has a future scheduled appointment to mention in template {{6}}
+        existing_future = db.query(Appointment).filter(
+            Appointment.tenant_id == tenant.id,
+            Appointment.patient_phone == next_cand.patient_phone,
+            Appointment.status.in_(["agendado", "confirmado"]),
+            Appointment.id != apt.id
+        ).order_by(Appointment.appointment_date.asc()).first()
+        current_booking_desc = (
+            format_appointment_datetime(existing_future.appointment_date, include_day_name=True)
+            if existing_future else "nuestra Lista de Espera Prioritaria"
+        )
+
+        # Split date_str ("18/10 a las 09:30 hs") into day and hour for adelanta_turno_v1 ({{3}} and {{4}})
+        full_day_str = format_appointment_datetime(apt.appointment_date, include_day_name=True)
+        if " a las " in full_day_str:
+            tpl_day_part, tpl_hour_part = full_day_str.split(" a las ", 1)
+            tpl_hour_part = tpl_hour_part.replace(" hs", "").strip()
+        else:
+            tpl_day_part, tpl_hour_part = date_str, "horario asignado"
+
         offer_text = (
             f"🔔 *¡HUECO LIBERADO DE TURNO! (Exclusivo para vos)*\n\n"
             f"Hola *{next_cand.patient_name}*, te escribimos de *{tenant.name}*.\n"
@@ -211,7 +231,16 @@ class AppointmentService:
             to_phone=next_cand.patient_phone,
             body_text=tenant_service.format_branded_message(tenant, offer_text),
             buttons=buttons,
-            header_text=f"🏥 {tenant.name[:30]}"
+            header_text=f"🏥 {tenant.name[:30]}",
+            template_name="adelanta_turno_v1",
+            template_body_params=[
+                next_cand.patient_name,
+                tenant.name,
+                tpl_day_part,
+                tpl_hour_part,
+                apt.doctor_or_service,
+                current_booking_desc
+            ]
         )
 
         logger.info(f"⚡ Rellena-Huecos 1-by-1: Slot {date_str} offered to '{next_cand.patient_name}' (Expires in {time_desc})")
@@ -475,11 +504,27 @@ class AppointmentService:
             {"id": f"fast_track_accept_{apt.id}_{future_apt.id}", "title": "SÍ, ADELANTAR"},
             {"id": f"fast_track_decline_{apt.id}_{future_apt.id}", "title": "NO, MANTENER FECHA"}
         ]
+        full_day_str = format_appointment_datetime(apt.appointment_date, include_day_name=True)
+        if " a las " in full_day_str:
+            tpl_day_part, tpl_hour_part = full_day_str.split(" a las ", 1)
+            tpl_hour_part = tpl_hour_part.replace(" hs", "").strip()
+        else:
+            tpl_day_part, tpl_hour_part = date_str, "horario asignado"
+
         await whatsapp.send_whatsapp_interactive_buttons(
             to_phone=future_apt.patient_phone,
             body_text=tenant_service.format_branded_message(tenant, offer_text),
             buttons=buttons,
-            header_text=f"🏥 {tenant.name[:30]}"
+            header_text=f"🏥 {tenant.name[:30]}",
+            template_name="adelanta_turno_v1",
+            template_body_params=[
+                future_apt.patient_name,
+                tenant.name,
+                tpl_day_part,
+                tpl_hour_part,
+                apt.doctor_or_service,
+                future_date_str
+            ]
         )
 
         logger.info(f"🚀 Adelanta-Turnos: Vacant slot {date_str} offered to future patient '{future_apt.patient_name}' (Turno actual: {future_date_str})")
@@ -677,6 +722,21 @@ class AppointmentService:
                 continue
 
             date_str = format_appointment_datetime(apt.appointment_date)
+            full_day_str = format_appointment_datetime(apt.appointment_date, include_day_name=True)
+            if " a las " in full_day_str:
+                tpl_day_part, tpl_hour_part = full_day_str.split(" a las ", 1)
+                tpl_hour_part = tpl_hour_part.replace(" hs", "").strip()
+            else:
+                tpl_day_part, tpl_hour_part = date_str, "horario asignado"
+
+            clinic_address = "Consultorio Central"
+            try:
+                kb = json.loads(tenant.knowledge_base or "{}")
+                if isinstance(kb, dict) and kb.get("direccion"):
+                    clinic_address = str(kb["direccion"])
+            except Exception:
+                pass
+
             body_text = (
                 f"Hola *{apt.patient_name}*! Te recordamos que *MAÑANA* es tu turno "
                 f"el día *{date_str}* con *{apt.doctor_or_service}* en *{tenant.name}*.\n\n"
@@ -691,7 +751,16 @@ class AppointmentService:
                 to_phone=apt.patient_phone,
                 body_text=tenant_service.format_branded_message(tenant, body_text),
                 buttons=buttons,
-                header_text=f"🏥 {tenant.name[:30]}"
+                header_text=f"🏥 {tenant.name[:30]}",
+                template_name="recordatorio_turno_v2",
+                template_body_params=[
+                    apt.patient_name,
+                    tenant.name,
+                    f"Mañana {tpl_day_part}",
+                    tpl_hour_part,
+                    apt.doctor_or_service,
+                    clinic_address
+                ]
             )
             if sent:
                 apt.reminder_24h_sent_at = now

@@ -433,11 +433,15 @@ async def send_whatsapp_interactive_buttons(
     body_text: str,
     buttons: List[dict],
     header_text: Optional[str] = None,
-    footer_text: Optional[str] = None
+    footer_text: Optional[str] = None,
+    template_name: Optional[str] = None,
+    template_body_params: Optional[List[str]] = None
 ) -> bool:
     """
     Sends interactive quick-reply buttons via Meta WhatsApp Cloud API.
-    Example buttons: [{"id": "btn_confirmar", "title": "✅ SÍ, CONFIRMO"}, {"id": "btn_cancelar", "title": "❌ REPROGRAMAR"}]
+    If template_name and template_body_params are provided, first dispatches the official
+    approved Meta Template (e.g. 'adelanta_turno_v1' or 'recordatorio_turno_v2') with
+    bound quick_reply button payloads so delivery works 24/7 even outside the 24-hour window.
     """
     clean_phone = "".join(filter(str.isdigit, to_phone))
 
@@ -447,6 +451,22 @@ async def send_whatsapp_interactive_buttons(
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
+
+        # 1. Primary 24/7 Delivery via Approved Meta Template
+        if template_name and template_body_params:
+            clean_params = [
+                str(p).replace("\n", " ").strip() or "-"
+                for p in template_body_params
+            ]
+            sent_tpl = await send_whatsapp_template(
+                to_phone=clean_phone,
+                template_name=template_name,
+                language_code="es_AR",
+                body_params=clean_params
+            )
+            if sent_tpl:
+                return True
+
         interactive_obj = {
             "type": "button",
             "body": {"text": body_text},

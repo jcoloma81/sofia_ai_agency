@@ -160,6 +160,10 @@ async def receive_whatsapp_webhook(
         msg_type = incoming_meta_msg.get("type")
         if msg_type == "text":
             message = incoming_meta_msg.get("text", {}).get("body", "")
+        elif msg_type == "button":
+            btn_data = incoming_meta_msg.get("button", {})
+            message = btn_data.get("text") or btn_data.get("payload") or ""
+            button_id = btn_data.get("payload") or btn_data.get("text")
         elif msg_type == "interactive":
             interactive = incoming_meta_msg.get("interactive", {})
             if interactive.get("type") == "button_reply" or "button_reply" in interactive:
@@ -414,13 +418,25 @@ async def receive_whatsapp_webhook(
         return {"status": "ignored", "reason": "Missing phone or message"}
 
     # Executive command check from Javier's personal alert line (Modo Jefe)
-    is_appointment_button = bool(button_id and (
-        button_id.startswith("claim_apt_") or
-        button_id.startswith("reject_apt_") or
-        button_id.startswith("confirm_apt_") or
-        button_id.startswith("cancel_apt_") or
-        button_id.startswith("fast_track_")
-    ))
+    template_btn_texts = {
+        "sí adelantar turno", "si adelantar turno",
+        "mantener turno actual",
+        "confirmo asistencia",
+        "reprogramar",
+        "no podré asistir", "no podre asistir",
+        "tomar turno", "no, paso",
+        "sí, confirmo", "si, confirmo", "no, reprogramar"
+    }
+    is_appointment_button = bool(
+        (button_id and (
+            button_id.startswith("claim_apt_") or
+            button_id.startswith("reject_apt_") or
+            button_id.startswith("confirm_apt_") or
+            button_id.startswith("cancel_apt_") or
+            button_id.startswith("fast_track_") or
+            button_id.strip().lower() in template_btn_texts
+        )) or (message and message.strip().lower() in template_btn_texts)
+    )
     if is_boss_number(clean_phone) and not is_appointment_button:
         boss_record = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
 

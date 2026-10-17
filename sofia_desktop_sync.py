@@ -25,6 +25,24 @@ try:
 except ImportError:
     HAS_PANDAS = False
 
+try:
+    import openpyxl
+    HAS_OPENPYXL = True
+except ImportError:
+    HAS_OPENPYXL = False
+
+def _format_cell_value(v):
+    """Normaliza objetos fecha/hora de Excel a texto legible DD/MM/YYYY o HH:MM."""
+    if v is None:
+        return None
+    if hasattr(v, "strftime"):
+        if hasattr(v, "hour") and not hasattr(v, "year"):
+            return v.strftime("%H:%M")
+        if hasattr(v, "hour") and (v.hour != 0 or v.minute != 0):
+            return v.strftime("%d/%m/%Y %H:%M")
+        return v.strftime("%d/%m/%Y")
+    return v
+
 def read_excel_rows(file_path):
     """Lee filas de un archivo Excel o CSV y las devuelve como lista de diccionarios."""
     if not os.path.exists(file_path):
@@ -32,6 +50,7 @@ def read_excel_rows(file_path):
 
     ext = os.path.splitext(file_path)[1].lower()
     
+    # 1. Lectura con pandas (si está instalado)
     if HAS_PANDAS:
         try:
             if ext in [".xlsx", ".xls"]:
@@ -41,28 +60,42 @@ def read_excel_rows(file_path):
             else:
                 return []
             
-            # Limpiar filas completamente vacías
             df = df.dropna(how="all")
-            # Convertir fechas a string legible
             for col in df.select_dtypes(include=['datetime', 'datetimetz']).columns:
                 df[col] = df[col].dt.strftime('%d/%m/%Y %H:%M')
             
-            # Reemplazar NaN por None
             records = df.where(pd.notnull(df), None).to_dict(orient="records")
-            # Asegurar que objetos time/date sueltos de Excel se conviertan a string limpio
             for row in records:
                 for k, v in list(row.items()):
-                    if hasattr(v, "strftime"):
-                        # Si es datetime.time (ej. 10:30:00) -> 10:30
-                        if hasattr(v, "hour") and not hasattr(v, "year"):
-                            row[k] = v.strftime("%H:%M")
-                        else:
-                            row[k] = v.strftime("%d/%m/%Y")
+                    row[k] = _format_cell_value(v)
             return records
         except Exception as e:
             print(f"⚠️ Error al leer con pandas: {e}")
 
-    # Fallback básico si pandas no está instalado
+    # 2. Lectura nativa de .xlsx con openpyxl (liviano y estándar)
+    if ext == ".xlsx" and HAS_OPENPYXL:
+        try:
+            wb = openpyxl.load_workbook(file_path, data_only=True)
+            ws = wb.active
+            rows_iter = list(ws.iter_rows(values_only=True))
+            wb.close()
+            if len(rows_iter) < 2:
+                return []
+            headers = [str(h).strip() if h is not None else f"col_{i}" for i, h in enumerate(rows_iter[0])]
+            records = []
+            for r in rows_iter[1:]:
+                if not any(cell is not None and str(cell).strip() != "" for cell in r):
+                    continue
+                row_dict = {}
+                for idx, h in enumerate(headers):
+                    val = r[idx] if idx < len(r) else None
+                    row_dict[h] = _format_cell_value(val)
+                records.append(row_dict)
+            return records
+        except Exception as e:
+            print(f"⚠️ Error al leer con openpyxl: {e}")
+
+    # 3. Fallback sin dependencias para .csv
     try:
         import csv
         if ext == ".csv":
