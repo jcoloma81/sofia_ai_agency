@@ -563,29 +563,78 @@ Debes clasificar la acción y responder estrictamente un JSON válido con esta e
                     return f"✅ *¡Entendido!* {reply}"
 
                 elif action == "CREATE_APPOINTMENT":
-                    # Parse appointment
+                    # Parse appointment date & time accurately in Argentina local time (UTC-3)
                     now = utc_now()
+                    local_now = now - timedelta(hours=3)
                     apt_name = parsed.get("patient_or_member_name") or "Paciente"
                     apt_phone = "".join(filter(str.isdigit, str(parsed.get("phone") or "5493434000000")))
+                    if len(apt_phone) == 10 and not apt_phone.startswith("54"):
+                        apt_phone = "549" + apt_phone
+                    elif len(apt_phone) == 12 and apt_phone.startswith("54") and not apt_phone.startswith("549"):
+                        apt_phone = "549" + apt_phone[2:]
                     doc = parsed.get("doctor_or_service") or "Profesional"
-                    dt_str = parsed.get("date_time_str") or "Próximos días"
-                    # Create appointment
+                    dt_str = parsed.get("date_time_str") or "mañana"
+
+                    combined_dt_text = f"{message} {dt_str}".lower()
+                    if "pasado mañana" in combined_dt_text or "pasado manana" in combined_dt_text:
+                        target_local = local_now + timedelta(days=2)
+                    elif "mañana" in combined_dt_text or "manana" in combined_dt_text:
+                        target_local = local_now + timedelta(days=1)
+                    elif "hoy" in combined_dt_text:
+                        target_local = local_now
+                    else:
+                        dm_match = re.search(r'\b(\d{1,2})/(\d{1,2})\b', combined_dt_text)
+                        if dm_match:
+                            day_num, month_num = int(dm_match.group(1)), int(dm_match.group(2))
+                            try:
+                                target_local = local_now.replace(month=month_num, day=day_num)
+                            except ValueError:
+                                target_local = local_now + timedelta(days=1)
+                        else:
+                            target_local = local_now + timedelta(days=1)
+
+                    # Extract hour and minute (e.g., "a las 12:30", "12:30 hs", "a las 16", "16hs")
+                    hr_match = re.search(r'(?:a las\s+|las\s+|\b)(\d{1,2})(?::(\d{2}))?\s*(?:hs|horas|\b)', combined_dt_text)
+                    hour_val, min_val = 10, 0
+                    for m in re.finditer(r'(?:a las\s+|las\s+)?(\d{1,2})(?::(\d{2}))\s*(?:hs|horas)?|(?:a las\s+|las\s+)(\d{1,2})\b|(\d{1,2})\s*(?:hs|horas)', combined_dt_text):
+                        if m.group(1) is not None:
+                            h_cand = int(m.group(1))
+                            m_cand = int(m.group(2) or 0)
+                        elif m.group(3) is not None:
+                            h_cand = int(m.group(3))
+                            m_cand = 0
+                        else:
+                            h_cand = int(m.group(4))
+                            m_cand = 0
+                        if 6 <= h_cand <= 22:
+                            hour_val, min_val = h_cand, m_cand
+                            break
+
+                    target_local = target_local.replace(hour=hour_val, minute=min_val, second=0, microsecond=0)
+                    target_utc = (target_local + timedelta(hours=3)).replace(tzinfo=None)
+
+                    # Create appointment (backdated created_at only if not tomorrow, or keep normal)
                     apt = Appointment(
                         tenant_id=tenant.id,
                         patient_name=apt_name,
                         patient_phone=apt_phone,
                         doctor_or_service=doc,
-                        appointment_date=now + timedelta(days=2), # Default target
+                        appointment_date=target_utc,
                         notes=f"Agendado por voz/texto del dueño: {dt_str}",
                         status="agendado"
                     )
                     db.add(apt)
                     db.commit()
-                    return f"✅ *¡Turno agendado!*\n👤 Paciente: *{apt_name}*\n👨‍⚕️ Profesional: *{doc}*\n📅 {dt_str}\n📱 Celular: +{apt_phone}"
+                    fmt_dt = format_appointment_datetime(target_utc, include_day_name=True)
+                    return f"✅ *¡Turno agendado!*\n👤 Paciente: *{apt_name}*\n👨‍⚕️ Profesional: *{doc}*\n📅 {fmt_dt}\n📱 Celular: +{apt_phone}"
 
                 elif action == "ADD_WAITLIST":
                     apt_name = parsed.get("patient_or_member_name") or "Paciente"
                     apt_phone = "".join(filter(str.isdigit, str(parsed.get("phone") or "5493434000000")))
+                    if len(apt_phone) == 10 and not apt_phone.startswith("54"):
+                        apt_phone = "549" + apt_phone
+                    elif len(apt_phone) == 12 and apt_phone.startswith("54") and not apt_phone.startswith("549"):
+                        apt_phone = "549" + apt_phone[2:]
                     doc = parsed.get("doctor_or_service") or "Profesional"
                     entry = WaitlistEntry(
                         tenant_id=tenant.id,
