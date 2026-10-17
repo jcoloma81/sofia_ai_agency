@@ -423,8 +423,9 @@ class TenantDispatcher:
 
         # Check for agenda/slots queries from secretary/owner
         is_query_slots = any(w in msg_lower for w in [
-            "quedo libre", "quedó libre", "hueco", "huecos", "turnos libres", 
-            "turnos de mañana", "lista de espera", "alguien para el turno", "quien cubre", "quién cubre", "estado de turnos"
+            "quedo libre", "quedó libre", "hueco", "huecos", "turnos libres",
+            "turnos de mañana", "turnos mañana", "agenda de mañana", "agenda mañana", "ver agenda",
+            "lista de espera", "alguien para el turno", "quien cubre", "quién cubre", "estado de turnos"
         ])
         if is_query_slots:
             now = utc_now()

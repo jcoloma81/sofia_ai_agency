@@ -427,6 +427,7 @@ async def receive_whatsapp_webhook(
         "tomar turno", "no, paso",
         "sí, confirmo", "si, confirmo", "no, reprogramar"
     }
+    msg_lower_check = (message or "").strip().lower()
     is_appointment_button = bool(
         (button_id and (
             button_id.startswith("claim_apt_") or
@@ -435,9 +436,17 @@ async def receive_whatsapp_webhook(
             button_id.startswith("cancel_apt_") or
             button_id.startswith("fast_track_") or
             button_id.strip().lower() in template_btn_texts
-        )) or (message and message.strip().lower() in template_btn_texts)
+        )) or (msg_lower_check in template_btn_texts)
     )
-    if is_boss_number(clean_phone) and not is_appointment_button:
+    # Also allow clinic secretary commands when boss phone is configured as a Tenant's owner_phone
+    secretary_cmd_keywords = (
+        "agenda de mañana", "agenda mañana", "ver agenda", "turnos de mañana", "turnos mañana",
+        "estado de turnos", "turnos libres", "sin confirmar", "reporte de turnos",
+        "mantener a ", "mantener #", "mantener todos", "liberar turnos", "liberar huecos",
+        "anotá a ", "anota a ", "agendá a ", "agendar a ", "sumá a ", "suma a "
+    )
+    is_tenant_secretary_cmd = any(k in msg_lower_check for k in secretary_cmd_keywords)
+    if is_boss_number(clean_phone) and not is_appointment_button and not is_tenant_secretary_cmd:
         boss_record = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
 
         # Check if boss is running a live Prospect Simulation
