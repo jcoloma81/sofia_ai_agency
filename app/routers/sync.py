@@ -272,6 +272,10 @@ async def sync_tenant_data(
                     appointment_date=dt_utc,
                     notes=str(notes)
                 )
+                # Spreadsheet rows represent pre-booked clinic appointments: ensure they qualify for reminders
+                # whenever Estado is 'Agendado', even if the secretary syncs the Excel the day before.
+                target_apt.created_at = dt_utc - timedelta(days=7)
+                db.commit()
                 created_count += 1
                 details.append(f"Turno creado: {patient_name} ({dt_utc.strftime('%d/%m %H:%M')} UTC)")
 
