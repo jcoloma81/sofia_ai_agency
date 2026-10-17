@@ -49,6 +49,15 @@ def read_excel_rows(file_path):
             
             # Reemplazar NaN por None
             records = df.where(pd.notnull(df), None).to_dict(orient="records")
+            # Asegurar que objetos time/date sueltos de Excel se conviertan a string limpio
+            for row in records:
+                for k, v in list(row.items()):
+                    if hasattr(v, "strftime"):
+                        # Si es datetime.time (ej. 10:30:00) -> 10:30
+                        if hasattr(v, "hour") and not hasattr(v, "year"):
+                            row[k] = v.strftime("%H:%M")
+                        else:
+                            row[k] = v.strftime("%d/%m/%Y")
             return records
         except Exception as e:
             print(f"⚠️ Error al leer con pandas: {e}")
@@ -73,7 +82,7 @@ def send_to_sofia(server_url, tenant_slug, rows):
         "rows": rows
     }
     
-    data_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    data_bytes = json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8")
     req = urllib.request.Request(
         endpoint,
         data=data_bytes,

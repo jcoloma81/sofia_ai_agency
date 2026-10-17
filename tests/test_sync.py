@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 from main import app
-from app.models.tenant import Tenant, Appointment, MembershipPayment, InactiveCustomer
+from app.models.tenant import Tenant, Appointment, WaitlistEntry, MembershipPayment, InactiveCustomer
 from tests.conftest import TestingSessionLocal
 
 @pytest.fixture
@@ -55,6 +55,8 @@ def test_sync_template_endpoint(db_session):
     assert data["status"] == "success"
     assert data["business_type"] == "salud"
     assert "fecha" in data["template"]["columns"]
+    assert "adelanta_turno" in data["template"]["columns"]
+    assert "estado" in data["template"]["columns"]
 
 def test_sync_appointments_salud(db_session):
     client = TestClient(app)
@@ -89,6 +91,57 @@ def test_sync_appointments_salud(db_session):
     data_re = resp_re.json()
     assert data_re["created_count"] == 0
     assert data_re["updated_count"] == 1
+
+def test_sync_salud_waitlist_and_excel_cancellation(db_session):
+    client = TestClient(app)
+    # 1. Sync a tomorrow appointment + a future patient who wants to advance ("adelanta_turno": "SI")
+    payload = {
+        "source": "desktop_excel",
+        "rows": [
+            {
+                "fecha": "18/10/2026 00:00",  # Test Excel date formatting with trailing 00:00
+                "hora": "10:00",
+                "paciente": "Juan Titular",
+                "telefono": "3434001122",
+                "profesional": "Dr. García - Odontología",
+                "adelanta_turno": "NO",
+                "estado": "Agendado",
+                "notas": "Limpieza dental"
+            },
+            {
+                "fecha": "28/10/2026",
+                "hora": "17:00",
+                "paciente": "Sofía Espera",
+                "telefono": "3434998877",
+                "profesional": "Dr. García - Odontología",
+                "adelanta_turno": "SI",
+                "estado": "Agendado",
+                "notas": "Prefiere por la mañana si se libera"
+            }
+        ]
+    }
+    resp = client.post("/api/v1/sync/clinica_test", json=payload)
+    assert resp.status_code == 200
+    assert resp.json()["created_count"] == 2
+
+    # Check WaitlistEntry created for Sofía Espera
+    wl = db_session.query(WaitlistEntry).filter(WaitlistEntry.patient_phone == "5493434998877").first()
+    assert wl is not None
+    assert wl.status == "activa"
+
+    # 2. Secretary changes Juan Titular's Estado to "Cancelado" in Excel and saves
+    payload["rows"][0]["estado"] = "Cancelado"
+    resp_cancel = client.post("/api/v1/sync/clinica_test", json=payload)
+    assert resp_cancel.status_code == 200
+
+    db_session.expire_all()
+    apt_juan = db_session.query(Appointment).filter(Appointment.patient_phone == "5493434001122").first()
+    assert apt_juan.status == "cancelado"
+
+    # Waitlist candidate Sofía Espera should have been automatically offered the slot!
+    wl_after = db_session.query(WaitlistEntry).filter(WaitlistEntry.patient_phone == "5493434998877").first()
+    assert wl_after.status == "notificado_oferta"
+    assert wl_after.offered_appointment_id == apt_juan.id
 
 def test_sync_memberships_gym(db_session):
     client = TestClient(app)

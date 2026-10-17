@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.database import get_db
-from app.models.tenant import Tenant, Appointment, MembershipPayment, InactiveCustomer
+from app.models.tenant import Tenant, Appointment, WaitlistEntry, MembershipPayment, InactiveCustomer
 from app.models.prospect import MerchantProduct
 from app.services.appointment_service import appointment_service
 from app.services import whatsapp
@@ -28,7 +28,10 @@ def parse_argentine_datetime(date_str: str, time_str: Optional[str] = None) -> O
         return None
     raw = str(date_str).strip()
     if time_str and str(time_str).strip():
-        raw = f"{raw} {str(time_str).strip()}"
+        # If Excel or Pandas formatted a date-only column with trailing 00:00 or 00:00:00, strip it before appending time_str
+        raw = re.sub(r"\s+00:00(:00)?$", "", raw)
+        t_clean = str(time_str).strip()
+        raw = f"{raw} {t_clean}"
 
     # Try common formats
     formats = [
@@ -79,9 +82,9 @@ def get_sync_template(tenant_slug: str, db: Session = Depends(get_db)):
 
     templates = {
         "salud": {
-            "columns": ["fecha", "hora", "paciente", "telefono", "profesional", "notas"],
+            "columns": ["fecha", "hora", "paciente", "telefono", "profesional", "adelanta_turno", "estado", "notas"],
             "example": [
-                {"fecha": "16/10/2026", "hora": "10:30", "paciente": "Laura Benítez", "telefono": "5493434536447", "profesional": "Dr. González - Odontología", "notas": "Primera consulta"}
+                {"fecha": "18/10/2026", "hora": "10:30", "paciente": "Laura Benítez", "telefono": "5493434536447", "profesional": "Dr. García - Odontología", "adelanta_turno": "SI", "estado": "Agendado", "notas": "Primera consulta"}
             ]
         },
         "gimnasio": {
@@ -184,7 +187,7 @@ async def sync_tenant_data(
         clean_r = {str(k).lower().strip(): v for k, v in r.items() if v is not None}
         
         # -----------------------------------------------------------------
-        # A. VERTICAL: SALUD & CONSULTORIOS (Appointments & Reminders)
+        # A. VERTICAL: SALUD & CONSULTORIOS (Appointments, Waitlist & Reminders)
         # -----------------------------------------------------------------
         if business_type in ["salud", "consultorio", "odontologia", "estetica"]:
             patient_name = clean_r.get("paciente") or clean_r.get("nombre") or clean_r.get("patient_name")
@@ -192,18 +195,55 @@ async def sync_tenant_data(
             doctor_raw = clean_r.get("profesional") or clean_r.get("medico") or clean_r.get("doctor") or clean_r.get("doctor_or_service") or "Profesional de la Clínica"
             date_raw = clean_r.get("fecha") or clean_r.get("date")
             time_raw = clean_r.get("hora") or clean_r.get("horario") or clean_r.get("time")
+            adelanta_raw = (
+                clean_r.get("adelanta_turno")
+                or clean_r.get("adelanta turno")
+                or clean_r.get("lista_espera")
+                or clean_r.get("lista de espera")
+                or clean_r.get("quiere_adelantar")
+                or ""
+            )
+            status_raw = str(clean_r.get("estado") or clean_r.get("status") or "").lower().strip()
             notes = clean_r.get("notas") or clean_r.get("motivo") or clean_r.get("notes") or f"Sincronizado vía {source}"
 
-            if not patient_name or not phone_raw or not date_raw:
-                continue
-
-            dt_utc = parse_argentine_datetime(str(date_raw), str(time_raw) if time_raw else None)
-            if not dt_utc:
+            if not patient_name or not phone_raw:
                 continue
 
             clean_phone = "".join(filter(str.isdigit, str(phone_raw)))
             if not clean_phone.startswith("54") and len(clean_phone) == 10:
                 clean_phone = f"549{clean_phone}"
+
+            wants_waitlist = str(adelanta_raw).strip().lower() in ["si", "sí", "yes", "true", "1", "x"]
+
+            # 1. If patient wants to advance appointment ("SI" in Adelanta Turno), register in WaitlistEntry (idempotent)
+            if wants_waitlist:
+                existing_wl = db.query(WaitlistEntry).filter(
+                    WaitlistEntry.tenant_id == tenant.id,
+                    WaitlistEntry.patient_phone == clean_phone,
+                    WaitlistEntry.status.in_(["activa", "notificado_oferta"])
+                ).first()
+                if not existing_wl:
+                    appointment_service.add_to_waitlist(
+                        db=db,
+                        tenant_id=tenant.id,
+                        patient_name=str(patient_name).strip(),
+                        patient_phone=clean_phone,
+                        doctor_or_service=str(doctor_raw).strip(),
+                        preferred_time_range=str(notes) if notes else "Quiere adelantar turno"
+                    )
+                    details.append(f"Lista de espera (Adelanta Turno): {patient_name}")
+
+            # 2. Process Appointment if a valid date is provided
+            if not date_raw:
+                if wants_waitlist:
+                    created_count += 1
+                continue
+
+            dt_utc = parse_argentine_datetime(str(date_raw), str(time_raw) if time_raw else None)
+            if not dt_utc:
+                if wants_waitlist:
+                    created_count += 1
+                continue
 
             # Idempotency check: look for existing appointment for same tenant + phone + date/hour
             existing = db.query(Appointment).filter(
@@ -213,15 +253,17 @@ async def sync_tenant_data(
                 Appointment.appointment_date <= dt_utc + timedelta(minutes=15)
             ).first()
 
+            target_apt = None
             if existing:
                 existing.patient_name = str(patient_name).strip()
                 existing.doctor_or_service = str(doctor_raw).strip()
                 if notes:
                     existing.notes = str(notes)
+                target_apt = existing
                 updated_count += 1
                 details.append(f"Turno actualizado: {patient_name} ({dt_utc.strftime('%d/%m %H:%M')} UTC)")
             else:
-                apt = appointment_service.create_appointment(
+                target_apt = appointment_service.create_appointment(
                     db=db,
                     tenant_id=tenant.id,
                     patient_name=str(patient_name).strip(),
@@ -232,6 +274,21 @@ async def sync_tenant_data(
                 )
                 created_count += 1
                 details.append(f"Turno creado: {patient_name} ({dt_utc.strftime('%d/%m %H:%M')} UTC)")
+
+            # 3. Check if secretary marked Estado as Cancelado or Confirmado directly in Excel/Sheets
+            if target_apt and status_raw:
+                if status_raw in ["cancelado", "cancelada", "cancelar", "anulado", "baja"]:
+                    if target_apt.status not in ["cancelado", "rellenado_con_exito"]:
+                        await appointment_service.cancel_and_fill_gap(
+                            db=db,
+                            appointment_id=target_apt.id,
+                            reason="Cancelado en planilla por secretaría"
+                        )
+                        details.append(f"Cascada activada por cancelación en planilla: {patient_name}")
+                elif status_raw in ["confirmado", "confirmada"]:
+                    if target_apt.status != "confirmado":
+                        target_apt.status = "confirmado"
+                        db.commit()
 
         # -----------------------------------------------------------------
         # B. VERTICAL: GIMNASIOS & CLUBES (Memberships & Collections)
