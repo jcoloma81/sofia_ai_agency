@@ -896,13 +896,15 @@ class AppointmentService:
             f"• Si no respondés nada: a las 18:00 hs Sofía activa la lista de espera de a 1 paciente."
         )
 
+        names_summary = ", ".join([f"{a.patient_name} ({format_appointment_datetime(a.appointment_date)})" for a in unconfirmed])
+        await whatsapp.send_whatsapp_message(tenant.owner_phone, report_msg)
         await whatsapp.send_owner_or_admin_alert(
             to_phone=tenant.owner_phone,
             fallback_text=report_msg,
             business_name=tenant.name,
-            event_type="Reporte Turnos Mañana",
+            event_type="Reporte Turnos Sin Confirmar (17:30 hs)",
             client_title="Secretaría",
-            details_summary=f"{len(unconfirmed)} turnos sin confirmar para mañana.",
+            details_summary=f"Sin confirmar ({len(unconfirmed)}): {names_summary}. Respondé 'mantener a [Nombre]' o 'mantener todos'.",
             owner_email=tenant.owner_email
         )
         logger.info(f"🛡️ Escudo Secretaria: Report sent to {tenant.owner_phone} for '{tenant.name}' ({len(unconfirmed)} unconfirmed).")
