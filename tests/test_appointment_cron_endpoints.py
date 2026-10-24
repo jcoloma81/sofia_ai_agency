@@ -165,15 +165,12 @@ async def test_cutoff_18hs_first_to_confirm_wins_and_timezone(db):
 
 
 @pytest.mark.asyncio
-async def test_morning_calendar_day_reminders_and_recent_booking_autoconfirm(db):
+async def test_morning_calendar_day_reminders_single_24h_for_all(db):
     """
-    Tests:
-    1. Booking made < 36h before slot (e.g. booked 24h before for tomorrow 07:00 AM):
-       Auto-confirmed ('confirmado'), NO 24h reminder sent.
-    2. Bookings made >= 48h before slot (e.g. 3 days ago) for tomorrow at 07:00 AM AND 19:00 hs:
-       BOTH receive the 24h interactive reminder in the same morning sweep regardless of slot hour.
-    3. Booking made >= 7 days ago for 2 days ahead (pasado mañana):
-       Receives the 48h heads-up reminder.
+    Tests the simplified Single 24h Reminder rule:
+    1. ALL appointments scheduled for tomorrow receive the 24h interactive reminder with buttons.
+    2. No 48h reminders are sent (reminders_48h == 0).
+    3. Appointments for 2 days ahead (pasado mañana) wait until their 24h window.
     """
     from datetime import datetime, timezone, timedelta
     from app.models.tenant import Tenant, Appointment
@@ -195,7 +192,7 @@ async def test_morning_calendar_day_reminders_and_recent_booking_autoconfirm(db)
     tomorrow_base = local_now + timedelta(days=1)
     day_after_base = local_now + timedelta(days=2)
 
-    # A. Recent booking (booked 20h before tomorrow 07:00 AM Argentina = 10:00 UTC)
+    # A. Booking for tomorrow 07:00 AM Argentina (= 10:00 UTC)
     slot_7am_utc = tomorrow_base.replace(hour=10, minute=0, second=0, microsecond=0)
     apt_recent = Appointment(
         tenant_id=tenant.id,
@@ -207,7 +204,7 @@ async def test_morning_calendar_day_reminders_and_recent_booking_autoconfirm(db)
         status="agendado"
     )
 
-    # B. Booked 3 days ago (72h before) for tomorrow 07:00 AM Argentina (10:00 UTC)
+    # B. Booked 3 days ago for tomorrow 07:00 AM Argentina (10:00 UTC)
     apt_7am_48h = Appointment(
         tenant_id=tenant.id,
         patient_name="Paciente 7AM (Sacó hace 3 días)",
@@ -258,16 +255,99 @@ async def test_morning_calendar_day_reminders_and_recent_booking_autoconfirm(db)
         db.refresh(apt_19hs_48h)
         db.refresh(apt_2days_10d)
 
-        # 1. Recent booking (<36h) was auto-confirmed WITHOUT sending 24h reminder
-        assert apt_recent.status == "confirmado"
-
-        # 2. Both 7:00 AM and 19:00 hs tomorrow bookings (made >=48h ago) received 24h interactive buttons!
+        # 1. All tomorrow appointments receive the single 24h interactive reminder!
+        assert apt_recent.status == "recordatorio_24h"
         assert apt_7am_48h.status == "recordatorio_24h"
         assert apt_19hs_48h.status == "recordatorio_24h"
-        assert stats["reminders_24h"] >= 2
+        assert stats["reminders_24h"] >= 3
 
-        # 3. 2-days-ahead booking (made 10 days ago) received 48h natural reminder!
-        assert apt_2days_10d.status == "recordatorio_48h"
-        assert stats["reminders_48h"] >= 1
+        # 2. No 48h reminders are dispatched (reminders_48h == 0)
+        assert apt_2days_10d.status == "agendado"
+        assert stats["reminders_48h"] == 0
+
+
+@pytest.mark.asyncio
+async def test_appointment_resolution_ignores_past_and_alerts_secretary(db):
+    """
+    Tests that:
+    1. A past zombie appointment (e.g. from 6 days ago) is IGNORED when confirming.
+    2. An appointment in 'en_oferta_lista_espera' (or 'recordatorio_24h') for today/tomorrow is correctly matched.
+    3. Secretaría (tenant.owner_phone) receives an immediate WhatsApp alert about the confirmed appointment.
+    """
+    from datetime import datetime, timezone, timedelta
+    from app.models.tenant import Tenant, Appointment
+    from app.services.tenant_dispatcher import TenantDispatcher
+
+    tenant = Tenant(
+        slug="test_clinica_past_shield",
+        name="Clínica Alvear Test",
+        business_type="salud",
+        owner_phone="5493434536447",
+        active=True
+    )
+    db.add(tenant)
+    db.commit()
+    db.refresh(tenant)
+
+    now = datetime.now(timezone.utc)
+    phone = "5493435730520"
+
+    # Past appointment from 6 days ago (Carlos Ruiz)
+    apt_past = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Carlos Ruiz",
+        patient_phone=phone,
+        doctor_or_service="Dr. García",
+        appointment_date=now - timedelta(days=6),
+        status="agendado"
+    )
+
+    # Current appointment today in cutoff (Martín Gómez)
+    apt_today = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Martín Gómez",
+        patient_phone=phone,
+        doctor_or_service="Dr. García",
+        appointment_date=now + timedelta(hours=4),
+        status="en_oferta_lista_espera"
+    )
+
+    db.add_all([apt_past, apt_today])
+    db.commit()
+
+    with patch("app.services.tenant_service.TenantService.send_branded_notification", new_callable=AsyncMock) as mock_patient_notify, \
+         patch("app.services.whatsapp.send_owner_or_admin_alert", new_callable=AsyncMock) as mock_secretary_alert:
+
+        mock_patient_notify.return_value = True
+        mock_secretary_alert.return_value = True
+
+        handled, reply = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=phone,
+            message="Confirmo asistencia"
+        )
+
+        assert handled is True
+        db.refresh(apt_past)
+        db.refresh(apt_today)
+
+        # 1. Past appointment remained untouched!
+        assert apt_past.status == "agendado"
+
+        # 2. Today's appointment was confirmed for Martín Gómez (NOT Carlos Ruiz)!
+        assert apt_today.status == "confirmado"
+
+        # 3. Patient received confirmation with Martín Gómez
+        assert mock_patient_notify.call_count == 1
+        assert "Martín Gómez" in mock_patient_notify.call_args[0][2]
+
+        # 4. Secretary received immediate alert on owner_phone!
+        assert mock_secretary_alert.call_count == 1
+        sec_call_args = mock_secretary_alert.call_args[1]
+        assert sec_call_args["to_phone"] == "5493434536447"
+        assert "Martín Gómez" in sec_call_args["fallback_text"]
+        assert sec_call_args["event_type"] == "Turno Rescatado Post-Corte"
+
 
 

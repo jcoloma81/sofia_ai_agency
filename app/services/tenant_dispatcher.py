@@ -227,10 +227,12 @@ class TenantDispatcher:
                     await appointment_service.reject_waitlist_slot(db, wl.offered_appointment_id, wl.id)
                     return True, "Turno rechazado, pasado al siguiente candidato."
                 # If already rejected or came from fast-track, still confirm their original appointment stays firm!
+                time_threshold = utc_now() - timedelta(hours=2)
                 existing_apt = db.query(Appointment).filter(
                     Appointment.tenant_id == tenant.id,
                     Appointment.patient_phone == clean_phone,
-                    Appointment.status.in_(["agendado", "confirmado"])
+                    Appointment.status.in_(["agendado", "confirmado"]),
+                    Appointment.appointment_date >= time_threshold
                 ).order_by(Appointment.appointment_date.asc()).first()
                 if existing_apt:
                     e_date_str = format_appointment_datetime(existing_apt.appointment_date)
@@ -241,11 +243,25 @@ class TenantDispatcher:
                     await tenant_service.send_branded_notification(tenant, clean_phone, ack)
                     return True, "Fecha original mantenida."
 
+            # Resolución inteligente de turno para el paciente:
+            # 1. Ignorar cualquier turno viejo en el pasado (appointment_date < ahora - 2hs).
+            # 2. Prioridad 1: Turno con recordatorio o en oferta activa en este momento (recordatorio_24h, en_oferta_lista_espera).
+            # 3. Prioridad 2: Turno agendado futuro más cercano.
+            time_threshold = utc_now() - timedelta(hours=2)
             recent_apt = db.query(Appointment).filter(
                 Appointment.tenant_id == tenant.id,
                 Appointment.patient_phone == clean_phone,
-                Appointment.status.in_(["agendado", "recordatorio_enviado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera"])
+                Appointment.status.in_(["recordatorio_24h", "en_oferta_lista_espera", "recordatorio_enviado"]),
+                Appointment.appointment_date >= time_threshold
             ).order_by(Appointment.appointment_date.asc()).first()
+
+            if not recent_apt:
+                recent_apt = db.query(Appointment).filter(
+                    Appointment.tenant_id == tenant.id,
+                    Appointment.patient_phone == clean_phone,
+                    Appointment.status.in_(["agendado", "recordatorio_48h"]),
+                    Appointment.appointment_date >= time_threshold
+                ).order_by(Appointment.appointment_date.asc()).first()
 
             if recent_apt:
                 # Cancellation intent ("Reprogramar", "No podré asistir", etc.)
@@ -286,11 +302,13 @@ class TenantDispatcher:
         # -------------------------------------------------------------
         system_prompt = tenant_service.build_tenant_system_prompt(tenant)
 
-        # Context Awareness: Check if sender has an upcoming appointment in this clinic/business
+        # Context Awareness: Check if sender has an upcoming appointment in this clinic/business (never in the past)
+        time_threshold = utc_now() - timedelta(hours=2)
         active_apt = db.query(Appointment).filter(
             Appointment.tenant_id == tenant.id,
             Appointment.patient_phone == clean_phone,
-            Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera", "confirmado"])
+            Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera", "confirmado"]),
+            Appointment.appointment_date >= time_threshold
         ).order_by(Appointment.appointment_date.asc()).first()
 
         if active_apt:

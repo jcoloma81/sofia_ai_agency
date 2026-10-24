@@ -121,6 +121,8 @@ class AppointmentService:
         # Si el turno estaba 'en_oferta_lista_espera' o 'cancelado' pero NADIE de la lista lo tomó aún,
         # el paciente titular que confirma tarde GANA el turno (Cero Sillas Vacías)
         # y anulamos cualquier oferta abierta en la lista de espera para este turno.
+        was_saved_from_cutoff = (apt.status == "en_oferta_lista_espera")
+
         active_offers = db.query(WaitlistEntry).filter(
             WaitlistEntry.offered_appointment_id == apt.id,
             WaitlistEntry.status == "notificado_oferta"
@@ -145,6 +147,37 @@ class AppointmentService:
                 f"¡Te esperamos puntual! Ante cualquier duda o imprevisto, avisanos por este medio."
             )
             await tenant_service.send_branded_notification(apt.tenant, apt.patient_phone, msg)
+
+            # Notificación inmediata a Secretaría (Celular del Dueño / Administración)
+            if apt.tenant.owner_phone:
+                if was_saved_from_cutoff:
+                    sec_text = (
+                        f"🎯 *¡TURNO RESCATADO A ÚLTIMO MOMENTO!*\n\n"
+                        f"El paciente titular *{apt.patient_name}* (+{apt.patient_phone}) acaba de confirmar "
+                        f"su turno del *{date_str}* con *{apt.doctor_or_service}*.\n\n"
+                        f"✅ Silla asegurada. Se cerró la oferta a la lista de espera."
+                    )
+                    evt = "Turno Rescatado Post-Corte"
+                else:
+                    sec_text = (
+                        f"✅ *¡TURNO CONFIRMADO POR PACIENTE!*\n\n"
+                        f"👤 Paciente: *{apt.patient_name}*\n"
+                        f"📅 Fecha: *{date_str}*\n"
+                        f"👨‍⚕️ Profesional: *{apt.doctor_or_service}*\n"
+                        f"📱 Celular: +{apt.patient_phone}\n\n"
+                        f"El turno quedó 100% confirmado en agenda."
+                    )
+                    evt = "Turno Confirmado"
+
+                await whatsapp.send_owner_or_admin_alert(
+                    to_phone=apt.tenant.owner_phone,
+                    fallback_text=sec_text,
+                    business_name=apt.tenant.name,
+                    event_type=evt,
+                    client_title=f"{apt.patient_name} (+{apt.patient_phone})",
+                    details_summary=f"Turno {date_str} confirmado.",
+                    owner_email=apt.tenant.owner_email
+                )
         return True
 
     @staticmethod
@@ -673,13 +706,10 @@ class AppointmentService:
     @staticmethod
     async def scan_and_send_appointment_reminders(db: Session, hours_ahead: Optional[int] = None) -> Dict[str, int]:
         """
-        DUAL-STAGE CRON (Dispatched in the morning from 08:00 hs Argentina):
-        Stage 1: PASADO MAÑANA (2 calendar days ahead) -> First Reminder (only if booked >= 7 days in advance)
-        Stage 2: MAÑANA (1 calendar day ahead, all slots from 07:00 AM to 23:00 hs) ->
-                 - If booked < 36h before slot (very recent booking): auto-confirmed, no reminder needed.
-                 - If booked >= 36h (48h+ before slot): sends interactive confirmation early in the morning
-                   so patient has all day until 18:00 hs to confirm.
-        Stage 3: Waitlist Timeout Sweeper -> Passes unresponded slots to candidate #2
+        SINGLE 24H REMINDER CRON (Dispatched from 08:00 hs Argentina):
+        - Sends ONE single official interactive reminder to ALL unconfirmed patients 24 hours prior (for tomorrow).
+        - Patients have until 18:00 hs to confirm or reschedule.
+        - Stage 2: Waitlist Timeout Sweeper -> Passes unresponded offers to candidate #2.
         """
         now = utc_now()
         local_now = now - timedelta(hours=3)
@@ -688,52 +718,8 @@ class AppointmentService:
         timeouts_processed = 0
 
         # -------------------------------------------------------------
-        # STAGE 1: PASADO MAÑANA (Full calendar day 2 days ahead in Argentina)
-        # Recordatorio natural y amable a la mañana, sin exigir confirmación aún
-        # -------------------------------------------------------------
-        start_48h = (local_now + timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0)
-        end_48h = (local_now + timedelta(days=2)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
-
-        apts_48h = db.query(Appointment).filter(
-            Appointment.status == "agendado",
-            Appointment.reminder_48h_sent_at == None,
-            Appointment.appointment_date >= start_48h,
-            Appointment.appointment_date <= end_48h
-        ).all()
-
-        for apt in apts_48h:
-            tenant = apt.tenant
-            if not tenant:
-                continue
-
-            # Anti-Spam / Smart UX: Only send 48h heads-up if booked >= 7 days (168h) in advance.
-            anticipation_hours = _get_booking_anticipation_hours(apt)
-            if anticipation_hours is not None and anticipation_hours < 168.0:
-                logger.info(
-                    f"⏩ Skipping 48h reminder for '{apt.patient_name}' (Turno #{apt.id}): "
-                    f"Booked with {anticipation_hours / 24.0:.1f} days anticipation (< 7 days). Will evaluate at 24h stage."
-                )
-                continue
-
-            date_str = format_appointment_datetime(apt.appointment_date, include_day_name=True)
-            body_text = (
-                f"Hola *{apt.patient_name}*! Te recordamos con anticipación que faltan *2 días* para tu turno "
-                f"el día *{date_str}* con *{apt.doctor_or_service}* en *{tenant.name}*.\n\n"
-                f"¡Que tengas un excelente día! Mañana a primera hora te escribiremos para coordinar la confirmación."
-            )
-
-            # Natural text reminder (no aggressive buttons at 48h)
-            sent = await tenant_service.send_branded_notification(tenant, apt.patient_phone, body_text)
-            if sent:
-                apt.reminder_48h_sent_at = now
-                apt.reminder_sent_at = now
-                apt.status = "recordatorio_48h"
-                db.commit()
-                reminders_48h_sent += 1
-
-        # -------------------------------------------------------------
-        # STAGE 2: MAÑANA (Full calendar day tomorrow in Argentina, from 7 AM to night)
-        # Sent early in the morning regardless of slot hour so patient has until 18:00 hs!
+        # STAGE 1: MAÑANA (Recordatorio Único 24hs antes - Día calendario completo de mañana)
+        # Enviado por la mañana a todos los pacientes agendados sin confirmar
         # -------------------------------------------------------------
         start_24h = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
         end_24h = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
@@ -748,20 +734,6 @@ class AppointmentService:
         for apt in apts_24h:
             tenant = apt.tenant
             if not tenant:
-                continue
-
-            # Regla "Es un RECORDATORIO": Si el paciente sacó el turno hace muy poquito (< 36 horas antes del turno,
-            # ej: sacó turno ayer u hoy para mañana a las 7 AM / 8 AM / 18 hs), NO se va a olvidar porque lo acaba de pedir.
-            # Lo damos por confirmado automáticamente y no lo molestamos con recordatorio.
-            anticipation_hours = _get_booking_anticipation_hours(apt)
-            if apt.status == "agendado" and anticipation_hours is not None and anticipation_hours < 36.0:
-                apt.status = "confirmado"
-                apt.confirmation_received_at = now
-                db.commit()
-                logger.info(
-                    f"✅ Auto-confirming recent booking for '{apt.patient_name}' (Turno #{apt.id}): "
-                    f"Booked {anticipation_hours:.1f}h before slot (< 36h). Skipping 24h reminder."
-                )
                 continue
 
             date_str = format_appointment_datetime(apt.appointment_date)
@@ -813,7 +785,7 @@ class AppointmentService:
                 reminders_24h_sent += 1
 
         # -------------------------------------------------------------
-        # STAGE 3: WAITLIST TIMEOUT SWEEPER (1-BY-1 PASS)
+        # STAGE 2: WAITLIST TIMEOUT SWEEPER (1-BY-1 PASS)
         # -------------------------------------------------------------
         expired_offers = db.query(WaitlistEntry).filter(
             WaitlistEntry.status == "notificado_oferta",
@@ -831,12 +803,12 @@ class AppointmentService:
                 timeouts_processed += 1
 
         logger.info(
-            f"📅 CRON Turnero Completado: {reminders_48h_sent} a 48hs | "
-            f"{reminders_24h_sent} a 24hs | {timeouts_processed} timeouts pasados al siguiente."
+            f"📅 CRON Turnero Completado: {reminders_24h_sent} recordatorios a 24hs | "
+            f"{timeouts_processed} timeouts pasados al siguiente."
         )
 
         return {
-            "reminders_48h": reminders_48h_sent,
+            "reminders_48h": 0,
             "reminders_24h": reminders_24h_sent,
             "timeouts_processed": timeouts_processed
         }
@@ -994,13 +966,6 @@ class AppointmentService:
 
         offered_count = 0
         for apt in to_offer:
-            anticipation_hours = _get_booking_anticipation_hours(apt)
-            if apt.status == "agendado" and anticipation_hours is not None and anticipation_hours < 36.0:
-                apt.status = "confirmado"
-                apt.confirmation_received_at = now
-                db.commit()
-                continue
-
             apt.status = "en_oferta_lista_espera"
             db.commit()
 
