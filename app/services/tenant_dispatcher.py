@@ -65,19 +65,96 @@ class TenantDispatcher:
         )
 
         # -------------------------------------------------------------
-        # 0. HANDLE SECRETARY COMMANDS (ESCUDO PARA LA SECRETARIA)
+        # 0. HANDLE SECRETARY COMMANDS (ESCUDO PARA LA SECRETARIA / CONTROL MANUAL)
         # -------------------------------------------------------------
         owner_digits = "".join(filter(str.isdigit, tenant.owner_phone or ""))
         if clean_phone == owner_digits and not is_patient_btn:
-            if msg_lower.startswith("mantener") and msg_lower != "mantener turno actual":
+            # A. Kill Switch: Pausar Sofía (Modo Manual)
+            if msg_lower in ["pausar sofia", "pausar", "desactivar sofia", "pausar turnero", "modo manual", "frenar sofia"]:
+                tenant.is_paused = True
+                db.commit()
+                reply = (
+                    f"⏸️ *¡SOFÍA PAUSADA! (Modo Manual Activo)*\n\n"
+                    f"Se suspendieron las acciones automáticas para *{tenant.name}*:\n"
+                    f"• No se enviarán recordatorios automáticos de 24 hs.\n"
+                    f"• No se disparará el corte de las 18:00 hs ni ofertas a lista de espera.\n"
+                    f"• La secretaría tiene el control manual 100% de la agenda.\n\n"
+                    f"👉 Para reactivar el piloto automático en cualquier momento, enviá: *activar sofia*."
+                )
+                await whatsapp.send_whatsapp_message(tenant.owner_phone, reply)
+                return True, reply
+
+            # B. Reactivar Sofía (Piloto Automático)
+            elif msg_lower in ["activar sofia", "activar", "reanudar sofia", "reanudar", "iniciar sofia", "modo automatico"]:
+                tenant.is_paused = False
+                db.commit()
+                reply = (
+                    f"▶️ *¡SOFÍA REACTIVADA! (Piloto Automático Activo)*\n\n"
+                    f"El sistema autónomo de turnos y recordatorios volvió a quedar activo para *{tenant.name}*.\n\n"
+                    f"Los recordatorios diarios de 24 hs y la guardia de huecos continúan en sus horarios habituales."
+                )
+                await whatsapp.send_whatsapp_message(tenant.owner_phone, reply)
+                return True, reply
+
+            # C. Consultar Estado de Sofía
+            elif msg_lower in ["estado", "estado sofia", "status", "como esta sofia"]:
+                is_p = getattr(tenant, "is_paused", False)
+                state_str = "⏸️ PAUSADA (Modo Manual)" if is_p else "▶️ ACTIVA (Piloto Automático)"
+                now_dt = utc_now()
+                loc_now = now_dt - timedelta(hours=3)
+                start_tom = (loc_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                end_tom = (loc_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
+
+                tot_tom = db.query(Appointment).filter(
+                    Appointment.tenant_id == tenant.id,
+                    Appointment.appointment_date >= start_tom,
+                    Appointment.appointment_date <= end_tom
+                ).count()
+
+                unconf_tom = db.query(Appointment).filter(
+                    Appointment.tenant_id == tenant.id,
+                    Appointment.status.in_(["agendado", "recordatorio_24h"]),
+                    Appointment.appointment_date >= start_tom,
+                    Appointment.appointment_date <= end_tom
+                ).count()
+
+                reply = (
+                    f"🤖 *ESTADO DEL SISTEMA SOFÍA*\n\n"
+                    f"🏢 Clínica: *{tenant.name}*\n"
+                    f"⚙️ Estado: *{state_str}*\n"
+                    f"📅 Turnos de mañana: *{tot_tom}* total (*{unconf_tom}* sin confirmar)\n\n"
+                    f"Comandos disponibles:\n"
+                    f"• *pausar sofia* (desactiva envíos automáticos)\n"
+                    f"• *activar sofia* (reactiva piloto automático)\n"
+                    f"• *reporte* (ver lista de turnos de mañana)\n"
+                    f"• *recordatorios ahora* (enviar recordatorios ya)\n"
+                    f"• *mantener a [Nombre]* (proteger turno de corte)"
+                )
+                await whatsapp.send_whatsapp_message(tenant.owner_phone, reply)
+                return True, reply
+
+            # D. Disparar Recordatorios Manuales Ahora
+            elif msg_lower in ["recordatorios ahora", "enviar recordatorios ahora", "recordar ahora", "recordatorios ya"]:
+                res = await appointment_service.scan_and_send_appointment_reminders(db)
+                sent = res.get("reminders_24h", 0)
+                reply = f"🚀 *Recordatorios enviados manualmente:* Se enviaron {sent} recordatorios de 24 hs a los pacientes de mañana."
+                await whatsapp.send_whatsapp_message(tenant.owner_phone, reply)
+                return True, reply
+
+            # E. Reporte de Secretaría
+            elif msg_lower in ["reporte", "reporte ahora", "resumen", "turnos mañana", "turnos de mañana", "sin confirmar", "agenda de mañana", "ver agenda"]:
+                await appointment_service.send_secretary_pre_cutoff_report(db, tenant.id)
+                return True, "Reporte de secretaría generado."
+
+            # F. Mantener turno específico (Escudo de Secretaría)
+            elif msg_lower.startswith("mantener") and msg_lower != "mantener turno actual":
                 held = await appointment_service.hold_appointment_by_secretary(db, tenant.id, msg_clean)
                 return True, "Comando de secretaría procesado: Turno conservado."
+
+            # G. Liberar turnos / Ejecutar corte
             elif msg_lower in ["liberar", "liberar turnos", "liberar huecos", "cortar"]:
                 count = await appointment_service.execute_cutoff_auto_cancellations(db, tenant.id)
                 return True, f"Comando de secretaría: {count} turnos liberados."
-            elif msg_lower in ["reporte", "resumen", "turnos mañana", "sin confirmar"]:
-                await appointment_service.send_secretary_pre_cutoff_report(db, tenant.id)
-                return True, "Reporte de secretaría generado."
 
             # AI-Powered Owner Management Command Parser (Voice & Text)
             admin_reply = await TenantDispatcher.process_owner_instruction(db, tenant, msg_clean)
@@ -199,8 +276,29 @@ class TenantDispatcher:
         # 3. TEXT & TEMPLATE BUTTON INTENT DETECTION: APPOINTMENTS (SALUD / TURNOS)
         # -------------------------------------------------------------
         if "turnos_rellena_huecos" in tenant.modules_enabled or tenant.business_type in ["salud", "medicina", "estetica"]:
-            # A. Template / Quick-Reply Waitlist Claim ("Sí adelantar turno" / "TOMAR TURNO")
-            if msg_lower in ["sí adelantar turno", "si adelantar turno", "tomar turno"] or "tomar turno" in msg_lower or "quiero el turno" in msg_lower or "lo tomo" in msg_lower:
+            time_threshold = utc_now() - timedelta(hours=2)
+
+            claim_keywords = [
+                "sí adelantar turno", "si adelantar turno", "adelantar turno", "adelanto el turno",
+                "tomar turno", "quiero el turno", "lo tomo", "si lo tomo", "dame el turno",
+                "si me sirve", "me sirve", "me queda bien", "lo quiero", "quiero adelantar",
+                "si quiero", "acepto el turno", "acepto el horario", "si quiero el turno",
+                "si por favor", "si adelantar", "sí adelantar", "si voy a adelantar"
+            ]
+
+            decline_keywords = [
+                "mantener turno actual", "mantener turno", "mantener el turno", "mantengo",
+                "mantener fecha", "mantengo mi turno", "mantengo mi fecha", "quiero mantener el turno",
+                "quiero mantener mi turno", "prefiero el que tengo", "prefiero mantener",
+                "prefiero mi fecha", "prefiero mi turno", "no paso", "no, paso", "paso",
+                "dejo pasar", "no gracias", "no puedo en ese horario", "no me queda comodo",
+                "no me sirve ese horario", "dejo el lugar", "paso este turno", "no adelantar",
+                "no quiero adelantar", "mantener mi turno", "mantener mi fecha", "no me sirve",
+                "no puedo en ese", "dejo la vacante"
+            ]
+
+            # A. Template / Quick-Reply / Natural Text Waitlist & Fast-Track Claim
+            if any(k in msg_lower for k in claim_keywords):
                 wl = db.query(WaitlistEntry).filter(
                     WaitlistEntry.tenant_id == tenant.id,
                     WaitlistEntry.patient_phone == clean_phone,
@@ -216,8 +314,27 @@ class TenantDispatcher:
                     await appointment_service.claim_waitlist_slot(db, wl.offered_appointment_id, wl.id)
                     return True, "Turno tomado de lista de espera."
 
-            # B. Template / Quick-Reply Waitlist Decline ("Mantener turno actual" / "NO, PASO")
-            if msg_lower in ["mantener turno actual", "no, paso", "no paso", "no, mantener fecha"]:
+                # Fast-Track Check (Paciente futuro adelantando su fecha por texto)
+                future_apt = db.query(Appointment).filter(
+                    Appointment.tenant_id == tenant.id,
+                    Appointment.patient_phone == clean_phone,
+                    Appointment.status.in_(["agendado", "confirmado"]),
+                    Appointment.appointment_date >= time_threshold
+                ).order_by(Appointment.appointment_date.asc()).first()
+                if future_apt:
+                    vacant = db.query(Appointment).filter(
+                        Appointment.tenant_id == tenant.id,
+                        Appointment.status == "en_oferta_lista_espera",
+                        Appointment.appointment_date >= time_threshold,
+                        Appointment.id != future_apt.id
+                    ).order_by(Appointment.appointment_date.asc()).first()
+                    if vacant:
+                        claimed = await appointment_service.claim_fast_track_slot(db, vacant.id, future_apt.id)
+                        if claimed:
+                            return True, "Turno adelantado con éxito por paciente futuro."
+
+            # B. Template / Quick-Reply / Natural Text Waitlist & Fast-Track Decline
+            if any(k in msg_lower for k in decline_keywords):
                 wl = db.query(WaitlistEntry).filter(
                     WaitlistEntry.tenant_id == tenant.id,
                     WaitlistEntry.patient_phone == clean_phone,
@@ -226,8 +343,8 @@ class TenantDispatcher:
                 if wl and wl.offered_appointment_id:
                     await appointment_service.reject_waitlist_slot(db, wl.offered_appointment_id, wl.id)
                     return True, "Turno rechazado, pasado al siguiente candidato."
-                # If already rejected or came from fast-track, still confirm their original appointment stays firm!
-                time_threshold = utc_now() - timedelta(hours=2)
+
+                # Fast-Track / Future Patient Check
                 existing_apt = db.query(Appointment).filter(
                     Appointment.tenant_id == tenant.id,
                     Appointment.patient_phone == clean_phone,
@@ -235,6 +352,16 @@ class TenantDispatcher:
                     Appointment.appointment_date >= time_threshold
                 ).order_by(Appointment.appointment_date.asc()).first()
                 if existing_apt:
+                    vacant = db.query(Appointment).filter(
+                        Appointment.tenant_id == tenant.id,
+                        Appointment.status == "en_oferta_lista_espera",
+                        Appointment.appointment_date >= time_threshold,
+                        Appointment.id != existing_apt.id
+                    ).order_by(Appointment.appointment_date.asc()).first()
+                    if vacant:
+                        await appointment_service.reject_fast_track_slot(db, vacant.id, existing_apt.id)
+                        return True, "Turno adelantado declinado, pasado al siguiente candidato."
+
                     e_date_str = format_appointment_datetime(existing_apt.appointment_date)
                     ack = (
                         f"¡Dale, no te preocupes {existing_apt.patient_name}! Entendido que preferís mantener tu fecha original.\n\n"

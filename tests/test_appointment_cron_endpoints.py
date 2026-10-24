@@ -350,4 +350,193 @@ async def test_appointment_resolution_ignores_past_and_alerts_secretary(db):
         assert sec_call_args["event_type"] == "Turno Rescatado Post-Corte"
 
 
+@pytest.mark.asyncio
+async def test_natural_text_decline_and_claim_intents(db):
+    """
+    Tests Punto 1:
+    - Patient typing 'quiero mantener el turno' (or 'mantengo') triggers waitlist decline / pass to candidate #2.
+    - Patient typing 'si quiero el turno' (or 'lo tomo') claims the offer.
+    """
+    from datetime import datetime, timezone, timedelta
+    from app.models.tenant import Tenant, Appointment, WaitlistEntry
+    from app.services.tenant_dispatcher import TenantDispatcher
+
+    tenant = Tenant(
+        slug="test_clinica_natural_lang",
+        name="Clínica Lenguaje Natural",
+        business_type="salud",
+        owner_phone="5493434000099",
+        active=True
+    )
+    db.add(tenant)
+    db.commit()
+    db.refresh(tenant)
+
+    now = datetime.now(timezone.utc)
+    phone_cand1 = "5493435111111"
+    phone_cand2 = "5493435222222"
+
+    apt_vacant = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Vacante",
+        patient_phone="5493435000000",
+        doctor_or_service="Dr. Gómez",
+        appointment_date=now + timedelta(days=1),
+        status="en_oferta_lista_espera"
+    )
+    wl1 = WaitlistEntry(
+        tenant_id=tenant.id,
+        patient_name="Candidato Uno",
+        patient_phone=phone_cand1,
+        doctor_or_service="Dr. Gómez",
+        status="notificado_oferta"
+    )
+    wl2 = WaitlistEntry(
+        tenant_id=tenant.id,
+        patient_name="Candidato Dos",
+        patient_phone=phone_cand2,
+        doctor_or_service="Dr. Gómez",
+        status="activa"
+    )
+    db.add_all([apt_vacant, wl1, wl2])
+    db.commit()
+    db.refresh(apt_vacant)
+    db.refresh(wl1)
+    db.refresh(wl2)
+
+    wl1.offered_appointment_id = apt_vacant.id
+    db.commit()
+
+    with patch("app.services.tenant_service.TenantService.send_branded_notification", new_callable=AsyncMock) as mock_notify, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_interactive_buttons", new_callable=AsyncMock) as mock_btns, \
+         patch("app.services.whatsapp.send_owner_or_admin_alert", new_callable=AsyncMock):
+
+        mock_notify.return_value = True
+        mock_msg.return_value = True
+        mock_btns.return_value = True
+
+        # 1. Candidato 1 types: "quiero mantener el turno" (natural text instead of button)
+        handled, reply = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=phone_cand1,
+            message="quiero mantener el turno"
+        )
+        assert handled is True
+        db.refresh(wl1)
+        db.refresh(wl2)
+
+        # Candidato 1 was rejected and slot passed to Candidato 2!
+        assert wl1.status == "rechazado"
+        assert wl2.status == "notificado_oferta"
+        assert wl2.offered_appointment_id == apt_vacant.id
+
+        # 2. Candidato 2 types: "si quiero el turno"
+        handled2, reply2 = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=phone_cand2,
+            message="si quiero el turno"
+        )
+        assert handled2 is True
+        db.refresh(wl2)
+        db.refresh(apt_vacant)
+
+        # Slot claimed!
+        assert wl2.status == "turno_tomado"
+        assert apt_vacant.status == "rellenado_con_exito"
+        assert apt_vacant.patient_name == "Candidato Dos"
+
+
+@pytest.mark.asyncio
+async def test_secretary_kill_switch_pause_and_resume(db):
+    """
+    Tests Punto 3:
+    - Secretary sends 'pausar sofia' -> tenant.is_paused becomes True.
+    - Automated sweeps (reminders, cutoffs) skip paused tenants.
+    - Secretary sends 'estado sofia' -> reports paused state.
+    - Secretary sends 'activar sofia' -> tenant.is_paused becomes False.
+    """
+    from datetime import datetime, timezone, timedelta
+    from app.models.tenant import Tenant, Appointment
+    from app.services.tenant_dispatcher import TenantDispatcher
+    from app.services.appointment_service import AppointmentService
+
+    secretary_phone = "5493434999888"
+    tenant = Tenant(
+        slug="test_clinica_kill_switch",
+        name="Clínica Escudo Test",
+        business_type="salud",
+        owner_phone=secretary_phone,
+        active=True,
+        is_paused=False
+    )
+    db.add(tenant)
+    db.commit()
+    db.refresh(tenant)
+
+    now = datetime.now(timezone.utc)
+    local_now = now - timedelta(hours=3)
+    tomorrow = (local_now + timedelta(days=1)).replace(hour=14, minute=0, second=0, microsecond=0)
+
+    apt = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Paciente Mañana",
+        patient_phone="5493434123456",
+        doctor_or_service="Dr. Gómez",
+        appointment_date=tomorrow,
+        status="agendado"
+    )
+    db.add(apt)
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg, \
+         patch("app.services.whatsapp.send_whatsapp_interactive_buttons", new_callable=AsyncMock) as mock_btns:
+
+        mock_msg.return_value = True
+        mock_btns.return_value = True
+
+        # 1. Secretary sends 'pausar sofia'
+        handled, reply = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=secretary_phone,
+            message="pausar sofia"
+        )
+        assert handled is True
+        db.refresh(tenant)
+        assert tenant.is_paused is True
+        assert "SOFÍA PAUSADA" in reply
+
+        # 2. While paused, reminders cron skips this tenant
+        stats = await AppointmentService.scan_and_send_appointment_reminders(db)
+        db.refresh(apt)
+        assert apt.status == "agendado"  # NOT changed to recordatorio_24h!
+        assert mock_btns.call_count == 0
+
+        # 3. Secretary checks status: 'estado'
+        handled_status, reply_status = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=secretary_phone,
+            message="estado"
+        )
+        assert handled_status is True
+        assert "PAUSADA (Modo Manual)" in reply_status
+
+        # 4. Secretary sends 'activar sofia'
+        handled_act, reply_act = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=secretary_phone,
+            message="activar sofia"
+        )
+        assert handled_act is True
+        db.refresh(tenant)
+        assert tenant.is_paused is False
+        assert "SOFÍA REACTIVADA" in reply_act
+
+
+
 

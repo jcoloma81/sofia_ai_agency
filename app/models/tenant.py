@@ -35,6 +35,7 @@ class Tenant(Base):
     last_quota_reset = Column(DateTime, default=utc_now)
 
     active = Column(Boolean, default=True, index=True)
+    is_paused = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

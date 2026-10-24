@@ -197,6 +197,9 @@ class AppointmentService:
             return None
 
         tenant = apt.tenant
+        if not tenant or getattr(tenant, "is_paused", False):
+            logger.info(f"⏸️ Waitlist cascade offer skipped: Tenant is paused.")
+            return None
         date_str = format_appointment_datetime(apt.appointment_date)
 
         # Query next candidate (FIFO: oldest registered first)
@@ -733,7 +736,7 @@ class AppointmentService:
 
         for apt in apts_24h:
             tenant = apt.tenant
-            if not tenant:
+            if not tenant or getattr(tenant, "is_paused", False):
                 continue
 
             date_str = format_appointment_datetime(apt.appointment_date)
@@ -949,7 +952,9 @@ class AppointmentService:
            gets the appointment!
         """
         tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-        if not tenant:
+        if not tenant or getattr(tenant, "is_paused", False):
+            if tenant and getattr(tenant, "is_paused", False):
+                logger.info(f"⏸️ Cutoff skipped for '{tenant.name}': Tenant is PAUSED by secretary.")
             return 0
 
         now = utc_now()
@@ -1011,6 +1016,8 @@ class AppointmentService:
         tenants = query.all()
         sent_count = 0
         for t in tenants:
+            if getattr(t, "is_paused", False):
+                continue
             if t.owner_phone:
                 ok = await AppointmentService.send_secretary_pre_cutoff_report(db, t.id)
                 if ok:

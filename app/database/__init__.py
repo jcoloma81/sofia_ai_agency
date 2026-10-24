@@ -111,6 +111,8 @@ def run_auto_migrations(db_engine):
                         conn.execute(text("ALTER TABLE tenants ADD COLUMN quota_exhausted_alert_sent BOOLEAN DEFAULT 0"))
                     if "last_quota_reset" not in t_cols:
                         conn.execute(text("ALTER TABLE tenants ADD COLUMN last_quota_reset TIMESTAMP"))
+                    if "is_paused" not in t_cols:
+                        conn.execute(text("ALTER TABLE tenants ADD COLUMN is_paused BOOLEAN DEFAULT 0"))
 
                 # Ensure message_pack_payments table
                 conn.execute(text("""
@@ -160,6 +162,7 @@ def run_auto_migrations(db_engine):
                     ALTER TABLE tenants ADD COLUMN IF NOT EXISTS extra_messages_balance INTEGER DEFAULT 0;
                     ALTER TABLE tenants ADD COLUMN IF NOT EXISTS quota_exhausted_alert_sent BOOLEAN DEFAULT FALSE;
                     ALTER TABLE tenants ADD COLUMN IF NOT EXISTS last_quota_reset TIMESTAMP;
+                    ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_paused BOOLEAN DEFAULT FALSE;
 
                     CREATE TABLE IF NOT EXISTS bridge_commands (
                         id SERIAL PRIMARY KEY,

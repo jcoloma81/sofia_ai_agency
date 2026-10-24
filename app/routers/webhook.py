@@ -441,9 +441,12 @@ async def receive_whatsapp_webhook(
     # Also allow clinic secretary commands when boss phone is configured as a Tenant's owner_phone
     secretary_cmd_keywords = (
         "agenda de mañana", "agenda mañana", "ver agenda", "turnos de mañana", "turnos mañana",
-        "estado de turnos", "turnos libres", "sin confirmar", "reporte de turnos",
+        "estado de turnos", "turnos libres", "sin confirmar", "reporte de turnos", "reporte",
         "mantener a ", "mantener #", "mantener todos", "liberar turnos", "liberar huecos",
-        "anotá a ", "anota a ", "agendá a ", "agendar a ", "sumá a ", "suma a "
+        "anotá a ", "anota a ", "agendá a ", "agendar a ", "sumá a ", "suma a ",
+        "pausar sofia", "pausar turnero", "desactivar sofia", "modo manual", "frenar sofia",
+        "activar sofia", "reanudar sofia", "modo automatico", "iniciar sofia",
+        "estado sofia", "status sofia", "recordatorios ahora", "enviar recordatorios", "recordar ahora"
     )
     is_tenant_secretary_cmd = any(k in msg_lower_check for k in secretary_cmd_keywords)
     if is_boss_number(clean_phone) and not is_appointment_button and not is_tenant_secretary_cmd:
