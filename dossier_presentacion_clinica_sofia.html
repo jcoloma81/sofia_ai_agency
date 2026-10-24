@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sofía AI — Dossier Oficial de Presentación para Consultorios y Clínicas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,600;0,6..72,700;1,6..72,400&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0F172A;
+      --primary-light: #1E293B;
+      --accent-green: #059669;
+      --accent-green-light: #ECFDF5;
+      --accent-green-border: #A7F3D0;
+      --accent-blue: #2563EB;
+      --accent-blue-light: #EFF6FF;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --text-soft: #64748B;
+      --border-subtle: #E2E8F0;
+      --card-bg: #F8FAFC;
+      --wa-bg: #EFEAE2;
+      --wa-bubble-in: #FFFFFF;
+      --wa-bubble-out: #E7FFDB;
+      --wa-header: #005E54;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      background-color: #E2E8F0;
+      line-height: 1.4;
+      font-size: 13px;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* CONTENEDOR DE PÁGINAS A4 */
+    .page {
+      width: 210mm;
+      height: 296mm;
+      max-height: 296mm;
+      padding: 12mm 16mm 10mm 16mm;
+      margin: 10mm auto;
+      background: #FFFFFF;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      page-break-inside: avoid;
+    }
+
+    @media print {
+      body {
+        background: transparent;
+      }
+      .page {
+        margin: 0;
+        width: 210mm;
+        height: 297mm;
+        max-height: 297mm;
+        box-shadow: none;
+        page-break-after: always;
+        page-break-inside: avoid;
+        padding: 12mm 16mm 10mm 16mm;
+      }
+      .page:last-child {
+        page-break-after: avoid;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* ENCABEZADOS Y PIES DE PÁGINA */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border-subtle);
+      margin-bottom: 12px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 17px;
+      color: var(--primary);
+      letter-spacing: -0.3px;
+    }
+    .brand-logo span.badge {
+      background: var(--accent-green);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .header-tagline {
+      font-size: 11px;
+      color: var(--text-soft);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 10px;
+      color: var(--text-soft);
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    .footer-bar .confidential {
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* TIPOGRAFÍA Y TÍTULOS */
+    h1 {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 30px;
+      line-height: 1.15;
+      color: var(--primary);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.3px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h2 .icon {
+      color: var(--accent-green);
+    }
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary-light);
+      margin-bottom: 4px;
+    }
+    p {
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    strong {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    /* CARDS Y CONTENEDORES */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .card.highlight {
+      background: var(--accent-green-light);
+      border-color: var(--accent-green-border);
+    }
+    .card.highlight-blue {
+      background: var(--accent-blue-light);
+      border-color: #BFDBFE;
+    }
+
+    /* GRID LAYOUTS */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    /* BADGES Y PILLS */
+    .pill {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #E2E8F0;
+      color: var(--primary);
+    }
+    .pill.green {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+    .pill.blue {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+
+    /* SIMULADOR WHATSAPP REALISTA */
+    .wa-chat {
+      background: var(--wa-bg);
+      border: 1px solid #CBD5E1;
+      border-radius: 10px;
+      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.35;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .wa-bubble {
+      max-width: 90%;
+      padding: 7px 9px;
+      border-radius: 7.5px;
+      position: relative;
+      box-shadow: 0 1px 1.5px rgba(0,0,0,0.13);
+    }
+    .wa-bubble.in {
+      background: var(--wa-bubble-in);
+      align-self: flex-start;
+      border-top-left-radius: 0;
+    }
+    .wa-bubble.out {
+      background: var(--wa-bubble-out);
+      align-self: flex-end;
+      border-top-right-radius: 0;
+    }
+    .wa-bubble .wa-sender {
+      font-weight: 700;
+      font-size: 10px;
+      color: var(--wa-header);
+      margin-bottom: 2px;
+    }
+    .wa-bubble .wa-time {
+      font-size: 9px;
+      color: #8C969E;
+      float: right;
+      margin-left: 6px;
+      margin-top: 4px;
+    }
+    .wa-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding-top: 5px;
+    }
+    .wa-btn {
+      background: #FFFFFF;
+      color: #007AFF;
+      font-weight: 600;
+      text-align: center;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 10.5px;
+      border: 1px solid #E2E8F0;
+    }
+    .wa-btn.primary {
+      color: #059669;
+      font-weight: 700;
+    }
+
+    /* ESTILOS DE MÉTRICAS */
+    .metric-box {
+      background: white;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent-green);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .metric-label {
+      font-size: 10.5px;
+      color: var(--text-soft);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* LISTAS CON CHECKS */
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .feature-list li .check {
+      color: var(--accent-green);
+      font-weight: 800;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    /* BOTÓN FLOTANTE PARA IMPRIMIR (SOLO NAVEGADOR) */
+    .print-bar {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      z-index: 9999;
+      background: var(--primary);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+    .print-bar:hover {
+      background: var(--accent-green);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BOTÓN PARA IMPRESIÓN DIRECTA O GUARDADO EN PDF -->
+  <button class="print-bar no-print" onclick="window.print()">
+    🖨️ Imprimir Dossier / Guardar PDF (A4)
+  </button>
+
+  <!-- =================================================================== -->
+  <!-- PÁGINA 1: PORTADA Y DIAGNÓSTICO DEL AUSENTISMO MÉDICO               -->
+  <!-- =================================================================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-logo">
+          SOFÍA AI <span class="badge">Salud & Clínicas</span>
+        </div>
+        <div class="header-tagline">Dossier Ejecutivo de Implementación</div>
+      </div>
+
+      <div style="margin: 25px 0 18px 0;">
+        <span class="pill green" style="margin-bottom: 8px;">Sistema Autónomo de Gestión de Pacientes</span>
+        <h1>El Fin del Ausentismo y las Sillas Vacías en tu Consultorio</h1>
+        <p style="font-size: 15px; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+          Asistencia integral por WhatsApp conectada a tu planilla habitual. Agendamiento 24/7, recordatorios interactivos, salvataje de cancelaciones en tiempo real y guardia permanente sin sobrecargar a tu secretaría.
+        </p>
+      </div>
+
+      <!-- MÉTRICAS DE IMPACTO -->
+      <div class="grid-3" style="margin-bottom: 16px;">
+        <div class="metric-box">
+          <div class="metric-value">25% a 30%</div>
+          <div class="metric-label">Ausentismo promedio sin recordatorio</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value">0% Fricción</div>
+          <div class="metric-label">Tu secretaría sigue usando su Excel</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value">&lt; 1 Segundo</div>
+          <div class="metric-label">Re-oferta de huecos a lista de espera</div>
+        </div>
+      </div>
+
+      <!-- EL DIAGNÓSTICO REAL DE UN CONSULTORIO -->
+      <div class="card" style="border-left: 4px solid #EF4444; margin-bottom: 14px;">
+        <h3 style="color: #B91C1C; font-size: 14px; margin-bottom: 4px;">⚠️ El Problema Invisible: Lo que cuesta cada turno perdido</h3>
+        <p style="font-size: 12.5px; margin-bottom: 0;">
+          En la práctica médica diaria, cuando un paciente no asiste o avisa a último momento, esa hora de sillón o consultorio **no se recupera jamás**. La secretaria no tiene tiempo material de llamar por teléfono a 15 personas para ver quién puede reemplazarlo. Ese bache genera pérdida neta de facturación para el profesional y alarga la lista de espera para quienes sí necesitan atención urgente.
+        </p>
+      </div>
+
+      <!-- QUÉ HACE SOFÍA EN TU CLÍNICA -->
+      <div class="card highlight" style="margin-bottom: 14px;">
+        <h3 style="color: #065F46; font-size: 14.5px; margin-bottom: 6px;">💡 La Solución Sofía: Automatización Quirúrgica sin Cambiar tu Rutina</h3>
+        <ul class="feature-list">
+          <li><span class="check">✓</span> <span><strong>Los pacientes piden turnos 24/7 por WhatsApp:</strong> Sofía los guía, consulta disponibilidad y los agenda automáticamente de noche, fines de semana o feriados.</span></li>
+          <li><span class="check">✓</span> <span><strong>Recordatorio único 24 hs antes:</strong> Sin spam invasivo a 48 hs. Un único mensaje claro el día anterior con botones oficiales de confirmación.</span></li>
+          <li><span class="check">✓</span> <span><strong>Rellena-Huecos 1 a 1:</strong> Si alguien cancela, Sofía le ofrece el turno al primer paciente de la Lista de Espera o adelanta turnos de semanas siguientes en segundos.</span></li>
+          <li><span class="check">✓</span> <span><strong>Tu secretaría conserva el control 100%:</strong> La recepción sigue con su Excel de siempre y cuenta con comandos por WhatsApp para pausar, reactivar o proteger turnos especiales.</span></li>
+        </ul>
+      </div>
+
+      <!-- TESTIMONIO / OBJETIVO -->
+      <div style="background: var(--primary); color: white; border-radius: 8px; padding: 12px 14px;">
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #34D399; letter-spacing: 0.5px; margin-bottom: 3px;">Propósito del Sistema</div>
+        <div style="font-size: 13px; font-weight: 500; line-height: 1.4;">
+          «Lograr que cada jornada médica comience con la agenda 100% confirmada y que cualquier cancelación imprevista se cubra antes de que el profesional apoye el instrumental».
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Sofía AI Agency — Sistema Autónomo de Gestión en Salud</span>
+      <span class="confidential">Página 1 de 5</span>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- PÁGINA 2: ECOSISTEMA DE FUNCIONALIDADES (DE LA A A LA Z)            -->
+  <!-- =================================================================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-logo">SOFÍA AI <span class="badge">Funcionalidades</span></div>
+        <div class="header-tagline">Capacidades del Motor Autónomo</div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <h2><span class="icon">⚡</span> Todas las Funcionalidades que Sofía Brinda a tu Clínica</h2>
+        <p style="font-size: 13px;">Un abanico completo diseñado específicamente para la operativa de consultorios médicos, odontológicos y centros de estética.</p>
+      </div>
+
+      <div class="grid-2">
+
+        <!-- PILAR 1: AGENDAMIENTO 24/7 -->
+        <div class="card" style="border-top: 3px solid var(--accent-blue);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h3 style="color: var(--accent-blue);">1. Agendamiento Autónomo 24/7</h3>
+            <span class="pill blue">Noches y Feriados</span>
+          </div>
+          <p style="font-size: 12px; margin-bottom: 6px;">Permite a los pacientes solicitar y agendar turnos en cualquier horario sin esperar a que abra la secretaría.</p>
+          <ul class="feature-list" style="font-size: 11.5px;">
+            <li><span class="check">✓</span> <span>Interpreta especialidad, profesional solicitado y preferencias de día u horario en lenguaje natural.</span></li>
+            <li><span class="check">✓</span> <span>Valida disponibilidad en tiempo real contra la agenda del consultorio.</span></li>
+            <li><span class="check">✓</span> <span>Registra celular, nombre completo y motivo de consulta de forma prolija.</span></li>
+          </ul>
+        </div>
+
+        <!-- PILAR 2: RECORDATORIOS INTELIGENTES -->
+        <div class="card" style="border-top: 3px solid var(--accent-green);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h3 style="color: var(--accent-green);">2. Recordatorio Oficial 24 hs</h3>
+            <span class="pill green">Plantilla Meta Oficial</span>
+          </div>
+          <p style="font-size: 12px; margin-bottom: 6px;">Notificación el día anterior a la mañana con 3 botones rápidos: [Confirmo asistencia], [Reprogramar], [No podré asistir].</p>
+          <ul class="feature-list" style="font-size: 11.5px;">
+            <li><span class="check">✓</span> <span>Sin bloqueo de 24 hs de Meta: Llega con certeza al WhatsApp del paciente.</span></li>
+            <li><span class="check">✓</span> <span>Límite claro de confirmación: Se solicita confirmar antes de las 18:00 hs.</span></li>
+            <li><span class="check">✓</span> <span>Elimina el costo de llamadas manuales de secretaría.</span></li>
+          </ul>
+        </div>
+
+        <!-- PILAR 3: RELLENA-HUECOS 1 A 1 -->
+        <div class="card" style="border-top: 3px solid #8B5CF6;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h3 style="color: #6D28D9;">3. Cascada FIFO 1-a-1 de Vacantes</h3>
+            <span class="pill" style="background:#EDE9FE; color:#5B21B6;">Anti Solapamiento</span>
+          </div>
+          <p style="font-size: 12px; margin-bottom: 6px;">Cuando se libera un horario, Sofía ofrece la vacante a <strong>un solo paciente por vez</strong> por orden de llegada.</p>
+          <ul class="feature-list" style="font-size: 11.5px;">
+            <li><span class="check">✓</span> <span>Evita que dos pacientes acepten el mismo turno a la vez.</span></li>
+            <li><span class="check">✓</span> <span>Ventana de 2 horas de respuesta; si rechaza o no contesta, pasa de inmediato al Candidato #2.</span></li>
+            <li><span class="check">✓</span> <span>Avisa a Secretaría en cuanto el hueco queda cubierto.</span></li>
+          </ul>
+        </div>
+
+        <!-- PILAR 4: ADELANTA-TURNOS -->
+        <div class="card" style="border-top: 3px solid #F59E0B;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h3 style="color: #B45309;">4. Motor "Adelanta-Turnos"</h3>
+            <span class="pill" style="background:#FEF3C7; color:#92400E;">Cero Sillas Vacías</span>
+          </div>
+          <p style="font-size: 12px; margin-bottom: 6px;">Si no hay nadie en lista de espera, contacta a pacientes de la semana siguiente para ofrecerles adelantarse.</p>
+          <ul class="feature-list" style="font-size: 11.5px;">
+            <li><span class="check">✓</span> <span>Beneficio exclusivo percibido como atención VIP por el paciente.</span></li>
+            <li><span class="check">✓</span> <span>Al aceptar, libera automáticamente su turno futuro original.</span></li>
+            <li><span class="check">✓</span> <span>Si declina, ratifica que su fecha original sigue 100% firme.</span></li>
+          </ul>
+        </div>
+
+        <!-- PILAR 5: ATENCIÓN DE PREGUNTAS FRECUENTES -->
+        <div class="card" style="border-top: 3px solid #06B6D4;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h3 style="color: #0E7490;">5. FAQ Médico & Aranceles</h3>
+            <span class="pill" style="background:#CFFAFE; color:#155E75;">Inteligencia Clínica</span>
+          </div>
+          <p style="font-size: 12px; margin-bottom: 6px;">Sofía evacúa las preguntas más repetitivas de recepción según las directivas del consultorio.</p>
+          <ul class="feature-list" style="font-size: 11.5px;">
+            <li><span class="check">✓</span> <span>Obras sociales y prepagas que se reciben vs. particulares.</span></li>
+            <li><span class="check">✓</span> <span>Preparación previa a estudios (ayunos, estudios anteriores).</span></li>
+            <li><span class="check">✓</span> <span>Dirección, mapa, teléfonos de urgencia y medios de pago.</span></li>
+          </ul>
+        </div>
+
+        <!-- PILAR 6: SINCRONIZACIÓN DE PLANILLA -->
+        <div class="card" style="border-top: 3px solid #10B981;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h3 style="color: #047857;">6. Integración con tu Excel Actual</h3>
+            <span class="pill green">Cero Cambio de Software</span>
+          </div>
+          <p style="font-size: 12px; margin-bottom: 6px;">Centinela liviano para la PC de recepción o conector para Google Sheets en la nube.</p>
+          <ul class="feature-list" style="font-size: 11.5px;">
+            <li><span class="check">✓</span> <span>La secretaria guarda el archivo y Sofía se sincroniza en vivo.</span></li>
+            <li><span class="check">✓</span> <span>Sin instalaciones pesadas ni licencias mensuales complejas.</span></li>
+            <li><span class="check">✓</span> <span>Compatible con Windows 10/11 y Microsoft Office habitual.</span></li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Sofía AI Agency — Sistema Autónomo de Gestión en Salud</span>
+      <span class="confidential">Página 2 de 5</span>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- PÁGINA 3: EL CIRCUITO EN VIVO (WHATSAPP PACIENTE VS. SECRETARÍA)    -->
+  <!-- =================================================================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-logo">SOFÍA AI <span class="badge">En Vivo</span></div>
+        <div class="header-tagline">Experiencia Real en WhatsApp</div>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <h2><span class="icon">📱</span> Cómo Interactúa el Paciente y Qué Recibe tu Secretaría</h2>
+        <p style="font-size: 13px;">Mensajería oficial de Meta, clara y sin fricción técnica. Textos limpios y botones directos.</p>
+      </div>
+
+      <div class="grid-2" style="align-items: start;">
+
+        <!-- COLUMNA IZQUIERDA: EL PACIENTE -->
+        <div>
+          <div style="font-weight: 700; font-size: 13px; color: var(--accent-blue); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            👤 Lo que ve el Paciente en su Celular
+          </div>
+
+          <!-- CHAT 1: RECORDATORIO 24HS -->
+          <div class="wa-chat" style="margin-bottom: 10px;">
+            <div class="wa-bubble in">
+              <div class="wa-sender">Consultorios Odontológicos Alvear</div>
+              Hola <strong>Martín Gómez</strong>! Te recordamos que <strong>MAÑANA</strong> es tu turno el día <strong>Martes 18/10 a las 11:00 hs</strong> con <strong>Dr. García</strong> en Alvear 342.<br><br>
+              ⏰ <em>Por favor confirmá tu asistencia antes de las 18:00 hs de hoy para conservar tu lugar en agenda.</em>
+              <span class="wa-time">09:15</span>
+              <div class="wa-buttons">
+                <div class="wa-btn primary">✓ Confirmo asistencia</div>
+                <div class="wa-btn">🔄 Reprogramar</div>
+                <div class="wa-btn" style="color:#DC2626;">✕ No podré asistir</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHAT 2: ADELANTA-TURNO -->
+          <div class="wa-chat">
+            <div class="wa-bubble in">
+              <div class="wa-sender">Consultorios Odontológicos Alvear</div>
+              🔔 <strong>¡OPORTUNIDAD DE ADELANTAR TU TURNO!</strong><br><br>
+              Hola <strong>Laura Benítez</strong>, se liberó un turno para <strong>MAÑANA a las 09:30 hs</strong> con <strong>Dr. García</strong>.<br><br>
+              Tenés turno agendado para el 21/10. Si te queda cómodo este nuevo horario, podés tomarlo ahora y liberamos tu fecha anterior.
+              <span class="wa-time">10:02</span>
+              <div class="wa-buttons">
+                <div class="wa-btn primary">⚡ Sí, adelantar turno</div>
+                <div class="wa-btn">📅 Mantener turno actual</div>
+              </div>
+            </div>
+            <div class="wa-bubble out">
+              Sí, adelantar turno
+              <span class="wa-time">10:04</span>
+            </div>
+            <div class="wa-bubble in">
+              🎉 <strong>¡Turno adelantado con éxito!</strong><br>
+              Tu nuevo horario quedó fijado para mañana a las 09:30 hs. ¡Te esperamos puntual!
+              <span class="wa-time">10:04</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: LA SECRETARÍA -->
+        <div>
+          <div style="font-weight: 700; font-size: 13px; color: var(--accent-green); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            🏥 Lo que Recibe la Secretaría en Tiempo Real
+          </div>
+
+          <!-- AVISO 1: HUECO SALVADO -->
+          <div class="wa-chat" style="margin-bottom: 10px;">
+            <div class="wa-bubble in" style="border-left: 3px solid var(--accent-green);">
+              <div class="wa-sender" style="color: var(--accent-green);">SOFÍA CENTINELA</div>
+              🎯 <strong>¡HUECO CUBIERTO CON ÉXITO!</strong><br><br>
+              El turno de mañana <strong>18/10 a las 09:30 hs</strong> (Dr. García) que había cancelado Roberto Sánchez fue <strong>reasignado a Laura Benítez</strong> (Cel: +5493434536447).<br><br>
+              💰 <em>Cero pérdida de facturación en el sillón.</em>
+              <span class="wa-time">10:04</span>
+            </div>
+          </div>
+
+          <!-- AVISO 2: CONFIRMACIÓN DE PACIENTE -->
+          <div class="wa-chat" style="margin-bottom: 10px;">
+            <div class="wa-bubble in" style="border-left: 3px solid var(--accent-blue);">
+              <div class="wa-sender" style="color: var(--accent-blue);">SOFÍA CENTINELA</div>
+              ✅ <strong>¡TURNO CONFIRMADO POR PACIENTE!</strong><br><br>
+              👤 Paciente: <strong>Martín Gómez</strong><br>
+              📅 Fecha: <strong>Martes 18/10 - 11:00 hs</strong><br>
+              👨‍⚕️ Profesional: <strong>Dr. García</strong><br>
+              📱 Celular: +5493435730520<br><br>
+              El turno quedó asegurado en agenda.
+              <span class="wa-time">09:18</span>
+            </div>
+          </div>
+
+          <!-- AVISO 3: REPORTE PRE-CORTE 17:30 HS -->
+          <div class="wa-chat">
+            <div class="wa-bubble in" style="border-left: 3px solid #D97706;">
+              <div class="wa-sender" style="color: #D97706;">ESCUDO DE SECRETARÍA (17:30 HS)</div>
+              📋 <strong>REPORTE DE TURNOS SIN CONFIRMAR PARA MAÑANA</strong><br><br>
+              Quedan 2 pacientes sin responder:<br>
+              1. <strong>Carlos Ruiz</strong> [ID: 59] - 12:30 hs (Dr. García)<br>
+              2. <strong>Diego Peralta</strong> [ID: 61] - 17:00 hs (Dr. García)<br><br>
+              👉 Si conocés al paciente y querés conservarlo, respondé:<br>
+              <em>mantener a Carlos Ruiz</em><br><br>
+              A las 18:00 hs los turnos no conservados se ofrecerán a lista de espera.
+              <span class="wa-time">17:30</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Sofía AI Agency — Sistema Autónomo de Gestión en Salud</span>
+      <span class="confidential">Página 3 de 5</span>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- PÁGINA 4: EL CONTROL EN MANOS DE LA SECRETARÍA (CERO INVASIÓN)     -->
+  <!-- =================================================================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-logo">SOFÍA AI <span class="badge">Control Total</span></div>
+        <div class="header-tagline">Gobierno y Autoridad Humana</div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <h2><span class="icon">🛡️</span> La Secretaría Manda: Seguridad Absoluta y "Freno de Mano"</h2>
+        <p style="font-size: 13px;">Sofía automatiza las tareas pesadas y repetitivas, pero <strong>la administración conserva en todo momento el 100% de la autoridad médica</strong>.</p>
+      </div>
+
+      <!-- EL ESCUDO Y EL BOTÓN DE EMERGENCIA -->
+      <div class="grid-2" style="margin-bottom: 12px;">
+
+        <div class="card" style="border-left: 4px solid var(--accent-green);">
+          <div class="pill green" style="margin-bottom: 4px;">Escudo de Secretaría</div>
+          <h3 style="font-size: 14px; margin-bottom: 4px;">Comando "Mantener Turno"</h3>
+          <p style="font-size: 12px; margin-bottom: 6px;">
+            Si hay un paciente conocido, amigo del doctor o un caso delicado que aún no confirmó por WhatsApp, la secretaria no pierde el turno.
+          </p>
+          <div style="background: white; border: 1px solid var(--border-subtle); padding: 7px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary);">
+            💬 Mandar por WhatsApp:<br>
+            <strong>mantener a Carlos Ruiz</strong>
+          </div>
+          <p style="font-size: 11px; color: var(--text-soft); margin-top: 5px; margin-bottom: 0;">
+            Sofía lo marca como <em>mantenido por secretaría</em> y jamás lo ofrece a la lista de espera.
+          </p>
+        </div>
+
+        <div class="card" style="border-left: 4px solid #EF4444;">
+          <div class="pill" style="background:#FEE2E2; color:#B91C1C; margin-bottom: 4px;">Botón de Emergencia</div>
+          <h3 style="font-size: 14px; margin-bottom: 4px;">Kill Switch Instantáneo</h3>
+          <p style="font-size: 12px; margin-bottom: 6px;">
+            Ante cualquier imprevisto clínico (médico descompuesto, corte de luz, paro o reformas), la secretaria frena a Sofía al instante.
+          </p>
+          <div style="background: white; border: 1px solid var(--border-subtle); padding: 7px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary);">
+            💬 Mandar por WhatsApp:<br>
+            <strong>pausar sofia</strong> / <strong>activar sofia</strong>
+          </div>
+          <p style="font-size: 11px; color: var(--text-soft); margin-top: 5px; margin-bottom: 0;">
+            El piloto automático se detiene en 1 segundo y el consultorio pasa a modo manual.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- TABLA DE COMANDOS RÁPIDOS POR WHATSAPP -->
+      <div class="card" style="margin-bottom: 12px;">
+        <h3 style="margin-bottom: 8px; font-size: 13.5px; color: var(--primary);">📋 Comandos Ejecutivos de Secretaría (Directo desde WhatsApp)</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-subtle); text-align: left; color: var(--text-soft);">
+              <th style="padding: 6px 8px;">Lo que escribe la Secretaria</th>
+              <th style="padding: 6px 8px;">Lo que hace Sofía en el Sistema</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-blue);">agenda de mañana</td>
+              <td style="padding: 6px 8px; color: var(--text-muted);">Devuelve la lista ordenada de pacientes citados para el día siguiente con sus estados.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-green);">anotá a Juan Pérez mañana 10:30 Dr. García cel 343...</td>
+              <td style="padding: 6px 8px; color: var(--text-muted);">Agenda al paciente en la base de datos sin tocar la computadora y programa su recordatorio.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #D97706);">recordatorios ahora</td>
+              <td style="padding: 6px 8px; color: var(--text-muted);">Si la secretaria se retira temprano, despacha los recordatorios de mañana de inmediato.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--primary);">estado</td>
+              <td style="padding: 6px 8px; color: var(--text-muted);">Informa si el sistema está activo o pausado, turnos del día y pendientes de confirmación.</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #DC2626);">pausar sofia</td>
+              <td style="padding: 6px 8px; color: var(--text-muted);">Suspende envíos automáticos de recordatorios y ofertas de lista de espera al instante.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PRINCIPIOS DE NO INVASIÓN -->
+      <div class="card highlight-blue">
+        <h3 style="color: var(--accent-blue); font-size: 13.5px; margin-bottom: 4px;">🤝 Los 3 Compromisos de Convivencia con tu Secretaría</h3>
+        <ul class="feature-list" style="font-size: 12px;">
+          <li><span class="check">✓</span> <span><strong>Cero invasión:</strong> Sofía no reemplaza la empatía ni el criterio de la recepcionista; se encarga del trabajo pesado para que ella atienda mejor en el mostrador.</span></li>
+          <li><span class="check">✓</span> <span><strong>Sin curva de aprendizaje:</strong> Si sabe mandar un mensaje por WhatsApp y usar Excel, ya sabe usar Sofía.</span></li>
+          <li><span class="check">✓</span> <span><strong>Horarios respetuosos:</strong> Tope nocturno a las 22:00 hs. Sofía no molesta a pacientes de madrugada.</span></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer-bar">
+      <span>Sofía AI Agency — Sistema Autónomo de Gestión en Salud</span>
+      <span class="confidential">Página 4 de 5</span>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- PÁGINA 5: PLAN DE CALIBRACIÓN ACOMPAÑADA Y PROPUESTA DE CIERRE      -->
+  <!-- =================================================================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-logo">SOFÍA AI <span class="badge">Puesta en Marcha</span></div>
+        <div class="header-tagline">Protocolo Seguro de Implementación</div>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <h2><span class="icon">🚀</span> Protocolo de Calibración Acompañada: Cero Riesgo</h2>
+        <p style="font-size: 13px;">No lanzamos el sistema a ciegas. Seguimos una metodología paso a paso certificada junto al equipo del consultorio.</p>
+      </div>
+
+      <!-- LOS 3 PASOS DE PUESTA EN MARCHA -->
+      <div class="grid-3" style="margin-bottom: 14px;">
+        <div class="card" style="border-top: 3px solid var(--text-soft);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-soft); text-transform: uppercase;">Fase 1 • Día 1</div>
+          <h3 style="margin-top: 3px;">Vinculación y Parámetros</h3>
+          <p style="font-size: 11.5px; margin-bottom: 0;">
+            Carga de profesionales, horarios de atención, obras sociales y conexión con la planilla Excel habitual de recepción.
+          </p>
+        </div>
+        <div class="card" style="border-top: 3px solid #D97706; background: #FFFBEB;">
+          <div style="font-size: 11px; font-weight: 700; color: #B45309; text-transform: uppercase;">Fase 2 • Días 2 y 3</div>
+          <h3 style="margin-top: 3px; color: #92400E;">Calibración (3 a 5 Turnos)</h3>
+          <p style="font-size: 11.5px; margin-bottom: 0;">
+            Se seleccionan 3 a 5 turnos de prueba (incluyendo los celulares del equipo). Se prueba en vivo la respuesta y tono de voz de Sofía.
+          </p>
+        </div>
+        <div class="card" style="border-top: 3px solid var(--accent-green); background: var(--accent-green-light);">
+          <div style="font-size: 11px; font-weight: 700; color: #047857; text-transform: uppercase;">Fase 3 • Día 4 en adelante</div>
+          <h3 style="margin-top: 3px; color: #065F46;">Activación a Agenda Plena</h3>
+          <p style="font-size: 11.5px; margin-bottom: 0;">
+            Con el visto bueno del consultorio, Sofía asume la guardia 24/7 de recordatorios y salvataje de huecos de toda la clínica.
+          </p>
+        </div>
+      </div>
+
+      <!-- RETORNO DE INVERSIÓN (ROI) -->
+      <div class="card highlight" style="margin-bottom: 14px; border: 1.5px solid var(--accent-green-border);">
+        <h3 style="color: #065F46; font-size: 14px; margin-bottom: 6px;">📈 Retorno de Inversión Garantizado</h3>
+        <p style="font-size: 12.5px; margin-bottom: 6px;">
+          En cualquier especialidad (odontología, kinesiología, medicina general o estética), <strong>salvar tan solo 1 o 2 turnos por semana</strong> que de otro modo hubieran quedado vacíos paga con creces el servicio completo de Sofía y deja una ganancia neta directa al consultorio.
+        </p>
+        <div style="display: flex; gap: 15px; font-size: 12px; color: var(--text-muted); font-weight: 600;">
+          <span>• Recuperación inmediata de horas ociosas</span>
+          <span>• Sala de espera más ordenada</span>
+          <span>• Cero pacientes desatendidos</span>
+        </div>
+      </div>
+
+      <!-- PROPUESTA DE CONTACTO Y PLAN PILOTO FUNDADOR -->
+      <div style="background: var(--primary); color: white; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #34D399; letter-spacing: 0.5px;">Programa Consultorio Piloto</div>
+            <div style="font-size: 17px; font-weight: 800;">Plan de Implementación Asistida</div>
+          </div>
+          <span class="pill green" style="font-size: 11px; padding: 4px 10px;">Cupo Limitado</span>
+        </div>
+        <p style="color: #CBD5E1; font-size: 12px; margin-bottom: 10px; line-height: 1.4;">
+          Incluye puesta en marcha completa, conexión con tu Excel, personalización del tono clínico de tu consultorio, capacitación presencial a la secretaría y soporte técnico directo prioritario durante todo el mes.
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 10px; font-size: 12px;">
+          <div>
+            <div style="color: #94A3B8; font-size: 10.5px;">RESPONSABLE DE IMPLEMENTACIÓN:</div>
+            <div style="font-weight: 700; font-size: 13px;">Javier Coloma — Director Sofía AI Agency</div>
+          </div>
+          <div>
+            <div style="color: #94A3B8; font-size: 10.5px;">WHATSAPP DIRECTO / COORDINACIÓN:</div>
+            <div style="font-weight: 700; font-size: 13px; color: #34D399;">+54 9 343 453-6447</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer-bar">
+      <span>Sofía AI Agency — Paraná, Entre Ríos, Argentina</span>
+      <span class="confidential">Página 5 de 5</span>
+    </div>
+  </div>
+
+</body>
+</html>
