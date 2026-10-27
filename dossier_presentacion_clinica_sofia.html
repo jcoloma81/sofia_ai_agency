@@ -690,79 +690,104 @@
       </div>
 
       <!-- EL ESCUDO Y EL BOTÓN DE EMERGENCIA -->
-      <div class="grid-2" style="margin-bottom: 12px;">
+      <div class="grid-2" style="margin-bottom: 10px;">
 
-        <div class="card" style="border-left: 4px solid var(--accent-green);">
-          <div class="pill green" style="margin-bottom: 4px;">Escudo de Secretaría</div>
-          <h3 style="font-size: 14px; margin-bottom: 4px;">Comando "Mantener Turno"</h3>
-          <p style="font-size: 12px; margin-bottom: 6px;">
-            Si hay un paciente conocido, amigo del doctor o un caso delicado que aún no confirmó por WhatsApp, la secretaria no pierde el turno.
+        <div class="card" style="border-left: 4px solid var(--accent-green); padding: 10px 12px;">
+          <div class="pill green" style="margin-bottom: 3px;">Escudo de Secretaría</div>
+          <h3 style="font-size: 13.5px; margin-bottom: 3px;">Comando "Mantener Turno"</h3>
+          <p style="font-size: 11.5px; margin-bottom: 5px;">
+            Si hay un paciente conocido o un caso delicado que aún no confirmó por WhatsApp, la secretaria protege el lugar:
           </p>
-          <div style="background: white; border: 1px solid var(--border-subtle); padding: 7px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary);">
-            💬 Mandar por WhatsApp:<br>
-            <strong>mantener a Carlos Ruiz</strong>
+          <div style="background: white; border: 1px solid var(--border-subtle); padding: 5px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--primary);">
+            💬 Mandar por WhatsApp: <strong>mantener a Carlos Ruiz</strong>
           </div>
-          <p style="font-size: 11px; color: var(--text-soft); margin-top: 5px; margin-bottom: 0;">
-            Sofía lo marca como <em>mantenido por secretaría</em> y jamás lo ofrece a la lista de espera.
+          <p style="font-size: 10.5px; color: var(--text-soft); margin-top: 4px; margin-bottom: 0;">
+            Sofía lo marca como <em>mantenido</em> y jamás lo libera a lista de espera.
           </p>
         </div>
 
-        <div class="card" style="border-left: 4px solid #EF4444;">
-          <div class="pill" style="background:#FEE2E2; color:#B91C1C; margin-bottom: 4px;">Botón de Emergencia</div>
-          <h3 style="font-size: 14px; margin-bottom: 4px;">Kill Switch Instantáneo</h3>
-          <p style="font-size: 12px; margin-bottom: 6px;">
-            Ante cualquier imprevisto clínico (médico descompuesto, corte de luz, paro o reformas), la secretaria frena a Sofía al instante.
+        <div class="card" style="border-left: 4px solid #EF4444; padding: 10px 12px;">
+          <div class="pill" style="background:#FEE2E2; color:#B91C1C; margin-bottom: 3px;">Botón de Emergencia</div>
+          <h3 style="font-size: 13.5px; margin-bottom: 3px;">Kill Switch Instantáneo</h3>
+          <p style="font-size: 11.5px; margin-bottom: 5px;">
+            Ante cualquier imprevisto clínico general (corte de luz, paro o reformas), la secretaria frena a Sofía en 1 segundo:
           </p>
-          <div style="background: white; border: 1px solid var(--border-subtle); padding: 7px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary);">
-            💬 Mandar por WhatsApp:<br>
-            <strong>pausar sofia</strong> / <strong>activar sofia</strong>
+          <div style="background: white; border: 1px solid var(--border-subtle); padding: 5px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--primary);">
+            💬 Mandar por WhatsApp: <strong>pausar sofia</strong> / <strong>activar sofia</strong>
           </div>
-          <p style="font-size: 11px; color: var(--text-soft); margin-top: 5px; margin-bottom: 0;">
-            El piloto automático se detiene en 1 segundo y el consultorio pasa a modo manual.
+          <p style="font-size: 10.5px; color: var(--text-soft); margin-top: 4px; margin-bottom: 0;">
+            El piloto automático se detiene al instante y el consultorio pasa a modo manual.
           </p>
         </div>
 
       </div>
 
+      <!-- NUEVO: PROTOCOLO DE IMPREVISTO MÉDICO (CONTINGENCIA ANTE AUSENCIAS O FUERZA MAYOR) -->
+      <div class="card" style="border-left: 4px solid #F59E0B; background: #FFFBEB; margin-bottom: 10px; padding: 10px 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+          <div class="pill" style="background: #FEF3C7; color: #B45309; font-weight: 700; font-size: 10px;">Nuevo • Contingencia por Imprevisto</div>
+          <span style="font-size: 10.5px; font-weight: 700; color: #92400E;">Cero Solapamientos • Filtrado Automático</span>
+        </div>
+        <h3 style="font-size: 13.5px; color: #92400E; margin-bottom: 3px;">Protocolo de Imprevisto Médico: Cuando el doctor no puede asistir</h3>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px; line-height: 1.35;">
+          Si un profesional tiene un imprevisto de salud o fuerza mayor, la secretaria no pierde 2 horas llamando a 15 pacientes. Con un solo WhatsApp, Sofía frena el golpe y les envía botones interactivos:
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10.5px;">
+          <div style="background: white; border: 1px solid #FDE68A; padding: 6px 9px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; color: var(--primary);">
+            💬 Orden de la Secretaria:<br>
+            <strong>"mañana el doctor gonzalez no va a asistir por imprevisto pasarlos al jueves"</strong>
+          </div>
+          <div style="background: white; border: 1px solid #FDE68A; padding: 6px 9px; border-radius: 6px; color: var(--text-muted);">
+            📲 <strong>Opciones para los Pacientes en WhatsApp:</strong><br>
+            🔘 <code>[Acepto Reprogramar]</code> 🔘 <code>[Que me llamen]</code> 🔘 <code>[Cancelar Turno]</code><br>
+            <span style="color: #065F46; font-weight: 600;">La secretaria recibe el reporte ordenado y solo llama a quienes lo pidieron.</span>
+          </div>
+        </div>
+      </div>
+
       <!-- TABLA DE COMANDOS RÁPIDOS POR WHATSAPP -->
-      <div class="card" style="margin-bottom: 12px;">
-        <h3 style="margin-bottom: 8px; font-size: 13.5px; color: var(--primary);">📋 Comandos Ejecutivos de Secretaría (Directo desde WhatsApp)</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+      <div class="card" style="margin-bottom: 10px; padding: 10px 12px;">
+        <h3 style="margin-bottom: 6px; font-size: 13px; color: var(--primary);">📋 Comandos Ejecutivos de Secretaría (Directo desde WhatsApp)</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
           <thead>
             <tr style="border-bottom: 2px solid var(--border-subtle); text-align: left; color: var(--text-soft);">
-              <th style="padding: 6px 8px;">Lo que escribe la Secretaria</th>
-              <th style="padding: 6px 8px;">Lo que hace Sofía en el Sistema</th>
+              <th style="padding: 5px 6px;">Lo que escribe la Secretaria</th>
+              <th style="padding: 5px 6px;">Lo que hace Sofía en el Sistema</th>
             </tr>
           </thead>
           <tbody>
             <tr style="border-bottom: 1px solid var(--border-subtle);">
-              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-blue);">agenda de mañana</td>
-              <td style="padding: 6px 8px; color: var(--text-muted);">Devuelve la lista ordenada de pacientes citados para el día siguiente con sus estados.</td>
+              <td style="padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-blue);">agenda de mañana</td>
+              <td style="padding: 4px 6px; color: var(--text-muted);">Devuelve la lista ordenada de pacientes citados para el día siguiente con sus estados.</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border-subtle);">
-              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-green);">anotá a Juan Pérez mañana 10:30 Dr. García cel 343...</td>
-              <td style="padding: 6px 8px; color: var(--text-muted);">Agenda al paciente en la base de datos sin tocar la computadora y programa su recordatorio.</td>
+              <td style="padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #D97706);">mañana dr. gonzález ausente pasarlos al jueves</td>
+              <td style="padding: 4px 6px; color: var(--text-muted);">Dispara el Protocolo de Imprevisto: notifica a sus pacientes con botones interactivos y entrega reporte filtrado.</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border-subtle);">
-              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #D97706);">recordatorios ahora</td>
-              <td style="padding: 6px 8px; color: var(--text-muted);">Si la secretaria se retira temprano, despacha los recordatorios de mañana de inmediato.</td>
+              <td style="padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent-green);">anotá a Juan Pérez mañana 10:30 Dr. García cel 343...</td>
+              <td style="padding: 4px 6px; color: var(--text-muted);">Agenda al paciente en la base de datos sin tocar la computadora y programa su recordatorio.</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border-subtle);">
-              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--primary);">estado</td>
-              <td style="padding: 6px 8px; color: var(--text-muted);">Informa si el sistema está activo o pausado, turnos del día y pendientes de confirmación.</td>
+              <td style="padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #D97706);">recordatorios ahora</td>
+              <td style="padding: 4px 6px; color: var(--text-muted);">Si la secretaria se retira temprano, despacha los recordatorios de mañana de inmediato.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--primary);">estado</td>
+              <td style="padding: 4px 6px; color: var(--text-muted);">Informa si el sistema está activo o pausado, turnos del día y pendientes de confirmación.</td>
             </tr>
             <tr>
-              <td style="padding: 6px 8px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #DC2626);">pausar sofia</td>
-              <td style="padding: 6px 8px; color: var(--text-muted);">Suspende envíos automáticos de recordatorios y ofertas de lista de espera al instante.</td>
+              <td style="padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #DC2626);">pausar sofia</td>
+              <td style="padding: 4px 6px; color: var(--text-muted);">Suspende envíos automáticos de recordatorios y ofertas de lista de espera al instante.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- PRINCIPIOS DE NO INVASIÓN -->
-      <div class="card highlight-blue">
-        <h3 style="color: var(--accent-blue); font-size: 13.5px; margin-bottom: 4px;">🤝 Los 3 Compromisos de Convivencia con tu Secretaría</h3>
-        <ul class="feature-list" style="font-size: 12px;">
+      <div class="card highlight-blue" style="padding: 9px 12px;">
+        <h3 style="color: var(--accent-blue); font-size: 12.5px; margin-bottom: 3px;">🤝 Los 3 Compromisos de Convivencia con tu Secretaría</h3>
+        <ul class="feature-list" style="font-size: 11px;">
           <li><span class="check">✓</span> <span><strong>Cero invasión:</strong> Sofía no reemplaza la empatía ni el criterio de la recepcionista; se encarga del trabajo pesado para que ella atienda mejor en el mostrador.</span></li>
           <li><span class="check">✓</span> <span><strong>Sin curva de aprendizaje:</strong> Si sabe mandar un mensaje por WhatsApp y usar Excel, ya sabe usar Sofía.</span></li>
           <li><span class="check">✓</span> <span><strong>Horarios respetuosos:</strong> Tope nocturno a las 22:00 hs. Sofía no molesta a pacientes de madrugada.</span></li>

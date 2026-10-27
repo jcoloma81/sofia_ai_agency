@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 from typing import Optional, List, Dict, Any
@@ -1047,6 +1048,115 @@ class AppointmentService:
             c = await AppointmentService.execute_cutoff_auto_cancellations(db, t.id)
             total_cancelled += c
         return {"tenants_processed": len(tenants), "appointments_cancelled": total_cancelled}
+
+    @staticmethod
+    async def trigger_doctor_absence_contingency(
+        db: Session,
+        tenant_id: int,
+        doctor_query: str,
+        target_date: Optional[datetime] = None,
+        alternative_day_text: str = "el próximo día de atención habitual"
+    ) -> Dict[str, Any]:
+        """
+        ESCUDO DE IMPREVISTO MÉDICO (CONTINGENCIA POR AUSENCIA O FUERZA MAYOR):
+        Permite a la secretaría notificar masivamente a los pacientes de un médico
+        que no podrá asistir, ofreciéndoles opciones interactivas para que elijan:
+        1. [ACEPTO REPROGRAMAR]: Aceptar pasar su consulta al día alternativo sugerido.
+        2. [QUE ME LLAMEN]: Solicitar que la secretaría los llame para coordinar otra fecha.
+        3. [CANCELAR TURNO]: Cancelar definitivamente la cita.
+
+        Evita superposiciones a ciegas, frena el caos de la sala de espera y
+        entrega un reporte consolidado en tiempo real a la secretaría.
+        """
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        if not tenant:
+            return {"status": "error", "message": "Tenant no encontrado", "patients_notified": 0}
+
+        now = utc_now()
+        local_now = now - timedelta(hours=3)
+
+        if not target_date:
+            target_date = local_now + timedelta(days=1)
+
+        # Range for target day in Argentina time (UTC-3)
+        start_day_utc = target_date.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(hours=3)
+        end_day_utc = target_date.replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
+
+        # Clean doctor query
+        clean_doc = re.sub(r'^(dr\.|dra\.|doctor\s+|doctora\s+)', '', doctor_query.strip(), flags=re.IGNORECASE).strip().lower()
+
+        # Fetch appointments for the specified day
+        apts = db.query(Appointment).filter(
+            Appointment.tenant_id == tenant.id,
+            Appointment.appointment_date >= start_day_utc,
+            Appointment.appointment_date <= end_day_utc,
+            Appointment.status.notin_(["cancelado", "cancelado_por_imprevisto", "rechazado", "liberado_por_adelanto"])
+        ).all()
+
+        if clean_doc:
+            apts = [a for a in apts if clean_doc in (a.doctor_or_service or "").lower()]
+
+        notified_count = 0
+        date_str_display = target_date.strftime("%d/%m/%Y")
+
+        for apt in apts:
+            apt.status = "imprevisto_medico"
+            alt_note = f"Contingencia médico ({doctor_query}): propuesta {alternative_day_text}"
+            apt.notes = f"{apt.notes} | {alt_note}" if apt.notes else alt_note
+            db.commit()
+
+            t_str = format_appointment_datetime(apt.appointment_date)
+            body_text = (
+                f"🏥 *{tenant.name}* — *Aviso Urgente de Turno*\n\n"
+                f"Hola *{apt.patient_name}*, te escribimos para avisarte que por un imprevisto de fuerza mayor el/la *{apt.doctor_or_service}* no podrá atender las consultas programadas para el día *{t_str}*.\n\n"
+                f"Te pedimos sinceras disculpas por las molestias ocasionadas.\n\n"
+                f"Para que no pierdas tu lugar de atención, te ofrecemos reprogramar tu consulta para *{alternative_day_text}* en tu mismo horario.\n\n"
+                f"Por favor elegí la opción que prefieras:"
+            )
+
+            buttons = [
+                {"id": f"contingency_accept_{apt.id}", "title": "ACEPTO REPROGRAMAR"},
+                {"id": f"contingency_call_{apt.id}", "title": "QUE ME LLAMEN"},
+                {"id": f"contingency_cancel_{apt.id}", "title": "CANCELAR TURNO"}
+            ]
+
+            sent = await whatsapp.send_whatsapp_interactive_buttons(
+                to_phone=apt.patient_phone,
+                body_text=tenant_service.format_branded_message(tenant, body_text),
+                buttons=buttons,
+                header_text=f"🏥 {tenant.name[:30]}"
+            )
+            if sent:
+                notified_count += 1
+
+        if tenant.owner_phone:
+            summary = (
+                f"🛡️ *Protocolo de Imprevisto Activado ({tenant.name})*\n\n"
+                f"👨‍⚕️ Profesional: *{doctor_query}*\n"
+                f"📅 Fecha afectada: *{date_str_display}*\n"
+                f"👥 Pacientes notificados: *{len(apts)}* ({notified_count} entregados)\n"
+                f"🔄 Alternativa ofrecida: *{alternative_day_text}*\n\n"
+                f"A medida que los pacientes respondan con los botones interactivos, te notificaré al instante para que actualices tu agenda."
+            )
+            await whatsapp.send_owner_or_admin_alert(
+                to_phone=tenant.owner_phone,
+                fallback_text=summary,
+                business_name=tenant.name,
+                event_type="Imprevisto Médico Activado",
+                client_title="Secretaría",
+                details_summary=f"{len(apts)} pacientes notificados para {date_str_display} ({doctor_query}).",
+                owner_email=tenant.owner_email
+            )
+
+        logger.info(f"🛡️ Doctor absence contingency triggered for '{tenant.name}': {len(apts)} appointments found, {notified_count} notified.")
+        return {
+            "status": "success",
+            "doctor": doctor_query,
+            "target_date": date_str_display,
+            "alternative_day": alternative_day_text,
+            "patients_found": len(apts),
+            "patients_notified": notified_count
+        }
 
 appointment_service = AppointmentService()
 

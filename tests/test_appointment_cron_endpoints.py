@@ -538,5 +538,143 @@ async def test_secretary_kill_switch_pause_and_resume(db):
         assert "SOFÍA REACTIVADA" in reply_act
 
 
+@pytest.mark.asyncio
+async def test_doctor_absence_contingency_protocol(db):
+    """
+    Tests the Protocolo de Imprevisto Médico (Doctor Absence Contingency):
+    1. Secretary triggers contingency for Dr. González for tomorrow.
+    2. Sofia notifies affected patients with interactive buttons.
+    3. Patient 1 clicks [ACEPTO REPROGRAMAR] -> status becomes 'reprogramacion_aceptada', secretary notified.
+    4. Patient 2 clicks [QUE ME LLAMEN] -> status becomes 'requiere_contacto_secretaria', secretary notified.
+    5. Patient 3 clicks [CANCELAR TURNO] -> status becomes 'cancelado_por_imprevisto', secretary notified.
+    """
+    from datetime import datetime, timezone, timedelta
+    from app.models.tenant import Tenant, Appointment, WaitlistEntry
+    from app.services.appointment_service import AppointmentService, utc_now
+    from app.services.tenant_dispatcher import TenantDispatcher
+
+    now = utc_now()
+    loc_now = now - timedelta(hours=3)
+    tomorrow_noon = (loc_now + timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0) + timedelta(hours=3)
+
+    sec_phone = "5493434536447"
+    tenant = Tenant(
+        slug=f"clinica_contingencia_{int(now.timestamp())}",
+        name="Clínica Médica Paraná",
+        business_type="salud",
+        owner_phone=sec_phone,
+        owner_name="Secretaría Central",
+        modules_enabled='["turnos_rellena_huecos", "recordatorios"]',
+        active=True
+    )
+    db.add(tenant)
+    db.commit()
+
+    apt1 = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Ana Rossi",
+        patient_phone="5493435111111",
+        doctor_or_service="Dr. González - Cardiología",
+        appointment_date=tomorrow_noon,
+        status="agendado"
+    )
+    apt2 = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Bruno Díaz",
+        patient_phone="5493435222222",
+        doctor_or_service="Dr. González - Cardiología",
+        appointment_date=tomorrow_noon + timedelta(hours=1),
+        status="agendado"
+    )
+    apt3 = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Carla Paz",
+        patient_phone="5493435333333",
+        doctor_or_service="Dr. González - Cardiología",
+        appointment_date=tomorrow_noon + timedelta(hours=2),
+        status="agendado"
+    )
+    # Different doctor - should NOT be affected
+    apt_diff = Appointment(
+        tenant_id=tenant.id,
+        patient_name="Daniel Vega",
+        patient_phone="5493435444444",
+        doctor_or_service="Dra. Gómez - Odontología",
+        appointment_date=tomorrow_noon,
+        status="agendado"
+    )
+    db.add_all([apt1, apt2, apt3, apt_diff])
+    db.commit()
+
+    with patch("app.services.whatsapp.send_whatsapp_interactive_buttons", new_callable=AsyncMock) as mock_btns, \
+         patch("app.services.whatsapp.send_owner_or_admin_alert", new_callable=AsyncMock) as mock_alert, \
+         patch("app.services.whatsapp.send_whatsapp_message", new_callable=AsyncMock) as mock_msg:
+
+        mock_btns.return_value = True
+        mock_alert.return_value = True
+        mock_msg.return_value = True
+
+        # 1. Secretary triggers contingency via natural language
+        handled, reply = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone=sec_phone,
+            message="mañana el doctor gonzalez no va a asistir por imprevisto pasarlos al jueves"
+        )
+        assert handled is True
+        assert "Protocolo de Imprevisto Activado" in reply
+
+        # Check notifications sent
+        assert mock_btns.call_count == 3  # exactly 3 patients of Dr. González
+        db.refresh(apt1)
+        db.refresh(apt2)
+        db.refresh(apt3)
+        db.refresh(apt_diff)
+        assert apt1.status == "imprevisto_medico"
+        assert apt2.status == "imprevisto_medico"
+        assert apt3.status == "imprevisto_medico"
+        assert apt_diff.status == "agendado"
+
+        # 2. Patient 1 clicks [contingency_accept_{apt1.id}]
+        h1, r1 = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone="5493435111111",
+            message="",
+            interactive_button_id=f"contingency_accept_{apt1.id}"
+        )
+        assert h1 is True
+        db.refresh(apt1)
+        assert apt1.status == "reprogramacion_aceptada"
+        assert "Muchas gracias por confirmar" in r1
+
+        # 3. Patient 2 clicks [contingency_call_{apt2.id}]
+        h2, r2 = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone="5493435222222",
+            message="",
+            interactive_button_id=f"contingency_call_{apt2.id}"
+        )
+        assert h2 is True
+        db.refresh(apt2)
+        assert apt2.status == "requiere_contacto_secretaria"
+        assert "Ya le avisamos a la secretaría" in r2
+
+        # 4. Patient 3 clicks [contingency_cancel_{apt3.id}]
+        h3, r3 = await TenantDispatcher.process_tenant_message(
+            db=db,
+            tenant=tenant,
+            phone="5493435333333",
+            message="",
+            interactive_button_id=f"contingency_cancel_{apt3.id}"
+        )
+        assert h3 is True
+        db.refresh(apt3)
+        assert apt3.status == "cancelado_por_imprevisto"
+        assert "ha sido cancelada" in r3
+
+
+
 
 

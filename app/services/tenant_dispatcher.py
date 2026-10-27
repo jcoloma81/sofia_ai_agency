@@ -50,7 +50,8 @@ class TenantDispatcher:
             "reprogramar",
             "no podré asistir", "no podre asistir",
             "tomar turno", "no, paso", "no paso",
-            "sí, confirmo", "si, confirmo", "no, reprogramar"
+            "sí, confirmo", "si, confirmo", "no, reprogramar",
+            "acepto reprogramar", "que me llamen", "cancelar turno"
         }
         is_patient_btn = bool(
             (btn_id and (
@@ -60,6 +61,7 @@ class TenantDispatcher:
                 btn_id.startswith("cancel_apt_") or
                 btn_id.startswith("fast_track_") or
                 btn_id.startswith("claim_promo_") or
+                btn_id.startswith("contingency_") or
                 btn_id.strip().lower() in template_btn_texts
             )) or (msg_lower in template_btn_texts)
         )
@@ -227,6 +229,110 @@ class TenantDispatcher:
                 return True, "Turno adelantado declinado, fecha original mantenida."
             except Exception as e:
                 logger.error(f"Error rejecting fast-track button {btn_id}: {e}")
+
+        # C5. Doctor Absence Contingency Accept Button
+        elif btn_id.startswith("contingency_accept_"):
+            try:
+                apt_id = int(btn_id.split("contingency_accept_")[1])
+                apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+                if apt:
+                    apt.status = "reprogramacion_aceptada"
+                    apt.notes = f"{apt.notes or ''} | Paciente aceptó reprogramación sugerida"
+                    db.commit()
+                    reply = (
+                        f"✅ *¡Muchas gracias por confirmar, {apt.patient_name}!* "
+                        f"Ya registramos tu aceptación para reprogramar tu consulta con {apt.doctor_or_service}. "
+                        f"La secretaría ya dejó asentada tu reserva en el nuevo horario."
+                    )
+                    await tenant_service.send_branded_notification(tenant, clean_phone, reply)
+                    if tenant.owner_phone:
+                        owner_alert = (
+                            f"✅ *Imprevisto Médico - Paciente Aceptó*\n\n"
+                            f"👤 Paciente: *{apt.patient_name}*\n"
+                            f"📱 Celular: +{clean_phone}\n"
+                            f"👨‍⚕️ Profesional: *{apt.doctor_or_service}*\n\n"
+                            f"👉 Aceptó reprogramar su consulta al día sugerido. Ya podés confirmarlo en tu agenda."
+                        )
+                        await whatsapp.send_owner_or_admin_alert(
+                            to_phone=tenant.owner_phone,
+                            fallback_text=owner_alert,
+                            business_name=tenant.name,
+                            event_type="Imprevisto: Paciente Aceptó",
+                            client_title=f"{apt.patient_name} (+{clean_phone})",
+                            details_summary=f"Aceptó reprogramar: {apt.doctor_or_service}"
+                        )
+                    return True, reply
+            except Exception as e:
+                logger.error(f"Error handling contingency_accept {btn_id}: {e}")
+
+        # C6. Doctor Absence Contingency Call Secretary Button
+        elif btn_id.startswith("contingency_call_"):
+            try:
+                apt_id = int(btn_id.split("contingency_call_")[1])
+                apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+                if apt:
+                    apt.status = "requiere_contacto_secretaria"
+                    apt.notes = f"{apt.notes or ''} | Paciente pide llamado de secretaría"
+                    db.commit()
+                    reply = (
+                        f"📞 *Entendido, {apt.patient_name}.* "
+                        f"Ya le avisamos a la secretaría de {tenant.name} para que se comunique con vos a la brevedad "
+                        f"y coordinen juntos el día y horario que mejor te quede. ¡Muchas gracias por tu comprensión!"
+                    )
+                    await tenant_service.send_branded_notification(tenant, clean_phone, reply)
+                    if tenant.owner_phone:
+                        owner_alert = (
+                            f"📞 *Imprevisto Médico - Pide Llamado*\n\n"
+                            f"👤 Paciente: *{apt.patient_name}*\n"
+                            f"📱 Celular: +{clean_phone}\n"
+                            f"👨‍⚕️ Profesional: *{apt.doctor_or_service}*\n\n"
+                            f"👉 No puede el día sugerido y pide que lo contactes para coordinar otra fecha."
+                        )
+                        await whatsapp.send_owner_or_admin_alert(
+                            to_phone=tenant.owner_phone,
+                            fallback_text=owner_alert,
+                            business_name=tenant.name,
+                            event_type="Imprevisto: Pide Llamado",
+                            client_title=f"{apt.patient_name} (+{clean_phone})",
+                            details_summary=f"Pide llamado para fecha: {apt.doctor_or_service}"
+                        )
+                    return True, reply
+            except Exception as e:
+                logger.error(f"Error handling contingency_call {btn_id}: {e}")
+
+        # C7. Doctor Absence Contingency Cancel Button
+        elif btn_id.startswith("contingency_cancel_"):
+            try:
+                apt_id = int(btn_id.split("contingency_cancel_")[1])
+                apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+                if apt:
+                    apt.status = "cancelado_por_imprevisto"
+                    apt.notes = f"{apt.notes or ''} | Paciente canceló por imprevisto médico"
+                    db.commit()
+                    reply = (
+                        f"Entendido, *{apt.patient_name}*. Tu consulta con {apt.doctor_or_service} ha sido cancelada sin penalización. "
+                        f"Cuando desees volver a solicitar turno, escribinos por este mismo medio y te atenderemos con gusto. ¡Que tengas un buen día!"
+                    )
+                    await tenant_service.send_branded_notification(tenant, clean_phone, reply)
+                    if tenant.owner_phone:
+                        owner_alert = (
+                            f"❌ *Imprevisto Médico - Paciente Canceló*\n\n"
+                            f"👤 Paciente: *{apt.patient_name}*\n"
+                            f"📱 Celular: +{clean_phone}\n"
+                            f"👨‍⚕️ Profesional: *{apt.doctor_or_service}*\n\n"
+                            f"👉 Prefirió cancelar definitivamente su consulta."
+                        )
+                        await whatsapp.send_owner_or_admin_alert(
+                            to_phone=tenant.owner_phone,
+                            fallback_text=owner_alert,
+                            business_name=tenant.name,
+                            event_type="Imprevisto: Canceló",
+                            client_title=f"{apt.patient_name} (+{clean_phone})",
+                            details_summary=f"Canceló consulta: {apt.doctor_or_service}"
+                        )
+                    return True, reply
+            except Exception as e:
+                logger.error(f"Error handling contingency_cancel {btn_id}: {e}")
 
         # D. Claim Promo Button
         elif btn_id.startswith("claim_promo_"):
@@ -620,8 +726,13 @@ class TenantDispatcher:
         is_appointment = any(w in msg_lower for w in ["anota a", "anotá a", "agendar a", "agendá a", "turno para", "turno el"])
         is_waitlist = any(w in msg_lower for w in ["lista de espera", "anotar en espera", "sumar a espera"])
         is_holiday = any(w in msg_lower for w in ["feriado", "no abrimos", "cerrado el", "no atendemos"])
+        is_absence = any(w in msg_lower for w in [
+            "no atiende", "no va a atender", "no asiste", "no va a asistir",
+            "no viene", "no va a venir", "imprevisto", "ausente", "faltazo",
+            "fuerza mayor", "cancela turnos", "contingencia"
+        ])
 
-        if not (is_price_change or is_appointment or is_waitlist or is_holiday):
+        if not (is_price_change or is_appointment or is_waitlist or is_holiday or is_absence):
             return None
 
         prompt = f"""
@@ -635,13 +746,14 @@ El dueño o secretaria te acaba de enviar esta instrucción por WhatsApp:
 
 Debes clasificar la acción y responder estrictamente un JSON válido con esta estructura:
 {{
-  "action": "UPDATE_PRICE" | "CREATE_APPOINTMENT" | "ADD_WAITLIST" | "ADD_HOLIDAY_NOTE" | "UNKNOWN",
+  "action": "UPDATE_PRICE" | "CREATE_APPOINTMENT" | "ADD_WAITLIST" | "ADD_HOLIDAY_NOTE" | "DOCTOR_ABSENCE" | "UNKNOWN",
   "plan_or_service": "nombre del plan o servicio modificado",
   "new_price": 55000 (número si aplica o null),
   "patient_or_member_name": "nombre de la persona",
   "phone": "número de celular con código de área si se menciona",
   "doctor_or_service": "profesional o servicio",
   "date_time_str": "descripción de fecha y hora (ej: jueves 16:00 hs)",
+  "alternative_day_str": "día u opción sugerida para reprogramar (ej: el jueves, próximo día de atención)",
   "reply_to_owner": "Mensaje cordial y ejecutivo confirmando el cambio exacto realizado en el sistema."
 }}
 """
@@ -680,6 +792,27 @@ Debes clasificar la acción y responder estrictamente un JSON válido con esta e
                         "plan_or_service": "cuota",
                         "new_price": new_num,
                         "reply_to_owner": f"He actualizado el precio a ${new_num:,.0f} ARS con éxito."
+                    }
+
+            # Regex fallback for doctor absence / contingency
+            if not parsed:
+                imprevisto_keywords = [
+                    "no atiende", "no va a atender", "no asiste", "no va a asistir",
+                    "no viene", "no va a venir", "imprevisto", "ausente", "faltazo", "cancela turnos"
+                ]
+                if any(k in msg_lower for k in imprevisto_keywords) and any(w in msg_lower for w in ["dr", "dra", "doctor", "doctora", "odontolog", "medico", "médico", "gonzalez", "gomez", "perez", "rossi", "garcia"]):
+                    doc_match = re.search(r'(?:dr\.|dra\.|doctor\s+|doctora\s+)([A-Za-záéíóúñÁÉÍÓÚÑ]+)', message, re.IGNORECASE)
+                    doc_found = f"Dr. {doc_match.group(1)}" if doc_match else "Profesional"
+
+                    alt_match = re.search(r'(?:pasarlos al|pasar al|para el|el día|el proximo|el próximo)\s+([a-záéíóúñ]+)', msg_lower)
+                    alt_day = f"el {alt_match.group(1).capitalize()}" if alt_match else "el próximo día de atención"
+
+                    parsed = {
+                        "action": "DOCTOR_ABSENCE",
+                        "doctor_or_service": doc_found,
+                        "date_time_str": "hoy" if "hoy" in msg_lower else "mañana",
+                        "alternative_day_str": alt_day,
+                        "reply_to_owner": "Protocolo de imprevisto activado por regla directa."
                     }
 
             if parsed:
@@ -801,6 +934,37 @@ Debes clasificar la acción y responder estrictamente un JSON válido con esta e
                     tenant.knowledge_base = json.dumps(kb, ensure_ascii=False)
                     db.commit()
                     return f"✅ *¡Aviso registrado!* A partir de ahora informaré: \"{message}\"."
+
+                elif action == "DOCTOR_ABSENCE":
+                    doc_target = parsed.get("doctor_or_service") or "Profesional"
+                    dt_str = parsed.get("date_time_str") or "mañana"
+                    alt_day = parsed.get("alternative_day_str") or "el próximo día de atención"
+
+                    now = utc_now()
+                    local_now = now - timedelta(hours=3)
+                    combined = f"{message} {dt_str}".lower()
+                    if "hoy" in combined:
+                        t_date = local_now
+                    elif "pasado mañana" in combined or "pasado manana" in combined:
+                        t_date = local_now + timedelta(days=2)
+                    else:
+                        t_date = local_now + timedelta(days=1)
+
+                    res = await appointment_service.trigger_doctor_absence_contingency(
+                        db=db,
+                        tenant_id=tenant.id,
+                        doctor_query=doc_target,
+                        target_date=t_date,
+                        alternative_day_text=alt_day
+                    )
+                    found = res.get("patients_found", 0)
+                    notified = res.get("patients_notified", 0)
+                    return (
+                        f"🛡️ *¡Protocolo de Imprevisto Activado!*\n\n"
+                        f"Se detectaron *{found}* turnos de *{doc_target}* para el {res.get('target_date', 'día indicado')}.\n"
+                        f"Se enviaron *{notified}* notificaciones por WhatsApp ofreciendo reprogramar para *{alt_day}*.\n"
+                        f"Te iré avisando en tiempo real a medida que cada paciente elija su preferencia."
+                    )
 
                 return reply
         except Exception as err:
