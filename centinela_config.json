@@ -1,0 +1,6 @@
+{
+    "tenant_slug": "clinica_alvear",
+    "excel_file": "Turnos.xlsx",
+    "server_url": "https://sofia-ai-agency.onrender.com",
+    "check_interval_seconds": 2
+}

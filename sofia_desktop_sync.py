@@ -140,47 +140,123 @@ def send_to_sofia(server_url, tenant_slug, rows):
     except Exception as e:
         return False, str(e)
 
+def get_base_dir():
+    """Retorna el directorio base del script o del ejecutable empaquetado con PyInstaller."""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+def load_or_create_config(base_dir, config_name="centinela_config.json"):
+    """Carga la configuración desde JSON o crea una plantilla si no existe."""
+    config_path = os.path.join(base_dir, config_name)
+    default_cfg = {
+        "tenant_slug": "clinica_alvear",
+        "excel_file": "Turnos.xlsx",
+        "server_url": "https://sofia-ai-agency.onrender.com",
+        "check_interval_seconds": 2
+    }
+    
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data, config_path
+        except Exception as e:
+            print(f"⚠️ Aviso: Error al leer {config_path}: {e}. Usando valores por defecto.")
+            return default_cfg, config_path
+    
+    # Si no existe, creamos la plantilla por defecto
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(default_cfg, f, indent=4, ensure_ascii=False)
+        print(f"📄 Se generó el archivo de configuración inicial en: {config_path}")
+    except Exception as e:
+        print(f"⚠️ No se pudo guardar plantilla de configuración: {e}")
+        
+    return default_cfg, config_path
+
 def main():
+    base_dir = get_base_dir()
+    cfg, config_path = load_or_create_config(base_dir)
+
     parser = argparse.ArgumentParser(description="Centinela Sofía Desktop - Sincronizador de Excel Local")
-    parser.add_argument("--file", "-f", required=False, default="Turnos.xlsx",
+    parser.add_argument("--file", "-f", required=False, default=None,
                         help="Ruta al archivo de Excel a monitorear (ej: Turnos.xlsx)")
-    parser.add_argument("--slug", "-s", required=False, default="clinica_alvear",
+    parser.add_argument("--slug", "-s", required=False, default=None,
                         help="Slug o identificador del negocio en Sofía (ej: clinica_alvear)")
-    parser.add_argument("--server", required=False, default="https://sofia-ai-agency.onrender.com",
+    parser.add_argument("--server", required=False, default=None,
                         help="URL del servidor de Sofía (defecto: Render Producción)")
+    parser.add_argument("--interval", "-i", type=int, required=False, default=None,
+                        help="Intervalo de verificación en segundos")
     args = parser.parse_args()
 
-    file_path = os.path.abspath(args.file)
+    # Prioridad: argumentos CLI > valores en centinela_config.json > defaults
+    slug = args.slug or cfg.get("tenant_slug") or "clinica_alvear"
+    server_url = args.server or cfg.get("server_url") or "https://sofia-ai-agency.onrender.com"
+    raw_file = args.file or cfg.get("excel_file") or "Turnos.xlsx"
+    interval = args.interval or cfg.get("check_interval_seconds") or 2
+
+    # Resolver ruta del archivo (absoluta o relativa a la carpeta del Centinela)
+    if os.path.isabs(raw_file):
+        file_path = raw_file
+    else:
+        file_candidate = os.path.join(base_dir, raw_file)
+        if os.path.exists(file_candidate):
+            file_path = file_candidate
+        else:
+            file_path = os.path.abspath(raw_file)
+
+    if sys.platform == "win32":
+        try:
+            os.system(f"title Sofía Centinela - {slug}")
+        except Exception:
+            pass
+
     print("\n" + "=" * 65)
     print(" 🤖 SOFÍA DESKTOP SYNC - CENTINELA DE EXCEL EN VIVO")
     print("=" * 65)
-    print(f" • Negocio:          {args.slug}")
+    print(f" • Negocio / Tenant: {slug}")
     print(f" • Archivo Excel:    {file_path}")
-    print(f" • Servidor Central: {args.server}")
+    print(f" • Configuración:    {config_path}")
+    print(f" • Servidor Central: {server_url}")
+    print(f" • Intervalo:        Cada {interval} segundos")
     print("-" * 65)
     print("💡 El centinela está activo. Cada vez que guardes el Excel,")
     print("   Sofía actualizará la base de datos automáticamente.\n")
 
     last_mtime = 0
+    file_warned = False
+
     if os.path.exists(file_path):
         last_mtime = os.path.getmtime(file_path)
         # Sincronización inicial al arrancar
         print("⏳ Ejecutando sincronización inicial...")
         rows = read_excel_rows(file_path)
         if rows:
-            ok, res = send_to_sofia(args.server, args.slug, rows)
+            ok, res = send_to_sofia(server_url, slug, rows)
             if ok:
                 print(f"✅ [Inicio] {res.get('created_count', 0)} creados, {res.get('updated_count', 0)} actualizados.")
             else:
                 print(f"⚠️ [Inicio] Aviso: {res}")
         else:
             print("ℹ️ Archivo sin filas de datos por el momento.")
+    else:
+        print(f"⚠️ El archivo '{os.path.basename(file_path)}' aún no existe en esa ruta.")
+        print(f"   El Centinela esperará a que sea colocado o creado allí...\n")
+        file_warned = True
 
     while True:
         try:
-            time.sleep(2) # Verifica cada 2 segundos
+            time.sleep(interval)
             if not os.path.exists(file_path):
+                if not file_warned:
+                    print(f"⚠️ [{time.strftime('%H:%M:%S')}] Esperando que aparezca el archivo: {file_path}")
+                    file_warned = True
                 continue
+
+            if file_warned:
+                print(f"✅ [{time.strftime('%H:%M:%S')}] Archivo detectado: {file_path}")
+                file_warned = False
 
             current_mtime = os.path.getmtime(file_path)
             if current_mtime > last_mtime:
@@ -192,7 +268,7 @@ def main():
 
                 rows = read_excel_rows(file_path)
                 if rows:
-                    ok, res = send_to_sofia(args.server, args.slug, rows)
+                    ok, res = send_to_sofia(server_url, slug, rows)
                     if ok:
                         print(f"✅ [{t_str}] Sincronización Exitosa: {res.get('created_count', 0)} creados, {res.get('updated_count', 0)} actualizados.")
                     else:
