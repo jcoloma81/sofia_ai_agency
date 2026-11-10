@@ -624,6 +624,24 @@ class TenantDispatcher:
                     f"1. Reconocé a {past_patient.customer_name} saludándolo cordialmente por su nombre.\n"
                     f"2. Mostrá cercanía: si pide turno o consulta, ofrecé agendarlo{prof_info} o preguntale en qué podés ayudarlo hoy.\n"
                 )
+            else:
+                # Also check historical appointments in Appointment table (e.g. appointments from past months)
+                past_apt = db.query(Appointment).filter(
+                    Appointment.tenant_id == tenant.id,
+                    Appointment.patient_phone == clean_phone
+                ).order_by(Appointment.appointment_date.desc()).first()
+                if past_apt:
+                    prof_info = f" con {past_apt.doctor_or_service}" if past_apt.doctor_or_service else ""
+                    last_dt = format_appointment_datetime(past_apt.appointment_date) if past_apt.appointment_date else "fecha anterior"
+                    system_prompt += (
+                        f"\n\nDATOS DEL PACIENTE HISTÓRICO QUE TE ESTÁ ESCRIBIENDO:\n"
+                        f"- Nombre del paciente: {past_apt.patient_name}\n"
+                        f"- Profesional habitual: {past_apt.doctor_or_service or 'Consulta Médica General'}\n"
+                        f"- Última atención registrada: {last_dt}\n\n"
+                        f"PAUTAS ESPECÍFICAS DE RESPUESTA:\n"
+                        f"1. Reconocé a {past_apt.patient_name} saludándolo cordialmente por su nombre.\n"
+                        f"2. Mostrá cercanía: reconocé que es un paciente habitual que ya se atendió en la clínica{prof_info}. Si pide turno o consulta, ofrecé agendarlo{prof_info} o preguntale en qué podés ayudarlo hoy.\n"
+                    )
 
         ai_reply = None
 
