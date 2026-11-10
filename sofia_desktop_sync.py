@@ -215,7 +215,15 @@ def main():
         if os.path.exists(file_candidate):
             file_path = file_candidate
         else:
-            file_path = os.path.abspath(raw_file)
+            # Auto-detección inteligente: si no existe Turnos.xlsx, buscar cualquier .xlsx en la carpeta
+            xlsx_candidates = [
+                f for f in os.listdir(base_dir)
+                if f.lower().endswith(('.xlsx', '.xls')) and not f.startswith('~$')
+            ] if os.path.exists(base_dir) else []
+            if xlsx_candidates:
+                file_path = os.path.join(base_dir, xlsx_candidates[0])
+            else:
+                file_path = os.path.abspath(raw_file)
 
     if sys.platform == "win32":
         try:
