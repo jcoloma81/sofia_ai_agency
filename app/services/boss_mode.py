@@ -657,6 +657,19 @@ async def generate_boss_ai_response(
     human_takeover = db.query(Prospect).filter(Prospect.status == "human_takeover").count()
     orders = db.query(Prospect).filter(Prospect.status == "order_confirmed").count()
 
+    # Query real appointments across all client clinics/tenants
+    from app.models.tenant import Appointment, Tenant
+    clinic_apts = db.query(Appointment, Tenant).join(Tenant, Appointment.tenant_id == Tenant.id)\
+        .filter(Appointment.status.in_(["agendado", "confirmado", "en_oferta_lista_espera"]))\
+        .order_by(Appointment.appointment_date.asc()).limit(15).all()
+
+    clinic_agenda_lines = []
+    for apt, t in clinic_apts:
+        dt_str = apt.appointment_date.strftime("%d/%m/%Y a las %H:%M hs") if apt.appointment_date else "Sin fecha"
+        doc_str = f" con {apt.doctor_or_service}" if apt.doctor_or_service else ""
+        clinic_agenda_lines.append(f"  • {t.name}: {apt.patient_name} (+{apt.patient_phone}) — {dt_str}{doc_str} [Estado: {apt.status}]")
+    clinic_agenda_txt = "\n".join(clinic_agenda_lines) if clinic_agenda_lines else "Ninguno agendado actualmente."
+
     from app.services.directives import directives_service
     directives_ctx = directives_service.get_prompt_context()
     catalog_preview = catalog_service.get_summary_prompt(max_items=15) if catalog_service.products else ""
@@ -685,11 +698,17 @@ ESTADO DEL SISTEMA EN TIEMPO REAL:
 - Línea oficial WhatsApp: Meta Cloud API (+54 9 343 572-0312), calidad Verde, 100% activa.
 - Prospectos registrados: {total_prospects}
 - En conversación activa: {in_conversation}
-- Citas/Reuniones agendadas: {meetings}
+- Citas/Reuniones agendadas de la agencia: {meetings}
 - Pedidos confirmados: {orders}
 - En atención manual (pausados): {human_takeover}
 - Catálogo: {cat_summary}
 - Directivas comerciales: {directives_ctx or 'Estándar'}
+
+TURNOS REALES AGENDADOS EN LOS CLIENTES/CONSULTORIOS (BASE DE DATOS EN VIVO):
+{clinic_agenda_txt}
+
+REGLA ESTRICTA SOBRE TURNOS:
+Si Javier te pregunta por los turnos de los consultorios o clientes de la agencia, respondé basándote ÚNICA Y EXCLUSIVAMENTE en la lista de turnos reales arriba. Mencioná la clínica, el nombre del paciente, la fecha, hora y doctor tal cual figura en la base de datos. NUNCA inventes nombres de doctores o clínicas.
 """
 
     if not gemini_key:

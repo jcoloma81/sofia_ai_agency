@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.prospect import Prospect, WebhookEvent
+from app.models.tenant import Tenant
 from app.services import brain, whatsapp
 from app.config.settings import settings
 from app.services.boss_mode import is_boss_number, process_boss_message
@@ -449,7 +450,70 @@ async def receive_whatsapp_webhook(
         "estado sofia", "status sofia", "recordatorios ahora", "enviar recordatorios", "recordar ahora"
     )
     is_tenant_secretary_cmd = any(k in msg_lower_check for k in secretary_cmd_keywords)
-    if is_boss_number(clean_phone) and not is_appointment_button and not is_tenant_secretary_cmd:
+
+    # Check if boss is explicitly targeting a tenant via hashtag (e.g. #alvear, #clinica_alvear) or in patient simulation
+    is_boss_tenant_override = False
+    if is_boss_number(clean_phone):
+        boss_rec = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
+        first_w = msg_lower_check.split()[0] if msg_lower_check else ""
+        
+        # A. Hashtag direct routing: #alvear, #clinica_alvear, etc.
+        if first_w.startswith("#"):
+            tag = first_w.lstrip("#")
+            for t in db.query(Tenant).filter(Tenant.active == True).all():
+                candidate_tags = [t.slug.lower(), (t.deep_link_keyword or "").lower(), t.slug.replace("clinica_", "").lower()]
+                if tag in candidate_tags:
+                    is_boss_tenant_override = True
+                    message = re.sub(r'^#[a-zA-Z0-9_-]+\s*', '', message).strip()
+                    from app.services.tenant_service import TenantService
+                    TenantService.set_active_session(db, clean_phone, t.slug)
+                    logger.info(f"🎯 Boss hashtag override routed to tenant '{t.slug}': message='{message}'")
+                    break
+
+        # B. Persistent patient simulation command (e.g. 'modo paciente alvear', 'simular paciente alvear')
+        elif any(msg_lower_check.startswith(prefix) for prefix in ["modo paciente ", "simular paciente "]):
+            target_slug_arg = msg_lower_check.split()[-1].strip()
+            target_t = None
+            for t in db.query(Tenant).filter(Tenant.active == True).all():
+                if target_slug_arg in [t.slug.lower(), (t.deep_link_keyword or "").lower(), t.slug.replace("clinica_", "").lower()]:
+                    target_t = t
+                    break
+            if target_t:
+                if not boss_rec:
+                    boss_rec = Prospect(phone=clean_phone, name="Javier Coloma (Director)", campaign="boss_mode", status="director")
+                    db.add(boss_rec)
+                boss_rec.status = "in_conversation"
+                boss_rec.campaign = f"tenant_sim_{target_t.slug}"
+                db.commit()
+                from app.services.tenant_service import TenantService
+                TenantService.set_active_session(db, clean_phone, target_t.slug)
+                sim_reply = (
+                    f"🎭 *¡Modo Paciente Activado para {target_t.name}!* 🏥\n\n"
+                    f"A partir de ahora Sofía te atiende como la recepcionista médica de la clínica.\n"
+                    f"Podés consultar tus turnos, pedir cambios o simular ser un paciente.\n\n"
+                    f"💡 *Para volver a Modo Jefe en cualquier momento, escribí:* `modo jefe`"
+                )
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=sim_reply)
+                return {"status": "success", "action": "tenant_simulation_started", "reply": sim_reply}
+
+        # C. If in active patient simulation, route to tenant unless boss says 'modo jefe' or 'salir'
+        elif boss_rec and boss_rec.campaign and boss_rec.campaign.startswith("tenant_sim_") and boss_rec.status == "in_conversation":
+            if msg_lower_check in ["modo jefe", "salir", "fin prueba", "terminar prueba", "salir de prueba"]:
+                boss_rec.status = "director"
+                boss_rec.name = "Javier Coloma (Director)"
+                boss_rec.campaign = "boss_mode"
+                db.commit()
+                revert_msg = "✅ Simulación de paciente finalizada. Has vuelto a Modo Jefe (Director)."
+                await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=revert_msg)
+                return {"status": "success", "action": "exit_simulation", "reply": revert_msg}
+            sim_slug = boss_rec.campaign.replace("tenant_sim_", "")
+            from app.services.tenant_service import TenantService
+            target_t = TenantService.get_tenant_by_slug(db, sim_slug)
+            if target_t:
+                is_boss_tenant_override = True
+                TenantService.set_active_session(db, clean_phone, target_t.slug)
+
+    if is_boss_number(clean_phone) and not is_appointment_button and not is_tenant_secretary_cmd and not is_boss_tenant_override:
         boss_record = db.query(Prospect).filter(Prospect.phone == clean_phone).first()
 
         # Check if boss is running a live Prospect Simulation
