@@ -54,44 +54,55 @@ def read_excel_rows(file_path):
     if HAS_PANDAS:
         try:
             if ext in [".xlsx", ".xls"]:
-                df = pd.read_excel(file_path)
+                all_sheets = pd.read_excel(file_path, sheet_name=None)
+                all_records = []
+                for sheet_name, df in all_sheets.items():
+                    df = df.dropna(how="all")
+                    for col in df.select_dtypes(include=['datetime', 'datetimetz']).columns:
+                        df[col] = df[col].dt.strftime('%d/%m/%Y %H:%M')
+                    records = df.where(pd.notnull(df), None).to_dict(orient="records")
+                    for row in records:
+                        row["_sheet"] = sheet_name
+                        for k, v in list(row.items()):
+                            row[k] = _format_cell_value(v)
+                        all_records.append(row)
+                return all_records
             elif ext == ".csv":
                 df = pd.read_csv(file_path)
+                df = df.dropna(how="all")
+                for col in df.select_dtypes(include=['datetime', 'datetimetz']).columns:
+                    df[col] = df[col].dt.strftime('%d/%m/%Y %H:%M')
+                records = df.where(pd.notnull(df), None).to_dict(orient="records")
+                for row in records:
+                    for k, v in list(row.items()):
+                        row[k] = _format_cell_value(v)
+                return records
             else:
                 return []
-            
-            df = df.dropna(how="all")
-            for col in df.select_dtypes(include=['datetime', 'datetimetz']).columns:
-                df[col] = df[col].dt.strftime('%d/%m/%Y %H:%M')
-            
-            records = df.where(pd.notnull(df), None).to_dict(orient="records")
-            for row in records:
-                for k, v in list(row.items()):
-                    row[k] = _format_cell_value(v)
-            return records
         except Exception as e:
             print(f"⚠️ Error al leer con pandas: {e}")
 
-    # 2. Lectura nativa de .xlsx con openpyxl (liviano y estándar)
+    # 2. Lectura nativa de .xlsx con openpyxl (todas las hojas: Turnos + Padrón de Pacientes)
     if ext == ".xlsx" and HAS_OPENPYXL:
         try:
             wb = openpyxl.load_workbook(file_path, data_only=True)
-            ws = wb.active
-            rows_iter = list(ws.iter_rows(values_only=True))
-            wb.close()
-            if len(rows_iter) < 2:
-                return []
-            headers = [str(h).strip() if h is not None else f"col_{i}" for i, h in enumerate(rows_iter[0])]
-            records = []
-            for r in rows_iter[1:]:
-                if not any(cell is not None and str(cell).strip() != "" for cell in r):
+            all_records = []
+            for sheet_name in wb.sheetnames:
+                ws = wb[sheet_name]
+                rows_iter = list(ws.iter_rows(values_only=True))
+                if len(rows_iter) < 2:
                     continue
-                row_dict = {}
-                for idx, h in enumerate(headers):
-                    val = r[idx] if idx < len(r) else None
-                    row_dict[h] = _format_cell_value(val)
-                records.append(row_dict)
-            return records
+                headers = [str(h).strip() if h is not None else f"col_{i}" for i, h in enumerate(rows_iter[0])]
+                for r in rows_iter[1:]:
+                    if not any(cell is not None and str(cell).strip() != "" for cell in r):
+                        continue
+                    row_dict = {"_sheet": sheet_name}
+                    for idx, h in enumerate(headers):
+                        val = r[idx] if idx < len(r) else None
+                        row_dict[h] = _format_cell_value(val)
+                    all_records.append(row_dict)
+            wb.close()
+            return all_records
         except Exception as e:
             print(f"⚠️ Error al leer con openpyxl: {e}")
 

@@ -9,6 +9,8 @@ echo.
 
 if exist "%~dp0Sofia_Centinela.exe" (
     "%~dp0Sofia_Centinela.exe"
+) else if exist "%~dp0sofia_desktop_sync.py" (
+    python "%~dp0sofia_desktop_sync.py"
 ) else (
     python "%~dp0..\sofia_desktop_sync.py"
 )

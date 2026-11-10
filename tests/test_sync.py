@@ -191,3 +191,59 @@ def test_sync_workshop_order_notification(db_session):
     cust = db_session.query(InactiveCustomer).filter(InactiveCustomer.customer_name == "Carlos Martínez").first()
     assert cust is not None
     assert cust.status == "listo_para_retirar"
+
+def test_sync_historical_patients_padron(db_session):
+    """
+    Verifies that the Centinela can ingest a master historical patient roster (Padrón de Pacientes)
+    without appointment dates, storing records idempotently in InactiveCustomer.
+    """
+    client = TestClient(app)
+    # Clean previous records if any
+    db_session.query(InactiveCustomer).filter(
+        InactiveCustomer.tenant_id == 1,
+        InactiveCustomer.customer_phone.in_(["5493434110011", "5493434220022"])
+    ).delete()
+    db_session.commit()
+
+    padron_payload = {
+        "source": "desktop_excel",
+        "rows": [
+            {
+                "_sheet": "Pacientes_Historicos",
+                "paciente": "María Eugenia Rossi",
+                "telefono": "3434110011",
+                "profesional": "Dr. Carlos García - Odontología",
+                "notas": "Implante molar izquierdo 2024. Control semestral recomendado."
+            },
+            {
+                "_sheet": "Pacientes_Historicos",
+                "paciente": "Jorge Alarcón",
+                "telefono": "3434220022",
+                "profesional": "Dra. Silvina Gómez - Ortodoncia",
+                "notas": "Tratamiento brackets completado."
+            }
+        ]
+    }
+
+    # 1. First sync pass
+    resp1 = client.post("/api/v1/sync/clinica_test", json=padron_payload)
+    assert resp1.status_code == 200
+    data1 = resp1.json()
+    assert data1["status"] == "success"
+    assert data1["created_count"] == 2
+    assert data1["updated_count"] == 0
+
+    # Verify Maria in DB
+    maria = db_session.query(InactiveCustomer).filter(InactiveCustomer.customer_phone == "5493434110011").first()
+    assert maria is not None
+    assert maria.customer_name == "María Eugenia Rossi"
+    assert "García" in maria.service_or_product
+    assert maria.campaign_name == "padron_historico"
+
+    # 2. Second sync pass (Idempotency test: Ctrl + G by secretary)
+    resp2 = client.post("/api/v1/sync/clinica_test", json=padron_payload)
+    assert resp2.status_code == 200
+    data2 = resp2.json()
+    assert data2["created_count"] == 0
+    assert data2["updated_count"] == 2
+

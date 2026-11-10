@@ -71,8 +71,8 @@ En la computadora de la recepción de la clínica:
    ```text
    instalar_en_inicio_windows.bat
    ```
-   * El script creará automáticamente el acceso directo en la carpeta de inicio de Windows.
-   * Te preguntará si querés iniciar el Centinela ahora mismo. Presionás **S** (Sí).
+   * El script crea automáticamente el acceso directo en el inicio de Windows y arranca el Centinela al instante.
+   * La ventana se cierra sola a los 3 segundos. ¡Cero clics extra!
 
 #### 💡 Alternativa Manual (si la computadora tiene bloqueado PowerShell):
 1. Clic derecho en `Sofia_Centinela.exe` ➡️ **"Crear acceso directo"**.

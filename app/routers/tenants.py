@@ -303,6 +303,18 @@ async def trigger_cutoff_cancellations(
     results = await appointment_service.execute_all_cutoff_auto_cancellations(db, tenant_id=tenant_id)
     return {"status": "success", "results": results}
 
+@router.post("/cron/run-daily-doctor-report")
+async def trigger_daily_doctor_report(
+    tenant_id: Optional[int] = Query(None, description="Optional tenant_id for a single clinic"),
+    db: Session = Depends(get_db)
+):
+    """
+    CRON Reporte Diario de las 20:00 hs (Efecto Retención):
+    Dispatches evening activity balance and tomorrow's agenda preview directly to the doctor's WhatsApp.
+    """
+    results = await appointment_service.broadcast_daily_doctor_closing_reports(db, tenant_id=tenant_id)
+    return {"status": "success", "results": results}
+
 @router.post("/cron/run-billing-reminders")
 async def trigger_billing_reminders(db: Session = Depends(get_db)):
     count = await billing_service.scan_and_send_due_reminders(db)

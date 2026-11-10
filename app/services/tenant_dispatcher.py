@@ -158,6 +158,53 @@ class TenantDispatcher:
                 count = await appointment_service.execute_cutoff_auto_cancellations(db, tenant.id)
                 return True, f"Comando de secretaría: {count} turnos liberados."
 
+            # H. RAG Orgánico (Human-in-the-Loop): Check for pending patient inquiry
+            from app.models.tenant import TenantInquiry
+            pending_inquiry = db.query(TenantInquiry).filter(
+                TenantInquiry.tenant_id == tenant.id,
+                TenantInquiry.status == "pending_secretary"
+            ).order_by(TenantInquiry.id.desc()).first()
+
+            if pending_inquiry:
+                # Secretary is answering the pending question!
+                clean_answer = msg_clean.strip()
+                patient_reply = (
+                    f"¡Hola {pending_inquiry.patient_name}! 👋 Te confirmo la información que consulté con la administración de *{tenant.name}*:\n\n"
+                    f"📢 *Información:* {clean_answer}\n\n"
+                    f"¿Te gustaría que te reserve un turno o necesitás consultar algún otro detalle?"
+                )
+                await tenant_service.send_branded_notification(tenant, pending_inquiry.patient_phone, patient_reply)
+
+                # Memorize in Tenant knowledge_base
+                try:
+                    kb = json.loads(tenant.knowledge_base or "{}")
+                    if not isinstance(kb, dict):
+                        kb = {}
+                    learned = kb.get("learned_faqs", [])
+                    learned.append({
+                        "question": pending_inquiry.question,
+                        "answer": clean_answer,
+                        "learned_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    kb["learned_faqs"] = learned
+                    tenant.knowledge_base = json.dumps(kb, ensure_ascii=False)
+                except Exception as kb_err:
+                    logger.warning(f"Error updating learned_faqs in tenant KB: {kb_err}")
+
+                pending_inquiry.answer = clean_answer
+                pending_inquiry.status = "answered"
+                pending_inquiry.answered_at = datetime.now(timezone.utc)
+                db.commit()
+
+                ack_msg = (
+                    f"✅ *¡Respuesta enviada al paciente y memorizada con éxito!* 🧠\n\n"
+                    f"👤 *Paciente:* {pending_inquiry.patient_name} (+{pending_inquiry.patient_phone})\n"
+                    f"💾 *Aprendido en memoria:* Ante consultas sobre *\"{pending_inquiry.question}\"*, responderé: _«{clean_answer}»_.\n\n"
+                    f"No volveré a consultarte por esto en el futuro."
+                )
+                await whatsapp.send_whatsapp_message(tenant.owner_phone, ack_msg)
+                return True, ack_msg
+
             # AI-Powered Owner Management Command Parser (Voice & Text)
             admin_reply = await TenantDispatcher.process_owner_instruction(db, tenant, msg_clean)
             if admin_reply:
@@ -559,6 +606,24 @@ class TenantDispatcher:
                 f"3. Si el paciente pregunta por cambiar de horario o reprogramar ('¿puedo cambiar?', '¿para qué hora tenés el viernes?'), "
                 f"mencioná su turno actual ({date_fmt}) y preguntale qué día y horario preferiría para coordinarlo con la secretaría.\n"
             )
+        else:
+            # Check if patient is registered in the Historical Master Padrón (InactiveCustomer)
+            past_patient = db.query(InactiveCustomer).filter(
+                InactiveCustomer.tenant_id == tenant.id,
+                InactiveCustomer.customer_phone == clean_phone
+            ).order_by(InactiveCustomer.id.desc()).first()
+
+            if past_patient:
+                prof_info = f" con {past_patient.service_or_product}" if past_patient.service_or_product else ""
+                system_prompt += (
+                    f"\n\nDATOS DEL PACIENTE HISTÓRICO QUE TE ESTÁ ESCRIBIENDO:\n"
+                    f"- Nombre del paciente: {past_patient.customer_name}\n"
+                    f"- Profesional o tratamiento habitual: {past_patient.service_or_product or 'Consulta Médica General'}\n"
+                    f"- Notas de su ficha histórica: {past_patient.response_notes or 'Paciente de la clínica'}\n\n"
+                    f"PAUTAS ESPECÍFICAS DE RESPUESTA:\n"
+                    f"1. Reconocé a {past_patient.customer_name} saludándolo cordialmente por su nombre.\n"
+                    f"2. Mostrá cercanía: si pide turno o consulta, ofrecé agendarlo{prof_info} o preguntale en qué podés ayudarlo hoy.\n"
+                )
 
         ai_reply = None
 
@@ -646,6 +711,40 @@ class TenantDispatcher:
             ai_reply = ai_reply.replace("[CANCEL_APPOINTMENT_INTENT]", "").strip()
             logger.info(f"🛑 Intent cancellation detected in chat for patient '{active_apt.patient_name}' (Turno #{active_apt.id}). Executing cancel_and_fill_gap...")
             await appointment_service.cancel_and_fill_gap(db, active_apt.id, reason=f"Cancelación informada por chat: '{msg_clean}'")
+
+        # Handle Organic RAG / Human-in-the-Loop Inquiry
+        if "[CONSULTAR_ADMINISTRACION:" in ai_reply:
+            inq_match = re.search(r'\[CONSULTAR_ADMINISTRACION:\s*(\{.*?\})\]', ai_reply, re.DOTALL)
+            if inq_match:
+                try:
+                    inq_data = json.loads(inq_match.group(1))
+                    ai_reply = re.sub(r'\[CONSULTAR_ADMINISTRACION:\s*\{.*?\}\]', '', ai_reply).strip()
+                    q_text = inq_data.get("pregunta") or msg_clean
+                    p_name = inq_data.get("paciente") or (active_apt.patient_name if active_apt else f"Paciente (+{clean_phone})")
+
+                    from app.models.tenant import TenantInquiry
+                    inquiry = TenantInquiry(
+                        tenant_id=tenant.id,
+                        patient_phone=clean_phone,
+                        patient_name=p_name,
+                        question=q_text,
+                        status="pending_secretary",
+                        notified_owner_at=datetime.now(timezone.utc)
+                    )
+                    db.add(inquiry)
+                    db.commit()
+
+                    if tenant.owner_phone:
+                        sec_alert = (
+                            f"❓ *CONSULTA DE PACIENTE PARA LA ADMINISTRACIÓN* 👩‍⚕️\n\n"
+                            f"👤 *Paciente:* {p_name} (+{clean_phone})\n"
+                            f"💬 *Preguntó:* \"{q_text}\"\n\n"
+                            f"👉 *Respondeme directamente a este mensaje con la respuesta.*\n"
+                            f"Se la enviaré al paciente y la guardaré en mi memoria para nunca más consultar por esto."
+                        )
+                        await whatsapp.send_whatsapp_message(to_phone=tenant.owner_phone, text=sec_alert)
+                except Exception as inq_err:
+                    logger.error(f"Error parsing [CONSULTAR_ADMINISTRACION]: {inq_err}")
 
         # Send response branded with the Tenant's header and logo (if it's their first message)
         session = db.query(TenantSession).filter(TenantSession.phone == clean_phone).first()

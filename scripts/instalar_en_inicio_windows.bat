@@ -1,13 +1,10 @@
 @echo off
-title Instalar Sofia Centinela en Inicio de Windows
+title Sofia Centinela - Instalacion Automatica
 color 0A
 cls
 echo ============================================================
-echo   INSTALADOR DE SOFIA CENTINELA EN INICIO AUTOMATICO
+echo   INSTALANDO SOFIA CENTINELA EN ESTA COMPUTADORA...
 echo ============================================================
-echo.
-echo Este script configurara Sofia Centinela para que se abra
-echo automaticamente cada vez que se prenda esta computadora.
 echo.
 
 set TARGET_EXE=%~dp0Sofia_Centinela.exe
@@ -16,45 +13,26 @@ if not exist "%TARGET_EXE%" (
         set TARGET_EXE=%~dp0iniciar_centinela.bat
     ) else (
         echo [ERROR] No se encontro Sofia_Centinela.exe en esta carpeta.
-        echo Asegurate de ejecutar este instalador dentro de la misma
-        echo carpeta donde esta Sofia_Centinela.exe.
+        echo Asegurate de descomprimir todos los archivos juntos.
         echo.
         pause
         exit /b 1
     )
 )
 
-echo Creando acceso directo en la carpeta de Inicio de Windows...
+echo [1/2] Configurando inicio automatico con Windows...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([System.IO.Path]::Combine($env:APPDATA, 'Microsoft\Windows\Start Menu\Programs\Startup', 'Sofia_Centinela.lnk')); $s.TargetPath = '%TARGET_EXE%'; $s.WorkingDirectory = '%~dp0'; $s.Description = 'Centinela de Sincronizacion Sofia AI'; $s.Save()"
 
-if %ERRORLEVEL% EQU 0 (
-    echo.
-    echo ============================================================
-    echo   [OK] INSTALACION EXITOSA!
-    echo ============================================================
-    echo A partir de ahora, cuando se prenda la computadora,
-    echo Sofia Centinela arrancara solo en segundo plano.
-    echo.
-    echo Deseas iniciar el Centinela ahora mismo?
-    choice /M "Presiona S para SI o N para NO"
-    if errorlevel 2 goto fin
-    if errorlevel 1 goto arrancar
-) else (
-    echo.
-    echo [AVISO] No se pudo crear el acceso automatico con PowerShell.
-    echo Puedes crearlo manualmente:
-    echo 1. Haz clic derecho en Sofia_Centinela.exe y elige "Crear acceso directo".
-    echo 2. Presiona Windows + R, escribe "shell:startup" y presiona Enter.
-    echo 3. Pega el acceso directo en esa carpeta.
-    echo.
-)
-
-:arrancar
-echo.
-echo Iniciando Sofia Centinela...
+echo [2/2] Iniciando Sofia Centinela en segundo plano...
 start "" "%TARGET_EXE%"
-goto fin
 
-:fin
 echo.
-pause
+echo ============================================================
+echo   LISTO! INSTALACION COMPLETADA CON EXITO.
+echo ============================================================
+echo Sofia Centinela ya esta activo y vigilando tu Excel.
+echo Arrancara automaticamente cada vez que prendas la PC.
+echo.
+echo Esta ventana se cerrara sola en 3 segundos...
+timeout /t 3 >nul
+exit

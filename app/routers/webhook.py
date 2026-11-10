@@ -654,6 +654,40 @@ async def receive_whatsapp_webhook(
         db.commit()
         db.refresh(prospect)
 
+    # -------------------------------------------------------------
+    # 0.95 AUDIO / WHATSAPP ONBOARDING ENGINE (CLINICS & DOCTORS)
+    # -------------------------------------------------------------
+    from app.services.audio_onboarding import audio_onboarding_service, DEFAULT_PROMPT_STEP_1
+
+    is_audio_onboarding_active = (
+        prospect.campaign == "onboarding_audio" and prospect.status == "in_progress"
+    )
+    is_triggering_onboarding = audio_onboarding_service.is_onboarding_trigger(message)
+
+    if is_audio_onboarding_active or is_triggering_onboarding:
+        # If user is triggering fresh start
+        if is_triggering_onboarding and not is_audio_onboarding_active:
+            prospect, session = audio_onboarding_service.get_or_create_session(db, clean_phone)
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=DEFAULT_PROMPT_STEP_1)
+            return {"status": "success", "action": "audio_onboarding_started", "reply": DEFAULT_PROMPT_STEP_1}
+
+        # Otherwise, process the step with audio or text!
+        handled, step_reply, step_meta = await audio_onboarding_service.process_step(
+            db=db,
+            phone=clean_phone,
+            audio_b64=audio_b64,
+            audio_mime=audio_mime,
+            text=message
+        )
+        if handled:
+            await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=step_reply)
+            return {
+                "status": "success",
+                "action": "audio_onboarding_completed" if step_meta.get("is_complete") else "audio_onboarding_step_advanced",
+                "reply": step_reply,
+                "meta": step_meta
+            }
+
     # Determine if sender is a supplier and resolve all linked merchants
     is_supplier_sender = (
         len(supplier_records) > 0

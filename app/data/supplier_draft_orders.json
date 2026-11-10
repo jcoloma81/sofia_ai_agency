@@ -56,7 +56,19 @@
   "5493435111111": {},
   "5493435222222": {},
   "5493434112244": {},
-  "5493434112255": {},
+  "5493434112255": {
+    "distribuidora_alem": {
+      "supplier_name": "Distribuidora Alem",
+      "items": [
+        {
+          "product_name": "Azúcar Ledesma 1kg",
+          "quantity": 20,
+          "unit_price": 800.0
+        }
+      ],
+      "updated_at": "2026-10-28T16:46:04.129409+00:00"
+    }
+  },
   "pinturas_litoral": {
     "supplier_name": "Pinturas Litoral",
     "items": [

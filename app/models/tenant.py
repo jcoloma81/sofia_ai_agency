@@ -45,6 +45,7 @@ class Tenant(Base):
     memberships = relationship("MembershipPayment", back_populates="tenant", cascade="all, delete-orphan")
     inactive_customers = relationship("InactiveCustomer", back_populates="tenant", cascade="all, delete-orphan")
     pack_payments = relationship("MessagePackPayment", back_populates="tenant", cascade="all, delete-orphan")
+    inquiries = relationship("TenantInquiry", back_populates="tenant", cascade="all, delete-orphan")
 
 class TenantSession(Base):
     """
@@ -174,3 +175,27 @@ class MessagePackPayment(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     tenant = relationship("Tenant", back_populates="pack_payments")
+
+class TenantInquiry(Base):
+    """
+    RAG Orgánico / Human-in-the-Loop:
+    Tracks patient questions that Sofía does not know yet.
+    Routes them to the secretary/owner, relays the answer back to the patient,
+    and permanently memorizes the learned Q&A in Tenant.knowledge_base.
+    """
+    __tablename__ = "tenant_inquiries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), index=True, nullable=False)
+    patient_phone = Column(String, index=True, nullable=False)
+    patient_name = Column(String, nullable=True)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=True)
+    status = Column(String, default="pending_secretary", index=True) # "pending_secretary", "answered", "dismissed"
+    notified_owner_at = Column(DateTime, nullable=True)
+    answered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    tenant = relationship("Tenant", back_populates="inquiries")
+

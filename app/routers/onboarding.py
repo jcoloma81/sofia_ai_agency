@@ -274,3 +274,42 @@ def check_onboarding_status(slug: str, db: Session = Depends(get_db)):
         "active": tenant.active,
         "created_at": tenant.created_at.isoformat() if tenant.created_at else None
     }
+
+@router.post("/audio-step")
+async def submit_audio_onboarding_step(
+    phone: str = Form(...),
+    text: Optional[str] = Form(None),
+    audio_file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Submits an onboarding audio note or text message directly via API.
+    Used for web audio intake, WhatsApp webhooks, and automated calibration tests.
+    """
+    import base64
+    from app.services.audio_onboarding import audio_onboarding_service
+
+    audio_b64 = None
+    audio_mime = "audio/ogg"
+
+    if audio_file:
+        content = await audio_file.read()
+        if content:
+            audio_b64 = base64.b64encode(content).decode("utf-8")
+            audio_mime = audio_file.content_type or "audio/ogg"
+
+    handled, reply, meta = await audio_onboarding_service.process_step(
+        db=db,
+        phone=phone,
+        audio_b64=audio_b64,
+        audio_mime=audio_mime,
+        text=text
+    )
+
+    return {
+        "status": "success",
+        "handled": handled,
+        "reply": reply,
+        "meta": meta
+    }
+

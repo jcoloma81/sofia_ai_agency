@@ -233,10 +233,33 @@ async def sync_tenant_data(
                     )
                     details.append(f"Lista de espera (Adelanta Turno): {patient_name}")
 
-            # 2. Process Appointment if a valid date is provided
+            # 2. Process Appointment if a valid date is provided, OR ingest into Padrón Histórico
             if not date_raw:
-                if wants_waitlist:
+                # 🛡️ Padrón Histórico de Pacientes (Idempotente)
+                existing_cust = db.query(InactiveCustomer).filter(
+                    InactiveCustomer.tenant_id == tenant.id,
+                    InactiveCustomer.customer_phone == clean_phone
+                ).first()
+                if not existing_cust:
+                    new_cust = InactiveCustomer(
+                        tenant_id=tenant.id,
+                        customer_name=str(patient_name).strip(),
+                        customer_phone=clean_phone,
+                        service_or_product=str(doctor_raw).strip() if doctor_raw and doctor_raw != "Profesional de la Clínica" else "Consulta General",
+                        response_notes=str(notes) if notes else "Importado del padrón histórico",
+                        campaign_name="padron_historico",
+                        status="dormido"
+                    )
+                    db.add(new_cust)
                     created_count += 1
+                    details.append(f"Padrón Histórico agregado: {patient_name} ({clean_phone})")
+                else:
+                    existing_cust.customer_name = str(patient_name).strip()
+                    if doctor_raw and doctor_raw != "Profesional de la Clínica":
+                        existing_cust.service_or_product = str(doctor_raw).strip()
+                    if notes:
+                        existing_cust.response_notes = str(notes).strip()
+                    updated_count += 1
                 continue
 
             dt_utc = parse_argentine_datetime(str(date_raw), str(time_raw) if time_raw else None)

@@ -4,10 +4,11 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 import os
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.database import Base, engine, run_auto_migrations, verify_database_health
+from sqlalchemy.orm import Session
+from app.database import Base, engine, get_db, run_auto_migrations, verify_database_health
 from app.routers.webhook import router as webhook_router
 from app.routers.outreach import router as outreach_router
 from app.routers.dashboard import router as dashboard_router, verify_admin_credentials
@@ -69,6 +70,10 @@ async def appointment_cron_worker():
                 # 3. Cutoff waitlist cascade window: 18:00 to 21:59 hs (stops sending new offers at 22:00 hs)
                 if 18 <= local_hour <= 21:
                     await AppointmentService.execute_all_cutoff_auto_cancellations(db)
+
+                # 4. Daily doctor executive closing report: 20:00 - 20:30 hs
+                if local_hour == 20 and 0 <= local_minute <= 30:
+                    await AppointmentService.broadcast_daily_doctor_closing_reports(db)
 
             except Exception as e:
                 logger.error(f"Error executing appointment cron check: {e}")
@@ -166,6 +171,20 @@ def serve_preview_estilos():
 def serve_alta_cliente():
     alta_path = os.path.join(os.path.dirname(__file__), "app", "static", "ficha_alta_cliente.html")
     return FileResponse(alta_path)
+
+# Cartel Oficial Imprimible & Kit de Acceso QR para la Clínica
+@app.get("/acceso/{slug}", response_class=HTMLResponse)
+@app.get("/qr/{slug}", response_class=HTMLResponse)
+def serve_clinic_access_card(slug: str, db: Session = Depends(get_db)):
+    from fastapi import HTTPException
+    from app.models.tenant import Tenant
+    from app.services.poster_generator import generate_clinic_access_html
+
+    tenant = db.query(Tenant).filter(Tenant.slug == slug.lower().strip()).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Consultorio o comercio no encontrado.")
+    html_content = generate_clinic_access_html(tenant)
+    return HTMLResponse(content=html_content)
 
 # Executive Technical Architecture & Meeting Cheat Sheet
 @app.get("/hoja-de-ruta", response_class=FileResponse)

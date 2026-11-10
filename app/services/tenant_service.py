@@ -41,14 +41,19 @@ class TenantService:
         msg_upper = message_text.strip().upper()
         msg_lower = message_text.strip().lower()
 
-        # 1. Check explicit hashtags or deep link keywords
+        # 1. Check explicit hashtags or deep link keywords (with underscores or spaces)
         all_tenants = db.query(Tenant).filter(Tenant.active == True).all()
         for t in all_tenants:
-            if t.deep_link_keyword and t.deep_link_keyword.upper() in msg_upper:
-                # Update or create session
+            kw_clean = (t.deep_link_keyword or "").upper()
+            kw_spaces = kw_clean.replace("_", " ")
+            if kw_clean and (kw_clean in msg_upper or kw_spaces in msg_upper):
                 TenantService.set_active_session(db, clean_phone, t.slug)
                 return t, message_text
             if f"#{t.slug.lower()}" in msg_lower or f"#{t.slug.upper()}" in msg_upper:
+                TenantService.set_active_session(db, clean_phone, t.slug)
+                return t, message_text
+            # Direct name match if 4+ chars
+            if t.name and len(t.name) >= 5 and t.name.lower() in msg_lower:
                 TenantService.set_active_session(db, clean_phone, t.slug)
                 return t, message_text
 
@@ -153,11 +158,25 @@ class TenantService:
         active modules, tone, and operational boundaries.
         """
         kb_text = tenant.knowledge_base or "{}"
+        kb_obj = {}
         try:
             kb_obj = json.loads(kb_text)
             kb_formatted = json.dumps(kb_obj, indent=2, ensure_ascii=False)
         except Exception:
             kb_formatted = kb_text
+
+        learned_faqs_section = ""
+        if isinstance(kb_obj, dict):
+            learned_faqs = kb_obj.get("learned_faqs", [])
+            if learned_faqs:
+                lines = []
+                for item in learned_faqs[-15:]:
+                    q = item.get("question", "")
+                    a = item.get("answer", "")
+                    if q and a:
+                        lines.append(f"• Pregunta: \"{q}\" ➔ Respuesta oficial: \"{a}\"")
+                if lines:
+                    learned_faqs_section = "\n\nPREGUNTAS APRENDIDAS DE LA ADMINISTRACIÓN / PROFESIONALES:\n" + "\n".join(lines)
 
         turnos_protocol = ""
         if "turnos_rellena_huecos" in tenant.modules_enabled or tenant.business_type in ["salud", "medicina", "estetica"]:
@@ -192,11 +211,15 @@ PAUTAS DE COMUNICACIÓN Y TONO:
 BASE DE CONOCIMIENTO OFICIAL DEL COMERCIO/CLÍNICA:
 \"\"\"
 {kb_formatted}
-\"\"\"
+\"\"\"{learned_faqs_section}
 
 REGLAS DE OPERACIÓN:
-1. Respondé dudas sobre horarios, precios, especialidades, ubicación y formas de pago basándote ESTRICTAMENTE en la base de conocimiento arriba.
-2. Si te preguntan algo que no figura en la base de conocimiento, no inventes: deciles que vas a consultar con la administración y que te dejen su consulta.
+1. Respondé dudas sobre horarios, precios, especialidades, ubicación y formas de pago basándote ESTRICTAMENTE en la base de conocimiento y respuestas aprendidas arriba.
+2. Si te preguntan algo médico, arancel específico, obra social o norma que NO figure con certeza en la base de conocimiento:
+   - NO inventes ni supongas bajo ninguna circunstancia.
+   - Respondé amablemente que vas a consultar ese detalle exacto con la administración para confirmarle y que en breve le avisás por acá mismo.
+   - Y al FINAL de tu respuesta, en una línea separada, agregá EXACTAMENTE la etiqueta:
+     [CONSULTAR_ADMINISTRACION: {{"pregunta": "texto exacto de la duda del paciente", "paciente": "Nombre del paciente o null"}}]
 3. Si el usuario desea agendar, cancelar o confirmar un turno, guialo con empatía.{turnos_protocol}
 4. Si el usuario envía una foto o comprobante de transferencia, confirmale la recepción amablemente.
 5. Mantené las respuestas concisas (ideales para leer rápido en WhatsApp).

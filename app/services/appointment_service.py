@@ -1050,6 +1050,104 @@ class AppointmentService:
         return {"tenants_processed": len(tenants), "appointments_cancelled": total_cancelled}
 
     @staticmethod
+    async def send_doctor_daily_closing_report(db: Session, tenant_id: int) -> bool:
+        """
+        Generates and dispatches the 20:00 hs Daily Executive Closing Report directly to the doctor's phone.
+        Highlights:
+        - Today's activity (attended/booked, rescued gaps, cancellations)
+        - Tomorrow's agenda status (confirmed vs pending, active waitlist)
+        """
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        if not tenant or not tenant.owner_phone:
+            return False
+
+        now = utc_now()
+        local_now = now - timedelta(hours=3)
+        start_today = local_now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(hours=3)
+        end_today = local_now.replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
+
+        start_tomorrow = (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(hours=3)
+        end_tomorrow = (local_now + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=0) + timedelta(hours=3)
+
+        # Today metrics
+        today_apts = db.query(Appointment).filter(
+            Appointment.tenant_id == tenant.id,
+            Appointment.appointment_date >= start_today,
+            Appointment.appointment_date <= end_today
+        ).all()
+
+        total_today = len(today_apts)
+        gaps_rescued = sum(1 for a in today_apts if a.status == "rellenado_con_exito" or (a.notes and "lista de espera" in a.notes.lower()))
+        cancelled_today = sum(1 for a in today_apts if a.status == "cancelado")
+
+        # Tomorrow metrics
+        tomorrow_apts = db.query(Appointment).filter(
+            Appointment.tenant_id == tenant.id,
+            Appointment.appointment_date >= start_tomorrow,
+            Appointment.appointment_date <= end_tomorrow
+        ).all()
+
+        tomorrow_total = len(tomorrow_apts)
+        tomorrow_confirmed = sum(1 for a in tomorrow_apts if a.status in ["confirmado", "rellenado_con_exito"])
+        tomorrow_pending = sum(1 for a in tomorrow_apts if a.status in ["agendado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera"])
+
+        waitlist_count = db.query(WaitlistEntry).filter(
+            WaitlistEntry.tenant_id == tenant.id,
+            WaitlistEntry.status == "activa"
+        ).count()
+
+        today_tag = local_now.strftime("%d/%m")
+        tomorrow_tag = (local_now + timedelta(days=1)).strftime("%d/%m")
+        doc_greeting = f"Dr./a {tenant.owner_name}" if tenant.owner_name else "Doctor/a"
+
+        report_text = (
+            f"🌙 *REPORTE DE CIERRE DIARIO — {tenant.name.upper()}* 🏥\n\n"
+            f"¡Buenas noches, *{doc_greeting}*! Sofía te acerca el balance operativo de hoy ({today_tag}):\n\n"
+            f"📊 *ACTIVIDAD DE HOY ({today_tag}):*\n"
+            f"• 👥 *Pacientes en agenda:* {total_today}\n"
+            f"• 🛡️ *Huecos rescatados por Sofía:* {gaps_rescued}\n"
+            f"• ❌ *Cancelaciones gestionadas:* {cancelled_today}\n\n"
+            f"📅 *AGENDA PARA MAÑANA ({tomorrow_tag}):*\n"
+            f"• 📋 *Turnos programados:* {tomorrow_total}\n"
+            f"• ✅ *Confirmados:* {tomorrow_confirmed}\n"
+            f"• ⏳ *Pendientes de confirmación:* {tomorrow_pending}\n"
+            f"• 👥 *Lista de espera activa:* {waitlist_count} paciente(s)\n\n"
+            f"✨ *El piloto automático de Sofía continúa activo 24/7.*\n"
+            f"¡Que tengas un excelente descanso!"
+        )
+
+        await whatsapp.send_whatsapp_message(to_phone=tenant.owner_phone, text=report_text)
+        logger.info(f"🌙 Daily doctor report sent to {tenant.name} ({tenant.owner_phone})")
+        return True
+
+    @staticmethod
+    async def broadcast_daily_doctor_closing_reports(
+        db: Session,
+        tenant_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Dispatches 20:00 hs Daily Executive Closing Report across all healthcare tenants.
+        """
+        query = db.query(Tenant).filter(Tenant.active == True)
+        if tenant_id:
+            query = query.filter(Tenant.id == tenant_id)
+        else:
+            query = query.filter(
+                (Tenant.business_type.in_(["salud", "medicina", "estetica", "consultorio", "odontologia"])) |
+                (Tenant.modules_enabled.like("%turnos%"))
+            )
+        tenants = query.all()
+        sent_count = 0
+        for t in tenants:
+            if getattr(t, "is_paused", False):
+                continue
+            if t.owner_phone:
+                ok = await AppointmentService.send_doctor_daily_closing_report(db, t.id)
+                if ok:
+                    sent_count += 1
+        return {"tenants_processed": len(tenants), "reports_sent": sent_count}
+
+    @staticmethod
     async def trigger_doctor_absence_contingency(
         db: Session,
         tenant_id: int,
