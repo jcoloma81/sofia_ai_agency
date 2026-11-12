@@ -256,6 +256,22 @@ def serve_modo_jefe_pdf():
     pdf_path = os.path.join(os.path.dirname(__file__), "docs", "MANUAL_MODO_JEFE_CLIENTE.pdf")
     return FileResponse(pdf_path, media_type="application/pdf", filename="MANUAL_MODO_JEFE_CLIENTE.pdf")
 
+# Súper Actualizador de Precios PRO — Landing Oficial & Descarga Directa
+@app.get("/actualizador", response_class=FileResponse)
+@app.get("/actualizador-precios", response_class=FileResponse)
+@app.get("/precios-pro", response_class=FileResponse)
+def serve_actualizador_landing():
+    landing_path = os.path.join(os.path.dirname(__file__), "app", "static", "actualizador_precios.html")
+    return FileResponse(landing_path)
+
+@app.get("/descargar-actualizador")
+@app.get("/descargar-actualizador-pro")
+def redirect_descargar_actualizador():
+    from fastapi.responses import RedirectResponse
+    # Enlace oficial de descarga directa de 1 clic desde Google Drive
+    drive_direct_url = "https://drive.usercontent.google.com/download?id=1gFGJtHyQB8smRKCvUV7ZGuT5KpEn__Nq&export=download&confirm=t"
+    return RedirectResponse(url=drive_direct_url)
+
 # Executive Web Dashboard (Restricted Admin Access)
 @app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
 @app.get("/admin", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])
