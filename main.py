@@ -147,8 +147,15 @@ def health_check():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
-# Public Landing & Commercial Proposal
+# SOF-IA Agency — Home Matriz
 @app.get("/", response_class=FileResponse)
+@app.get("/agency", response_class=FileResponse)
+def serve_agency_home():
+    home_path = os.path.join(os.path.dirname(__file__), "app", "static", "home_agency.html")
+    return FileResponse(home_path)
+
+# Sofía AI — Landing Oficial, Propuesta Comercial & Precios
+@app.get("/sofia", response_class=FileResponse)
 @app.get("/propuesta", response_class=FileResponse)
 @app.get("/precios", response_class=FileResponse)
 def serve_propuesta():
@@ -271,6 +278,13 @@ def redirect_descargar_actualizador():
     # Enlace oficial de descarga directa de 1 clic desde Google Drive
     drive_direct_url = "https://drive.usercontent.google.com/download?id=1gFGJtHyQB8smRKCvUV7ZGuT5KpEn__Nq&export=download&confirm=t"
     return RedirectResponse(url=drive_direct_url)
+
+# Air Control — Redirección oficial a AirControlPro.net
+@app.get("/air-control")
+@app.get("/aircontrol")
+def redirect_air_control():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="https://aircontrolpro.net/", status_code=307)
 
 # Executive Web Dashboard (Restricted Admin Access)
 @app.get("/dashboard", response_class=FileResponse, dependencies=[Depends(verify_admin_credentials)])

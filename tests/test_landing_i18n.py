@@ -5,8 +5,8 @@ import re
 client = TestClient(app)
 
 def test_landing_page_multilingual_and_responsive():
-    # 1. Landing serves 200 OK
-    res = client.get("/")
+    # 1. Landing serves 200 OK on /sofia and /propuesta
+    res = client.get("/sofia")
     assert res.status_code == 200
     html = res.text
 

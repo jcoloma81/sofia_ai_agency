@@ -4,7 +4,7 @@ from main import app
 client = TestClient(app)
 
 def test_landing_page_pricing_and_rubros_sections():
-    res = client.get("/")
+    res = client.get("/sofia")
     assert res.status_code == 200
     html = res.text
 
