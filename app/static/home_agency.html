@@ -294,11 +294,52 @@
       display: flex;
       align-items: center;
       gap: 14px;
+      transition: all 0.25s ease;
     }
 
-    .metric-icon {
-      font-size: 26px;
-      line-height: 1;
+    .metric-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .metric-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.25s ease;
+    }
+
+    .icon-emerald {
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.22);
+      color: #4ade80;
+    }
+
+    .icon-cyan {
+      background: rgba(6, 182, 212, 0.08);
+      border: 1px solid rgba(6, 182, 212, 0.22);
+      color: #38bdf8;
+    }
+
+    .icon-amber {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.22);
+      color: #fbbf24;
+    }
+
+    .icon-purple {
+      background: rgba(168, 85, 247, 0.08);
+      border: 1px solid rgba(168, 85, 247, 0.22);
+      color: #c084fc;
+    }
+
+    .metric-card:hover .metric-icon-box {
+      transform: scale(1.05);
     }
 
     .metric-info h4 {
@@ -534,12 +575,25 @@
     .synergy-badge {
       font-size: 13px;
       font-weight: 600;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border);
       padding: 6px 14px;
-      border-radius: 8px;
+      border-radius: 999px;
       color: var(--text-primary);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .badge-dot.green { background: #22C55E; box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+    .badge-dot.cyan { background: #06B6D4; box-shadow: 0 0 6px rgba(6,182,212,0.6); }
+    .badge-dot.amber { background: #F59E0B; box-shadow: 0 0 6px rgba(245,158,11,0.6); }
+    .badge-dot.purple { background: #A855F7; box-shadow: 0 0 6px rgba(168,85,247,0.6); }
 
     .synergy-visual {
       background: #090A0D;
@@ -755,31 +809,56 @@
     <!-- Metric Badges -->
     <div class="metric-grid">
       <div class="metric-card">
-        <div class="metric-icon">🤖</div>
+        <div class="metric-icon-box icon-emerald">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/>
+            <rect x="9" y="9" width="6" height="6" rx="1"/>
+            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+          </svg>
+        </div>
         <div class="metric-info">
-          <h4>IA Oficial Meta</h4>
-          <p>Gemini 1.5 Multimodal 24/7</p>
+          <h4>Meta Cloud &amp; Gemini</h4>
+          <p>IA Multimodal 24/7</p>
         </div>
       </div>
+
       <div class="metric-card">
-        <div class="metric-icon">⚡</div>
+        <div class="metric-icon-box icon-cyan">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
         <div class="metric-info">
-          <h4>3 Segundos</h4>
-          <p>Procesamiento de catálogos</p>
+          <h4>Velocidad &lt; 3s</h4>
+          <p>Cálculo masivo de catálogos</p>
         </div>
       </div>
+
       <div class="metric-card">
-        <div class="metric-icon">💳</div>
+        <div class="metric-icon-box icon-amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v6M17 5l-3 3M7 5l3 3"/>
+            <rect x="4" y="8" width="16" height="12" rx="3"/>
+            <circle cx="12" cy="14" r="2"/>
+          </svg>
+        </div>
         <div class="metric-info">
-          <h4>Mercado Pago IoT</h4>
+          <h4>Smart IoT &amp; Mercado Pago</h4>
           <p>Monetización por tiempo</p>
         </div>
       </div>
+
       <div class="metric-card">
-        <div class="metric-icon">📍</div>
+        <div class="metric-icon-box icon-purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
         <div class="metric-info">
-          <h4>Paraná, Entre Ríos</h4>
-          <p>Cobertura nacional e internacional</p>
+          <h4>Paraná • Todo el País</h4>
+          <p>Desarrollo y soporte directo</p>
         </div>
       </div>
     </div>
@@ -920,12 +999,12 @@
             No somos revendedores de plataformas genéricas. En <strong>SOF-IA Tech &amp; AI Studio</strong> desarrollamos soluciones con ingeniería propia: arquitecturas de agentes multimodales autónomos, software de procesamiento masivo de datos e integraciones IoT con enchufes inteligentes homologados y pasarelas de pago.
           </p>
           <div class="synergy-badges">
-            <span class="synergy-badge">⚡ FastAPI / Python 3.12</span>
-            <span class="synergy-badge">🤖 Meta Cloud API</span>
-            <span class="synergy-badge">🧠 Google Gemini 1.5 Multimodal</span>
-            <span class="synergy-badge">🔌 Smart Plugs Homologados &amp; IoT</span>
-            <span class="synergy-badge">💳 Mercado Pago SDK &amp; Webhooks</span>
-            <span class="synergy-badge">📊 Motor de Cálculos Numéricos</span>
+            <span class="synergy-badge"><span class="badge-dot green"></span>FastAPI / Python 3.12</span>
+            <span class="synergy-badge"><span class="badge-dot cyan"></span>Meta Cloud API Oficial</span>
+            <span class="synergy-badge"><span class="badge-dot green"></span>Google Gemini 1.5 Multimodal</span>
+            <span class="synergy-badge"><span class="badge-dot amber"></span>Smart Plugs Homologados IoT</span>
+            <span class="synergy-badge"><span class="badge-dot cyan"></span>Mercado Pago SDK &amp; Webhooks</span>
+            <span class="synergy-badge"><span class="badge-dot purple"></span>Motor Numérico de Alta Velocidad</span>
           </div>
         </div>
 
