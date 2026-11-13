@@ -15,12 +15,12 @@
       --bg-card-hover: #171B23;
       --border: rgba(255, 255, 255, 0.08);
       --border-strong: rgba(255, 255, 255, 0.16);
-      --border-accent: rgba(34, 197, 94, 0.35);
+      --border-accent: rgba(16, 185, 129, 0.3);
       --text-primary: #F8FAFC;
       --text-secondary: #94A3B8;
       --text-muted: #64748B;
-      --accent-green: #22C55E;
-      --accent-green-glow: rgba(34, 197, 94, 0.18);
+      --accent-green: #10B981;
+      --accent-green-glow: rgba(16, 185, 129, 0.18);
       --accent-cyan: #06B6D4;
       --accent-blue: #3B82F6;
       --accent-amber: #F59E0B;
@@ -82,7 +82,7 @@
 
     .brand-logo span {
       color: var(--accent-green);
-      background: linear-gradient(135deg, #22C55E 0%, #10B981 100%);
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -128,11 +128,11 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(34, 197, 94, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.35);
-      color: #4ade80;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      color: #34d399;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
       padding: 8px 16px;
       border-radius: 10px;
       text-decoration: none;
@@ -140,7 +140,8 @@
     }
 
     .btn-wa-header:hover {
-      background: rgba(34, 197, 94, 0.22);
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #34d399;
       transform: translateY(-1px);
     }
 
@@ -199,7 +200,7 @@
     }
 
     .hero h1 span.accent-text {
-      background: linear-gradient(135deg, #22C55E 0%, #06B6D4 100%);
+      background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -221,24 +222,25 @@
     }
 
     .btn-primary-hero {
-      background: #22C55E;
-      color: #052e16;
+      background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+      color: #ffffff;
       font-size: 15px;
       font-weight: 700;
       padding: 14px 28px;
       border-radius: 12px;
       text-decoration: none;
-      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.25);
-      transition: all 0.2s ease;
+      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       display: inline-flex;
       align-items: center;
       gap: 10px;
     }
 
     .btn-primary-hero:hover {
-      background: #16a34a;
+      background: linear-gradient(180deg, #059669 0%, #047857 100%);
       transform: translateY(-2px);
-      box-shadow: 0 12px 28px rgba(34, 197, 94, 0.35);
+      box-shadow: 0 14px 28px rgba(5, 150, 105, 0.45);
     }
 
     .btn-secondary-hero {
@@ -301,9 +303,9 @@
     }
 
     .icon-emerald {
-      background: rgba(34, 197, 94, 0.08);
-      border: 1px solid rgba(34, 197, 94, 0.22);
-      color: #4ade80;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.22);
+      color: #34d399;
     }
 
     .icon-cyan {
@@ -418,9 +420,9 @@
     }
 
     .pill-green {
-      background: rgba(34, 197, 94, 0.12);
-      color: #4ade80;
-      border: 1px solid rgba(34, 197, 94, 0.25);
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     .pill-cyan {
@@ -509,17 +511,20 @@
       width: 100%;
       padding: 12px 18px;
       border-radius: 12px;
-      background: var(--accent-green);
-      color: #052e16;
+      background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+      color: #ffffff;
       font-size: 14px;
-      font-weight: 800;
+      font-weight: 700;
       text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 16px rgba(5, 150, 105, 0.25);
       transition: all 0.2s ease;
     }
 
     .btn-card-direct:hover {
-      background: #16a34a;
+      background: linear-gradient(180deg, #059669 0%, #047857 100%);
       transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
     }
 
     /* About & Synergy Section */
@@ -576,7 +581,7 @@
       height: 6px;
       border-radius: 50%;
     }
-    .badge-dot.green { background: #22C55E; box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+    .badge-dot.green { background: #10B981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
     .badge-dot.cyan { background: #06B6D4; box-shadow: 0 0 6px rgba(6,182,212,0.6); }
     .badge-dot.amber { background: #F59E0B; box-shadow: 0 0 6px rgba(245,158,11,0.6); }
     .badge-dot.purple { background: #A855F7; box-shadow: 0 0 6px rgba(168,85,247,0.6); }
@@ -605,18 +610,18 @@
       background: #ef4444;
     }
     .terminal-dot.y { background: #f59e0b; }
-    .terminal-dot.g { background: #22c55e; }
+    .terminal-dot.g { background: #10B981; }
 
     .code-block {
       color: #94A3B8;
       line-height: 1.7;
     }
-    .code-block .accent { color: #22C55E; }
+    .code-block .accent { color: #34d399; }
     .code-block .cyan { color: #06B6D4; }
 
     /* CTA Final Banner */
     .cta-banner {
-      background: radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.15) 0%, rgba(18, 21, 27, 0.95) 70%);
+      background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12) 0%, rgba(18, 21, 27, 0.95) 70%);
       border: 1px solid var(--border-accent);
       border-radius: 24px;
       padding: 60px 24px;
@@ -679,15 +684,16 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: #22C55E;
-      color: #052e16;
+      background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+      color: #ffffff;
       width: 58px;
       height: 58px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       z-index: 100;
       transition: all 0.2s ease;
       text-decoration: none;
@@ -695,7 +701,8 @@
 
     .wa-floating:hover {
       transform: scale(1.08);
-      background: #16a34a;
+      background: linear-gradient(180deg, #059669 0%, #047857 100%);
+      box-shadow: 0 12px 28px rgba(5, 150, 105, 0.5);
     }
 
     .wa-floating svg {
@@ -1205,10 +1212,10 @@
           </ul>
         </div>
         <div class="card-actions">
-          <a href="https://aircontrolpro.net/" target="_blank" class="btn-card-primary" style="border-color: var(--border-amber); color: #fbbf24;">
+          <a href="https://aircontrolpro.net/" target="_blank" class="btn-card-primary" style="border-color: rgba(245, 158, 11, 0.35); color: #fbbf24;">
             Visitar Landing Oficial (AirControlPro.net) ↗
           </a>
-          <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20consultar%20por%20Air%20Control%20para%20mi%20complejo." target="_blank" class="btn-card-direct" style="background: #F59E0B; color: #451a03;">
+          <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20consultar%20por%20Air%20Control%20para%20mi%20complejo." target="_blank" class="btn-card-direct" style="background: linear-gradient(180deg, #D97706 0%, #B45309 100%); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 16px rgba(180, 83, 9, 0.3);">
             Consultar Instalación para Cabañas
           </a>
         </div>
