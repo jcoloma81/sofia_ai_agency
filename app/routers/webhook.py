@@ -2193,7 +2193,7 @@ async def receive_whatsapp_webhook(
             f"📱 *Teléfono:* +{clean_phone}\n"
             f"💬 *Mensaje recibido:* \"{last_msg_display}\"\n"
             f"🤖 *Sofía respondió:* \"{ai_response.strip()}\"\n\n"
-            f"👉 *Acción:* Entrá al WhatsApp o al Dashboard y contactalo ahora mismo para cerrar la venta ($30.000/mes)."
+            f"👉 *Acción:* Entrá al WhatsApp o al Dashboard y contactalo ahora mismo para cerrar la propuesta."
         )
         if boss_phone:
             asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=wa_lead_alert))

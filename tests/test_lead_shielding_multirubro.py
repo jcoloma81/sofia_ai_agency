@@ -143,7 +143,7 @@ async def test_active_demo_does_not_hijack_agency_inquiry():
 
             # Must use agency prompt, NOT consultorio receptionist prompt
             assert "ASISTENTE COMERCIAL DE LA AGENCIA" in system_instruction
-            assert "$30.000 finales" in system_instruction
+            assert "modelos de implementación" in system_instruction
             assert "recepcionista virtual del Consultorio" not in system_instruction
     finally:
         live_demo_service.reset_demo_mode()

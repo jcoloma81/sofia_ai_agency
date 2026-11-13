@@ -220,7 +220,7 @@ async def submit_client_onboarding(
         f"⏱️ *Duración turnos:* {appointment_duration or '30 min'}\n"
         f"{file_info}\n"
         f"💵 *Modalidad Cobro:* {deposit_info}\n"
-        f"🏷️ *Abono:* $30.000 finales / mes\n\n"
+        f"🏷️ *Plan:* A medida según escala\n\n"
         f"👉 *Acción:* Revisá la ficha en el Dashboard y coordiná la vinculación de la línea."
     )
 

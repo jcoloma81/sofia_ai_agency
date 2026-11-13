@@ -451,7 +451,7 @@ class AudioOnboardingService:
                 f"⏰ *Horarios:* {operating_hours}\n"
                 f"⏱️ *Turnos:* {duration}\n"
                 f"👥 *Profesionales:* {len(collected.get('professionals', []))} registrados\n"
-                f"🏷️ *Abono:* $30.000 / mes\n\n"
+                f"🏷️ *Plan:* A medida según escala\n\n"
                 f"👉 ¡Sofía ya está calibrada y lista para recibir pacientes!"
             )
             asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=boss_phone, text=alert_text))
