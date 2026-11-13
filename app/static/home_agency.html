@@ -3,27 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="SOF-IA — Agencia de Soluciones Tecnológicas, Inteligencia Artificial, Software y Dispositivos IoT para empresas y comercios.">
-  <title>SOF-IA | Tech & AI Studio — Soluciones Tecnológicas, IA & IoT</title>
+  <meta name="description" content="SOF-IA — Software a medida, automatización para WhatsApp y hardware IoT para empresas, consultorios y comercios.">
+  <title>SOF-IA | Estudio de Software, Automatización & IoT</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #0B0D10;
-      --bg-card: #12151B;
-      --bg-card-hover: #171B23;
+      --bg-main: #0B0E14;
+      --bg-card: #121721;
+      --bg-card-hover: #181F2C;
       --border: rgba(255, 255, 255, 0.08);
       --border-strong: rgba(255, 255, 255, 0.16);
-      --border-accent: rgba(16, 185, 129, 0.3);
+      --border-accent: rgba(16, 185, 129, 0.28);
       --text-primary: #F8FAFC;
       --text-secondary: #94A3B8;
       --text-muted: #64748B;
-      --accent-green: #10B981;
-      --accent-green-glow: rgba(16, 185, 129, 0.18);
-      --accent-cyan: #06B6D4;
-      --accent-blue: #3B82F6;
-      --accent-amber: #F59E0B;
+      --accent-green: #059669;
+      --accent-green-light: #10B981;
+      --accent-blue: #2563EB;
+      --accent-blue-light: #60A5FA;
+      --accent-amber: #D97706;
+      --accent-amber-light: #FBBF24;
       --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
@@ -50,8 +51,8 @@
     /* Top Navigation */
     .navbar {
       border-bottom: 1px solid var(--border);
-      background: rgba(11, 13, 16, 0.85);
-      backdrop-filter: blur(14px);
+      background: rgba(11, 14, 20, 0.92);
+      backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
       z-index: 50;
@@ -81,10 +82,7 @@
     }
 
     .brand-logo span {
-      color: var(--accent-green);
-      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--accent-green-light);
     }
 
     .brand-pill {
@@ -92,7 +90,7 @@
       font-weight: 700;
       padding: 3px 8px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text-secondary);
       text-transform: uppercase;
@@ -128,19 +126,19 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.1);
+      background: rgba(16, 185, 129, 0.08);
       border: 1px solid rgba(16, 185, 129, 0.28);
       color: #34d399;
       font-size: 13px;
       font-weight: 600;
       padding: 8px 16px;
-      border-radius: 10px;
+      border-radius: 8px;
       text-decoration: none;
       transition: all 0.2s ease;
     }
 
     .btn-wa-header:hover {
-      background: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.16);
       border-color: #34d399;
       transform: translateY(-1px);
     }
@@ -155,16 +153,7 @@
     }
 
     .hero-glow {
-      position: absolute;
-      top: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 350px;
-      background: radial-gradient(circle, rgba(34, 197, 94, 0.15) 0%, rgba(6, 182, 212, 0.08) 50%, transparent 70%);
-      filter: blur(60px);
-      z-index: -1;
-      pointer-events: none;
+      display: none;
     }
 
     .badge-agency {
@@ -172,45 +161,38 @@
       align-items: center;
       justify-content: center;
       padding: 6px 16px;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-strong);
       border-radius: 999px;
       font-size: 11.5px;
       font-weight: 700;
       letter-spacing: 0.8px;
-      color: var(--text-secondary);
+      color: #cbd5e1;
       margin-bottom: 24px;
     }
 
     .hero h1 {
-      font-size: 52px;
-      line-height: 1.15;
+      font-size: 46px;
+      line-height: 1.18;
       font-weight: 800;
-      letter-spacing: -1.5px;
+      letter-spacing: -1.2px;
       margin-bottom: 20px;
       max-width: 900px;
       margin-left: auto;
       margin-right: auto;
+      color: var(--text-primary);
     }
 
-    .hero h1 span.gradient-text {
-      background: linear-gradient(135deg, #F8FAFC 30%, #94A3B8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .hero h1 span.accent-text {
-      background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .hero h1 .text-highlight {
+      color: var(--accent-green-light);
     }
 
     .hero p.lead {
-      font-size: 19px;
+      font-size: 18px;
       color: var(--text-secondary);
-      max-width: 760px;
+      max-width: 780px;
       margin: 0 auto 36px;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     .hero-actions {
@@ -222,35 +204,35 @@
     }
 
     .btn-primary-hero {
-      background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+      background: #059669;
       color: #ffffff;
       font-size: 15px;
       font-weight: 700;
-      padding: 14px 28px;
-      border-radius: 12px;
+      padding: 13px 26px;
+      border-radius: 10px;
       text-decoration: none;
-      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      border: 1px solid #10B981;
+      transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
       gap: 10px;
     }
 
     .btn-primary-hero:hover {
-      background: linear-gradient(180deg, #059669 0%, #047857 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 14px 28px rgba(5, 150, 105, 0.45);
+      background: #047857;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
     }
 
     .btn-secondary-hero {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border-strong);
       color: var(--text-primary);
       font-size: 15px;
       font-weight: 600;
-      padding: 14px 28px;
-      border-radius: 12px;
+      padding: 13px 26px;
+      border-radius: 10px;
       text-decoration: none;
       transition: all 0.2s ease;
       display: inline-flex;
@@ -259,9 +241,9 @@
     }
 
     .btn-secondary-hero:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       border-color: rgba(255, 255, 255, 0.25);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
 
     /* Trust / Metric Badges */
@@ -278,60 +260,56 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       padding: 18px 20px;
-      border-radius: 14px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       gap: 14px;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
     }
 
     .metric-card:hover {
       border-color: var(--border-strong);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      background: var(--bg-card-hover);
+      transform: translateY(-1px);
     }
 
     .metric-icon-box {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
     }
 
     .icon-emerald {
       background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.22);
+      border: 1px solid rgba(16, 185, 129, 0.24);
       color: #34d399;
     }
 
-    .icon-cyan {
-      background: rgba(6, 182, 212, 0.08);
-      border: 1px solid rgba(6, 182, 212, 0.22);
-      color: #38bdf8;
+    .icon-blue {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.24);
+      color: #60a5fa;
     }
 
     .icon-amber {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.22);
+      background: rgba(217, 119, 6, 0.08);
+      border: 1px solid rgba(217, 119, 6, 0.24);
       color: #fbbf24;
     }
 
-    .icon-purple {
-      background: rgba(168, 85, 247, 0.08);
-      border: 1px solid rgba(168, 85, 247, 0.22);
-      color: #c084fc;
-    }
-
-    .metric-card:hover .metric-icon-box {
-      transform: scale(1.05);
+    .icon-slate {
+      background: rgba(148, 163, 184, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      color: #cbd5e1;
     }
 
     .metric-info h4 {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: var(--text-primary);
       margin-bottom: 2px;
@@ -351,7 +329,7 @@
 
     .section-header {
       text-align: center;
-      margin-bottom: 50px;
+      margin-bottom: 48px;
     }
 
     .section-tag {
@@ -359,23 +337,25 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: var(--accent-green);
+      color: var(--accent-green-light);
       margin-bottom: 10px;
       display: block;
     }
 
     .section-title {
-      font-size: 36px;
+      font-size: 34px;
       font-weight: 800;
-      letter-spacing: -1px;
-      margin-bottom: 14px;
+      letter-spacing: -0.8px;
+      margin-bottom: 12px;
+      color: var(--text-primary);
     }
 
     .section-subtitle {
       font-size: 16px;
       color: var(--text-secondary);
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto;
+      line-height: 1.6;
     }
 
     /* Solutions 3-Pillars Cards */
@@ -388,20 +368,20 @@
     .solution-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px 28px;
+      border-radius: 16px;
+      padding: 32px 26px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       position: relative;
       overflow: hidden;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
     }
 
     .solution-card:hover {
-      border-color: var(--border-accent);
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+      border-color: var(--border-strong);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
     }
 
     .card-top {
@@ -420,28 +400,29 @@
     }
 
     .pill-green {
-      background: rgba(16, 185, 129, 0.1);
+      background: rgba(16, 185, 129, 0.08);
       color: #34d399;
       border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
-    .pill-cyan {
-      background: rgba(6, 182, 212, 0.12);
-      color: #38bdf8;
-      border: 1px solid rgba(6, 182, 212, 0.25);
+    .pill-blue {
+      background: rgba(59, 130, 246, 0.08);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.25);
     }
 
     .pill-amber {
-      background: rgba(245, 158, 11, 0.12);
+      background: rgba(217, 119, 6, 0.08);
       color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.25);
+      border: 1px solid rgba(217, 119, 6, 0.25);
     }
 
     .solution-card h3 {
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 800;
       margin-bottom: 12px;
       line-height: 1.3;
+      color: var(--text-primary);
     }
 
     .solution-card p.card-desc {
@@ -470,7 +451,7 @@
     .features-list li svg {
       width: 16px;
       height: 16px;
-      stroke: var(--accent-green);
+      stroke: var(--accent-green-light);
       flex-shrink: 0;
     }
 
@@ -487,18 +468,18 @@
       gap: 8px;
       width: 100%;
       padding: 12px 18px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border-strong);
       color: var(--text-primary);
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       text-decoration: none;
       transition: all 0.2s ease;
     }
 
     .btn-card-primary:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.1);
       border-color: rgba(255, 255, 255, 0.3);
       color: #fff;
     }
@@ -510,48 +491,47 @@
       gap: 8px;
       width: 100%;
       padding: 12px 18px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+      border-radius: 10px;
+      background: #059669;
       color: #ffffff;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       text-decoration: none;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 4px 16px rgba(5, 150, 105, 0.25);
+      border: 1px solid #10B981;
       transition: all 0.2s ease;
     }
 
     .btn-card-direct:hover {
-      background: linear-gradient(180deg, #059669 0%, #047857 100%);
+      background: #047857;
       transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
     }
 
-    /* About & Synergy Section */
+    /* About & Studio Section */
     .synergy-box {
-      background: linear-gradient(180deg, #12151B 0%, #0E1015 100%);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 48px;
+      border-radius: 20px;
+      padding: 44px;
       position: relative;
     }
 
     .synergy-content {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.1fr 0.9fr;
       gap: 40px;
       align-items: center;
     }
 
     .synergy-text h3 {
-      font-size: 30px;
+      font-size: 28px;
       font-weight: 800;
       letter-spacing: -0.5px;
       margin-bottom: 16px;
+      color: var(--text-primary);
     }
 
     .synergy-text p {
-      font-size: 15.5px;
+      font-size: 15px;
       color: var(--text-secondary);
       line-height: 1.7;
       margin-bottom: 24px;
@@ -564,12 +544,12 @@
     }
 
     .synergy-badge {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border);
-      padding: 6px 14px;
-      border-radius: 999px;
+      padding: 6px 12px;
+      border-radius: 8px;
       color: var(--text-primary);
       display: inline-flex;
       align-items: center;
@@ -581,67 +561,86 @@
       height: 6px;
       border-radius: 50%;
     }
-    .badge-dot.green { background: #10B981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
-    .badge-dot.cyan { background: #06B6D4; box-shadow: 0 0 6px rgba(6,182,212,0.6); }
-    .badge-dot.amber { background: #F59E0B; box-shadow: 0 0 6px rgba(245,158,11,0.6); }
-    .badge-dot.purple { background: #A855F7; box-shadow: 0 0 6px rgba(168,85,247,0.6); }
+    .badge-dot.green { background: #10B981; }
+    .badge-dot.blue { background: #3B82F6; }
+    .badge-dot.amber { background: #F59E0B; }
+    .badge-dot.slate { background: #94A3B8; }
 
-    .synergy-visual {
-      background: #090A0D;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-      font-family: var(--font-mono);
-      font-size: 13px;
+    /* Executive Tech Sheet */
+    .tech-sheet {
+      background: #0D1017;
+      border: 1px solid var(--border-strong);
+      border-radius: 14px;
+      padding: 22px 24px;
     }
 
-    .terminal-line {
+    .tech-sheet-header {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
+    }
+
+    .tech-sheet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .tech-sheet-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tech-sheet-item .label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: var(--text-muted);
     }
 
-    .terminal-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #ef4444;
+    .tech-sheet-item .value {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.4;
     }
-    .terminal-dot.y { background: #f59e0b; }
-    .terminal-dot.g { background: #10B981; }
-
-    .code-block {
-      color: #94A3B8;
-      line-height: 1.7;
-    }
-    .code-block .accent { color: #34d399; }
-    .code-block .cyan { color: #06B6D4; }
 
     /* CTA Final Banner */
     .cta-banner {
-      background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12) 0%, rgba(18, 21, 27, 0.95) 70%);
-      border: 1px solid var(--border-accent);
-      border-radius: 24px;
-      padding: 60px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      padding: 56px 24px;
       text-align: center;
       margin: 80px auto;
-      max-width: 1000px;
+      max-width: 960px;
     }
 
     .cta-banner h2 {
-      font-size: 38px;
+      font-size: 34px;
       font-weight: 800;
-      letter-spacing: -1px;
-      margin-bottom: 16px;
+      letter-spacing: -0.8px;
+      margin-bottom: 14px;
+      color: var(--text-primary);
     }
 
     .cta-banner p {
-      font-size: 17px;
+      font-size: 16.5px;
       color: var(--text-secondary);
-      max-width: 600px;
+      max-width: 620px;
       margin: 0 auto 32px;
+      line-height: 1.6;
     }
 
     /* Footer */
@@ -911,16 +910,9 @@
         font-size: 11.5px;
         padding: 5px 10px;
       }
-      .synergy-visual {
-        padding: 14px 12px;
+      .tech-sheet {
+        padding: 16px 14px;
         border-radius: 12px;
-        font-size: 11px;
-        overflow-x: auto;
-      }
-      .code-block {
-        font-size: 11px;
-        line-height: 1.55;
-        word-break: break-word;
       }
 
       .cta-banner {
@@ -999,16 +991,16 @@
 
       <ul class="nav-links">
         <li><a href="#soluciones">Soluciones</a></li>
-        <li><a href="/sofia">Sofía AI WhatsApp</a></li>
+        <li><a href="/sofia">Sofía WhatsApp</a></li>
         <li><a href="/actualizador">Actualizador PRO</a></li>
         <li><a href="https://aircontrolpro.net/" target="_blank">Air Control ↗</a></li>
         <li><a href="#contacto">Contacto</a></li>
       </ul>
 
       <div class="nav-actions">
-        <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20vengo%20desde%20la%20web%20de%20SOF-IA%20Agency%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-wa-header">
+        <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20vengo%20desde%20la%20web%20de%20SOF-IA%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-wa-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
-          Hablar con Asesor
+          Hablar con Javier
         </a>
       </div>
     </div>
@@ -1016,29 +1008,26 @@
 
   <!-- Hero Section -->
   <section class="hero">
-    <div class="hero-glow"></div>
-
     <div class="badge-agency">
-      ESTUDIO DE TECNOLOGÍA • INTELIGENCIA ARTIFICIAL, SOFTWARE &amp; IOT
+      ESTUDIO DE SOFTWARE, AUTOMATIZACIÓN &amp; IOT • PARANÁ, ENTRE RÍOS
     </div>
 
     <h1>
-      <span class="gradient-text">Desarrollamos soluciones que</span><br>
-      <span class="accent-text">automatizan y monetizan tu negocio.</span>
+      Software robusto, automatización para WhatsApp y hardware IoT.
     </h1>
 
     <p class="lead">
-      En <strong>SOF-IA</strong> creamos asistentes conversacionales autónomos para WhatsApp, software de escritorio de alta velocidad y dispositivos de hardware conectados a pasarelas de pago para maximizar tu rentabilidad operativa.
+      En <strong>SOF-IA</strong> desarrollamos tecnología aplicada a la economía real: recepcionistas automáticas para consultorios que sincronizan turnos en tu propio Excel, procesadores masivos de listas de precios para distribuidoras y controladores inteligentes con cobro por Mercado Pago.
     </p>
 
     <div class="hero-actions">
       <a href="#soluciones" class="btn-primary-hero">
-        Explorar los 3 Productos
+        Conocer las 3 Soluciones
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
       </a>
-      <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20conocer%20m%C3%A1s%20sobre%20las%20soluciones%20de%20SOF-IA." target="_blank" class="btn-secondary-hero">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Consultar Proyecto a Medida
+      <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20vengo%20desde%20la%20web%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-secondary-hero">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
+        Conversar con Javier por WhatsApp
       </a>
     </div>
 
@@ -1053,20 +1042,20 @@
           </svg>
         </div>
         <div class="metric-info">
-          <h4>Meta Cloud &amp; Gemini</h4>
-          <p>IA Multimodal 24/7</p>
+          <h4>WhatsApp Cloud API</h4>
+          <p>Integración oficial sin clones</p>
         </div>
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon-box icon-cyan">
+        <div class="metric-icon-box icon-blue">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
         </div>
         <div class="metric-info">
-          <h4>Velocidad &lt; 3s</h4>
-          <p>Cálculo masivo de catálogos</p>
+          <h4>Motor Numérico Local</h4>
+          <p>50.000 filas en 3 segundos</p>
         </div>
       </div>
 
@@ -1079,22 +1068,21 @@
           </svg>
         </div>
         <div class="metric-info">
-          <h4>Smart IoT &amp; Mercado Pago</h4>
-          <p>Monetización por tiempo</p>
+          <h4>Hardware IoT Seguro</h4>
+          <p>Cobro y corte automático MP</p>
         </div>
       </div>
 
       <div class="metric-card">
-        <div class="metric-icon-box icon-purple">
+        <div class="metric-icon-box icon-slate">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
           </svg>
         </div>
         <div class="metric-info">
-          <h4>Paraná, Entre Ríos</h4>
-          <p>Cobertura nacional e internacional</p>
+          <h4>Soporte Directo</h4>
+          <p>Atención por su desarrollador</p>
         </div>
       </div>
     </div>
@@ -1103,9 +1091,9 @@
   <!-- Solutions Showcase -->
   <section class="section-wrap" id="soluciones">
     <div class="section-header">
-      <span class="section-tag">NUESTRO ECOSISTEMA PRODUCTIVO</span>
-      <h2 class="section-title">3 Soluciones diseñadas para resolver problemas reales</h2>
-      <p class="section-subtitle">Soluciones de software, hardware e inteligencia artificial listas para transformar comercios, clínicas, distribuidoras y complejos turísticos.</p>
+      <span class="section-tag">SOLUCIONES PROBADAS EN PRODUCCIÓN</span>
+      <h2 class="section-title">Tres herramientas concretas para problemas reales</h2>
+      <p class="section-subtitle">Sistemas instalados, configurados y funcionando en consultorios, distribuidoras y complejos turísticos.</p>
     </div>
 
     <div class="solutions-grid">
@@ -1113,36 +1101,36 @@
       <!-- Solution 1: Sofía AI -->
       <div class="solution-card">
         <div class="card-top">
-          <span class="pill-rubro pill-green">IA Conversacional &amp; ERP WhatsApp</span>
-          <h3>Sofía AI — Recepcionista &amp; Operadora Autónoma</h3>
+          <span class="pill-rubro pill-green">Consultorios Médicos &amp; Comercios</span>
+          <h3>Sofía AI — Asistente de WhatsApp con Sincronización Excel</h3>
           <p class="card-desc">
-            Atiende consultas las 24 horas sobre la API oficial de WhatsApp. Agenda turnos sincronizados en tiempo real sobre Excel/DB, cobra señas y activa el exclusivo 'Modo Jefe' para reportes ejecutivos.
+            Atiende consultas las 24 horas sobre la API oficial de WhatsApp. Responde preguntas frecuentes, agenda turnos sincronizados en tu propia planilla Excel o base de datos y te notifica cancelaciones al instante.
           </p>
           <ul class="features-list">
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Multi-rubro: Clínicas, Médicos, Ferreterías
+              Sincroniza con el Excel que tu secretaria ya usa
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Recordatorios 48h/24h anti-inasistencias
+              Recordatorios preventivos 48h y 24h anti-inasistencias
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Modo Jefe: Pedidos de stock y reportes
+              Modo Jefe: reportes diarios y control por WhatsApp
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Conexión directa Meta Cloud sin intermediarios
+              Conexión directa oficial Meta Cloud sin intermediarios
             </li>
           </ul>
         </div>
         <div class="card-actions">
           <a href="/sofia" class="btn-card-primary">
-            Ver Propuesta Comercial &amp; Modelos →
+            Ver Propuesta &amp; Modelos Operativos →
           </a>
           <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" target="_blank" class="btn-card-direct">
-            Probar Bot en Vivo en WhatsApp
+            Probar Demo en Vivo en WhatsApp
           </a>
         </div>
       </div>
@@ -1150,27 +1138,27 @@
       <!-- Solution 2: Actualizador PRO -->
       <div class="solution-card">
         <div class="card-top">
-          <span class="pill-rubro pill-cyan">Software de Escritorio &amp; Retail</span>
-          <h3>Súper Actualizador PRO — Listas en 3 Segundos</h3>
+          <span class="pill-rubro pill-blue">Ferreterías &amp; Distribuidoras</span>
+          <h3>Súper Actualizador PRO — Procesador Masivo de Listas de Precios</h3>
           <p class="card-desc">
-            Software de escritorio ultra-rápido para comercios, ferreterías y distribuidoras. Detecta automáticamente columnas de proveedores, calcula aumentos porcentuales y márgenes, y exporta listo para tu sistema.
+            Software de escritorio para Windows desarrollado para comercios con catálogos pesados. Aplica aumentos, calcula márgenes de ganancia con IVA y exporta listas listas para tu sistema en 3 segundos.
           </p>
           <ul class="features-list">
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              100% Offline y seguro: tus datos no viajan a la nube
+              100% Offline: tus listas y márgenes nunca salen de tu PC
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Maneja listas gigantes de +50.000 filas
+              Procesa catálogos gigantes de +50.000 filas sin trabarse
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Fórmulas automáticas de IVA y utilidad neta
+              Detección automática de columnas de proveedores
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              7 Días de prueba completa sin tarjeta
+              7 Días de prueba completa sin tarjeta ni compromiso
             </li>
           </ul>
         </div>
@@ -1187,10 +1175,10 @@
       <!-- Solution 3: Air Control -->
       <div class="solution-card">
         <div class="card-top">
-          <span class="pill-rubro pill-amber">Internet de las Cosas (IoT) + FinTech</span>
-          <h3>Air Control — Climatización Prepaga con Enchufes Smart</h3>
+          <span class="pill-rubro pill-amber">Cabañas, Alojamientos &amp; Complejos</span>
+          <h3>Air Control — Climatización Prepaga con Mercado Pago</h3>
           <p class="card-desc">
-            Sistema inteligente con enchufes smart homologados y Mercado Pago. El huésped escanea el código QR en la habitación, abona las horas de uso y el suministro se activa y corta automáticamente.
+            Control inteligente de energía para equipos de aire acondicionado. El huésped escanea el QR en la habitación, abona las horas de uso y el enchufe inteligente habilita el suministro por el tiempo contratado.
           </p>
           <ul class="features-list">
             <li>
@@ -1199,24 +1187,24 @@
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Ahorro de hasta el 60% en la factura eléctrica
+              Reduce hasta un 60% el consumo eléctrico en temporada
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Cobro automatizado de 1 clic con Mercado Pago
+              Cobro instantáneo y automático a tu cuenta de Mercado Pago
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Plug &amp; Play: instalación inmediata sin modificar la instalación
+              Instalación rápida sin romper paredes ni modificar cableados
             </li>
           </ul>
         </div>
         <div class="card-actions">
-          <a href="https://aircontrolpro.net/" target="_blank" class="btn-card-primary" style="border-color: rgba(245, 158, 11, 0.35); color: #fbbf24;">
-            Visitar Landing Oficial (AirControlPro.net) ↗
+          <a href="https://aircontrolpro.net/" target="_blank" class="btn-card-primary">
+            Visitar Sitio Oficial (AirControlPro.net) ↗
           </a>
-          <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20consultar%20por%20Air%20Control%20para%20mi%20complejo." target="_blank" class="btn-card-direct" style="background: linear-gradient(180deg, #D97706 0%, #B45309 100%); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 16px rgba(180, 83, 9, 0.3);">
-            Consultar Instalación para Cabañas
+          <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20consultar%20por%20Air%20Control%20para%20mi%20complejo." target="_blank" class="btn-card-direct" style="background: #D97706; border-color: #F59E0B;">
+            Consultar Instalación para Alojamientos
           </a>
         </div>
       </div>
@@ -1224,41 +1212,45 @@
     </div>
   </section>
 
-  <!-- Synergy / Agency DNA -->
+  <!-- Studio DNA & Engineering -->
   <section class="section-wrap">
     <div class="synergy-box">
       <div class="synergy-content">
         <div class="synergy-text">
-          <span class="section-tag">EL ADN DE SOF-IA</span>
-          <h3>Ingeniería directa, sin burocracia ni intermediarios</h3>
+          <span class="section-tag">DESARROLLO ARTESANAL &amp; SOPORTE DIRECTO</span>
+          <h3>Tecnología propia, sin intermediarios ni plataformas enlatadas</h3>
           <p>
-            No somos revendedores de plataformas genéricas. En <strong>SOF-IA Tech &amp; AI Studio</strong> desarrollamos soluciones con ingeniería propia: arquitecturas de agentes multimodales autónomos, software de procesamiento masivo de datos e integraciones IoT con enchufes inteligentes homologados y pasarelas de pago.
+            En <strong>SOF-IA</strong> no revendemos licencias de terceros que mañana dejan de funcionar. Cada sistema está desarrollado a medida con código limpio, bases de datos seguras y hardware homologado. Cuando necesitás una adaptación o tenés una consulta, hablás directamente con el desarrollador que escribió el código.
           </p>
           <div class="synergy-badges">
             <span class="synergy-badge"><span class="badge-dot green"></span>FastAPI / Python 3.12</span>
-            <span class="synergy-badge"><span class="badge-dot cyan"></span>Meta Cloud API Oficial</span>
-            <span class="synergy-badge"><span class="badge-dot green"></span>Google Gemini 1.5 Multimodal</span>
-            <span class="synergy-badge"><span class="badge-dot amber"></span>Smart Plugs Homologados IoT</span>
-            <span class="synergy-badge"><span class="badge-dot cyan"></span>Mercado Pago SDK &amp; Webhooks</span>
-            <span class="synergy-badge"><span class="badge-dot purple"></span>Motor Numérico de Alta Velocidad</span>
+            <span class="synergy-badge"><span class="badge-dot green"></span>Meta Cloud API Oficial</span>
+            <span class="synergy-badge"><span class="badge-dot blue"></span>Motor Numérico Local C++/Python</span>
+            <span class="synergy-badge"><span class="badge-dot amber"></span>Hardware Homologado IoT</span>
+            <span class="synergy-badge"><span class="badge-dot blue"></span>Mercado Pago SDK Oficial</span>
+            <span class="synergy-badge"><span class="badge-dot slate"></span>PostgreSQL &amp; SQLite Local</span>
           </div>
         </div>
 
-        <div class="synergy-visual">
-          <div class="terminal-line">
-            <span class="terminal-dot"></span>
-            <span class="terminal-dot y"></span>
-            <span class="terminal-dot g"></span>
-            <span>sof-ia-studio-stack.sys</span>
+        <div class="tech-sheet">
+          <div class="tech-sheet-header">
+            <span>COMPROMISOS DE CALIDAD &amp; SOPORTE</span>
+            <span style="color: var(--accent-green-light);">OPERATIVO</span>
           </div>
-          <div class="code-block">
-            <span class="accent">// SOF-IA Tech Stack Manifesto</span><br>
-            [01] <strong>AI AGENTS:</strong> Gemini 1.5 Multimodal + Official Meta Cloud<br>
-            [02] <strong>DESKTOP CORE:</strong> Ultra-fast bulk data pricing parser<br>
-            [03] <strong>SMART IOT:</strong> Enchufes Homologados + Webhook Mercado Pago<br>
-            [04] <strong>DATABASE:</strong> SQLite / PostgreSQL / Multi-tenant isolation<br>
-            <span class="cyan">&gt; Status: All 3 Flagship Systems Online &amp; Production-Ready.</span>
-          </div>
+          <ul class="tech-sheet-list">
+            <li class="tech-sheet-item">
+              <span class="label">Infraestructura Directa</span>
+              <span class="value">Conexión oficial WhatsApp Cloud de Meta; tu número queda a tu nombre sin riesgo de baneo.</span>
+            </li>
+            <li class="tech-sheet-item">
+              <span class="label">Propiedad de los Datos</span>
+              <span class="value">Tus planillas Excel, bases de datos y registros comerciales son 100% de tu exclusiva propiedad.</span>
+            </li>
+            <li class="tech-sheet-item">
+              <span class="label">Soporte Humano Dedicado</span>
+              <span class="value">Atención mano a mano desde Paraná, Entre Ríos, con respuesta directa y puesta en marcha guiada.</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -1267,9 +1259,9 @@
   <!-- CTA Banner -->
   <section class="section-wrap" id="contacto">
     <div class="cta-banner">
-      <h2>¿Tenés un comercio, empresa o proyecto?</h2>
+      <h2>¿Tenés un comercio, consultorio o complejo?</h2>
       <p>
-        Charlemos sin compromiso. Te mostramos cómo podés implementar cualquiera de nuestras soluciones en cuestión de días.
+        Conversemos de forma directa. Te mostramos cómo podés implementar cualquiera de nuestras soluciones en cuestión de días y con resultados comprobables.
       </p>
       <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
         <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20coordinar%20una%20demostraci%C3%B3n%20de%20las%20soluciones%20de%20SOF-IA." target="_blank" class="btn-primary-hero">
@@ -1287,8 +1279,8 @@
   <footer>
     <div class="footer-container">
       <div>
-        <strong>SOF-IA Tech &amp; AI Studio</strong> — Paraná, Entre Ríos, Argentina.<br>
-        <span style="font-size: 12px; color: var(--text-muted);">Soluciones Tecnológicas, Inteligencia Artificial e Internet de las Cosas.</span>
+        <strong>SOF-IA Estudio Tecnológico</strong> — Paraná, Entre Ríos, Argentina.<br>
+        <span style="font-size: 12px; color: var(--text-muted);">Software a medida, Automatización y Soluciones IoT para la economía real.</span>
       </div>
       <ul class="footer-links">
         <li><a href="/">Home</a></li>
