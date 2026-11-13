@@ -26,7 +26,7 @@ def test_onboarding_page_routes_serve_html():
         assert "text/html" in response.headers.get("content-type", "")
         assert "Puesta en Marcha Digital" in response.text
         assert "sofia.ia.agency" in response.text
-        assert "30.000" in response.text
+        assert "Plan a Medida" in response.text
         # Verify Meta Cloud policy notice, personal phone distinction and email alert field are present
         assert "Requisito Oficial Obligatorio de Meta" in response.text
         assert "WhatsApp Personal del Titular" in response.text
