@@ -198,7 +198,14 @@ async def submit_client_onboarding(
     file_info = f"📎 Archivo adjunto: *{original_filename}*" if original_filename else ("📝 Precios cargados por texto" if price_notes else "ℹ️ Sin archivo adjunto")
     deposit_info = f"💰 Seña: ${deposit_amount}" if requires_dep_bool and deposit_amount else ("💰 Seña requerida" if requires_dep_bool else "Pago en el local")
     line_mode_info = f"📲 Línea Propia Exclusiva" + (f" (+{clean_dedicated})" if clean_dedicated else " (chip nuevo a homologar)") if is_dedicated else "🌐 Central Verificada Compartida (Enlace/QR)"
-    agenda_info = "📅 Agenda: Libre desde cero" if agenda_status == "libre" else f"📅 Agenda: {agenda_status}"
+    agenda_map = {
+        "excel_centinela": "💻 Excel en PC (Centinela)",
+        "google_calendar": "📅 Google Calendar",
+        "libre": "🟢 Agenda libre desde cero",
+        "con_turnos_anotados": "📝 Con turnos anotados",
+        "a_demanda_sin_turnos": "🏬 A demanda / Sin turnos fijos"
+    }
+    agenda_info = f"📅 Modalidad Agenda: {agenda_map.get(agenda_status, agenda_status)}"
 
     alert_text = (
         f"🎉 *[NUEVA ALTA DE CLIENTE ONLINE]* 🚀\n\n"

@@ -626,30 +626,40 @@
           </div>
         </div>
 
-        <!-- PASO 4: ARANCELES, PRECIOS Y SUBIDA DE LISTAS / AGENDA -->
+        <!-- PASO 4: SERVICIOS, ARANCELES Y MODALIDAD DE AGENDA -->
         <div class="step-section">
           <div class="step-title">
             <div class="step-num">4</div>
-            <span>Servicios, Precios & Agenda Vigente</span>
+            <span>Servicios, Precios &amp; Agenda Vigente</span>
+          </div>
+
+          <!-- AVISO DE TRANQUILIDAD CENTINELA -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px;">
+            <span style="font-size: 20px; line-height: 1;">💡</span>
+            <div style="font-size: 13px; color: #d1d5db; line-height: 1.5;">
+              <strong style="color: #6ee7b7;">¿Ya tenés turnos dados para los próximos días?</strong><br>
+              No te preocupes: <strong>no tenés que cargar turnos a mano</strong>. Nuestro instalador de 1 clic (Centinela) en la PC de tu consultorio detecta y sincroniza automáticamente cualquier planilla de Excel existente sin que muevas un solo dedo.
+            </div>
           </div>
 
           <div class="field-group">
-            <label>¿Tenés turnos ya agendados o clientes activos para los próximos días?</label>
+            <label>¿Cómo gestionás tus turnos actualmente?</label>
             <select name="agenda_status">
-              <option value="libre" selected>🟢 Arranco con la agenda libre desde cero</option>
-              <option value="con_turnos_anotados">📝 Sí, tengo turnos ya dados (subo foto de mi libreta / planilla abajo)</option>
-              <option value="a_demanda_sin_turnos">🏬 No uso turnos fijos (gimnasio / comercio / atención a demanda)</option>
+              <option value="excel_centinela" selected>💻 Planilla de Excel en la PC de recepción (Sincronización Centinela automática)</option>
+              <option value="google_calendar">📅 Google Calendar / Turnero en la nube</option>
+              <option value="libre">🟢 Quiero arrancar la agenda digital desde cero con Sofía</option>
+              <option value="a_demanda_sin_turnos">🏬 No uso turnos fijos (comercio / gimnasio / atención por llegada)</option>
             </select>
-            <span class="hint">Si ya diste turnos para esta semana o la próxima, Sofía los respetará para que jamás se te superponga ningún horario.</span>
+            <span class="hint">Sofía se adaptará a tu modalidad para que tu equipo siga trabajando exactamente como está acostumbrado.</span>
           </div>
 
           <div class="field-group">
-            <label>Subí tu Lista de Precios, Agenda Actual o Planilla de Clientes (Opcional)</label>
+            <label>Subí tu Lista de Precios o Aranceles (Opcional)</label>
             <div class="upload-box" id="dropArea" onclick="document.getElementById('catalogFileInput').click()">
               <input type="file" name="catalog_file" id="catalogFileInput" style="display: none;" accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.doc,.docx" onchange="handleFileSelected(this)">
               <div class="upload-icon">📄</div>
-              <div class="upload-title">Hacé clic para seleccionar o arrastrá tu archivo acá</div>
-              <div class="upload-subtitle">Formatos admitidos: PDF, Excel, fotos del cuaderno de turnos, cartelera o Word</div>
+              <div class="upload-title">Hacé clic para seleccionar o arrastrá tu lista de precios acá</div>
+              <div class="upload-subtitle">Formatos admitidos: PDF, Excel, fotos de la cartelera de aranceles o Word</div>
               <div class="file-selected-info" id="fileSelectedInfo">
                 <span>✓ Archivo seleccionado:</span> <span id="fileNameLabel"></span>
               </div>
@@ -657,8 +667,8 @@
           </div>
 
           <div class="field-group">
-            <label>O pegá tus servicios, aranceles o aclaraciones de turnos en texto</label>
-            <textarea name="price_notes" rows="3" placeholder="Ej: Consulta clínica $18.000. Limpieza $35.000. El lunes de 10 a 11 ya está ocupado..."></textarea>
+            <label>O pegá tus servicios, aranceles o aclaraciones comerciales en texto</label>
+            <textarea name="price_notes" rows="3" placeholder="Ej: Consulta clínica $18.000. Limpieza $35.000. Atendemos OSDE y Swiss Medical..."></textarea>
             <span class="hint">Si tenés dudas, no te preocupes: después de enviar podés mandarnos audios por WhatsApp para sumar o corregir cualquier detalle.</span>
           </div>
         </div>
