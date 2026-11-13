@@ -1665,61 +1665,74 @@
 
     <!-- Official Pricing & Plans Section -->
     <div class="section-header" id="precios">
-      <div class="section-tag" data-i18n="pricing_tag">Estructura Comercial Transparente</div>
-      <h2 class="section-title" data-i18n="pricing_title">Planes Transparentes y Accesibles para Cada Negocio</h2>
-      <p class="section-sub" data-i18n="pricing_sub">Elegí entre Central Compartida ($30.000/mes) o Línea Propia Exclusiva ($45.000/mes). Sin comisiones sobre tus ventas y con cancelación libre.</p>
+      <div class="section-tag" data-i18n="pricing_tag">Modelos de Implementación</div>
+      <h2 class="section-title" data-i18n="pricing_title">Soluciones a Medida para Cada Escala de Negocio</h2>
+      <p class="section-sub" data-i18n="pricing_sub">Desde consultorios individuales hasta clínicas de alta complejidad y empresas distribuidoras. Cada implementación se calibra según el volumen de turnos, cantidad de agendas e infraestructura técnica requerida.</p>
+    </div>
+
+    <!-- ROI Highlight Callout -->
+    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 14px; padding: 20px 24px; margin-bottom: 28px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div>
+        <h4 style="font-size: 15px; font-weight: 700; color: #F4F3EE; margin-bottom: 3px;" data-i18n="roi_title">Retorno de Inversión Inmediato</h4>
+        <p style="font-size: 13.5px; color: #94A3B8; margin: 0; line-height: 1.5;" data-i18n="roi_desc">Sofía se autofinancia desde la primera semana de operación: con solo rescatar 2 o 3 turnos caídos o concretar ventas fuera de hora, el sistema cubre el 100% de su costo operativo mensual.</p>
+      </div>
     </div>
 
     <section class="pricing-grid">
       <!-- Plan Central Compartida -->
       <div class="pricing-card">
         <div>
-          <h3 class="pricing-plan-name" data-i18n="plan_shared_title">Plan Central Compartida</h3>
-          <p class="pricing-plan-desc" data-i18n="plan_shared_desc">Ideal para consultorios individuales, profesionales de la salud, estética y comercios barriales.</p>
+          <h3 class="pricing-plan-name" data-i18n="plan_shared_title">Nivel Consultorio &amp; Profesional Independiente</h3>
+          <p class="pricing-plan-desc" data-i18n="plan_shared_desc">Diseñado para médicos, odontólogos, kinesiólogos, psicólogos, veterinarias y profesionales con agenda individual o consultorio propio.</p>
           
-          <div class="pricing-price-wrap">
-            <div class="pricing-price">$30.000</div>
-            <div class="pricing-currency">ARS / mes</div>
+          <div class="pricing-price-wrap" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+            <div class="pricing-price" style="font-size: 26px; color: #34d399;" data-i18n="plan_shared_tier">Plan Profesional</div>
+            <div class="pricing-currency" data-i18n="plan_shared_currency">Propuesta adaptada a tu volumen de consultas</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_shared_setup">Laboratorio de Calibración &amp; Onboarding: $30.000 ARS</div>
+          <div class="pricing-setup" data-i18n="plan_shared_setup" style="margin-top: 10px; margin-bottom: 20px;">Onboarding, Carga de Lista &amp; Calibración Personalizada</div>
 
           <ul class="pricing-features-list">
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_1">Atención entrante 24/7 ILIMITADA en línea oficial verificada</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_2"><strong>150 Mensajes Salientes Automáticos incluidos al mes</strong> (turnos, cuotas o retiros)</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_4">Modo Director por voz desde el WhatsApp del titular</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_5">Packs de recarga prepago disponibles si superás los 150 mensajes</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_1">Atención entrante 24/7 ILIMITADA en WhatsApp con fluidez humana (texto y audio)</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_2"><strong>1 Agenda sincronizada</strong> (Google Calendar / Turnero local)</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_3"><strong>Protocolo Anti-Ausentismo</strong>: confirmación y rescate automático de turnos cancelados en &lt; 90s</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_4">Modo Director por notas de voz directo desde el WhatsApp del titular</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_shared_5">Puesta en marcha rápida en 48-72 hs sin cambiar tu número ni instalar aplicaciones</span></li>
           </ul>
         </div>
 
-        <a href="https://wa.me/5493435720312?text=Hola,%20quiero%20iniciar%20con%20el%20Plan%20Central%20Compartida%20de%20Sofia%20AI" class="btn-secondary" style="width: 100%; text-align: center;" data-i18n="plan_shared_cta">
-          Elegir Plan Central →
+        <a href="https://wa.me/5493435720312?text=Hola%2C%20quiero%20consultar%20por%20la%20implementaci%C3%B3n%20de%20Sofia%20AI%20para%20mi%20Consultorio" class="btn-secondary" style="width: 100%; text-align: center; justify-content: center; padding: 13px;" data-i18n="plan_shared_cta">
+          Consultar Propuesta para Consultorio →
         </a>
       </div>
 
       <!-- Plan Enterprise Línea Propia -->
       <div class="pricing-card featured">
-        <span class="pricing-badge-popular" data-i18n="plan_enterprise_badge">Más Recomendado</span>
+        <span class="pricing-badge-popular" data-i18n="plan_enterprise_badge">Institucional &amp; Clínicas</span>
         <div>
-          <h3 class="pricing-plan-name" data-i18n="plan_enterprise_title">Plan Enterprise — Línea Propia</h3>
-          <p class="pricing-plan-desc" data-i18n="plan_enterprise_desc">Para clínicas, gimnasios, ópticas, talleres y distribuidoras que desean su propio número oficial exclusivo.</p>
+          <h3 class="pricing-plan-name" data-i18n="plan_enterprise_title">Nivel Clínica, Sanatorio &amp; PyME</h3>
+          <p class="pricing-plan-desc" data-i18n="plan_enterprise_desc">Para centros médicos, sanatorios, policonsultorios, distribuidoras y empresas con múltiples secretarias o especialidades.</p>
           
-          <div class="pricing-price-wrap">
-            <div class="pricing-price">$45.000</div>
-            <div class="pricing-currency">ARS / mes</div>
+          <div class="pricing-price-wrap" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+            <div class="pricing-price" style="font-size: 26px; color: #38bdf8;" data-i18n="plan_enterprise_tier">Plan Enterprise a Medida</div>
+            <div class="pricing-currency" data-i18n="plan_enterprise_currency">Cotización personalizada según infraestructura y flujo</div>
           </div>
-          <div class="pricing-setup" data-i18n="plan_enterprise_setup">Homologación Meta &amp; Laboratorio de Calibración: $80.000 ARS</div>
+          <div class="pricing-setup" data-i18n="plan_enterprise_setup" style="margin-top: 10px; margin-bottom: 20px;">Homologación Oficial Meta Cloud + Conexión Centinela en PC</div>
 
           <ul class="pricing-features-list">
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_1"><strong>Número y chip propio exclusivo</strong> del comercio en Meta Cloud API</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_2"><strong>Mensajes Salientes ILIMITADOS</strong> (Meta debita el consumo a la tarjeta del comercio)</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_3">Perfil corporativo con logo, catálogo y tilde verde oficial</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_4">Soporte multi-secretaria con integración al grupo de WhatsApp de recepción</span></li>
-            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_5">Aislamiento total de riesgo y reputación de línea garantizada</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_1"><strong>Línea y chip propio exclusivo</strong> verificado en Meta Cloud API con tilde verde</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_2"><strong>Multi-Especialidad y Multi-Agenda</strong> con derivación inteligente por profesional</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_3"><strong>Integración con software local en PC (Centinela)</strong>: sincroniza tu sistema médico sin abrir puertos</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_4">Soporte multi-secretaria con integración al grupo de recepción interna</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_5">Mensajería saliente de reactivación masiva y campañas informativas</span></li>
+            <li><span class="check-icon">✓</span> <span data-i18n="feat_ent_6">Aislamiento total de base de datos, métricas avanzadas y soporte prioritario SLA</span></li>
           </ul>
         </div>
 
-        <a href="https://wa.me/5493435720312?text=Hola,%20me%20interesa%20el%20Plan%20Enterprise%20con%20Línea%20Propia%20para%20mi%20negocio" class="btn-primary" style="width: 100%; text-align: center;" data-i18n="plan_enterprise_cta">
-          Solicitar Homologación Enterprise →
+        <a href="https://wa.me/5493435720312?text=Hola%2C%20quiero%20solicitar%20una%20cotizaci%C3%B3n%20a%20medida%20de%20Sofia%20AI%20para%20mi%20Cl%C3%ADnica%20o%20Empresa" class="btn-primary" style="width: 100%; text-align: center; justify-content: center; padding: 13px;" data-i18n="plan_enterprise_cta">
+          Solicitar Cotización a Medida →
         </a>
       </div>
     </section>
@@ -1727,11 +1740,11 @@
     <!-- Packs Extra Callout -->
     <div class="packs-callout">
       <div class="packs-text">
-        <h4 data-i18n="packs_title">¿Precisás enviar campañas masivas de reactivación en el Plan Central?</h4>
-        <p data-i18n="packs_desc">Podés recargar packs adicionales en cualquier momento: <strong>Pack de 100 Mensajes Extra por solo $4.500 ARS</strong> vía Mercado Pago con acreditación inmediata.</p>
+        <h4 data-i18n="packs_title">¿Tenés un sistema de gestión existente o bases de datos propias?</h4>
+        <p data-i18n="packs_desc">En SOF-IA desarrollamos puentes a medida: conectamos a Sofía con tu software médico en PC (Centinela), planillas Excel o bases SQL sin cambiar tu forma de trabajar.</p>
       </div>
-      <a href="https://wa.me/5493435720312?text=Hola,%20quiero%20consultar%20por%20un%20pack%20de%20mensajes%20extra%20para%20Sofia%20AI" class="btn-secondary" style="padding: 10px 18px; font-size: 13.5px;" data-i18n="packs_cta">
-        Consultar Packs Extra
+      <a href="https://wa.me/5493435720312?text=Hola%20Javier%2C%20tengo%20un%20sistema%20de%20gesti%C3%B3n%20en%20mi%20cl%C3%ADnica%20y%20quiero%20saber%20c%C3%B3mo%20integrarlo%20con%20Sofia%20AI." class="btn-secondary" style="padding: 10px 18px; font-size: 13.5px; white-space: nowrap;" data-i18n="packs_cta">
+        Consultar Integración Especial
       </a>
     </div>
 
@@ -1949,30 +1962,38 @@
         rubro_b2b_title: "Comercios, Distribuidoras & Excel en Vivo",
         rubro_b2b_desc: "Toma de pedidos por audio, actualización de planillas de Excel en pantalla sin tocar la PC (Windows COM) y comparador inteligente que te avisa al instante qué proveedor tiene el mejor precio.",
         rubro_b2b_tag: "Excel en Vivo • Comparador Multi-Proveedor",
-        pricing_tag: "Estructura Comercial Transparente",
-        pricing_title: "Planes Transparentes y Accesibles para Cada Negocio",
-        pricing_sub: "Elegí entre Central Compartida ($30.000/mes) o Línea Propia Exclusiva ($45.000/mes). Sin comisiones sobre tus ventas y con cancelación libre.",
-        plan_shared_title: "Plan Central Compartida",
-        plan_shared_desc: "Ideal para consultorios individuales, profesionales de la salud, estética y comercios barriales.",
-        plan_shared_setup: "Laboratorio de Calibración & Onboarding: $30.000 ARS",
-        feat_shared_1: "Atención entrante 24/7 ILIMITADA en línea oficial verificada",
-        feat_shared_2: "150 Mensajes Salientes Automáticos incluidos al mes (turnos, cuotas o retiros)",
-        feat_shared_4: "Modo Director por voz desde el WhatsApp del titular",
-        feat_shared_5: "Packs de recarga prepago disponibles si superás los 150 mensajes",
-        plan_shared_cta: "Elegir Plan Central →",
-        plan_enterprise_badge: "Más Recomendado",
-        plan_enterprise_title: "Plan Enterprise — Línea Propia",
-        plan_enterprise_desc: "Para clínicas, gimnasios, ópticas, talleres y distribuidoras que desean su propio número oficial exclusivo.",
-        plan_enterprise_setup: "Homologación Meta & Laboratorio de Calibración: $80.000 ARS",
-        feat_ent_1: "Número y chip propio exclusivo del comercio en Meta Cloud API",
-        feat_ent_2: "Mensajes Salientes ILIMITADOS (Meta debita el consumo a la tarjeta del comercio)",
-        feat_ent_3: "Perfil corporativo con logo, catálogo y tilde verde oficial",
-        feat_ent_4: "Soporte multi-secretaria con integración al grupo de WhatsApp de recepción",
-        feat_ent_5: "Aislamiento total de riesgo y reputación de línea garantizada",
-        plan_enterprise_cta: "Solicitar Homologación Enterprise →",
-        packs_title: "¿Precisás enviar campañas masivas de reactivación en el Plan Central?",
-        packs_desc: "Podés recargar packs adicionales en cualquier momento: Pack de 100 Mensajes Extra por solo $4.500 ARS vía Mercado Pago con acreditación inmediata.",
-        packs_cta: "Consultar Packs Extra",
+        pricing_tag: "Modelos de Implementación",
+        pricing_title: "Soluciones a Medida para Cada Escala de Negocio",
+        pricing_sub: "Desde consultorios individuales hasta clínicas de alta complejidad y empresas distribuidoras. Cada implementación se calibra según el volumen de turnos, cantidad de agendas e infraestructura técnica requerida.",
+        roi_title: "Retorno de Inversión Inmediato",
+        roi_desc: "Sofía se autofinancia desde la primera semana de operación: con solo rescatar 2 o 3 turnos caídos o concretar ventas fuera de hora, el sistema cubre el 100% de su costo operativo mensual.",
+        plan_shared_title: "Nivel Consultorio & Profesional Independiente",
+        plan_shared_desc: "Diseñado para médicos, odontólogos, kinesiólogos, psicólogos, veterinarias y profesionales con agenda individual o consultorio propio.",
+        plan_shared_tier: "Plan Profesional",
+        plan_shared_currency: "Propuesta adaptada a tu volumen de consultas",
+        plan_shared_setup: "Onboarding, Carga de Lista & Calibración Personalizada",
+        feat_shared_1: "Atención entrante 24/7 ILIMITADA en WhatsApp con fluidez humana (texto y audio)",
+        feat_shared_2: "1 Agenda sincronizada (Google Calendar / Turnero local)",
+        feat_shared_3: "Protocolo Anti-Ausentismo: confirmación y rescate automático de turnos cancelados en < 90s",
+        feat_shared_4: "Modo Director por notas de voz directo desde el WhatsApp del titular",
+        feat_shared_5: "Puesta en marcha rápida en 48-72 hs sin cambiar tu número ni instalar aplicaciones",
+        plan_shared_cta: "Consultar Propuesta para Consultorio →",
+        plan_enterprise_badge: "Institucional & Clínicas",
+        plan_enterprise_title: "Nivel Clínica, Sanatorio & PyME",
+        plan_enterprise_desc: "Para centros médicos, sanatorios, policonsultorios, distribuidoras y empresas con múltiples secretarias o especialidades.",
+        plan_enterprise_tier: "Plan Enterprise a Medida",
+        plan_enterprise_currency: "Cotización personalizada según infraestructura y flujo",
+        plan_enterprise_setup: "Homologación Oficial Meta Cloud + Conexión Centinela en PC",
+        feat_ent_1: "Línea y chip propio exclusivo verificado en Meta Cloud API con tilde verde",
+        feat_ent_2: "Multi-Especialidad y Multi-Agenda con derivación inteligente por profesional",
+        feat_ent_3: "Integración con software local en PC (Centinela): sincroniza tu sistema médico sin abrir puertos",
+        feat_ent_4: "Soporte multi-secretaria con integración al grupo de recepción interna",
+        feat_ent_5: "Mensajería saliente de reactivación masiva y campañas informativas",
+        feat_ent_6: "Aislamiento total de base de datos, métricas avanzadas y soporte prioritario SLA",
+        plan_enterprise_cta: "Solicitar Cotización a Medida →",
+        packs_title: "¿Tenés un sistema de gestión existente o bases de datos propias?",
+        packs_desc: "En SOF-IA desarrollamos puentes a medida: conectamos a Sofía con tu software médico en PC (Centinela), planillas Excel o bases SQL sin cambiar tu forma de trabajar.",
+        packs_cta: "Consultar Integración Especial",
         docs_tag: "Documentación Oficial",
         docs_title: "Dossiers Comerciales & Guías Técnicas",
         docs_sub: "Descargá el material ejecutivo preparado para analizar en tu equipo o compartir con tus socios.",
@@ -2063,6 +2084,38 @@
         step_4_num: "Etapa 04 // Execução",
         step_4_title: "Envio e Sincronização Local",
         step_4_desc: "O proprietário aprova com 1 toque. Pedido formal enviado ao fornecedor e planilha local atualizada na hora.",
+        pricing_tag: "Modelos de Implementação",
+        pricing_title: "Soluções Sob Medida para Cada Escala de Negócio",
+        pricing_sub: "Desde consultórios individuais até clínicas de alta complexidade e empresas distribuidoras. Cada implementação é calibrada de acordo com o volume de agendamentos e a infraestrutura técnica necessária.",
+        roi_title: "Retorno Imediato sobre o Investimento",
+        roi_desc: "A Sofia se autofinancia desde a primeira semana de operação: ao resgatar apenas 2 ou 3 horários cancelados ou fechar atendimentos fora do expediente, o sistema cobre 100% do seu custo operacional mensal.",
+        plan_shared_title: "Nível Consultório & Profissional Independente",
+        plan_shared_desc: "Projetado para médicos, dentistas, fisioterapeutas, psicólogos, veterinárias e profissionais com agenda própria.",
+        plan_shared_tier: "Plano Profissional",
+        plan_shared_currency: "Proposta adaptada ao seu volume de consultas",
+        plan_shared_setup: "Onboarding, Cadastro de Lista & Calibração Personalizada",
+        feat_shared_1: "Atendimento de entrada 24/7 ILIMITADO no WhatsApp com fluidez humana (texto e áudio)",
+        feat_shared_2: "1 Agenda sincronizada (Google Calendar / Sistema local)",
+        feat_shared_3: "Protocolo Anti-Absenteísmo: confirmação e resgate automático de vagas canceladas em < 90s",
+        feat_shared_4: "Modo Diretor por mensagens de voz direto do WhatsApp do titular",
+        feat_shared_5: "Implementação rápida em 48-72h sem mudar seu número nem instalar aplicativos",
+        plan_shared_cta: "Consultar Proposta para Consultório →",
+        plan_enterprise_badge: "Institucional & Clínicas",
+        plan_enterprise_title: "Nível Clínica, Sanatório & Empresa",
+        plan_enterprise_desc: "Para centros médicos, policlínicas, distribuidoras e empresas com múltiplas secretárias ou especialidades.",
+        plan_enterprise_tier: "Plano Enterprise Sob Medida",
+        plan_enterprise_currency: "Orçamento personalizado conforme infraestrutura e fluxo de pacientes",
+        plan_enterprise_setup: "Homologação Oficial Meta Cloud + Conexão Sentinela no PC",
+        feat_ent_1: "Linha e chip exclusivo verificado na Meta Cloud API com selo verde",
+        feat_ent_2: "Multi-Especialidade e Multi-Agenda com roteamento inteligente por profissional",
+        feat_ent_3: "Integração com software local no PC (Sentinela): sincroniza seu sistema médico sem abrir portas",
+        feat_ent_4: "Suporte multi-secretária com integração ao grupo de recepção interna",
+        feat_ent_5: "Mensagens ativas de reativação de clientes e avisos importantes",
+        feat_ent_6: "Isolamento total de dados, relatórios gerenciais e suporte prioritário com SLA",
+        plan_enterprise_cta: "Solicitar Orçamento Sob Medida →",
+        packs_title: "Já possui um software de gestão existente ou banco de dados próprio?",
+        packs_desc: "Na SOF-IA desenvolvemos integrações sob medida: conectamos a Sofia ao seu software médico no PC (Sentinela), planilhas Excel ou bases SQL.",
+        packs_cta: "Consultar Integração Especial",
         stack_tag: "Fundação de Engenharia",
         stack_title: "Stack Tecnológico em Produção",
         badge_backend: "<span>Backend:</span> Python 3.12 e FastAPI",
@@ -2193,30 +2246,38 @@
         rubro_b2b_title: "Retail, Wholesale & Voice Director",
         rubro_b2b_desc: "Guided 24/7 order placement and executive business control for owners via simple 5-second WhatsApp voice notes (price increases, promotions, announcements).",
         rubro_b2b_tag: "Voice & B2B 24/7",
-        pricing_tag: "Transparent Pricing Model",
-        pricing_title: "Transparent and Accessible Plans for Every Business",
-        pricing_sub: "Choose between Shared Central ($30,000/mo) or Dedicated Official Line ($45,000/mo). Zero commission on sales and free cancellation.",
-        plan_shared_title: "Shared Central Plan",
-        plan_shared_desc: "Ideal for individual practices, solo healthcare professionals, beauty studios, and local stores.",
-        plan_shared_setup: "Calibration Lab & Onboarding: $30,000 ARS",
-        feat_shared_1: "UNLIMITED 24/7 inbound customer support on official verified line",
-        feat_shared_2: "150 Automated Outbound Messages included per month (appointments, dues, pickups)",
-        feat_shared_4: "Voice & text Director Mode from owner's personal WhatsApp",
-        feat_shared_5: "Prepaid refill packs available instantly if you exceed 150 messages",
-        plan_shared_cta: "Choose Shared Central →",
-        plan_enterprise_badge: "Most Recommended",
-        plan_enterprise_title: "Enterprise Plan — Dedicated Line",
-        plan_enterprise_desc: "For clinics, gyms, opticians, automotive centers, and distributors desiring their own exclusive official line.",
-        plan_enterprise_setup: "Meta Homologation & Calibration Lab: $80,000 ARS",
-        feat_ent_1: "Exclusive dedicated business number & SIM chip on Meta Cloud API",
-        feat_ent_2: "UNLIMITED Outbound Messages (official Meta carrier costs billed to client's card)",
-        feat_ent_3: "Official verified enterprise profile with custom logo, catalog & green checkmark",
+        pricing_tag: "Implementation Models",
+        pricing_title: "Tailored Solutions for Every Business Scale",
+        pricing_sub: "From individual practices to complex clinics and corporate distribution centers. Each implementation is calibrated according to appointment volume, number of calendars, and technical infrastructure.",
+        roi_title: "Immediate Return on Investment",
+        roi_desc: "Sofia pays for itself within the first week of operation: by saving just 2 or 3 cancelled appointments or securing after-hours bookings, the system fully offsets its monthly operational cost.",
+        plan_shared_title: "Practice & Independent Specialist Level",
+        plan_shared_desc: "Tailored for doctors, dentists, physical therapists, psychologists, vets, and solo practitioners with individual calendars.",
+        plan_shared_tier: "Professional Plan",
+        plan_shared_currency: "Custom proposal matched to your patient volume",
+        plan_shared_setup: "Personalized Onboarding, Catalog Upload & Calibration",
+        feat_shared_1: "UNLIMITED 24/7 inbound WhatsApp attention with human fluency (text & audio)",
+        feat_shared_2: "1 Synchronized Calendar (Google Calendar / Local scheduler)",
+        feat_shared_3: "Anti-No-Show Protocol: automated confirmation & cancelled slot rescue in < 90s",
+        feat_shared_4: "Voice-note Director Mode straight from the business owner's personal WhatsApp",
+        feat_shared_5: "Fast 48-72h rollout with zero phone number changes or client app installs",
+        plan_shared_cta: "Inquire About Practice Plan →",
+        plan_enterprise_badge: "Institutional & Clinics",
+        plan_enterprise_title: "Clinic, Healthcare Center & Enterprise Level",
+        plan_enterprise_desc: "For polyclinics, medical centers, distributors, and businesses with multiple receptionists and specialists.",
+        plan_enterprise_tier: "Tailored Enterprise Plan",
+        plan_enterprise_currency: "Custom quote based on infrastructure and patient flow",
+        plan_enterprise_setup: "Official Meta Cloud Homologation + Desktop Sentinel PC Bridge",
+        feat_ent_1: "Dedicated exclusive business number on Meta Cloud API with official green badge",
+        feat_ent_2: "Multi-Specialty & Multi-Calendar with intelligent physician routing",
+        feat_ent_3: "Local PC Software Integration (Sentinel): syncs your desktop clinic software without port forwarding",
         feat_ent_4: "Multi-secretary receptionist support with internal WhatsApp group sync",
-        feat_ent_5: "Zero credit/reputation risk bleed across accounts with complete isolation",
-        plan_enterprise_cta: "Request Enterprise Homologation →",
-        packs_title: "Need to run larger customer reactivation broadcasts on the Shared Plan?",
-        packs_desc: "Purchase additional quota at any time: 100 Extra Messages Pack for just $4,500 ARS with instant Mercado Pago activation.",
-        packs_cta: "Inquire About Extra Packs",
+        feat_ent_5: "Outbound reactivation broadcasts and patient announcement campaigns",
+        feat_ent_6: "Complete database isolation, advanced operational reporting, and priority SLA support",
+        plan_enterprise_cta: "Request Custom Quote →",
+        packs_title: "Already have existing management software or private databases?",
+        packs_desc: "At SOF-IA we build custom bridges: connecting Sofia to your local PC medical software (Sentinel), Excel spreadsheets, or SQL databases without altering your daily workflow.",
+        packs_cta: "Inquire About Custom Integration",
         docs_tag: "Official Documentation",
         docs_title: "Commercial Dossiers & Engineering Guides",
         docs_sub: "Download executive documentation to analyze with your leadership team and business partners.",

@@ -21,15 +21,16 @@ def test_landing_page_pricing_and_rubros_sections():
     assert "Turneros Web Clásicos" in html
     assert "Con Sofía AI (Autogestión Nativa en WhatsApp)" in html
 
-    # 3. Pricing Section ($30.000 Shared / $45.000 Enterprise)
+    # 3. Implementation Models & ROI Section (Tailored pricing without low rigid anchors)
     assert 'id="precios"' in html
-    assert "$30.000" in html
-    assert "$45.000" in html
-    assert "Plan Central Compartida" in html
-    assert "Plan Enterprise" in html
-    assert "150 Mensajes Salientes" in html
-    assert "$80.000" in html
-    assert "Pack de 100 Mensajes Extra por solo $4.500 ARS" in html
+    assert "Modelos de Implementación" in html
+    assert "Retorno de Inversión Inmediato" in html
+    assert "Nivel Consultorio &amp; Profesional Independiente" in html or "Nivel Consultorio & Profesional Independiente" in html
+    assert "Plan Profesional" in html
+    assert "Nivel Clínica, Sanatorio &amp; PyME" in html or "Nivel Clínica, Sanatorio & PyME" in html
+    assert "Plan Enterprise a Medida" in html
+    assert "Protocolo Anti-Ausentismo" in html
+    assert "Centinela" in html
 
     # 4. Downloads Section
     assert 'id="descargas"' in html
