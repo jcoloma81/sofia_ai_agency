@@ -210,9 +210,12 @@ def serve_manual_rubros_html():
 
 @app.get("/manual-rubros-pdf", response_class=FileResponse)
 @app.get("/descargar-guia-pdf", response_class=FileResponse)
+@app.get("/descargar-guia-activacion-pdf", response_class=FileResponse)
 def serve_manual_rubros_pdf():
-    pdf_path = os.path.join(os.path.dirname(__file__), "docs", "Manual_Comercial_Sofia_Rubros.pdf")
-    return FileResponse(pdf_path, media_type="application/pdf", filename="Manual_Comercial_Sofia_Rubros.pdf")
+    pdf_path = os.path.join(os.path.dirname(__file__), "docs", "FLUJO_VENTA_Y_ACTIVACION_REMOTA_SOFIA.pdf")
+    if not os.path.exists(pdf_path):
+        pdf_path = os.path.join(os.path.dirname(__file__), "docs", "Manual_Comercial_Sofia_Rubros.pdf")
+    return FileResponse(pdf_path, media_type="application/pdf", filename="Guia_Inicio_y_Activacion_Sofia.pdf")
 
 # Monetization, Pricing Policy & Meta Cloud Costs
 @app.get("/modelo-costos", response_class=FileResponse)

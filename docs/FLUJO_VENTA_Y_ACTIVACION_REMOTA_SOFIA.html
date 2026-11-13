@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guía de Inicio y Puesta en Marcha — Asistente Sofía</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    .document-sheet {
+      background: #ffffff;
+      max-width: 860px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 40px 48px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+    }
+    .step-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #2563eb;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 14px 0;
+    }
+    .highlight-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+    @media print {
+      @page {
+        margin: 12mm 14mm;
+        size: A4 portrait;
+      }
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+      .document-sheet {
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .page-break {
+        page-break-before: always;
+        break-before: page;
+      }
+      .avoid-break {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="py-4 sm:py-8">
+
+  <div class="document-sheet">
+
+    <!-- PÁGINA 1: ENCABEZADO, INTRODUCCIÓN, PASO 1 Y PASO 2 -->
+    <div class="avoid-break">
+      <!-- ENCABEZADO INSTITUCIONAL -->
+      <header class="border-b-2 border-slate-200 pb-5 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1">
+            Guía de Acompañamiento y Puesta en Marcha
+          </p>
+          <h1 class="text-3xl font-bold text-slate-900 tracking-tight">
+            Bienvenido a Sofía
+          </h1>
+          <p class="text-base text-slate-600 mt-1">
+            Asistente inteligente de atención y coordinación de turnos para su consultorio.
+          </p>
+        </div>
+        <div class="text-left sm:text-right">
+          <span class="inline-block text-xs font-semibold px-3 py-1.5 bg-slate-100 text-slate-700 rounded-md border border-slate-300">
+            Manual de Operación
+          </span>
+        </div>
+      </header>
+
+      <!-- INTRODUCCIÓN -->
+      <section class="mb-6">
+        <p class="text-slate-800 text-base leading-relaxed mb-2">
+          <strong>Estimado/a profesional y equipo del consultorio:</strong>
+        </p>
+        <p class="text-slate-700 text-[14.5px] leading-relaxed mb-3">
+          Sofía es una asistente diseñada para colaborar activamente con su consultorio, brindando a sus pacientes atención inmediata las 24 horas por WhatsApp. Se encarga de responder consultas habituales, coordinar turnos según sus disponibilidades y recordar citas programadas, permitiendo que el personal administrativo pueda priorizar la atención personalizada en recepción.
+        </p>
+        <p class="text-slate-700 text-[14.5px] leading-relaxed">
+          A continuación, detallamos los cuatro pasos sencillos de puesta en marcha para comenzar a utilizar el servicio sin modificar su dinámica de trabajo habitual.
+        </p>
+      </section>
+
+      <!-- PASO 1 -->
+      <section class="mb-6">
+        <div class="flex items-center gap-3 mb-2.5">
+          <div class="step-number">1</div>
+          <h2 class="text-lg font-bold text-slate-900">
+            Personalización inicial de su consultorio
+          </h2>
+        </div>
+        <p class="text-[14.5px] text-slate-700 leading-relaxed mb-2.5">
+          Para agilizar el inicio y evitar planillas engorrosas, el relevamiento se realiza directamente por WhatsApp enviando <strong>4 breves mensajes o audios</strong> con los datos clave:
+        </p>
+
+        <div class="info-box text-[14px] text-slate-800 space-y-2">
+          <div><strong>1. Datos generales:</strong> Nombre del consultorio, dirección física y profesionales a cargo.</div>
+          <div><strong>2. Especialidades y coberturas:</strong> Especialidades médicas de atención y obras sociales o prepagas recibidas.</div>
+          <div><strong>3. Días y horarios:</strong> Días y franjas horarias de atención, y duración estimada por consulta (ej. 30 minutos).</div>
+          <div><strong>4. Aranceles y contacto administrativo:</strong> Valores de consultas particulares y número telefónico de recepción o secretaría.</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-1.5">
+          Con esta información, nuestro equipo carga las pautas de atención para que Sofía responda con exactitud y el tono adecuado para su consultorio.
+        </p>
+      </section>
+
+      <!-- PASO 2 -->
+      <section class="mb-2">
+        <div class="flex items-center gap-3 mb-2.5">
+          <div class="step-number">2</div>
+          <h2 class="text-lg font-bold text-slate-900">
+            Kit de difusión para sus pacientes (Enlace y Cartel QR)
+          </h2>
+        </div>
+        <p class="text-[14.5px] text-slate-700 leading-relaxed mb-3">
+          Una vez configurado el asistente, dispondrá de dos herramientas directas de contacto para sus pacientes:
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="highlight-card">
+            <h3 class="text-[15px] font-bold text-slate-900 mb-1.5">
+              Enlace directo de WhatsApp
+            </h3>
+            <p class="text-[13.5px] text-slate-600 leading-relaxed">
+              Un enlace personalizado para incorporar en el perfil de Instagram del consultorio, en Google Maps o en su sitio web. El paciente hace clic y accede al chat con un mensaje inicial listo para enviar.
+            </p>
+          </div>
+
+          <div class="highlight-card">
+            <h3 class="text-[15px] font-bold text-slate-900 mb-1.5">
+              Cartel con Código QR para Mostrador
+            </h3>
+            <p class="text-[13.5px] text-slate-600 leading-relaxed">
+              Una lámina oficial en tamaño A4 lista para imprimir en un solo clic y exhibir en recepción o sala de espera. Los pacientes pueden escanearlo con la cámara del celular para autogestionar citas de inmediato.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- SALTO DE PÁGINA OBLIGATORIO PARA IMPRESIÓN LIMPIA -->
+    <div class="page-break my-6"></div>
+
+    <!-- PÁGINA 2: PASO 3, PASO 4 Y SOPORTE -->
+    <div class="avoid-break pt-2">
+      <!-- PASO 3 -->
+      <section class="mb-6">
+        <div class="flex items-center gap-3 mb-2.5">
+          <div class="step-number">3</div>
+          <h2 class="text-lg font-bold text-slate-900">
+            Sincronización con su agenda habitual (El Centinela)
+          </h2>
+        </div>
+        <p class="text-[14.5px] text-slate-700 leading-relaxed mb-3">
+          <strong>No es necesario cambiar de sistema ni cargar turnos en dos lugares distintos.</strong> Si en recepción utilizan una planilla de cálculo (Excel) o agenda informática, el módulo <em>Centinela</em> sincroniza los turnos de forma automática y transparente.
+        </p>
+
+        <div class="highlight-card mb-3">
+          <h3 class="text-[15px] font-bold text-slate-900 mb-2">
+            Activación en la computadora de recepción (1 solo paso):
+          </h3>
+          <ol class="list-decimal list-inside text-[13.5px] text-slate-700 space-y-2 leading-relaxed">
+            <li>Descargue y descomprima la carpeta <strong>Centinela_Consultorio.zip</strong> en la computadora donde anotan los turnos.</li>
+            <li>Haga doble clic en el archivo <strong>instalar_en_inicio_windows.bat</strong>.</li>
+            <li>Se abrirá una breve ventana de confirmación que se cerrará sola en 3 segundos. A partir de ese momento, el servicio queda activo y se iniciará automáticamente cada vez que encienda la computadora.</li>
+          </ol>
+        </div>
+
+        <div class="info-box text-[13.5px] text-slate-700 leading-relaxed">
+          <strong>Funcionamiento cotidiano:</strong> La secretaría continúa anotando o modificando los turnos en su planilla como siempre. Cada vez que guarda el archivo (haciendo clic en el ícono del disquete 💾 arriba a la izquierda o presionando <kbd class="px-2 py-0.5 bg-white border border-slate-300 rounded font-mono text-[11px] font-bold">Ctrl + G</kbd>), el Centinela detecta los cambios y actualiza la agenda de Sofía en tiempo real.
+        </div>
+      </section>
+
+      <!-- PASO 4 -->
+      <section class="mb-6">
+        <div class="flex items-center gap-3 mb-2.5">
+          <div class="step-number">4</div>
+          <h2 class="text-lg font-bold text-slate-900">
+            Dinámica de trabajo diario y supervisión
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+          <div class="highlight-card">
+            <h3 class="text-[15px] font-bold text-slate-900 mb-1.5">
+              Consultas específicas o administrativas
+            </h3>
+            <p class="text-[13px] text-slate-600 leading-relaxed">
+              Si un paciente realiza una consulta particular no prevista (indicaciones especiales o excepciones arancelarias), Sofía <strong>no inventa respuestas</strong>: consulta a la secretaría por WhatsApp, transmite la respuesta al paciente y memoriza el criterio para ocasiones futuras.
+            </p>
+          </div>
+
+          <div class="highlight-card">
+            <h3 class="text-[15px] font-bold text-slate-900 mb-1.5">
+              Resumen diario de cierre (20:00 hs)
+            </h3>
+            <p class="text-[13px] text-slate-600 leading-relaxed">
+              Al finalizar la jornada laboral, el profesional o titular recibe en su WhatsApp un reporte conciso: cantidad de pacientes atendidos, cancelaciones reasignadas exitosamente y la agenda programada para el día siguiente.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SOPORTE Y CONTACTO -->
+      <section class="border-t-2 border-slate-200 pt-5 mb-5">
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-5">
+          <h3 class="text-sm font-bold text-slate-900 mb-1.5">
+            Acompañamiento y Soporte Técnico Continuo
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-3">
+            Ante cualquier consulta, alta de nuevos profesionales, modificaciones de horarios o actualización de aranceles, nuestro equipo de soporte se encuentra a su disposición de forma directa.
+          </p>
+          <div class="text-xs text-slate-700 flex flex-col sm:flex-row gap-4 font-medium">
+            <div><span class="text-slate-400 font-normal">Canal de atención:</span> WhatsApp de Soporte y Mesa de Ayuda</div>
+            <div><span class="text-slate-400 font-normal">Horario de guardia:</span> Lunes a Viernes de 8:00 a 20:00 hs</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PIE DE PÁGINA -->
+      <footer class="pt-3 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-400">
+        <span>Sofía — Sistema de Asistencia y Coordinación para Consultorios</span>
+        <span>Guía de Inicio y Puesta en Marcha</span>
+      </footer>
+    </div>
+
+  </div>
+
+</body>
+</html>
