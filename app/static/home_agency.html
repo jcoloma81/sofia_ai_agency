@@ -7,23 +7,23 @@
   <title>SOF-IA | Tech & AI Studio — Soluciones Tecnológicas, IA & IoT</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #0B0E14;
-      --bg-card: #121721;
-      --bg-card-hover: #181F2C;
+      --bg-main: #0D0F12;
+      --bg-card: #14171C;
+      --bg-card-hover: #191D24;
       --border: rgba(255, 255, 255, 0.08);
       --border-strong: rgba(255, 255, 255, 0.16);
-      --border-accent: rgba(16, 185, 129, 0.28);
-      --text-primary: #F8FAFC;
-      --text-secondary: #94A3B8;
-      --text-muted: #64748B;
+      --border-highlight: rgba(5, 150, 105, 0.35);
+      --text-primary: #F4F3EE;
+      --text-secondary: #9FA6B2;
+      --text-muted: #646B79;
       --accent-green: #059669;
       --accent-green-light: #10B981;
-      --accent-cyan: #0284c7;
-      --accent-blue: #2563EB;
       --accent-amber: #D97706;
+      --accent-slate: #94A3B8;
+      --font-display: 'Newsreader', Georgia, serif;
       --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
@@ -50,7 +50,7 @@
     /* Top Navigation */
     .navbar {
       border-bottom: 1px solid var(--border);
-      background: rgba(11, 13, 16, 0.85);
+      background: rgba(13, 15, 18, 0.9);
       backdrop-filter: blur(14px);
       position: sticky;
       top: 0;
@@ -75,8 +75,8 @@
     }
 
     .brand-logo {
-      font-size: 24px;
-      font-weight: 800;
+      font-size: 22px;
+      font-weight: 700;
       letter-spacing: -0.5px;
     }
 
@@ -85,15 +85,16 @@
     }
 
     .brand-pill {
-      font-size: 11px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 600;
       padding: 3px 8px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border);
       color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
 
     .nav-links {
@@ -125,21 +126,26 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.28);
-      color: #34d399;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-strong);
+      color: #F4F3EE;
       font-size: 13px;
       font-weight: 600;
       padding: 8px 16px;
-      border-radius: 10px;
+      border-radius: 8px;
       text-decoration: none;
       transition: all 0.2s ease;
     }
 
     .btn-wa-header:hover {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: #34d399;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #FFFFFF;
       transform: translateY(-1px);
+    }
+
+    .btn-wa-header svg {
+      color: #10B981;
     }
 
     /* Hero Section */
@@ -159,24 +165,26 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 6px 16px;
-      background: rgba(255, 255, 255, 0.04);
+      padding: 5px 14px;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-strong);
       border-radius: 999px;
-      font-size: 11.5px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
       letter-spacing: 0.8px;
-      color: var(--text-secondary);
+      color: #D1D5DB;
       margin-bottom: 24px;
     }
 
     .hero h1 {
-      font-size: 48px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5.5vw, 50px);
       line-height: 1.15;
-      font-weight: 800;
-      letter-spacing: -1.2px;
+      font-weight: 600;
+      letter-spacing: -0.8px;
       margin-bottom: 20px;
-      max-width: 900px;
+      max-width: 920px;
       margin-left: auto;
       margin-right: auto;
       color: #FFFFFF;
@@ -184,12 +192,14 @@
 
     .hero h1 span.accent-text {
       color: #FFFFFF;
+      font-family: inherit;
+      font-weight: inherit;
     }
 
     .hero p.lead {
-      font-size: 18px;
+      font-size: 17.5px;
       color: var(--text-secondary);
-      max-width: 780px;
+      max-width: 800px;
       margin: 0 auto 36px;
       line-height: 1.65;
     }
@@ -204,13 +214,13 @@
 
     .btn-primary-hero {
       background: #FFFFFF;
-      color: #0B0E14;
-      font-size: 15px;
-      font-weight: 700;
-      padding: 13px 26px;
-      border-radius: 10px;
+      color: #0D0F12;
+      font-size: 14.5px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 8px;
       text-decoration: none;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
       border: 1px solid #FFFFFF;
       transition: all 0.2s ease;
       display: inline-flex;
@@ -221,19 +231,19 @@
     .btn-primary-hero:hover {
       background: #E2E8F0;
       border-color: #E2E8F0;
-      color: #0B0E14;
+      color: #0D0F12;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
     }
 
     .btn-secondary-hero {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-card);
       border: 1px solid var(--border-strong);
       color: var(--text-primary);
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 600;
-      padding: 13px 26px;
-      border-radius: 10px;
+      padding: 12px 24px;
+      border-radius: 8px;
       text-decoration: none;
       transition: all 0.2s ease;
       display: inline-flex;
@@ -242,8 +252,9 @@
     }
 
     .btn-secondary-hero:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.25);
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #FFFFFF;
       transform: translateY(-1px);
     }
 
@@ -251,8 +262,8 @@
     .metric-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      max-width: 1000px;
+      gap: 14px;
+      max-width: 1040px;
       margin: 0 auto;
       text-align: left;
     }
@@ -260,62 +271,66 @@
     .metric-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      padding: 18px 20px;
-      border-radius: 14px;
+      padding: 16px 18px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       gap: 14px;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
     }
 
     .metric-card:hover {
+      background: var(--bg-card-hover);
       border-color: var(--border-strong);
       transform: translateY(-2px);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
     }
 
     .metric-icon-box {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.25s ease;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: #D1D5DB;
+      transition: all 0.2s ease;
     }
 
     .icon-emerald {
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.22);
-      color: #34d399;
+      background: rgba(5, 150, 105, 0.08);
+      border: 1px solid rgba(5, 150, 105, 0.25);
+      color: #10B981;
     }
 
     .icon-cyan {
-      background: rgba(6, 182, 212, 0.08);
-      border: 1px solid rgba(6, 182, 212, 0.22);
-      color: #38bdf8;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #CBD5E1;
     }
 
     .icon-amber {
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.22);
-      color: #fbbf24;
+      background: rgba(217, 119, 6, 0.08);
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      color: #D97706;
     }
 
     .icon-purple {
-      background: rgba(168, 85, 247, 0.08);
-      border: 1px solid rgba(168, 85, 247, 0.22);
-      color: #c084fc;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94A3B8;
     }
 
     .metric-card:hover .metric-icon-box {
-      transform: scale(1.05);
+      transform: scale(1.04);
     }
 
     .metric-info h4 {
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 13.5px;
+      font-weight: 600;
       color: var(--text-primary);
       margin-bottom: 2px;
     }
@@ -338,41 +353,45 @@
     }
 
     .section-tag {
-      font-size: 12px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
       color: var(--accent-green);
       margin-bottom: 10px;
       display: block;
     }
 
     .section-title {
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: -1px;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4.2vw, 38px);
+      font-weight: 600;
+      letter-spacing: -0.6px;
       margin-bottom: 14px;
+      color: var(--text-primary);
     }
 
     .section-subtitle {
-      font-size: 16px;
+      font-size: 15.5px;
       color: var(--text-secondary);
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto;
+      line-height: 1.6;
     }
 
     /* Solutions 3-Pillars Cards */
     .solutions-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
+      gap: 20px;
     }
 
     .solution-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px 28px;
+      border-radius: 14px;
+      padding: 30px 24px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -382,9 +401,10 @@
     }
 
     .solution-card:hover {
-      border-color: var(--border-accent);
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+      border-color: var(--border-strong);
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
     }
 
     .card-top {
@@ -393,42 +413,46 @@
 
     .pill-rubro {
       display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       padding: 4px 10px;
-      border-radius: 999px;
+      border-radius: 6px;
       margin-bottom: 16px;
     }
 
     .pill-green {
-      background: rgba(16, 185, 129, 0.1);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: rgba(5, 150, 105, 0.1);
+      color: #10B981;
+      border: 1px solid rgba(5, 150, 105, 0.25);
     }
 
     .pill-cyan {
-      background: rgba(6, 182, 212, 0.12);
-      color: #38bdf8;
-      border: 1px solid rgba(6, 182, 212, 0.25);
+      background: rgba(255, 255, 255, 0.05);
+      color: #CBD5E1;
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
 
     .pill-amber {
-      background: rgba(245, 158, 11, 0.12);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.25);
+      background: rgba(217, 119, 6, 0.1);
+      color: #D97706;
+      border: 1px solid rgba(217, 119, 6, 0.25);
     }
 
     .solution-card h3 {
+      font-family: var(--font-display);
       font-size: 22px;
-      font-weight: 800;
+      font-weight: 600;
+      letter-spacing: -0.3px;
       margin-bottom: 12px;
       line-height: 1.3;
+      color: var(--text-primary);
     }
 
     .solution-card p.card-desc {
-      font-size: 14.5px;
+      font-size: 14px;
       color: var(--text-secondary);
       line-height: 1.6;
       margin-bottom: 20px;
@@ -443,7 +467,7 @@
     }
 
     .features-list li {
-      font-size: 13.5px;
+      font-size: 13px;
       color: var(--text-primary);
       display: flex;
       align-items: center;
@@ -451,8 +475,8 @@
     }
 
     .features-list li svg {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       stroke: var(--accent-green);
       flex-shrink: 0;
     }
@@ -469,21 +493,22 @@
       align-items: center;
       gap: 8px;
       width: 100%;
-      padding: 12px 18px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.08);
+      padding: 11px 16px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border-strong);
       color: var(--text-primary);
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 13.5px;
+      font-weight: 600;
       text-decoration: none;
       transition: all 0.2s ease;
     }
 
     .btn-card-primary:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.3);
-      color: #fff;
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #FFFFFF;
+      transform: translateY(-1px);
     }
 
     .btn-card-direct {
@@ -492,30 +517,32 @@
       align-items: center;
       gap: 8px;
       width: 100%;
-      padding: 12px 18px;
-      border-radius: 12px;
-      background: #059669;
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 700;
+      padding: 11px 16px;
+      border-radius: 8px;
+      background: #065F46;
+      color: #F4F3EE;
+      font-size: 13.5px;
+      font-weight: 600;
       text-decoration: none;
-      border: 1px solid #10B981;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
       transition: all 0.2s ease;
     }
 
     .btn-card-direct:hover {
       background: #047857;
+      border-color: rgba(52, 211, 153, 0.45);
+      color: #FFFFFF;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
     }
 
     /* About & Synergy Section */
     .synergy-box {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 48px;
+      border-radius: 16px;
+      padding: 44px;
       position: relative;
     }
 
@@ -527,14 +554,16 @@
     }
 
     .synergy-text h3 {
-      font-size: 30px;
-      font-weight: 800;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3.5vw, 30px);
+      font-weight: 600;
       letter-spacing: -0.5px;
       margin-bottom: 16px;
+      color: var(--text-primary);
     }
 
     .synergy-text p {
-      font-size: 15.5px;
+      font-size: 15px;
       color: var(--text-secondary);
       line-height: 1.7;
       margin-bottom: 24px;
@@ -543,17 +572,18 @@
     .synergy-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .synergy-badge {
-      font-size: 13px;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.04);
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border);
-      padding: 6px 14px;
-      border-radius: 999px;
-      color: var(--text-primary);
+      padding: 5px 12px;
+      border-radius: 6px;
+      color: var(--text-secondary);
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -564,18 +594,18 @@
       height: 6px;
       border-radius: 50%;
     }
-    .badge-dot.green { background: #10B981; }
-    .badge-dot.cyan { background: #0284c7; }
+    .badge-dot.green { background: #059669; }
+    .badge-dot.cyan { background: #94A3B8; }
     .badge-dot.amber { background: #D97706; }
-    .badge-dot.purple { background: #7c3aed; }
+    .badge-dot.purple { background: #64748B; }
 
     .synergy-visual {
       background: #090A0D;
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
+      border-radius: 12px;
+      padding: 22px;
       font-family: var(--font-mono);
-      font-size: 13px;
+      font-size: 12.5px;
     }
 
     .terminal-line {
@@ -587,8 +617,8 @@
     }
 
     .terminal-dot {
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background: #ef4444;
     }
@@ -600,38 +630,42 @@
       line-height: 1.7;
     }
     .code-block .accent { color: #10B981; }
-    .code-block .cyan { color: #38bdf8; }
+    .code-block .cyan { color: #CBD5E1; }
 
     /* CTA Final Banner */
     .cta-banner {
       background: var(--bg-card);
       border: 1px solid var(--border-strong);
-      border-radius: 24px;
-      padding: 60px 24px;
+      border-radius: 16px;
+      padding: 56px 24px;
       text-align: center;
       margin: 80px auto;
-      max-width: 1000px;
+      max-width: 960px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
     }
 
     .cta-banner h2 {
-      font-size: 38px;
-      font-weight: 800;
-      letter-spacing: -1px;
+      font-family: var(--font-display);
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 600;
+      letter-spacing: -0.6px;
       margin-bottom: 16px;
+      color: var(--text-primary);
     }
 
     .cta-banner p {
-      font-size: 17px;
+      font-size: 16px;
       color: var(--text-secondary);
       max-width: 600px;
       margin: 0 auto 32px;
+      line-height: 1.6;
     }
 
     /* Footer */
     footer {
       border-top: 1px solid var(--border);
       padding: 40px 24px;
-      background: #08090C;
+      background: #090A0D;
       font-size: 13px;
       color: var(--text-muted);
     }
@@ -667,15 +701,15 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+      background: linear-gradient(180deg, #059669 0%, #047857 100%);
       color: #ffffff;
-      width: 58px;
-      height: 58px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.35);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
       border: 1px solid rgba(255, 255, 255, 0.15);
       z-index: 100;
       transition: all 0.2s ease;
@@ -683,14 +717,14 @@
     }
 
     .wa-floating:hover {
-      transform: scale(1.08);
-      background: linear-gradient(180deg, #059669 0%, #047857 100%);
-      box-shadow: 0 12px 28px rgba(5, 150, 105, 0.5);
+      transform: translateY(-2px);
+      background: #047857;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
     }
 
     .wa-floating svg {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       fill: currentColor;
     }
 
@@ -1195,10 +1229,10 @@
           </ul>
         </div>
         <div class="card-actions">
-          <a href="https://aircontrolpro.net/" target="_blank" class="btn-card-primary" style="border-color: rgba(245, 158, 11, 0.35); color: #fbbf24;">
+          <a href="https://aircontrolpro.net/" target="_blank" class="btn-card-primary" style="border-color: rgba(217, 119, 6, 0.3); color: #D97706;">
             Visitar Landing Oficial (AirControlPro.net) ↗
           </a>
-          <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20consultar%20por%20Air%20Control%20para%20mi%20complejo." target="_blank" class="btn-card-direct" style="background: linear-gradient(180deg, #D97706 0%, #B45309 100%); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 16px rgba(180, 83, 9, 0.3);">
+          <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20quiero%20consultar%20por%20Air%20Control%20para%20mi%20complejo." target="_blank" class="btn-card-direct" style="background: #D97706; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);">
             Consultar Instalación para Cabañas
           </a>
         </div>
