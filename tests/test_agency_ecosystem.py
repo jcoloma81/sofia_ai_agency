@@ -25,8 +25,9 @@ def test_actualizador_landing_and_download():
     assert "Descargar Súper Actualizador PRO" in html
 
     dl = client.get("/descargar-actualizador", follow_redirects=False)
-    assert dl.status_code == 307
-    assert "drive.usercontent.google.com" in dl.headers["location"]
+    assert dl.status_code == 200
+    assert "application/zip" in dl.headers["content-type"]
+    assert "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip" in dl.headers.get("content-disposition", "")
 
 def test_air_control_redirect():
     res = client.get("/air-control", follow_redirects=False)

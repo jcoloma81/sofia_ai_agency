@@ -276,9 +276,15 @@ def serve_actualizador_landing():
 
 @app.get("/descargar-actualizador")
 @app.get("/descargar-actualizador-pro")
-def redirect_descargar_actualizador():
+def serve_descargar_actualizador():
+    zip_path = os.path.join(os.path.dirname(__file__), "app", "static", "packages", "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip")
+    if os.path.exists(zip_path):
+        return FileResponse(
+            zip_path,
+            filename="PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip",
+            media_type="application/zip"
+        )
     from fastapi.responses import RedirectResponse
-    # Enlace oficial de descarga directa de 1 clic desde Google Drive
     drive_direct_url = "https://drive.usercontent.google.com/download?id=1gFGJtHyQB8smRKCvUV7ZGuT5KpEn__Nq&export=download&confirm=t"
     return RedirectResponse(url=drive_direct_url)
 
