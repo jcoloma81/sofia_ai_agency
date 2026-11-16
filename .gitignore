@@ -53,6 +53,7 @@ Thumbs.db
 # Media & Scratch
 *.mp4
 !assets/demo_air_control.mp4
+!assets/video_promocional_sap_pro.mp4
 scratch/
 assets/catalogo_base.xlsx
 assets/lista_proveedor_aumento.xlsx
