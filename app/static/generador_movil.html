@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🔐 Generador Móvil Oficial | Sofía AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background: #0b0f17; color: #f8fafc; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .card { background: #131c2e; border: 1px solid #1e293b; border-radius: 18px; padding: 24px; width: 100%; max-width: 450px; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.7); }
+    .header { text-align: center; margin-bottom: 20px; }
+    .badge { display: inline-block; background: #0284c7; color: #fff; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    h1 { font-size: 21px; font-weight: 800; color: #f1f5f9; }
+    p.sub { font-size: 12.5px; color: #94a3b8; margin-top: 4px; }
+    .field { margin-bottom: 14px; }
+    label { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px; }
+    input { width: 100%; background: #0b1120; border: 1.5px solid #334155; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #f8fafc; outline: none; transition: border-color 0.2s; }
+    input:focus { border-color: #38bdf8; }
+    .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+    button { border: none; border-radius: 10px; padding: 14px; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s, opacity 0.2s; }
+    button:active { transform: scale(0.98); }
+    .btn-full { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); }
+    .btn-demo { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
+    .btn-base { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+    .result-box { margin-top: 22px; background: #0b1120; border: 1.5px dashed #38bdf8; border-radius: 12px; padding: 16px; display: none; }
+    .result-box.active { display: block !important; }
+    .result-title { font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .key-display { background: #131c2e; padding: 12px; border-radius: 8px; font-family: Consolas, monospace; font-size: 12px; word-break: break-all; color: #34d399; margin-bottom: 12px; border: 1px solid #1e293b; line-height: 1.4; max-height: 120px; overflow-y: auto; }
+    .action-row { display: flex; gap: 8px; }
+    .btn-copy { flex: 1; background: #0284c7; color: #ffffff; padding: 11px; font-size: 13px; }
+    .btn-share { flex: 1.2; background: #16a34a; color: #ffffff; padding: 11px; font-size: 13px; }
+    .toast { position: fixed; bottom: 20px; background: #10b981; color: #fff; padding: 10px 22px; border-radius: 30px; font-size: 13px; font-weight: 700; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+    .toast.show { opacity: 1; }
+    .footer { text-align: center; margin-top: 18px; font-size: 11px; color: #64748b; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <span class="badge">Panel Privado del Propietario</span>
+    <h1>🔐 Generador de Licencias RSA</h1>
+    <p class="sub">Emití licencias seguras desde tu celular estés donde estés</p>
+  </div>
+
+  <div class="field">
+    <label>PIN Secreto del Administrador:</label>
+    <input type="password" id="pinInput" placeholder="PIN de seguridad" value="9981">
+  </div>
+
+  <div class="field">
+    <label>1. Hardware ID del Cliente (de su pantalla):</label>
+    <input type="text" id="hwId" placeholder="Ej: SAP-88A2-BC41-09D2" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <label>2. Nombre del Comercio:</label>
+    <input type="text" id="cliente" placeholder="Ej: Ferretería El Sol" value="Comercio">
+  </div>
+
+  <div class="btn-group">
+    <button type="button" class="btn-full" onclick="generar('FULL_PRO')" id="btnFull">
+      👑 Generar LICENCIA FULL PRO (De por vida)
+    </button>
+    <button type="button" class="btn-demo" onclick="generar('DEMO_7_DIAS')" id="btnDemo">
+      🎁 Generar Licencia DEMO (7 Días)
+    </button>
+    <button type="button" class="btn-base" onclick="generar('BASE')">
+      ⚡ Generar Licencia BASE (Pestaña 1)
+    </button>
+  </div>
+
+  <div class="result-box" id="resultBox">
+    <div class="result-title">
+      <span id="resTipo">CLAVE GENERADA:</span>
+      <span style="color:#10b981;">● FIRMADA RSA-2048</span>
+    </div>
+    <div class="key-display" id="resKey"></div>
+    <div class="action-row">
+      <button type="button" class="btn-copy" onclick="copiarClave()">📋 Copiar Clave</button>
+      <button type="button" class="btn-share" onclick="enviarWhatsApp()">📲 Enviar x WhatsApp</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    Sofía AI Agency • Sistema Comercial Enterprise
+  </div>
+</div>
+
+<div class="toast" id="toast">¡Clave copiada al portapapeles!</div>
+
+<script>
+  let claveActual = "";
+  let clienteActual = "";
+  let tipoActual = "";
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedPin = localStorage.getItem('sap_admin_pin');
+    if (savedPin) {
+      document.getElementById('pinInput').value = savedPin;
+    }
+  });
+
+  async function generar(tipo) {
+    const pin = document.getElementById('pinInput').value.trim();
+    let hw = document.getElementById('hwId').value.trim().toUpperCase();
+    const cliente = document.getElementById('cliente').value.trim() || 'Comercio';
+
+    if (!pin) {
+      alert('Ingresá tu PIN de seguridad.');
+      return;
+    }
+    localStorage.setItem('sap_admin_pin', pin);
+
+    if (!hw || hw.length < 6) {
+      alert('Ingresá un Hardware ID válido (ej: SAP-XXXX-XXXX-XXXX).');
+      document.getElementById('hwId').focus();
+      return;
+    }
+
+    const btn = tipo === 'FULL_PRO' ? document.getElementById('btnFull') : document.getElementById('btnDemo');
+    const origText = btn.innerHTML;
+    btn.innerHTML = '⏳ Firmando con RSA en la nube...';
+    btn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/licencias/generar-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pin: pin,
+          hardware_id: hw,
+          comercio: cliente,
+          tipo: tipo
+        })
+      });
+
+      const data = await resp.json();
+      if (!resp.ok) {
+        alert('Error: ' + (data.detail || 'No se pudo generar'));
+        return;
+      }
+
+      claveActual = data.clave;
+      clienteActual = data.cliente;
+      tipoActual = data.tipo;
+
+      document.getElementById('resTipo').textContent = `LICENCIA ${tipoActual} (${data.vence || 'PERMANENTE'}):`;
+      document.getElementById('resKey').textContent = claveActual;
+      document.getElementById('resultBox').classList.add('active');
+
+      mostrarToast('✅ ¡Clave generada y firmada con éxito!');
+      document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión con el servidor: ' + e.message);
+    } finally {
+      btn.innerHTML = origText;
+      btn.disabled = false;
+    }
+  }
+
+  function copiarClave() {
+    if (!claveActual) return;
+    navigator.clipboard.writeText(claveActual).then(() => {
+      mostrarToast('📋 ¡Clave copiada al portapapeles!');
+    }).catch(() => {
+      prompt('Copiá la clave manualmente:', claveActual);
+    });
+  }
+
+  function enviarWhatsApp() {
+    if (!claveActual) return;
+    const tipoTxt = tipoActual === 'FULL_PRO' ? 'FULL PRO PERMANENTE (De por vida)' : 'DEMO (7 Días)';
+    const msg = `¡Hola ${clienteActual}! 👋\n\nAquí tienes tu clave oficial de activación *${tipoTxt}* para el *Súper Actualizador de Precios PRO*:\n\n\`${claveActual}\`\n\n👉 *Instrucciones:*\n1. Abre el programa en tu computadora.\n2. Toca el botón 'Licencia' arriba a la derecha.\n3. Pega esta clave en el casillero y presiona 'Activar Sistema'.\n\n¡Cualquier consulta estoy a tu disposición!`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  function mostrarToast(texto) {
+    const t = document.getElementById('toast');
+    t.textContent = texto;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>

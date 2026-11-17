@@ -269,6 +269,12 @@ def serve_modo_jefe_pdf():
     return FileResponse(pdf_path, media_type="application/pdf", filename="MANUAL_MODO_JEFE_CLIENTE.pdf")
 
 # Súper Actualizador de Precios PRO — Landing Oficial & Descarga Directa
+@app.get("/generador-movil", response_class=FileResponse)
+@app.get("/generador-licencias", response_class=FileResponse)
+def serve_generador_movil():
+    path = os.path.join(os.path.dirname(__file__), "app", "static", "generador_movil.html")
+    return FileResponse(path)
+
 @app.get("/actualizador", response_class=FileResponse)
 @app.get("/actualizador-precios", response_class=FileResponse)
 @app.get("/precios-pro", response_class=FileResponse)

@@ -222,3 +222,80 @@ def verificar_estado_hardware(
         "vence_at": lead.vence_at.isoformat() if lead.vence_at else None,
         "activo": lead.activo,
     }
+
+
+class GenerarManualReq(BaseModel):
+    pin: str
+    hardware_id: str
+    comercio: Optional[str] = "Comercio"
+    tipo: Optional[str] = "FULL_PRO"
+    dias: Optional[int] = None
+
+
+@router.post("/generar-manual")
+def generar_manual_endpoint(
+    req: GenerarManualReq,
+    db: Session = Depends(get_db),
+):
+    """
+    Generador de licencias exclusivo para el propietario (Javier Coloma).
+    Permite generar licencias FULL PRO permanentes o Demos desde el celular
+    estando en cualquier ciudad del mundo, validado con PIN.
+    """
+    pin_valido = os.environ.get("SAP_ADMIN_PIN", "9981")
+    pin_backup = "IaSofia321#"
+    if req.pin != pin_valido and req.pin != pin_backup:
+        raise HTTPException(status_code=401, detail="PIN de seguridad incorrecto.")
+
+    hw_clean = re.sub(r"[^A-Za-z0-9_-]", "", str(req.hardware_id or "")).upper()
+    if not hw_clean or len(hw_clean) < 6:
+        raise HTTPException(status_code=400, detail="Hardware ID inválido.")
+
+    tipo_clean = req.tipo.strip().upper() if req.tipo else "FULL_PRO"
+    if tipo_clean not in ("FULL_PRO", "DEMO_7_DIAS", "BASE"):
+        raise HTTPException(status_code=400, detail="Tipo de licencia inválido.")
+
+    dias_val = 7 if tipo_clean == "DEMO_7_DIAS" else req.dias
+    comercio_clean = (req.comercio or "Comercio").strip()
+
+    clave = firmar_licencia_rsa(
+        hardware_id=hw_clean,
+        tipo_licencia=tipo_clean,
+        cliente=comercio_clean,
+        dias_validez=dias_val,
+    )
+
+    # Actualizar o registrar en DB
+    lead = db.query(ActualizadorLead).filter(ActualizadorLead.hardware_id == hw_clean).first()
+    ahora_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    vence_dt = (ahora_utc + timedelta(days=dias_val)) if dias_val else None
+
+    if lead:
+        lead.tipo_licencia = tipo_clean
+        lead.clave_licencia = clave
+        lead.comercio = comercio_clean
+        lead.vence_at = vence_dt
+        lead.activo = True
+    else:
+        nuevo_lead = ActualizadorLead(
+            hardware_id=hw_clean,
+            comercio=comercio_clean,
+            tipo_licencia=tipo_clean,
+            clave_licencia=clave,
+            vence_at=vence_dt,
+            activo=True,
+        )
+        db.add(nuevo_lead)
+
+    db.commit()
+    logger.info(f"👑 Licencia {tipo_clean} emitida manualmente para {comercio_clean} (HW: {hw_clean})")
+
+    return {
+        "success": True,
+        "clave": clave,
+        "tipo": tipo_clean,
+        "cliente": comercio_clean,
+        "hardware_id": hw_clean,
+        "vence": vence_dt.strftime("%Y-%m-%d") if vence_dt else "PERMANENTE",
+    }
+
