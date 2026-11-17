@@ -17,6 +17,8 @@ from app.routers.tenants import router as tenants_router
 from app.routers.payments import router as payments_router
 from app.routers.onboarding import router as onboarding_router
 from app.routers.sync import router as sync_router
+from app.routers.licencias import router as licencias_router
+from app.models.actualizador import ActualizadorLead
 from app.config.settings import settings
 
 # Initialize logging
@@ -339,6 +341,7 @@ app.include_router(payments_router)
 app.include_router(onboarding_router)
 app.include_router(onboarding_router, prefix="/api/v1")
 app.include_router(sync_router)
+app.include_router(licencias_router)
 
 # Backward compatibility routes
 app.include_router(webhook_router, prefix="/api/v1/prospecting", tags=["Prospecting Compatibility"])
