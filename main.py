@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 import os
@@ -18,7 +18,7 @@ from app.routers.payments import router as payments_router
 from app.routers.onboarding import router as onboarding_router
 from app.routers.sync import router as sync_router
 from app.routers.licencias import router as licencias_router
-from app.models.actualizador import ActualizadorLead
+from app.models.actualizador import ActualizadorLead, ActualizadorDownloadLog
 from app.config.settings import settings
 
 # Initialize logging
@@ -284,7 +284,25 @@ def serve_actualizador_landing():
 
 @app.get("/descargar-actualizador")
 @app.get("/descargar-actualizador-pro")
-def serve_descargar_actualizador():
+def serve_descargar_actualizador(request: Request, db: Session = Depends(get_db)):
+    # Registrar telemetría de descarga para Javier
+    try:
+        client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        if "," in client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        ua = str(request.headers.get("user-agent", ""))[:250]
+
+        log_descarga = ActualizadorDownloadLog(
+            ip=client_ip,
+            user_agent=ua
+        )
+        db.add(log_descarga)
+        db.commit()
+        logger.info(f"📦 Descarga registrada de Súper Actualizador PRO desde IP: {client_ip}")
+    except Exception as e:
+        logger.warning(f"No se pudo registrar log de descarga (no bloqueante): {e}")
+        db.rollback()
+
     zip_path = os.path.join(os.path.dirname(__file__), "app", "static", "packages", "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip")
     if os.path.exists(zip_path):
         return FileResponse(

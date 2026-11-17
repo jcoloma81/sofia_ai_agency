@@ -20,7 +20,7 @@ class ActualizadorLead(Base):
     comercio = Column(String, index=True, nullable=True)
     whatsapp = Column(String, index=True, nullable=True)
     email = Column(String, nullable=True)
-    tipo_licencia = Column(String, default="DEMO_7_DIAS")  # DEMO_7_DIAS, FULL_PRO, BASE
+    tipo_licencia = Column(String, default="DEMO_7_DIAS")  # DEMO_7_DIAS, FULL_PRO, BASE, ASISTENCIA_TECNICA
     clave_licencia = Column(Text, nullable=True)
     dias_demo = Column(Integer, default=7)
     demo_solicitada_at = Column(DateTime, default=utc_now)
@@ -30,3 +30,16 @@ class ActualizadorLead(Base):
     notas = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class ActualizadorDownloadLog(Base):
+    """
+    Contador de descargas oficiales del paquete ZIP Súper Actualizador PRO.
+    Registra fecha, IP y dispositivo para telemetría comercial en tiempo real.
+    """
+    __tablename__ = "actualizador_downloads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip = Column(String, index=True, nullable=True)
+    user_agent = Column(String, nullable=True)
+    created_at = Column(DateTime, default=utc_now)

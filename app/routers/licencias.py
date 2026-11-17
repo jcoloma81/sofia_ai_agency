@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.actualizador import ActualizadorLead
+from app.models.actualizador import ActualizadorLead, ActualizadorDownloadLog
 
 logger = logging.getLogger("sofia_ai_agency.licencias")
 
@@ -334,5 +334,92 @@ def registrar_lead_landing_endpoint(
     db.commit()
     logger.info(f"📥 Lead para calibración de listas registrado: {comercio_clean} (WA: {wa_clean})")
     return {"success": True, "mensaje": "Solicitud de asistencia técnica recibida correctamente."}
+
+
+@router.get("/metricas")
+def obtener_metricas_endpoint(
+    pin: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Devuelve métricas en tiempo real de telemetría comercial:
+    - Total de descargas del paquete ZIP
+    - Demos activas de 7 días
+    - Leads con WhatsApp (asistencia o registro)
+    - Licencias FULL PRO emitidas
+    - Listado de actividad y leads recientes para gestión comercial
+    """
+    pin_valido = os.environ.get("SAP_ADMIN_PIN", "9981")
+    pin_backup = "IaSofia321#"
+    if pin != pin_valido and pin != pin_backup:
+        raise HTTPException(status_code=401, detail="PIN de seguridad incorrecto.")
+
+    # 1. Total descargas del instalador ZIP
+    try:
+        total_descargas = db.query(ActualizadorDownloadLog).count()
+    except Exception:
+        total_descargas = 0
+
+    # 2. Total demos
+    try:
+        total_demos = db.query(ActualizadorLead).filter(ActualizadorLead.tipo_licencia == "DEMO_7_DIAS").count()
+    except Exception:
+        total_demos = 0
+
+    # 3. Total FULL PRO
+    try:
+        total_full_pro = db.query(ActualizadorLead).filter(ActualizadorLead.tipo_licencia == "FULL_PRO").count()
+    except Exception:
+        total_full_pro = 0
+
+    # 4. Total leads con WhatsApp
+    try:
+        total_leads_wa = db.query(ActualizadorLead).filter(
+            (ActualizadorLead.whatsapp.isnot(None)) & (ActualizadorLead.whatsapp != "")
+        ).count()
+    except Exception:
+        total_leads_wa = 0
+
+    # 5. Leads recientes
+    leads_recientes = []
+    try:
+        leads_db = db.query(ActualizadorLead).order_by(ActualizadorLead.id.desc()).limit(25).all()
+        for l in leads_db:
+            leads_recientes.append({
+                "id": l.id,
+                "hardware_id": l.hardware_id or "",
+                "comercio": l.comercio or "Comercio",
+                "whatsapp": l.whatsapp or "",
+                "tipo": l.tipo_licencia or "DEMO_7_DIAS",
+                "fecha": l.created_at.strftime("%d/%m/%Y %H:%M") if l.created_at else "-",
+                "vence": l.vence_at.strftime("%d/%m/%Y") if l.vence_at else "-",
+                "notas": l.notas or "",
+            })
+    except Exception as e:
+        logger.error(f"Error consultando leads recientes: {e}")
+
+    # 6. Últimas descargas
+    descargas_recientes = []
+    try:
+        descargas_db = db.query(ActualizadorDownloadLog).order_by(ActualizadorDownloadLog.id.desc()).limit(10).all()
+        for d in descargas_db:
+            descargas_recientes.append({
+                "fecha": d.created_at.strftime("%d/%m/%Y %H:%M") if d.created_at else "-",
+                "ip": d.ip or "Desconocida",
+                "user_agent": (d.user_agent or "")[:40],
+            })
+    except Exception as e:
+        logger.error(f"Error consultando descargas recientes: {e}")
+
+    return {
+        "success": True,
+        "total_descargas": total_descargas,
+        "total_demos": total_demos,
+        "total_full_pro": total_full_pro,
+        "total_leads_wa": total_leads_wa,
+        "leads_recientes": leads_recientes,
+        "descargas_recientes": descargas_recientes,
+    }
+
 
 

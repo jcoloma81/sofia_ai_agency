@@ -3,88 +3,181 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>🔐 Generador Móvil Oficial | Sofía AI</title>
+  <title>🔐 Centro de Control & Generador RSA | Sofía AI</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background: #0b0f17; color: #f8fafc; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .card { background: #131c2e; border: 1px solid #1e293b; border-radius: 18px; padding: 24px; width: 100%; max-width: 450px; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.7); }
-    .header { text-align: center; margin-bottom: 20px; }
-    .badge { display: inline-block; background: #0284c7; color: #fff; font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-    h1 { font-size: 21px; font-weight: 800; color: #f1f5f9; }
-    p.sub { font-size: 12.5px; color: #94a3b8; margin-top: 4px; }
-    .field { margin-bottom: 14px; }
-    label { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px; }
-    input { width: 100%; background: #0b1120; border: 1.5px solid #334155; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #f8fafc; outline: none; transition: border-color 0.2s; }
+    body { background: #080c14; color: #f8fafc; padding: 16px 12px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+    .container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 18px; padding: 20px; box-shadow: 0 15px 30px -10px rgba(0,0,0,0.7); }
+    .header { text-align: center; margin-bottom: 16px; }
+    .badge { display: inline-block; background: #0284c7; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    h1 { font-size: 20px; font-weight: 800; color: #f1f5f9; }
+    p.sub { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+
+    /* KPI Metrics Grid */
+    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .kpi-card { background: #0d1424; border: 1px solid #1e293b; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+    .kpi-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.3px; display: flex; align-items: center; justify-content: space-between; }
+    .kpi-num { font-size: 24px; font-weight: 900; color: #38bdf8; }
+    .kpi-num.green { color: #34d399; }
+    .kpi-num.purple { color: #c084fc; }
+    .kpi-num.amber { color: #fbbf24; }
+
+    .field { margin-bottom: 13px; }
+    label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 5px; }
+    input { width: 100%; background: #090e1a; border: 1.5px solid #334155; border-radius: 10px; padding: 11px 13px; font-size: 13.5px; color: #f8fafc; outline: none; transition: border-color 0.2s; }
     input:focus { border-color: #38bdf8; }
-    .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
-    button { border: none; border-radius: 10px; padding: 14px; font-size: 14px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s, opacity 0.2s; }
+    .btn-group { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+    button { border: none; border-radius: 10px; padding: 13px; font-size: 13.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s, opacity 0.2s; }
     button:active { transform: scale(0.98); }
     .btn-full { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4); }
     .btn-demo { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); }
     .btn-base { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
-    .result-box { margin-top: 22px; background: #0b1120; border: 1.5px dashed #38bdf8; border-radius: 12px; padding: 16px; display: none; }
+    .btn-refresh { background: #1e293b; color: #38bdf8; padding: 8px 14px; font-size: 12px; border-radius: 8px; width: 100%; margin-top: 6px; border: 1px solid #334155; }
+
+    .result-box { margin-top: 18px; background: #090e1a; border: 1.5px dashed #38bdf8; border-radius: 12px; padding: 14px; display: none; }
     .result-box.active { display: block !important; }
-    .result-title { font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .key-display { background: #131c2e; padding: 12px; border-radius: 8px; font-family: Consolas, monospace; font-size: 12px; word-break: break-all; color: #34d399; margin-bottom: 12px; border: 1px solid #1e293b; line-height: 1.4; max-height: 120px; overflow-y: auto; }
+    .result-title { font-size: 11.5px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .key-display { background: #111827; padding: 11px; border-radius: 8px; font-family: Consolas, monospace; font-size: 11.5px; word-break: break-all; color: #34d399; margin-bottom: 10px; border: 1px solid #1f2937; line-height: 1.35; max-height: 110px; overflow-y: auto; }
     .action-row { display: flex; gap: 8px; }
-    .btn-copy { flex: 1; background: #0284c7; color: #ffffff; padding: 11px; font-size: 13px; }
-    .btn-share { flex: 1.2; background: #16a34a; color: #ffffff; padding: 11px; font-size: 13px; }
+    .btn-copy { flex: 1; background: #0284c7; color: #ffffff; padding: 10px; font-size: 12.5px; }
+    .btn-share { flex: 1.3; background: #16a34a; color: #ffffff; padding: 10px; font-size: 12.5px; }
+
+    /* Leads & Recents Section */
+    .section-title { font-size: 13px; font-weight: 800; color: #f1f5f9; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .lead-list { display: flex; flex-direction: column; gap: 9px; max-height: 480px; overflow-y: auto; padding-right: 2px; }
+    .lead-item { background: #0d1424; border: 1px solid #1e293b; border-radius: 10px; padding: 11px; display: flex; flex-direction: column; gap: 6px; }
+    .lead-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .lead-name { font-size: 13px; font-weight: 800; color: #f8fafc; word-break: break-word; }
+    .lead-badge { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+    .badge-demo { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; }
+    .badge-pro { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid #6366f1; }
+    .badge-lead { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #0284c7; }
+    .lead-details { font-size: 11px; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 10px; }
+    .lead-actions { display: flex; gap: 6px; margin-top: 4px; }
+    .btn-sm-wa { background: #16a34a; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; flex: 1; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .btn-sm-use { background: #334155; color: #f1f5f9; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; flex: 1; border: 1px solid #475569; }
+
+    /* Downloads List */
+    .dl-item { font-size: 11.5px; color: #94a3b8; background: #0d1424; padding: 8px 10px; border-radius: 8px; border: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; }
+
     .toast { position: fixed; bottom: 20px; background: #10b981; color: #fff; padding: 10px 22px; border-radius: 30px; font-size: 13px; font-weight: 700; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
     .toast.show { opacity: 1; }
-    .footer { text-align: center; margin-top: 18px; font-size: 11px; color: #64748b; }
+    .footer { text-align: center; font-size: 11px; color: #64748b; margin-top: 8px; }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="header">
-    <span class="badge">Panel Privado del Propietario</span>
-    <h1>🔐 Generador de Licencias RSA</h1>
-    <p class="sub">Emití licencias seguras desde tu celular estés donde estés</p>
-  </div>
+<div class="container">
 
-  <div class="field">
-    <label>PIN Secreto del Administrador:</label>
-    <input type="password" id="pinInput" placeholder="PIN de seguridad" value="9981">
-  </div>
-
-  <div class="field">
-    <label>1. Hardware ID del Cliente (de su pantalla):</label>
-    <input type="text" id="hwId" placeholder="Ej: SAP-88A2-BC41-09D2" autocomplete="off" autocapitalize="characters" spellcheck="false">
-  </div>
-
-  <div class="field">
-    <label>2. Nombre del Comercio:</label>
-    <input type="text" id="cliente" placeholder="Ej: Ferretería El Sol" value="Comercio">
-  </div>
-
-  <div class="btn-group">
-    <button type="button" class="btn-full" onclick="generar('FULL_PRO')" id="btnFull">
-      👑 Generar LICENCIA FULL PRO (De por vida)
-    </button>
-    <button type="button" class="btn-demo" onclick="generar('DEMO_7_DIAS')" id="btnDemo">
-      🎁 Generar Licencia DEMO (7 Días)
-    </button>
-    <button type="button" class="btn-base" onclick="generar('BASE')">
-      ⚡ Generar Licencia BASE (Pestaña 1)
-    </button>
-  </div>
-
-  <div class="result-box" id="resultBox">
-    <div class="result-title">
-      <span id="resTipo">CLAVE GENERADA:</span>
-      <span style="color:#10b981;">● FIRMADA RSA-2048</span>
+  <!-- TARJETA 1: MÉTRICAS Y TELEMETRÍA EN VIVO -->
+  <div class="card">
+    <div class="header">
+      <span class="badge">Panel Privado del Propietario</span>
+      <h1>📊 Métricas Súper Actualizador</h1>
+      <p class="sub">Telemetría de descargas, demos y leads en tiempo real</p>
     </div>
-    <div class="key-display" id="resKey"></div>
-    <div class="action-row">
-      <button type="button" class="btn-copy" onclick="copiarClave()">📋 Copiar Clave</button>
-      <button type="button" class="btn-share" onclick="enviarWhatsApp()">📲 Enviar x WhatsApp</button>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">📦 Descargas ZIP</div>
+        <div class="kpi-num" id="statDescargas">-</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">⚡ Demos Activas</div>
+        <div class="kpi-num green" id="statDemos">-</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">🛠️ Leads Asistencia</div>
+        <div class="kpi-num amber" id="statLeads">-</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">👑 Licencias FULL PRO</div>
+        <div class="kpi-num purple" id="statFullPro">-</div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-refresh" onclick="cargarMetricas()">
+      🔄 Actualizar Métricas en Tiempo Real
+    </button>
+  </div>
+
+  <!-- TARJETA 2: GENERADOR DE LICENCIAS -->
+  <div class="card" id="cardGenerador">
+    <div class="header" style="margin-bottom:12px;">
+      <h2 style="font-size:16px; font-weight:800; color:#f8fafc;">🔐 Emitir Licencia RSA Inviolable</h2>
+      <p class="sub">Generá y firmá digitalmente con RSA-2048 desde tu teléfono</p>
+    </div>
+
+    <div class="field">
+      <label>PIN Secreto del Administrador:</label>
+      <input type="password" id="pinInput" placeholder="PIN de seguridad" value="9981" onchange="cargarMetricas()">
+    </div>
+
+    <div class="field">
+      <label>1. Hardware ID del Cliente (de su pantalla):</label>
+      <input type="text" id="hwId" placeholder="Ej: SAP-88A2-BC41-09D2" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </div>
+
+    <div class="field">
+      <label>2. Nombre del Comercio:</label>
+      <input type="text" id="cliente" placeholder="Ej: Ferretería El Sol" value="Comercio">
+    </div>
+
+    <div class="btn-group">
+      <button type="button" class="btn-full" onclick="generar('FULL_PRO')" id="btnFull">
+        👑 Generar LICENCIA FULL PRO (De por vida)
+      </button>
+      <button type="button" class="btn-demo" onclick="generar('DEMO_7_DIAS')" id="btnDemo">
+        🎁 Generar Licencia DEMO (7 Días)
+      </button>
+      <button type="button" class="btn-base" onclick="generar('BASE')">
+        ⚡ Generar Licencia BASE (Pestaña 1)
+      </button>
+    </div>
+
+    <div class="result-box" id="resultBox">
+      <div class="result-title">
+        <span id="resTipo">CLAVE GENERADA:</span>
+        <span style="color:#10b981;">● RSA-PSS SHA-256</span>
+      </div>
+      <div class="key-display" id="resKey"></div>
+      <div class="action-row">
+        <button type="button" class="btn-copy" onclick="copiarClave()">📋 Copiar Clave</button>
+        <button type="button" class="btn-share" onclick="enviarWhatsApp()">📲 Enviar x WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARJETA 3: LEADS Y CLIENTES RECIENTES -->
+  <div class="card">
+    <div class="section-title">
+      <span>📋 Leads y Clientes Recientes</span>
+      <span style="font-size:11px; color:#38bdf8;" id="leadsCount"></span>
+    </div>
+    <div class="lead-list" id="leadList">
+      <div style="font-size:12px; color:#64748b; text-align:center; padding:15px;">
+        Ingresá tu PIN para ver los leads y clientes en vivo...
+      </div>
+    </div>
+  </div>
+
+  <!-- TARJETA 4: ÚLTIMAS DESCARGAS REGISTRADAS -->
+  <div class="card">
+    <div class="section-title">
+      <span>📦 Últimas Descargas del Paquete ZIP</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:6px;" id="descargasList">
+      <div style="font-size:12px; color:#64748b; text-align:center; padding:10px;">
+        Sin registros de descarga aún...
+      </div>
     </div>
   </div>
 
   <div class="footer">
-    Sofía AI Agency • Sistema Comercial Enterprise
+    Sofía AI Agency • Sistema Comercial Enterprise • Javier Coloma
   </div>
+
 </div>
 
 <div class="toast" id="toast">¡Clave copiada al portapapeles!</div>
@@ -99,7 +192,90 @@
     if (savedPin) {
       document.getElementById('pinInput').value = savedPin;
     }
+    cargarMetricas();
   });
+
+  async function cargarMetricas() {
+    const pin = document.getElementById('pinInput').value.trim();
+    if (!pin) return;
+    localStorage.setItem('sap_admin_pin', pin);
+
+    try {
+      const resp = await fetch(`/api/licencias/metricas?pin=${encodeURIComponent(pin)}`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+
+      document.getElementById('statDescargas').textContent = data.total_descargas ?? 0;
+      document.getElementById('statDemos').textContent = data.total_demos ?? 0;
+      document.getElementById('statLeads').textContent = data.total_leads_wa ?? 0;
+      document.getElementById('statFullPro').textContent = data.total_full_pro ?? 0;
+
+      // Render leads recientes
+      const leadListEl = document.getElementById('leadList');
+      if (data.leads_recientes && data.leads_recientes.length > 0) {
+        document.getElementById('leadsCount').textContent = `${data.leads_recientes.length} registros`;
+        leadListEl.innerHTML = data.leads_recientes.map(l => {
+          let badgeClass = 'badge-demo';
+          let badgeText = '⚡ DEMO';
+          if (l.tipo === 'FULL_PRO') {
+            badgeClass = 'badge-pro';
+            badgeText = '👑 FULL PRO';
+          } else if (l.tipo === 'ASISTENCIA_TECNICA') {
+            badgeClass = 'badge-lead';
+            badgeText = '🛠️ ASISTENCIA';
+          }
+
+          const hasWa = l.whatsapp && l.whatsapp.trim().length >= 6;
+          const waNum = hasWa ? l.whatsapp.replace(/[^0-9+]/g, '') : '';
+          const waMsg = encodeURIComponent(`¡Hola ${l.comercio}! 👋 Te contacto de Sofía AI por tu consulta del Súper Actualizador PRO.`);
+
+          return `
+            <div class="lead-item">
+              <div class="lead-top">
+                <span class="lead-name">${l.comercio}</span>
+                <span class="lead-badge ${badgeClass}">${badgeText}</span>
+              </div>
+              <div class="lead-details">
+                <span>📅 ${l.fecha}</span>
+                <span>🔑 HW: ${l.hardware_id ? l.hardware_id.substring(0, 16) + '...' : '-'}</span>
+                ${hasWa ? `<span style="color:#34d399;">📲 ${l.whatsapp}</span>` : ''}
+              </div>
+              <div class="lead-actions">
+                ${hasWa ? `<a href="https://wa.me/${waNum}?text=${waMsg}" target="_blank" class="btn-sm-wa">💬 WhatsApp</a>` : ''}
+                ${l.hardware_id && !l.hardware_id.startsWith('LANDING-') ? `<button type="button" class="btn-sm-use" onclick="seleccionarParaEmision('${l.hardware_id}', '${l.comercio.replace(/'/g, "\\'")}')">👑 Emitir PRO</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        leadListEl.innerHTML = '<div style="font-size:12px; color:#64748b; text-align:center; padding:15px;">Aún no hay clientes registrados.</div>';
+      }
+
+      // Render últimas descargas
+      const dlListEl = document.getElementById('descargasList');
+      if (data.descargas_recientes && data.descargas_recientes.length > 0) {
+        dlListEl.innerHTML = data.descargas_recientes.map(d => `
+          <div class="dl-item">
+            <span>📦 ${d.fecha}</span>
+            <span style="font-family:monospace; color:#38bdf8;">IP: ${d.ip}</span>
+          </div>
+        `).join('');
+      } else {
+        dlListEl.innerHTML = '<div style="font-size:12px; color:#64748b; text-align:center; padding:10px;">Sin descargas registradas todavía.</div>';
+      }
+
+    } catch (e) {
+      console.error('Error cargando métricas:', e);
+    }
+  }
+
+  function seleccionarParaEmision(hw, comercio) {
+    document.getElementById('hwId').value = hw;
+    document.getElementById('cliente').value = comercio;
+    mostrarToast(`Listo: cargado ${comercio}`);
+    document.getElementById('cardGenerador').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('hwId').focus();
+  }
 
   async function generar(tipo) {
     const pin = document.getElementById('pinInput').value.trim();
@@ -151,6 +327,9 @@
 
       mostrarToast('✅ ¡Clave generada y firmada con éxito!');
       document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
+
+      // Recargar métricas tras emisión
+      setTimeout(cargarMetricas, 800);
     } catch (e) {
       console.error(e);
       alert('Error de conexión con el servidor: ' + e.message);
