@@ -85,8 +85,8 @@ def firmar_licencia_rsa(
 
 class ActivarDemoReq(BaseModel):
     hardware_id: str
-    comercio: str
-    whatsapp: str
+    comercio: Optional[str] = "Comercio"
+    whatsapp: Optional[str] = None
     email: Optional[str] = None
 
 
@@ -98,21 +98,16 @@ def activar_demo_endpoint(
 ):
     """
     Endpoint público para que los clientes del Súper Actualizador PRO
-    activen sus 7 días de demo gratuita al instante.
-    Registra el lead comercial en la base de datos de Sofía AI Agency.
+    activen sus 7 días de demo gratuita al instante con 1 solo clic.
+    Los campos comercio y whatsapp son opcionales para máxima comodidad del usuario.
     """
     hw_clean = re.sub(r"[^A-Za-z0-9_-]", "", str(req.hardware_id or "")).upper()
     if not hw_clean or len(hw_clean) < 6:
         raise HTTPException(status_code=400, detail="Código de Hardware ID inválido.")
 
-    comercio_clean = (req.comercio or "Comercio").strip()
-    whatsapp_clean = re.sub(r"[^0-9+]", "", str(req.whatsapp or "")).strip()
-
-    if not whatsapp_clean or len(whatsapp_clean) < 6:
-        raise HTTPException(
-            status_code=400,
-            detail="Por favor ingrese un número de WhatsApp válido para activar la prueba gratuita.",
-        )
+    comercio_clean = (req.comercio or "Comercio").strip() or "Comercio"
+    raw_wa = str(req.whatsapp or "").strip()
+    whatsapp_clean = re.sub(r"[^0-9+]", "", raw_wa) if raw_wa and len(raw_wa) >= 6 else None
 
     # Obtener IP de origen
     client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
@@ -298,4 +293,46 @@ def generar_manual_endpoint(
         "hardware_id": hw_clean,
         "vence": vence_dt.strftime("%Y-%m-%d") if vence_dt else "PERMANENTE",
     }
+
+
+class LeadLandingReq(BaseModel):
+    comercio: Optional[str] = None
+    whatsapp: str
+    rubro: Optional[str] = None
+    notas: Optional[str] = None
+
+
+@router.post("/lead-landing")
+def registrar_lead_landing_endpoint(
+    req: LeadLandingReq,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Registra el lead comercial que solicitó asistencia técnica gratuita / calibración de listas
+    en la landing page antes de descargar el ZIP.
+    """
+    wa_clean = re.sub(r"[^0-9+]", "", str(req.whatsapp or "")).strip()
+    if not wa_clean or len(wa_clean) < 6:
+        raise HTTPException(status_code=400, detail="Número de WhatsApp inválido.")
+
+    comercio_clean = (req.comercio or "Comercio Interesado").strip()
+    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+    if "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
+    lead_id = f"LANDING-{uuid.uuid4().hex[:8].upper()}"
+    nuevo_lead = ActualizadorLead(
+        hardware_id=lead_id,
+        comercio=comercio_clean,
+        whatsapp=wa_clean,
+        tipo_licencia="ASISTENCIA_TECNICA",
+        notas=f"Solicitó asistencia técnica en landing. Rubro: {req.rubro or 'General'}. IP: {client_ip}",
+        activo=True,
+    )
+    db.add(nuevo_lead)
+    db.commit()
+    logger.info(f"📥 Lead para calibración de listas registrado: {comercio_clean} (WA: {wa_clean})")
+    return {"success": True, "mensaje": "Solicitud de asistencia técnica recibida correctamente."}
+
 
