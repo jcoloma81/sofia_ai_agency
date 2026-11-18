@@ -284,7 +284,21 @@ def serve_actualizador_landing():
 
 @app.get("/descargar-actualizador")
 @app.get("/descargar-actualizador-pro")
-def serve_descargar_actualizador(request: Request, db: Session = Depends(get_db)):
+@app.get("/descargar-actualizador-latam")
+@app.get("/descargar-actualizador-europa")
+def serve_descargar_actualizador(request: Request, region: Optional[str] = None, db: Session = Depends(get_db)):
+    # Determinar edición regional según la URL o parámetro
+    path_url = request.url.path
+    if "latam" in path_url or region == "latam":
+        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_LATAM_USD.zip"
+        label_region = "LATAM_USD"
+    elif "europa" in path_url or region == "europa":
+        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_EUROPA_EUR.zip"
+        label_region = "EUROPA_EUR"
+    else:
+        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip"
+        label_region = "ARGENTINA"
+
     # Registrar telemetría de descarga para Javier
     try:
         client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
@@ -293,21 +307,21 @@ def serve_descargar_actualizador(request: Request, db: Session = Depends(get_db)
         ua = str(request.headers.get("user-agent", ""))[:250]
 
         log_descarga = ActualizadorDownloadLog(
-            ip=client_ip,
+            ip=f"{client_ip} [{label_region}]",
             user_agent=ua
         )
         db.add(log_descarga)
         db.commit()
-        logger.info(f"📦 Descarga registrada de Súper Actualizador PRO desde IP: {client_ip}")
+        logger.info(f"📦 Descarga registrada de Súper Actualizador PRO ({label_region}) desde IP: {client_ip}")
     except Exception as e:
         logger.warning(f"No se pudo registrar log de descarga (no bloqueante): {e}")
         db.rollback()
 
-    zip_path = os.path.join(os.path.dirname(__file__), "app", "static", "packages", "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip")
+    zip_path = os.path.join(os.path.dirname(__file__), "app", "static", "packages", target_filename)
     if os.path.exists(zip_path):
         return FileResponse(
             zip_path,
-            filename="PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip",
+            filename=target_filename,
             media_type="application/zip"
         )
     from fastapi.responses import RedirectResponse
