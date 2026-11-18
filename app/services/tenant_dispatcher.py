@@ -526,7 +526,7 @@ class TenantDispatcher:
             # Resolución inteligente de turno para el paciente:
             # 1. Ignorar cualquier turno viejo en el pasado (appointment_date < ahora - 2hs).
             # 2. Prioridad 1: Turno con recordatorio o en oferta activa en este momento (recordatorio_24h, en_oferta_lista_espera).
-            # 3. Prioridad 2: Turno agendado futuro más cercano.
+            # 3. Prioridad 2: Turno agendado o confirmado futuro más cercano (agendado, recordatorio_48h, confirmado, rellenado_con_exito).
             time_threshold = utc_now() - timedelta(hours=2)
             recent_apt = db.query(Appointment).filter(
                 Appointment.tenant_id == tenant.id,
@@ -539,9 +539,50 @@ class TenantDispatcher:
                 recent_apt = db.query(Appointment).filter(
                     Appointment.tenant_id == tenant.id,
                     Appointment.patient_phone == clean_phone,
-                    Appointment.status.in_(["agendado", "recordatorio_48h"]),
+                    Appointment.status.in_(["agendado", "recordatorio_48h", "confirmado", "rellenado_con_exito"]),
                     Appointment.appointment_date >= time_threshold
                 ).order_by(Appointment.appointment_date.asc()).first()
+
+            # 4. Caso Especial: Paciente cuyo turno fue reasignado por falta de confirmación tras corte 18hs (Confirmación Tardía)
+            reallocated_apt = db.query(Appointment).filter(
+                Appointment.tenant_id == tenant.id,
+                Appointment.patient_phone == clean_phone,
+                Appointment.status == "reasignado_por_falta_confirmacion",
+                Appointment.appointment_date >= time_threshold
+            ).order_by(Appointment.appointment_date.desc()).first()
+
+            # Determinar si el mensaje proviene del titular cuyo turno fue reasignado
+            # (en producción porque no tiene turno activo; en tests si el mensaje incluye su nombre)
+            is_reallocated_sender = bool(
+                reallocated_apt and (
+                    not recent_apt or
+                    (reallocated_apt.patient_name and reallocated_apt.patient_name.lower() in msg_lower)
+                )
+            )
+
+            if is_reallocated_sender:
+                date_str = format_appointment_datetime(reallocated_apt.appointment_date)
+                # Intento de confirmación tardía
+                if any(w in msg_lower for w in ["confirmo", "si confirmo", "sí, confirmo", "si, confirmo", "voy", "ahi estare", "ahi voy", "perfecto voy", "si voy"]):
+                    late_msg = (
+                        f"Hola *{reallocated_apt.patient_name}*, te informamos que al no haber recibido tu confirmación "
+                        f"antes del horario límite (18:00 hs), tu turno del *{date_str}* con *{reallocated_apt.doctor_or_service}* "
+                        f"ha sido *reasignado a un paciente en lista de espera*.\n\n"
+                        f"❌ *Por favor NO concurras al consultorio mañana*, ya que el horario fue otorgado a otra persona.\n\n"
+                        f"¿Te gustaría que te ayudemos a buscar una nueva fecha para reprogramar tu consulta?"
+                    )
+                    await tenant_service.send_branded_notification(tenant, clean_phone, late_msg)
+                    return True, late_msg
+
+                # Intento de reprogramación o aviso de no asistencia sobre turno ya reasignado
+                if any(w in msg_lower for w in ["no puedo", "no podré", "no podre", "no llego", "cancelo", "cancelar", "reprogramar", "cambiar", "otro horario", "otra fecha"]):
+                    resched_msg = (
+                        f"Hola *{reallocated_apt.patient_name}*, tu turno del *{date_str}* con *{reallocated_apt.doctor_or_service}* "
+                        f"ya había sido liberado tras el corte de las 18:00 hs por falta de confirmación.\n\n"
+                        f"Con mucho gusto te ayudamos a coordinar una nueva fecha. ¿Qué día y horario te quedaría cómodo?"
+                    )
+                    await tenant_service.send_branded_notification(tenant, clean_phone, resched_msg)
+                    return True, resched_msg
 
             if recent_apt:
                 # Cancellation intent ("Reprogramar", "No podré asistir", etc.)
@@ -587,7 +628,7 @@ class TenantDispatcher:
         active_apt = db.query(Appointment).filter(
             Appointment.tenant_id == tenant.id,
             Appointment.patient_phone == clean_phone,
-            Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera", "confirmado"]),
+            Appointment.status.in_(["agendado", "recordatorio_48h", "recordatorio_24h", "en_oferta_lista_espera", "confirmado", "rellenado_con_exito"]),
             Appointment.appointment_date >= time_threshold
         ).order_by(Appointment.appointment_date.asc()).first()
 
@@ -607,11 +648,33 @@ class TenantDispatcher:
                 f"mencioná su turno actual ({date_fmt}) y preguntale qué día y horario preferiría para coordinarlo con la secretaría.\n"
             )
         else:
-            # Check if patient is registered in the Historical Master Padrón (InactiveCustomer)
-            past_patient = db.query(InactiveCustomer).filter(
-                InactiveCustomer.tenant_id == tenant.id,
-                InactiveCustomer.customer_phone == clean_phone
-            ).order_by(InactiveCustomer.id.desc()).first()
+            # Check if patient had an appointment that was reallocated after 18hs cutoff
+            reallocated_apt = db.query(Appointment).filter(
+                Appointment.tenant_id == tenant.id,
+                Appointment.patient_phone == clean_phone,
+                Appointment.status == "reasignado_por_falta_confirmacion",
+                Appointment.appointment_date >= time_threshold
+            ).order_by(Appointment.appointment_date.desc()).first()
+
+            if reallocated_apt:
+                r_date_fmt = format_appointment_datetime(reallocated_apt.appointment_date, include_day_name=True)
+                system_prompt += (
+                    f"\n\nDATOS DEL PACIENTE QUE TE ESTÁ ESCRIBIENDO:\n"
+                    f"- Nombre: {reallocated_apt.patient_name}\n"
+                    f"- Turno anterior: {r_date_fmt} con {reallocated_apt.doctor_or_service}\n"
+                    f"- Estado: TURNO REASIGNADO POR CORTE DE LAS 18:00 HS.\n\n"
+                    f"PAUTAS ESPECÍFICAS DE RESPUESTA:\n"
+                    f"1. Si el paciente confirma, avisa que viene o pregunta por su turno del {r_date_fmt}, explicale con total amabilidad y calidez "
+                    f"que al no haber recibido la confirmación antes de las 18:00 hs, su turno debió ser reasignado a otro paciente de la lista de espera, "
+                    f"por lo que NO debe concurrir al consultorio en ese horario.\n"
+                    f"2. Ofrecele reprogramar su consulta para un nuevo día y horario con {reallocated_apt.doctor_or_service}.\n"
+                )
+            else:
+                # Check if patient is registered in the Historical Master Padrón (InactiveCustomer)
+                past_patient = db.query(InactiveCustomer).filter(
+                    InactiveCustomer.tenant_id == tenant.id,
+                    InactiveCustomer.customer_phone == clean_phone
+                ).order_by(InactiveCustomer.id.desc()).first()
 
             if past_patient:
                 prof_info = f" con {past_patient.service_or_product}" if past_patient.service_or_product else ""

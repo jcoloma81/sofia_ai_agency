@@ -105,18 +105,29 @@ class AppointmentService:
         if not apt:
             return False
 
-        # Cerrojo: Si el turno ya fue cubierto por alguien de la lista de espera
-        if apt.status == "rellenado_con_exito":
+        # Cerrojo: Si el turno ya fue cubierto por alguien de la lista de espera o ya está confirmado
+        if apt.status in ("rellenado_con_exito", "confirmado"):
             if apt.tenant:
                 date_str = format_appointment_datetime(apt.appointment_date)
-                msg = (
-                    f"⚠️ Hola! Te informamos que al haber pasado el horario límite de confirmación (18:00 hs), "
-                    f"el turno del *{date_str}* ya fue asignado a otro paciente en lista de espera.\n\n"
-                    f"Si deseás agendar una nueva fecha, escribinos por este medio y te buscamos lugar enseguida. 🙌"
-                )
-                target_phone = sender_phone or apt.patient_phone
-                if target_phone:
-                    await tenant_service.send_branded_notification(apt.tenant, target_phone, msg)
+                clean_sender = "".join(filter(str.isdigit, sender_phone or ""))
+                clean_patient = "".join(filter(str.isdigit, apt.patient_phone or ""))
+                if clean_sender and clean_sender == clean_patient:
+                    msg = (
+                        f"Hola *{apt.patient_name}*, te confirmamos que tu turno del *{date_str}* con *{apt.doctor_or_service}* "
+                        f"ya se encuentra *100% confirmado y reservado a tu nombre*.\n\n"
+                        f"¡Te esperamos puntual!"
+                    )
+                    await tenant_service.send_branded_notification(apt.tenant, apt.patient_phone, msg)
+                    return True
+                else:
+                    msg = (
+                        f"⚠️ Hola! Te informamos que al haber pasado el horario límite de confirmación (18:00 hs), "
+                        f"el turno del *{date_str}* ya fue asignado a otro paciente en lista de espera.\n\n"
+                        f"Si deseás agendar una nueva fecha, escribinos por este medio y te buscamos lugar enseguida. 🙌"
+                    )
+                    target_phone = sender_phone or apt.patient_phone
+                    if target_phone:
+                        await tenant_service.send_branded_notification(apt.tenant, target_phone, msg)
             return False
 
         # Si el turno estaba 'en_oferta_lista_espera' o 'cancelado' pero NADIE de la lista lo tomó aún,
@@ -253,7 +264,7 @@ class AppointmentService:
         ).order_by(Appointment.appointment_date.asc()).first()
         current_booking_desc = (
             format_appointment_datetime(existing_future.appointment_date, include_day_name=True)
-            if existing_future else "nuestra Lista de Espera Prioritaria"
+            if existing_future else "que solicitaste en nuestra Lista de Espera"
         )
 
         # Split date_str ("18/10 a las 09:30 hs") into day and hour for adelanta_turno_v1 ({{3}} and {{4}})
@@ -457,6 +468,21 @@ class AppointmentService:
         apt.notes = f"Original: {original_patient_name} ({original_patient_phone})"
         cand.status = "turno_tomado"
 
+        # Si venía del corte de las 18:00 hs, creamos registro explícito para el titular original
+        # con status 'reasignado_por_falta_confirmacion' para preservar su trazabilidad histórica
+        # y responderle con precisión si escribe después de las 18:00 hs
+        if was_cutoff_offer and original_patient_phone:
+            lost_apt = Appointment(
+                tenant_id=apt.tenant_id,
+                patient_name=original_patient_name,
+                patient_phone=original_patient_phone,
+                doctor_or_service=apt.doctor_or_service,
+                appointment_date=apt.appointment_date,
+                status="reasignado_por_falta_confirmacion",
+                notes=f"Turno liberado por corte 18hs y reasignado a {cand.patient_name} (#{cand.id})"
+            )
+            db.add(lost_apt)
+
         # If this waitlist candidate also had a later future appointment booked, free it up so they aren't double-booked
         later_apts = db.query(Appointment).filter(
             Appointment.tenant_id == apt.tenant_id,
@@ -475,7 +501,8 @@ class AppointmentService:
 
         # Si venía del corte de las 18:00 hs, recién AHORA que otro paciente tomó el turno,
         # le avisamos al titular original que su turno fue reasignado por falta de confirmación.
-        if was_cutoff_offer and original_patient_phone and original_patient_phone != cand.patient_phone:
+        # Se envía siempre que sea otro teléfono o si en pruebas se usó el mismo número con otro nombre.
+        if was_cutoff_offer and original_patient_phone and (original_patient_phone != cand.patient_phone or original_patient_name != cand.patient_name):
             patient_notice = (
                 f"⚠️ *AVISO OFICIAL DE TURNO LIBERADO POR FALTA DE CONFIRMACIÓN*\n\n"
                 f"Hola *{original_patient_name}*, te informamos que al no haber recibido tu confirmación "
