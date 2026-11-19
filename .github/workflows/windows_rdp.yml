@@ -21,53 +21,7 @@ jobs:
         run: |
           net user runneradmin "SuperActualizador2026!" /active:yes
 
-      - name: 3. Iniciar Tunel TCP Inmediato (Sin Cuentas ni Tarjetas)
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Path "C:\tunnel" -Force | Out-Null
-          Invoke-WebRequest -Uri "https://github.com/ekzhang/bore/releases/download/v0.6.0/bore-v0.6.0-x86_64-pc-windows-msvc.zip" -OutFile "C:\tunnel\bore.zip"
-          Expand-Archive -Path "C:\tunnel\bore.zip" -DestinationPath "C:\tunnel" -Force
-          Start-Process -FilePath "C:\tunnel\bore.exe" -ArgumentList "local 3389 --to bore.pub" -RedirectStandardOutput "C:\tunnel\bore.log" -RedirectStandardError "C:\tunnel\bore_err.log"
-          
-          $addr = ""
-          for ($i = 0; $i -lt 15; $i++) {
-            Start-Sleep -Seconds 2
-            if (Test-Path "C:\tunnel\bore.log") {
-              $log = Get-Content "C:\tunnel\bore.log" -Raw
-              if ($log -match "bore\.pub:(\d+)") {
-                $addr = "bore.pub:$($matches[1])"
-                break
-              }
-            }
-          }
-          
-          if (-not $addr) {
-            Write-Host "Revisando logs de error:"
-            Get-Content "C:\tunnel\bore.log" -ErrorAction SilentlyContinue
-            Get-Content "C:\tunnel\bore_err.log" -ErrorAction SilentlyContinue
-            Write-Error "No se pudo obtener el puerto del túnel."
-            exit 1
-          }
-
-          Write-Host ""
-          Write-Host "=========================================================="
-          Write-Host "🚀 ¡TU WINDOWS 100% REAL ESTA ACTIVO EN LA NUBE!"
-          Write-Host "=========================================================="
-          Write-Host ""
-          Write-Host "👉 DIRECCION PARA REMMINA:  $addr"
-          Write-Host "👉 USUARIO:                 runneradmin"
-          Write-Host "👉 CONTRASENA:              SuperActualizador2026!"
-          Write-Host ""
-          Write-Host "=========================================================="
-          Write-Host "Paso a paso para conectar:"
-          Write-Host "1. En tu Linux abri Remmina."
-          Write-Host "2. Asegurate que el protocolo sea RDP."
-          Write-Host "3. En el campo de servidor pega: $addr"
-          Write-Host "4. Usuario: runneradmin | Clave: SuperActualizador2026!"
-          Write-Host "5. ¡Listo! Estas adentro de Windows en pantalla completa."
-          Write-Host "=========================================================="
-
-      - name: 4. Descargar y Descomprimir el Actualizador en el Escritorio
+      - name: 3. Descargar y Descomprimir el Actualizador en el Escritorio
         shell: powershell
         run: |
           $desktop = "C:\Users\runneradmin\Desktop"
@@ -80,13 +34,28 @@ jobs:
             Write-Host "Aviso: Puedes descargarlo manualmente desde Edge en el escritorio."
           }
 
-      - name: 5. Mantener Sesion Activa (Hasta 6 Horas)
+      - name: 4. Descargar Herramienta de Tunel Bore
         shell: powershell
         run: |
-          $max_minutos = 360
-          for ($m = 1; $m -le $max_minutos; $m++) {
-            Start-Sleep -Seconds 60
-            if ($m % 15 -eq 0) {
-              Write-Host "Windows activo ($m de $max_minutos minutos transcurridos)."
-            }
-          }
+          New-Item -ItemType Directory -Path "C:\tunnel" -Force | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/ekzhang/bore/releases/download/v0.6.0/bore-v0.6.0-x86_64-pc-windows-msvc.zip" -OutFile "C:\tunnel\bore.zip"
+          Expand-Archive -Path "C:\tunnel\bore.zip" -DestinationPath "C:\tunnel" -Force
+          Write-Host "✅ Bore listo en C:\tunnel\bore.exe"
+
+      - name: 5. Iniciar Tunel RDP en Primer Plano (Activo hasta 6 Horas)
+        shell: powershell
+        run: |
+          Write-Host ""
+          Write-Host "=========================================================="
+          Write-Host "🚀 ¡WINDOWS SERVER 100% REAL ESTA ACTIVO!"
+          Write-Host "=========================================================="
+          Write-Host "👉 USUARIO:     runneradmin"
+          Write-Host "👉 CONTRASENA:  SuperActualizador2026!"
+          Write-Host ""
+          Write-Host "👉 MIRA LA SIGUIENTE LINEA QUE DICE 'listening at bore.pub:XXXXX'"
+          Write-Host "   Copia esa direccion exactamente y pegala en Remmina."
+          Write-Host "=========================================================="
+          Write-Host ""
+
+          # Ejecutar bore en primer plano para que GitHub Actions NO mate el proceso
+          & C:\tunnel\bore.exe local 3389 --to bore.pub
