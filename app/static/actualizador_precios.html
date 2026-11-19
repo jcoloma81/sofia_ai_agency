@@ -690,7 +690,7 @@
           </div>
           <div class="region-detail-item">
             <span class="region-detail-label">Facturación de Licencia</span>
-            <span class="region-detail-val" id="specPagos">Mercado Pago y Transferencia</span>
+            <span class="region-detail-val" id="specPagos">Lemon Cash y Transferencia</span>
           </div>
         </div>
 
@@ -848,6 +848,75 @@
       </div>
     </div>
 
+    <!-- Sección Oficial de Precios y Planes -->
+    <section class="pricing-section" id="planes" style="margin: 80px 0 40px;">
+      <div class="section-title">
+        <h2>Planes Claros de Pago Único (Sin Mensualidades)</h2>
+        <p>Probás 7 días gratis sin tarjeta. Si te sirve para tu negocio, congelás tu licencia definitiva de por vida.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 820px; margin: 0 auto;">
+        
+        <!-- PLAN 1: BASE -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 18px; padding: 32px 28px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <span style="display: inline-block; background: rgba(255, 255, 255, 0.08); color: var(--text-secondary); font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 12px; text-transform: uppercase;">
+              Plan de Entrada
+            </span>
+            <h3 style="font-size: 22px; font-weight: 800; margin: 12px 0 6px;">Licencia BASE</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 20px;">
+              Ideal para comercios que solo necesitan actualizar sus listas de precios de forma masiva y sin errores.
+            </p>
+            <div style="margin-bottom: 24px;">
+              <span style="font-size: 32px; font-weight: 800; color: #f8fafc;" id="landingPrecioBase">$ 44.900 ARS</span>
+              <span style="font-size: 13px; color: var(--text-muted); display: block; margin-top: 4px;">Pago Único por PC • Sin abonos</span>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 13.5px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 10px;">
+              <li style="display: flex; gap: 8px;">✅ Motor de Actualización Masiva Ilimitado</li>
+              <li style="display: flex; gap: 8px;">✅ Cruce con catálogos y listas sucias</li>
+              <li style="display: flex; gap: 8px;">✅ Cálculo limpio con descuentos e IVA</li>
+              <li style="display: flex; gap: 8px;">✅ Redondeo y exportación a Excel</li>
+              <li style="display: flex; gap: 8px; color: var(--text-muted);">⚡ 3 Pruebas de Comparador y Radar ML</li>
+            </ul>
+          </div>
+          <a href="/descargar-actualizador" class="btn-download-main btnDownloadDynamic" style="padding: 12px; font-size: 14px; text-decoration: none; justify-content: center;" onclick="abrirModalDescarga(event)">
+            Probar 7 Días Gratis
+          </a>
+        </div>
+
+        <!-- PLAN 2: FULL PRO (MÁS ELEGIDO) -->
+        <div style="background: rgba(37, 99, 235, 0.05); border: 2px solid #3b82f6; border-radius: 18px; padding: 32px 28px; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);">
+          <div style="position: absolute; top: -12px; right: 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 12px; text-transform: uppercase;">
+            👑 MÁS ELEGIDO
+          </div>
+          <div>
+            <span style="display: inline-block; background: rgba(59, 130, 246, 0.2); color: #60a5fa; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 12px; text-transform: uppercase;">
+              Edición Enterprise Completa
+            </span>
+            <h3 style="font-size: 22px; font-weight: 800; margin: 12px 0 6px;">Licencia FULL PRO</h3>
+            <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 20px;">
+              El ecosistema comercial total para comparar proveedores, ahorrar costos y vigilar precios de mercado.
+            </p>
+            <div style="margin-bottom: 24px;">
+              <span style="font-size: 32px; font-weight: 800; color: #60a5fa;" id="landingPrecioPro">$ 69.900 ARS</span>
+              <span style="font-size: 13px; color: var(--text-muted); display: block; margin-top: 4px;">Pago Único por PC • Acceso Permanente</span>
+            </div>
+            <ul style="list-style: none; padding: 0; margin: 0 0 24px 0; font-size: 13.5px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 10px;">
+              <li style="display: flex; gap: 8px;">✅ <strong>Todo lo del Plan Base Ilimitado</strong></li>
+              <li style="display: flex; gap: 8px;">✅ <strong>Comparador Multi-Proveedor Ilimitado</strong></li>
+              <li style="display: flex; gap: 8px;">✅ <strong>Radar MercadoLibre Ilimitado</strong></li>
+              <li style="display: flex; gap: 8px;">✅ Detección automática del proveedor más barato</li>
+              <li style="display: flex; gap: 8px;">✅ Soporte prioritario directo con el desarrollador</li>
+            </ul>
+          </div>
+          <a href="/descargar-actualizador" class="btn-download-main btnDownloadDynamic" style="padding: 12px; font-size: 14px; text-decoration: none; justify-content: center; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);" onclick="abrirModalDescarga(event)">
+            Probar 7 Días Gratis
+          </a>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <!-- Floating WhatsApp CTA -->
@@ -915,7 +984,9 @@
         nombre: 'Argentina',
         moneda: 'Pesos Argentinos ($ ARS)',
         impuestos: 'IVA 21% / 10.5% (RG 1415 AFIP)',
-        pagos: 'Mercado Pago y Transferencia Bancaria',
+        pagos: 'Lemon Cash y Transferencia Bancaria (Alias: pagoslemon.cash)',
+        precioBase: '$ 44.900 ARS',
+        precioPro: '$ 69.900 ARS',
         btnText: 'Descargar Súper Actualizador PRO (Edición Argentina)',
         url: '/descargar-actualizador',
         waMsg: 'Hola Javier, estoy en Argentina y descargué el Súper Actualizador PRO. Solicito mi clave de prueba.'
@@ -925,7 +996,9 @@
         nombre: 'América Latina',
         moneda: 'Dólares Americanos (US$)',
         impuestos: 'IVA / IGV / ITBMS configurable por país',
-        pagos: 'Tarjeta Internacional (Visa, Mastercard, AMEX)',
+        pagos: 'Pasarela Internacional Segura (Visa, Mastercard, AMEX, PayPal)',
+        precioBase: '$39 USD',
+        precioPro: '$69 USD',
         btnText: 'Descargar Súper Actualizador PRO (Edición LatAm USD)',
         url: '/descargar-actualizador-latam',
         waMsg: 'Hola Javier, estoy en Latinoamérica y descargué el Súper Actualizador PRO. Solicito mi clave de prueba.'
@@ -935,7 +1008,9 @@
         nombre: 'Europa / España',
         moneda: 'Euros (€ EUR)',
         impuestos: 'IVA General 21%, Reducido 10%, Superreducido 4%',
-        pagos: 'Tarjeta Bancaria y Transferencia SEPA',
+        pagos: 'Pasarela Oficial Europea (Tarjeta Bancaria, Bizum, SEPA)',
+        precioBase: '49 €',
+        precioPro: '89 €',
         btnText: 'Descargar Súper Actualizador PRO (Edición Europa EUR)',
         url: '/descargar-actualizador-europa',
         waMsg: 'Hola Javier, estoy en Europa y descargué el Súper Actualizador PRO. Solicito mi clave de prueba.'
@@ -1023,10 +1098,14 @@
       const elMoneda = document.getElementById('specMoneda');
       const elImpuestos = document.getElementById('specImpuestos');
       const elPagos = document.getElementById('specPagos');
+      const elPrecioBase = document.getElementById('landingPrecioBase');
+      const elPrecioPro = document.getElementById('landingPrecioPro');
 
       if (elMoneda) elMoneda.textContent = data.moneda;
       if (elImpuestos) elImpuestos.textContent = data.impuestos;
       if (elPagos) elPagos.textContent = data.pagos;
+      if (elPrecioBase && data.precioBase) elPrecioBase.textContent = data.precioBase;
+      if (elPrecioPro && data.precioPro) elPrecioPro.textContent = data.precioPro;
 
       // Actualizar botones de descarga y metadata según SO y Región
       actualizarEnlacesDescarga();
