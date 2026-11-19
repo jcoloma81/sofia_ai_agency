@@ -2,17 +2,12 @@ name: "🖥️ Windows Laboratorio RDP"
 
 on:
   workflow_dispatch:
-    inputs:
-      ngrok_token:
-        description: "Ngrok Auth Token (obtenelo gratis en dashboard.ngrok.com)"
-        required: false
-        type: string
-        default: ""
 
 jobs:
   windows_rdp:
     name: "Iniciar Windows Real con Escritorio Remoto"
     runs-on: windows-latest
+    timeout-minutes: 360
     steps:
       - name: 1. Habilitar RDP y Firewall
         shell: powershell
@@ -21,58 +16,68 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -value 0
 
-      - name: 2. Configurar Usuario Administrador
+      - name: 2. Configurar Clave de Acceso
         shell: powershell
         run: |
-          $pass = ConvertTo-SecureString "SuperActualizador2026!" -AsPlainText -Force
-          New-LocalUser -Name "runneradmin" -Password $pass -Description "RDP Admin" -PasswordNeverExpires:$true -AccountNeverExpires:$true -ErrorAction SilentlyContinue
-          Add-LocalGroupMember -Group "Administradores" -Member "runneradmin" -ErrorAction SilentlyContinue
-          Add-LocalGroupMember -Group "Administrators" -Member "runneradmin" -ErrorAction SilentlyContinue
+          net user runneradmin "SuperActualizador2026!" /active:yes
 
-      - name: 3. Descargar y Configurar Ngrok
+      - name: 3. Iniciar Tunel TCP Inmediato (Sin Cuentas ni Tarjetas)
         shell: powershell
         run: |
-          $token = "${{ inputs.ngrok_token }}"
-          if (-not $token) {
-            $token = "${{ secrets.NGROK_AUTH_TOKEN }}"
+          New-Item -ItemType Directory -Path "C:\tunnel" -Force | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/ekzhang/bore/releases/download/v0.6.0/bore-v0.6.0-x86_64-pc-windows-msvc.zip" -OutFile "C:\tunnel\bore.zip"
+          Expand-Archive -Path "C:\tunnel\bore.zip" -DestinationPath "C:\tunnel" -Force
+          Start-Process -FilePath "C:\tunnel\bore.exe" -ArgumentList "local 3389 --to bore.pub" -RedirectStandardOutput "C:\tunnel\bore.log" -RedirectStandardError "C:\tunnel\bore_err.log"
+          
+          $addr = ""
+          for ($i = 0; $i -lt 15; $i++) {
+            Start-Sleep -Seconds 2
+            if (Test-Path "C:\tunnel\bore.log") {
+              $log = Get-Content "C:\tunnel\bore.log" -Raw
+              if ($log -match "bore\.pub:(\d+)") {
+                $addr = "bore.pub:$($matches[1])"
+                break
+              }
+            }
           }
-          if (-not $token) {
-            Write-Error "Falta el Ngrok Auth Token. Ingresalo al ejecutar el workflow o agregalo en Secrets como NGROK_AUTH_TOKEN."
+          
+          if (-not $addr) {
+            Write-Host "Revisando logs de error:"
+            Get-Content "C:\tunnel\bore.log" -ErrorAction SilentlyContinue
+            Get-Content "C:\tunnel\bore_err.log" -ErrorAction SilentlyContinue
+            Write-Error "No se pudo obtener el puerto del túnel."
             exit 1
           }
-          New-Item -ItemType Directory -Path "C:\ngrok" -Force | Out-Null
-          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "C:\ngrok\ngrok.zip"
-          Expand-Archive -Path "C:\ngrok\ngrok.zip" -DestinationPath "C:\ngrok" -Force
-          & C:\ngrok\ngrok.exe config add-authtoken $token
 
-      - name: 4. Iniciar Tunel RDP y Mostrar Credenciales
+          Write-Host ""
+          Write-Host "=========================================================="
+          Write-Host "🚀 ¡TU WINDOWS 100% REAL ESTA ACTIVO EN LA NUBE!"
+          Write-Host "=========================================================="
+          Write-Host ""
+          Write-Host "👉 DIRECCION PARA REMMINA:  $addr"
+          Write-Host "👉 USUARIO:                 runneradmin"
+          Write-Host "👉 CONTRASENA:              SuperActualizador2026!"
+          Write-Host ""
+          Write-Host "=========================================================="
+          Write-Host "Paso a paso para conectar:"
+          Write-Host "1. En tu Linux abri Remmina."
+          Write-Host "2. Asegurate que el protocolo sea RDP."
+          Write-Host "3. En el campo de servidor pega: $addr"
+          Write-Host "4. Usuario: runneradmin | Clave: SuperActualizador2026!"
+          Write-Host "5. ¡Listo! Estas adentro de Windows en pantalla completa."
+          Write-Host "=========================================================="
+
+      - name: 4. Descargar y Descomprimir el Actualizador en el Escritorio
         shell: powershell
         run: |
-          Start-Process -FilePath "C:\ngrok\ngrok.exe" -ArgumentList "tcp 3389" -WindowStyle Hidden
-          Start-Sleep -Seconds 7
+          $desktop = "C:\Users\runneradmin\Desktop"
           try {
-            $tunnels = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels"
-            $url = $tunnels.tunnels[0].public_url
-            $clean_addr = $url -replace "tcp://", ""
-            Write-Host "=========================================================="
-            Write-Host "🚀 ¡TU WINDOWS 100% REAL ESTA ACTIVO EN LA NUBE!"
-            Write-Host "=========================================================="
-            Write-Host ""
-            Write-Host "DIRECCION PARA REMMINA:  $clean_addr"
-            Write-Host "USUARIO:                 runneradmin"
-            Write-Host "CONTRASENA:              SuperActualizador2026!"
-            Write-Host ""
-            Write-Host "=========================================================="
-            Write-Host "Paso a paso en Remmina:"
-            Write-Host "1. Abrir Remmina en tu Linux."
-            Write-Host "2. Asegurar que el protocolo este en RDP."
-            Write-Host "3. Pegar la direccion: $clean_addr"
-            Write-Host "4. Ingresar usuario runneradmin y contrasena."
-            Write-Host "5. ¡Listo! Ya estas adentro de Windows con pantalla completa."
-            Write-Host "=========================================================="
+            Write-Host "Descargando Súper Actualizador PRO al Escritorio de Windows..."
+            Invoke-WebRequest -Uri "https://sofia-ai-agency.onrender.com/descargar-actualizador" -OutFile "$desktop\PAQUETE_ACTUALIZADOR.zip"
+            Expand-Archive -Path "$desktop\PAQUETE_ACTUALIZADOR.zip" -DestinationPath "$desktop\SuperActualizadorPRO" -Force
+            Write-Host "✅ Paquete descomprimido en el Escritorio: $desktop\SuperActualizadorPRO"
           } catch {
-            Write-Error "No se pudo obtener el tunel de Ngrok. Revisa que tu Auth Token sea valido."
-            exit 1
+            Write-Host "Aviso: Puedes descargarlo manualmente desde Edge en el escritorio."
           }
 
       - name: 5. Mantener Sesion Activa (Hasta 6 Horas)
