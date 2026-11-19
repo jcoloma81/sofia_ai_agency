@@ -802,12 +802,23 @@
         <div class="step-item">
           <div class="step-number">01</div>
           <h4>Descargar y Extraer el Paquete</h4>
-          <p>Descarga el archivo ZIP de tu región. Haz clic derecho sobre el archivo y selecciona <strong>"Extraer todo"</strong>.</p>
+          <p id="step01Desc">Descarga el archivo ZIP de tu región. Haz clic derecho sobre el archivo y selecciona <strong>"Extraer todo"</strong>.</p>
         </div>
         <div class="step-item">
           <div class="step-number">02</div>
-          <h4>Ejecutar INICIAR_WINDOWS</h4>
-          <p>Abre la carpeta resultante y ejecuta <strong>INICIAR_WINDOWS.bat</strong>. El sistema inicia en menos de un segundo en tu navegador predeterminado.</p>
+          <div id="step02Container">
+            <h4>Elegir tu Modo de Inicio Favorito</h4>
+            <p style="margin-bottom: 8px;">Abre la carpeta resultante y elige cómo iniciarlo:</p>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
+              <strong style="color: #10b981;">🔕 Modo Silencioso (Recomendado):</strong> Ejecuta <code>INICIAR_SILENCIOSO.vbs</code>. Arranca 100% invisible en segundo plano, sin ventanas negras, abriendo directo tu navegador.
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
+              <strong style="color: #60a5fa;">⚡ Modo Rápido:</strong> Ejecuta <code>1_INICIAR_PROGRAMA.bat</code> para arranque directo con consola visible.
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 0;">
+              💡 <em>Opcional: Ejecuta <code>CREAR_ACCESO_DIRECTO_ESCRITORIO.bat</code> para tener el icono directo en tu escritorio.</em>
+            </p>
+          </div>
         </div>
         <div class="step-item">
           <div class="step-number">03</div>
@@ -843,7 +854,10 @@
         </div>
         <div>
           <h5>Soporte Directo por WhatsApp</h5>
-          <p>Atención directa y personalizada con el desarrollador del software para resolver cualquier duda.</p>
+          <p>
+            Atención directa y personalizada con el desarrollador del software para resolver cualquier duda.
+            <a href="https://wa.me/5493434536447" target="_blank" style="color: #10b981; font-weight: 700; text-decoration: none; display: inline-block; margin-top: 4px;">WhatsApp Directo (343-4536447) →</a>
+          </p>
         </div>
       </div>
     </div>
@@ -1033,6 +1047,42 @@
       if (btnWin) btnWin.classList.toggle('active', soKey === 'windows');
       if (btnLin) btnLin.classList.toggle('active', soKey === 'linux');
       actualizarEnlacesDescarga();
+      actualizarExplicativoPasos();
+    }
+
+    function actualizarExplicativoPasos() {
+      const elPaso1 = document.getElementById('step01Desc');
+      const elPaso2 = document.getElementById('step02Container');
+      if (!elPaso1 || !elPaso2) return;
+
+      if (soActual === 'linux') {
+        elPaso1.innerHTML = 'Descarga el paquete ZIP nativo para Linux (4.3 MB). Haz clic derecho sobre el archivo y selecciona <strong>"Extraer aquí"</strong>.';
+        elPaso2.innerHTML = `
+          <h4>Ejecutar el Script Nativo</h4>
+          <p style="margin-bottom: 8px;">Abre la carpeta resultante y ejecuta:</p>
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
+            <strong style="color: #10b981;">🚀 Inicio Nativo:</strong> Haz doble clic en <code>INICIAR_SUPER_ACTUALIZADOR.sh</code> o ejecuta en tu terminal <code>./INICIAR_SUPER_ACTUALIZADOR.sh</code>.
+          </div>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin: 0;">
+            El entorno ultra liviano levanta el servidor local e inicia tu navegador en menos de un segundo.
+          </p>
+        `;
+      } else {
+        elPaso1.innerHTML = 'Descarga el archivo ZIP de tu región. Haz clic derecho sobre el archivo y selecciona <strong>"Extraer todo"</strong>.';
+        elPaso2.innerHTML = `
+          <h4>Elegir tu Modo de Inicio Favorito</h4>
+          <p style="margin-bottom: 8px;">Abre la carpeta resultante y elige cómo iniciarlo:</p>
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
+            <strong style="color: #10b981;">🔕 Modo Silencioso (Recomendado):</strong> Ejecuta <code>INICIAR_SILENCIOSO.vbs</code>. Arranca 100% invisible en segundo plano, sin ventanas negras, abriendo directo tu navegador.
+          </div>
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
+            <strong style="color: #60a5fa;">⚡ Modo Rápido:</strong> Ejecuta <code>1_INICIAR_PROGRAMA.bat</code> para arranque directo con consola visible.
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0;">
+            💡 <em>Opcional: Ejecuta <code>CREAR_ACCESO_DIRECTO_ESCRITORIO.bat</code> para tener el icono directo en tu escritorio.</em>
+          </p>
+        `;
+      }
     }
 
     function actualizarEnlacesDescarga() {
