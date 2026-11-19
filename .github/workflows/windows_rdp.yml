@@ -1,0 +1,87 @@
+name: "🖥️ Windows Laboratorio RDP"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ngrok_token:
+        description: "Ngrok Auth Token (obtenelo gratis en dashboard.ngrok.com)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  windows_rdp:
+    name: "Iniciar Windows Real con Escritorio Remoto"
+    runs-on: windows-latest
+    steps:
+      - name: 1. Habilitar RDP y Firewall
+        shell: powershell
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -value 0
+
+      - name: 2. Configurar Usuario Administrador
+        shell: powershell
+        run: |
+          $pass = ConvertTo-SecureString "SuperActualizador2026!" -AsPlainText -Force
+          New-LocalUser -Name "runneradmin" -Password $pass -Description "RDP Admin" -PasswordNeverExpires:$true -AccountNeverExpires:$true -ErrorAction SilentlyContinue
+          Add-LocalGroupMember -Group "Administradores" -Member "runneradmin" -ErrorAction SilentlyContinue
+          Add-LocalGroupMember -Group "Administrators" -Member "runneradmin" -ErrorAction SilentlyContinue
+
+      - name: 3. Descargar y Configurar Ngrok
+        shell: powershell
+        run: |
+          $token = "${{ inputs.ngrok_token }}"
+          if (-not $token) {
+            $token = "${{ secrets.NGROK_AUTH_TOKEN }}"
+          }
+          if (-not $token) {
+            Write-Error "Falta el Ngrok Auth Token. Ingresalo al ejecutar el workflow o agregalo en Secrets como NGROK_AUTH_TOKEN."
+            exit 1
+          }
+          New-Item -ItemType Directory -Path "C:\ngrok" -Force | Out-Null
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "C:\ngrok\ngrok.zip"
+          Expand-Archive -Path "C:\ngrok\ngrok.zip" -DestinationPath "C:\ngrok" -Force
+          & C:\ngrok\ngrok.exe config add-authtoken $token
+
+      - name: 4. Iniciar Tunel RDP y Mostrar Credenciales
+        shell: powershell
+        run: |
+          Start-Process -FilePath "C:\ngrok\ngrok.exe" -ArgumentList "tcp 3389" -WindowStyle Hidden
+          Start-Sleep -Seconds 7
+          try {
+            $tunnels = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels"
+            $url = $tunnels.tunnels[0].public_url
+            $clean_addr = $url -replace "tcp://", ""
+            Write-Host "=========================================================="
+            Write-Host "🚀 ¡TU WINDOWS 100% REAL ESTA ACTIVO EN LA NUBE!"
+            Write-Host "=========================================================="
+            Write-Host ""
+            Write-Host "DIRECCION PARA REMMINA:  $clean_addr"
+            Write-Host "USUARIO:                 runneradmin"
+            Write-Host "CONTRASENA:              SuperActualizador2026!"
+            Write-Host ""
+            Write-Host "=========================================================="
+            Write-Host "Paso a paso en Remmina:"
+            Write-Host "1. Abrir Remmina en tu Linux."
+            Write-Host "2. Asegurar que el protocolo este en RDP."
+            Write-Host "3. Pegar la direccion: $clean_addr"
+            Write-Host "4. Ingresar usuario runneradmin y contrasena."
+            Write-Host "5. ¡Listo! Ya estas adentro de Windows con pantalla completa."
+            Write-Host "=========================================================="
+          } catch {
+            Write-Error "No se pudo obtener el tunel de Ngrok. Revisa que tu Auth Token sea valido."
+            exit 1
+          }
+
+      - name: 5. Mantener Sesion Activa (Hasta 6 Horas)
+        shell: powershell
+        run: |
+          $max_minutos = 360
+          for ($m = 1; $m -le $max_minutos; $m++) {
+            Start-Sleep -Seconds 60
+            if ($m % 15 -eq 0) {
+              Write-Host "Windows activo ($m de $max_minutos minutos transcurridos)."
+            }
+          }
