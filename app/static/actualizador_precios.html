@@ -340,6 +340,43 @@
       font-weight: 600;
     }
 
+    /* Selector de Sistema Operativo */
+    .so-selector-container {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px;
+      border-radius: 30px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+
+    .so-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .so-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .so-tab.active {
+      background: rgba(37, 99, 235, 0.25);
+      border-color: #3b82f6;
+      color: #93c5fd;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+    }
+
     /* Pillars / Features */
     .section-title {
       text-align: center;
@@ -657,26 +694,40 @@
           </div>
         </div>
 
-        <div style="margin-bottom: 14px;">
+        <div style="margin-bottom: 12px;">
           <span class="cta-badge-trial">7 Días de Prueba Completa sin Costo</span>
+        </div>
+
+        <!-- Selector de Sistema Operativo Inteligente (Detección automática) -->
+        <div>
+          <div class="so-selector-container" role="tablist">
+            <button type="button" id="btnSoWindows" class="so-tab active" onclick="seleccionarSO('windows')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Windows (10 / 11)
+            </button>
+            <button type="button" id="btnSoLinux" class="so-tab" onclick="seleccionarSO('linux')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              Linux (Ubuntu / Debian)
+            </button>
+          </div>
         </div>
 
         <a href="/descargar-actualizador" id="btnDownloadMain" class="btn-download-main" onclick="abrirModalDescarga(event)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span id="btnDownloadText">Descargar Súper Actualizador PRO (Edición Argentina)</span>
         </a>
-        <div class="download-meta">
+        <div class="download-meta" id="downloadMetaContainer">
           <span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            Compatible con Windows 10 / 11
+            Compatible con Windows 10 / 11 (64-bit)
           </span>
           <span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            Portable Zero-Install (47 MB)
+            Portable Zero-Install (46 MB)
           </span>
           <span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            Arranque Instantáneo (0.5s)
+            1 Clic sin Consolas
           </span>
         </div>
       </div>
@@ -892,6 +943,67 @@
     };
 
     let regionActual = 'argentina';
+    let soActual = 'windows';
+
+    function detectarSO() {
+      const ua = (navigator.userAgent || '').toLowerCase();
+      if (ua.includes('linux') && !ua.includes('android')) return 'linux';
+      return 'windows';
+    }
+
+    function seleccionarSO(soKey) {
+      soActual = soKey;
+      const btnWin = document.getElementById('btnSoWindows');
+      const btnLin = document.getElementById('btnSoLinux');
+      if (btnWin) btnWin.classList.toggle('active', soKey === 'windows');
+      if (btnLin) btnLin.classList.toggle('active', soKey === 'linux');
+      actualizarEnlacesDescarga();
+    }
+
+    function actualizarEnlacesDescarga() {
+      if (!REGIONES[regionActual]) return;
+      const data = REGIONES[regionActual];
+      const btnMain = document.getElementById('btnDownloadMain');
+      const btnText = document.getElementById('btnDownloadText');
+      const linkModal = document.getElementById('linkDescargaDirectaModal');
+      const metaContainer = document.getElementById('downloadMetaContainer');
+
+      const soQuery = soActual === 'linux' ? '?so=linux' : '';
+      const finalUrl = data.url + soQuery;
+
+      if (btnMain) btnMain.href = finalUrl;
+      if (linkModal) linkModal.href = finalUrl;
+
+      if (soActual === 'linux') {
+        if (btnText) btnText.textContent = `${data.btnText} (Linux)`;
+        if (metaContainer) {
+          metaContainer.innerHTML = `
+            <span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              Compatible con Linux (Ubuntu, Debian, Fedora)
+            </span>
+            <span>•</span>
+            <span>Ultra Liviano (4.3 MB)</span>
+            <span>•</span>
+            <span>Scripts Nativos .sh</span>
+          `;
+        }
+      } else {
+        if (btnText) btnText.textContent = `${data.btnText} (Windows)`;
+        if (metaContainer) {
+          metaContainer.innerHTML = `
+            <span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Compatible con Windows 10 / 11 (64-bit)
+            </span>
+            <span>•</span>
+            <span>Portable Zero-Install (46 MB)</span>
+            <span>•</span>
+            <span>1 Clic sin Consolas</span>
+          `;
+        }
+      }
+    }
 
     function seleccionarRegion(regionKey, actualizarUrl = true) {
       if (!REGIONES[regionKey]) return;
@@ -916,21 +1028,8 @@
       if (elImpuestos) elImpuestos.textContent = data.impuestos;
       if (elPagos) elPagos.textContent = data.pagos;
 
-      // Actualizar botones de descarga
-      const btnMain = document.getElementById('btnDownloadMain');
-      if (btnMain) {
-        btnMain.href = data.url;
-      }
-      const btnText = document.getElementById('btnDownloadText');
-      if (btnText) {
-        btnText.textContent = data.btnText;
-      }
-
-      // Actualizar enlace directo del modal
-      const linkModal = document.getElementById('linkDescargaDirectaModal');
-      if (linkModal) {
-        linkModal.href = data.url;
-      }
+      // Actualizar botones de descarga y metadata según SO y Región
+      actualizarEnlacesDescarga();
 
       // Actualizar enlace de WhatsApp flotante
       const waFloat = document.querySelector('.wa-floating');
@@ -959,7 +1058,8 @@
       const comercio = document.getElementById('landingNombreComercio').value.trim();
       const whatsapp = document.getElementById('landingWhatsapp').value.trim();
       const btn = document.getElementById('btnDescargarConSoporte');
-      const targetUrl = REGIONES[regionActual] ? REGIONES[regionActual].url : '/descargar-actualizador';
+      const baseUrl = REGIONES[regionActual] ? REGIONES[regionActual].url : '/descargar-actualizador';
+      const targetUrl = baseUrl + (soActual === 'linux' ? '?so=linux' : '');
 
       if (whatsapp && whatsapp.length >= 6) {
         btn.textContent = 'Registrando solicitud...';
@@ -1005,6 +1105,7 @@
         targetReg = 'europa';
       }
       seleccionarRegion(targetReg, false);
+      seleccionarSO(detectarSO());
     });
   </script>
 

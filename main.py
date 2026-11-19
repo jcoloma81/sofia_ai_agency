@@ -289,18 +289,28 @@ def serve_actualizador_landing():
 @app.get("/descargar-actualizador-pro")
 @app.get("/descargar-actualizador-latam")
 @app.get("/descargar-actualizador-europa")
-def serve_descargar_actualizador(request: Request, region: Optional[str] = None, db: Session = Depends(get_db)):
+def serve_descargar_actualizador(
+    request: Request,
+    region: Optional[str] = None,
+    so: Optional[str] = None,
+    os_type: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    # Determinar si solicita versión Linux o Windows (Windows por defecto 98%)
+    so_param = (so or os_type or "").lower()
+    es_linux = "linux" in so_param or "linux" in request.url.path
+
     # Determinar edición regional según la URL o parámetro
     path_url = request.url.path
     if "latam" in path_url or region == "latam":
-        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_LATAM_USD.zip"
-        label_region = "LATAM_USD"
+        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_LATAM_USD_LINUX.zip" if es_linux else "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_LATAM_USD.zip"
+        label_region = f"LATAM_USD_{'LINUX' if es_linux else 'WIN'}"
     elif "europa" in path_url or region == "europa":
-        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_EUROPA_EUR.zip"
-        label_region = "EUROPA_EUR"
+        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_EUROPA_EUR_LINUX.zip" if es_linux else "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_EUROPA_EUR.zip"
+        label_region = f"EUROPA_EUR_{'LINUX' if es_linux else 'WIN'}"
     else:
-        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip"
-        label_region = "ARGENTINA"
+        target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_LINUX.zip" if es_linux else "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip"
+        label_region = f"ARGENTINA_{'LINUX' if es_linux else 'WIN'}"
 
     # Registrar telemetría de descarga para Javier
     try:
