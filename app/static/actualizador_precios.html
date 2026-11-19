@@ -1105,7 +1105,14 @@
         targetReg = 'europa';
       }
       seleccionarRegion(targetReg, false);
-      seleccionarSO(detectarSO());
+
+      // Windows SIEMPRE predeterminado para el 99% de los comercios
+      const soParam = (params.get('so') || '').toLowerCase();
+      if (soParam === 'linux') {
+        seleccionarSO('linux');
+      } else {
+        seleccionarSO('windows');
+      }
     });
   </script>
 
