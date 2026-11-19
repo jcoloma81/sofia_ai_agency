@@ -279,6 +279,8 @@ def serve_generador_movil():
 @app.get("/actualizador", response_class=FileResponse)
 @app.get("/actualizador-precios", response_class=FileResponse)
 @app.get("/precios-pro", response_class=FileResponse)
+@app.get("/actualizador-latam", response_class=FileResponse)
+@app.get("/actualizador-europa", response_class=FileResponse)
 def serve_actualizador_landing():
     landing_path = os.path.join(os.path.dirname(__file__), "app", "static", "actualizador_precios.html")
     return FileResponse(landing_path)
