@@ -166,6 +166,109 @@
       transform: translateY(-1px);
     }
 
+    .btn-wa-header, .btn-ig-header, .btn-menu-toggle {
+      height: 38px;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-menu-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      color: #F4F3EE;
+      width: 38px;
+      height: 38px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-menu-toggle:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #FFFFFF;
+    }
+
+    /* Mobile Navigation Drawer */
+    .mobile-nav-drawer {
+      display: none;
+      position: fixed;
+      top: 61px;
+      left: 0;
+      right: 0;
+      background: rgba(13, 15, 18, 0.98);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-strong);
+      padding: 18px 20px 22px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      animation: slideDownNav 0.2s ease-out;
+    }
+
+    .mobile-nav-drawer.open {
+      display: block;
+    }
+
+    @keyframes slideDownNav {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-nav-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .mobile-nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .mobile-nav-list a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      color: #e2e8f0;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.18s ease;
+    }
+
+    .mobile-nav-list a:hover, .mobile-nav-list a.active {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .mobile-nav-list a .nav-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
     .pay-pill-mini {
       display: inline-flex;
       align-items: center;
@@ -775,6 +878,9 @@
       .navbar {
         padding: 14px 20px;
       }
+      .btn-menu-toggle {
+        display: inline-flex;
+      }
       .solutions-grid {
         grid-template-columns: 1fr;
         gap: 20px;
@@ -811,14 +917,24 @@
       .brand-pill {
         display: none; /* Hide pill on mobile so brand and button never collide */
       }
+      .btn-ig-header span { display: none; }
+      .btn-ig-header {
+        padding: 0;
+        width: 36px;
+        height: 36px;
+        justify-content: center;
+      }
       .btn-wa-header {
-        padding: 7px 12px;
+        padding: 0 10px;
+        height: 36px;
         font-size: 12px;
         border-radius: 8px;
         gap: 6px;
       }
-      .btn-ig-header span { display: none; }
-      .btn-ig-header { padding: 7px 10px; }
+      .btn-menu-toggle {
+        width: 36px;
+        height: 36px;
+      }
 
       .hero {
         padding: 40px 16px 28px;
@@ -1038,12 +1154,17 @@
       }
     }
 
-    @media (max-width: 380px) {
+    @media (max-width: 480px) {
       .hero h1 {
         font-size: 23px;
       }
       .btn-wa-header span.btn-text-full {
         display: none;
+      }
+      .btn-wa-header {
+        width: 36px;
+        padding: 0;
+        justify-content: center;
       }
     }
   </style>
@@ -1060,8 +1181,8 @@
 
       <ul class="nav-links">
         <li><a href="#soluciones">Soluciones</a></li>
-        <li><a href="/sofia">Sofía AI WhatsApp</a></li>
         <li><a href="/actualizador">Actualizador PRO</a></li>
+        <li><a href="/sofia">Sofía AI WhatsApp</a></li>
         <li><a href="https://aircontrolpro.net/" target="_blank">Air Control ↗</a></li>
         <li><a href="#contacto">Contacto</a></li>
       </ul>
@@ -1071,9 +1192,56 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
           <span>@sof_ia.tech</span>
         </a>
-        <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20vengo%20desde%20la%20web%20de%20SOF-IA%20Agency%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-wa-header">
+        <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20vengo%20desde%20la%20web%20de%20SOF-IA%20Agency%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-wa-header" title="WhatsApp: +54 9 343 4536447">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
-          Hablar con Asesor
+          <span class="btn-text-full">Hablar con Asesor</span>
+        </a>
+        <button type="button" class="btn-menu-toggle" id="btnMenuToggle" aria-label="Abrir menú" onclick="toggleMenuMobile()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer for Home Agency -->
+    <div class="mobile-nav-drawer" id="mobileNavDrawer">
+      <div class="mobile-nav-title">Nuestras Soluciones</div>
+      <ul class="mobile-nav-list">
+        <li>
+          <a href="/actualizador">
+            <span>⭐ Súper Actualizador PRO</span>
+            <span class="nav-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">PRODUCTO ESTRELLA</span>
+          </a>
+        </li>
+        <li>
+          <a href="/sofia">
+            <span>Sofía AI WhatsApp</span>
+            <span class="nav-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">BOT IA</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://aircontrolpro.net/" target="_blank">
+            <span>Air Control Climatización ↗</span>
+            <span class="nav-badge" style="background: rgba(217, 119, 6, 0.2); color: #fbbf24;">SMART IOT</span>
+          </a>
+        </li>
+      </ul>
+      <div class="mobile-nav-title">Navegación</div>
+      <ul class="mobile-nav-list">
+        <li><a href="#soluciones" onclick="toggleMenuMobile()"><span>Ver las 3 Soluciones</span></a></li>
+        <li><a href="#contacto" onclick="toggleMenuMobile()"><span>Contacto &amp; Asesor</span></a></li>
+      </ul>
+      <div style="display: flex; gap: 8px;">
+        <a href="https://www.instagram.com/sof_ia.tech/" target="_blank" rel="noopener noreferrer" class="btn-ig-header" style="flex: 1; justify-content: center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          <span>Instagram</span>
+        </a>
+        <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20vengo%20desde%20la%20web%20de%20SOF-IA%20Agency%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-wa-header" style="flex: 1; justify-content: center; background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
+          <span>WhatsApp</span>
         </a>
       </div>
     </div>
@@ -1093,7 +1261,7 @@
     </h1>
 
     <p class="lead">
-      En <strong>SOF-IA</strong> desarrollamos soluciones técnicas aplicadas a la economía real: recepcionistas automáticas para consultorios que sincronizan turnos en tu propio Excel, procesadores masivos de listas de precios para distribuidoras y controladores inteligentes con cobro por Mercado Pago.
+      En <strong>SOF-IA</strong> desarrollamos soluciones técnicas aplicadas a la economía real: procesadores masivos de listas de precios para distribuidoras y comercios, recepcionistas automáticas con IA que sincronizan turnos en tu propio Excel y controladores IoT con cobro por Mercado Pago.
     </p>
 
     <div class="hero-actions">
@@ -1175,7 +1343,52 @@
 
     <div class="solutions-grid">
 
-      <!-- Solution 1: Sofía AI -->
+      <!-- Solution 1: Actualizador PRO (PRODUCTO ESTRELLA) -->
+      <div class="solution-card" style="border-color: rgba(16, 185, 129, 0.38); box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.2); position: relative;">
+        <div class="card-top">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+            <span class="pill-rubro pill-cyan" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.35); font-weight: 700;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="display:inline; margin-right:4px; vertical-align: -1px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              PRODUCTO ESTRELLA • SOFTWARE B2B
+            </span>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.25);">
+              7 Días Gratis
+            </span>
+          </div>
+          <h3>Súper Actualizador PRO — Listas en 3 Segundos</h3>
+          <p class="card-desc">
+            Software de escritorio ultra-rápido para comercios, ferreterías y distribuidoras. Detecta automáticamente columnas de proveedores, calcula aumentos porcentuales y márgenes, y exporta listo para tu sistema.
+          </p>
+          <ul class="features-list">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              100% Offline y seguro: tus datos no viajan a la nube
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Maneja listas gigantes de +50.000 filas
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Fórmulas automáticas de IVA y utilidad neta
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              7 Días de prueba completa sin tarjeta
+            </li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <a href="/actualizador" class="btn-card-primary" style="background: linear-gradient(180deg, #10B981 0%, #059669 100%); color: #ffffff; border: none; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);">
+            Ver Detalles del Software →
+          </a>
+          <a href="/descargar-actualizador" class="btn-card-direct">
+            Descargar Gratis (.ZIP) 1-Clic
+          </a>
+        </div>
+      </div>
+
+      <!-- Solution 2: Sofía AI -->
       <div class="solution-card">
         <div class="card-top">
           <span class="pill-rubro pill-green">IA Conversacional &amp; ERP WhatsApp</span>
@@ -1208,43 +1421,6 @@
           </a>
           <a href="https://wa.me/5493435720312?text=Hola%20Sofia,%20quiero%20ver%20una%20demo%20de%20c%C3%B3mo%20atend%C3%A9s%20para%20mi%20negocio" target="_blank" class="btn-card-direct">
             Probar Bot en Vivo en WhatsApp
-          </a>
-        </div>
-      </div>
-
-      <!-- Solution 2: Actualizador PRO -->
-      <div class="solution-card">
-        <div class="card-top">
-          <span class="pill-rubro pill-cyan">Software de Escritorio &amp; Retail</span>
-          <h3>Súper Actualizador PRO — Listas en 3 Segundos</h3>
-          <p class="card-desc">
-            Software de escritorio ultra-rápido para comercios, ferreterías y distribuidoras. Detecta automáticamente columnas de proveedores, calcula aumentos porcentuales y márgenes, y exporta listo para tu sistema.
-          </p>
-          <ul class="features-list">
-            <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              100% Offline y seguro: tus datos no viajan a la nube
-            </li>
-            <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Maneja listas gigantes de +50.000 filas
-            </li>
-            <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Fórmulas automáticas de IVA y utilidad neta
-            </li>
-            <li>
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              7 Días de prueba completa sin tarjeta
-            </li>
-          </ul>
-        </div>
-        <div class="card-actions">
-          <a href="/actualizador" class="btn-card-primary">
-            Ver Detalles del Software →
-          </a>
-          <a href="/descargar-actualizador" class="btn-card-direct">
-            Descargar Gratis (.ZIP) 1-Clic
           </a>
         </div>
       </div>
@@ -1415,6 +1591,31 @@
   <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20estoy%20en%20la%20web%20de%20SOF-IA%20y%20tengo%20una%20consulta." target="_blank" class="wa-floating" title="Contactar por WhatsApp">
     <svg viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
   </a>
+
+  <script>
+    function toggleMenuMobile() {
+      const drawer = document.getElementById('mobileNavDrawer');
+      const btn = document.getElementById('btnMenuToggle');
+      if (!drawer) return;
+      const isOpen = drawer.classList.toggle('open');
+      if (btn) {
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        btn.innerHTML = isOpen
+          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>';
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      const drawer = document.getElementById('mobileNavDrawer');
+      const btn = document.getElementById('btnMenuToggle');
+      if (drawer && drawer.classList.contains('open')) {
+        if (!drawer.contains(e.target) && !btn.contains(e.target)) {
+          toggleMenuMobile();
+        }
+      }
+    });
+  </script>
 
 </body>
 </html>
