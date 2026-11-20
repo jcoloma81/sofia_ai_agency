@@ -81,7 +81,7 @@
     }
 
     .brand-logo span {
-      color: var(--accent-green-light);
+      color: #3b82f6;
     }
 
     .brand-pill {
@@ -142,6 +142,48 @@
       border-color: rgba(255, 255, 255, 0.28);
       color: #FFFFFF;
       transform: translateY(-1px);
+    }
+
+    .btn-ig-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-strong);
+      color: #F4F3EE;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-ig-header:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+
+    .pay-pill-mini {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #94A3B8;
+      transition: all 0.2s ease;
+    }
+
+    .pay-pill-mini:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #F4F3EE;
     }
 
     .btn-wa-header svg {
@@ -775,6 +817,8 @@
         border-radius: 8px;
         gap: 6px;
       }
+      .btn-ig-header span { display: none; }
+      .btn-ig-header { padding: 7px 10px; }
 
       .hero {
         padding: 40px 16px 28px;
@@ -1023,6 +1067,10 @@
       </ul>
 
       <div class="nav-actions">
+        <a href="https://www.instagram.com/sof_ia.tech/" target="_blank" rel="noopener noreferrer" class="btn-ig-header" title="Seguinos en Instagram @sof_ia.tech">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          <span>@sof_ia.tech</span>
+        </a>
         <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20vengo%20desde%20la%20web%20de%20SOF-IA%20Agency%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-wa-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
           Hablar con Asesor
@@ -1303,8 +1351,52 @@
   <!-- Footer -->
   <footer>
     <div class="footer-container">
+      <!-- Universal Payment & Security Rails (Icons Only) -->
+      <div style="width: 100%; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 22px; margin-bottom: 22px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;">
+        <div class="pay-pill-mini" title="Visa">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <span>Visa</span>
+        </div>
+        <div class="pay-pill-mini" title="Mastercard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg>
+          <span>Mastercard</span>
+        </div>
+        <div class="pay-pill-mini" title="American Express">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+          <span>AMEX</span>
+        </div>
+        <div class="pay-pill-mini" style="border-color: rgba(59, 130, 246, 0.3);" title="PayPal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M10 6h5c2.5 0 4 1.5 3.5 3.5-.5 2.5-2.5 4-5 4h-2l-1.5 6h-2.5l2.5-13.5z"/></svg>
+          <span>PayPal</span>
+        </div>
+        <div class="pay-pill-mini" title="Apple Pay & Google Pay">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>Apple Pay • Google Pay</span>
+        </div>
+        <div class="pay-pill-mini" style="border-color: rgba(56, 189, 248, 0.3);" title="Mercado Pago">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.6-4.6a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0L14 12"/><path d="m13 7-2-2a1 1 0 0 0-1.4 0L5 9.6a1 1 0 0 0 0 1.4l2 2a1 1 0 0 0 1.4 0L10 11"/></svg>
+          <span>Mercado Pago</span>
+        </div>
+        <div class="pay-pill-mini" style="border-color: rgba(250, 204, 21, 0.3);" title="Lemon Cash">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9l6 6"/></svg>
+          <span>Lemon</span>
+        </div>
+        <div class="pay-pill-mini" title="Transferencia Bancaria Inmediata">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M15 10v11M19 10v11M12 2L2 7h20L12 2z"/></svg>
+          <span>Transferencia</span>
+        </div>
+        <div class="pay-pill-mini" style="border-color: rgba(34, 211, 238, 0.3);" title="Bizum & SEPA">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>Bizum • SEPA</span>
+        </div>
+        <div class="pay-pill-mini" style="border-color: rgba(16, 185, 129, 0.35); color: #34d399;" title="Cifrado Bancario SSL 256-Bit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>SSL 256-Bit</span>
+        </div>
+      </div>
+
       <div>
-        <strong>SOF-IA Tech &amp; AI Studio</strong> — Paraná, Entre Ríos, Argentina.<br>
+        <strong>SOF<span style="color: #3b82f6;">-IA</span> Tech &amp; AI Studio</strong> — Paraná, Entre Ríos, Argentina.<br>
         <span style="font-size: 12px; color: var(--text-muted);">Soluciones Tecnológicas, Inteligencia Artificial e Internet de las Cosas.</span>
       </div>
       <ul class="footer-links">
@@ -1312,6 +1404,7 @@
         <li><a href="/sofia">Sofía AI</a></li>
         <li><a href="/actualizador">Actualizador PRO</a></li>
         <li><a href="https://aircontrolpro.net/" target="_blank">Air Control Pro ↗</a></li>
+        <li><a href="https://www.instagram.com/sof_ia.tech/" target="_blank" rel="noopener noreferrer">Instagram ↗</a></li>
         <li><a href="/privacy">Privacidad</a></li>
         <li><a href="/terms">Términos</a></li>
       </ul>
