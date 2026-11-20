@@ -54,6 +54,7 @@ Thumbs.db
 *.mp4
 !assets/demo_air_control.mp4
 !assets/video_promocional_sap_pro.mp4
+!assets/demo_comparador_proveedores.mp4
 scratch/
 assets/catalogo_base.xlsx
 assets/lista_proveedor_aumento.xlsx
