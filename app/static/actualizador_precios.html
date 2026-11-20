@@ -1401,7 +1401,7 @@
           </div>
         `;
       } else if (regionKey === 'europa') {
-        if (subtitle) subtitle.textContent = 'Pasarela oficial europea con cobro en Euros (€) y factura comunitaria.';
+        if (subtitle) subtitle.textContent = 'Pasarela oficial europea con cobro en Euros (€) y factura con IVA (VAT) para autónomos y empresas.';
         container.innerHTML = `
           <div class="pay-pill" title="Tarjetas Bancarias Europeas">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
@@ -1422,7 +1422,7 @@
         `;
       } else {
         // LatAm
-        if (subtitle) subtitle.textContent = 'Pasarela internacional segura en Dólares (US$) para México, Colombia, Chile, Perú y toda la región.';
+        if (subtitle) subtitle.textContent = 'Pasarela internacional en Dólares (US$) con conversión automática a tu moneda local y recibo comercial (Invoice / Tax ID).';
         container.innerHTML = `
           <div class="pay-pill" title="Tarjetas Internacionales">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
