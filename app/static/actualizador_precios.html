@@ -155,22 +155,26 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 9px;
       color: #f1f5f9;
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.15s ease, border-color 0.15s ease;
       box-sizing: border-box;
       flex-shrink: 0;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
-    .btn-menu-toggle:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.3);
-      color: #ffffff;
+    .btn-menu-toggle:active {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(0.96);
     }
 
     .nav-extra-links {
@@ -874,12 +878,9 @@
           <span class="btn-wa-text-full">WhatsApp: +54 9 343 4536447</span>
           <span class="btn-wa-text-short">WhatsApp</span>
         </a>
-        <button type="button" class="btn-menu-toggle" id="btnMenuToggle" aria-label="Abrir menú" onclick="toggleMenuMobile()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+        <button type="button" class="btn-menu-toggle" id="btnMenuToggle" aria-label="Abrir menú" onclick="toggleMenuMobile(event)">
+          <svg class="icon-ham" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: none; pointer-events: none;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
     </div>
@@ -896,8 +897,8 @@
         </li>
         <li>
           <a href="/sofia">
-            <span>Sofía AI WhatsApp</span>
-            <span class="nav-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">BOT IA</span>
+            <span>Sofía AI — Secretaria Virtual</span>
+            <span class="nav-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">SECRETARIA VIRTUAL IA</span>
           </a>
         </li>
         <li>
@@ -1762,26 +1763,41 @@
       }, 1500);
     }
 
-    // Menú hamburguesa móvil
-    function toggleMenuMobile() {
+    // Menú hamburguesa móvil instantáneo
+    function toggleMenuMobile(e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
       const drawer = document.getElementById('mobileNavDrawer');
       const btn = document.getElementById('btnMenuToggle');
       if (!drawer) return;
       const isOpen = drawer.classList.toggle('open');
       if (btn) {
         btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        btn.innerHTML = isOpen
-          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
-          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>';
+        const iconHam = btn.querySelector('.icon-ham');
+        const iconClose = btn.querySelector('.icon-close');
+        if (iconHam && iconClose) {
+          iconHam.style.display = isOpen ? 'none' : 'block';
+          iconClose.style.display = isOpen ? 'block' : 'none';
+        }
       }
     }
 
     document.addEventListener('click', function(e) {
       const drawer = document.getElementById('mobileNavDrawer');
       const btn = document.getElementById('btnMenuToggle');
-      if (drawer && drawer.classList.contains('open')) {
-        if (!drawer.contains(e.target) && !btn.contains(e.target)) {
-          toggleMenuMobile();
+      if (!drawer || !drawer.classList.contains('open')) return;
+      if (!drawer.contains(e.target) && !btn.contains(e.target)) {
+        drawer.classList.remove('open');
+        if (btn) {
+          btn.setAttribute('aria-expanded', 'false');
+          const iconHam = btn.querySelector('.icon-ham');
+          const iconClose = btn.querySelector('.icon-close');
+          if (iconHam && iconClose) {
+            iconHam.style.display = 'block';
+            iconClose.style.display = 'none';
+          }
         }
       }
     });
