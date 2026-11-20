@@ -118,6 +118,48 @@
       transform: translateY(-1px);
     }
 
+    .btn-ig-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-ig-header:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .pay-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #cbd5e1;
+      transition: all 0.2s;
+    }
+
+    .pay-pill:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+    }
+
     /* Container */
     .container {
       max-width: 1160px;
@@ -618,6 +660,8 @@
       .hero-cta-box { padding: 24px 18px; }
       .steps-section { padding: 32px 20px; }
       .wa-floating { padding: 12px 18px; bottom: 16px; right: 16px; font-size: 13px; }
+      .btn-ig-header span { display: none; }
+      .btn-ig-header { padding: 8px 10px; }
     }
   </style>
 </head>
@@ -638,6 +682,10 @@
         </div>
       </div>
       <div class="nav-actions">
+        <a href="https://www.instagram.com/sof_ia.tech/" target="_blank" rel="noopener noreferrer" class="btn-ig-header" title="Seguinos en Instagram @sof_ia.tech">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          <span>@sof_ia.tech</span>
+        </a>
         <a href="https://wa.me/5493434536447?text=Hola%20Javier%2C%20estoy%20viendo%20el%20S%C3%BAper%20Actualizador%20PRO%20en%20la%20web%20y%20quiero%20hacerte%20una%20consulta." target="_blank" class="btn-wa-header">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
           WhatsApp: 343-4536447
@@ -1077,6 +1125,25 @@
         </div>
 
       </div>
+
+      <!-- Barra Corporativa de Métodos de Pago y Respaldo Oficial -->
+      <div id="paymentTrustContainer" style="max-width: 820px; margin: 32px auto 0; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 16px; padding: 20px 24px;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span>Canales de Pago Habilitados • Emisión Directa de Licencia</span>
+            </div>
+            <p id="trustSubtitle" style="font-size: 12.5px; color: #64748b; margin: 3px 0 0 0;">
+              Procesamiento bancario seguro sin retenciones ni suscripciones automáticas.
+            </p>
+          </div>
+          
+          <div id="trustBadgesList" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+            <!-- Badges vectoriales inyectados dinámicamente según la región -->
+          </div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -1090,12 +1157,32 @@
   <!-- Footer -->
   <footer>
     <div class="container">
-      <p style="margin-bottom:6px;">
-        <strong>SOF-IA</strong> — Tech &amp; AI Studio
-      </p>
-      <p>
-        Desarrollado en Paraná, Entre Ríos, Argentina • Contacto: <a href="https://wa.me/5493434536447" target="_blank">+54 9 343 4536447</a>
-      </p>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px;">
+        <div style="text-align: left;">
+          <div style="font-size: 16px; font-weight: 800; color: #f8fafc; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;">
+            <span>SOF<span style="color: #3b82f6;">-IA</span> Studio</span>
+            <span style="font-size: 11px; font-weight: 700; color: #64748b; background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">Tech &amp; AI</span>
+          </div>
+          <div style="font-size: 12.5px; color: #64748b; margin-top: 4px;">
+            Ingeniería de Software &amp; Agentes Comerciales de IA • Paraná, Entre Ríos, Argentina
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <a href="https://www.instagram.com/sof_ia.tech/" target="_blank" rel="noopener noreferrer" class="btn-ig-header" style="font-size: 12px; padding: 7px 13px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            <span>Instagram: @sof_ia.tech</span>
+          </a>
+          <a href="https://wa.me/5493434536447" target="_blank" rel="noopener noreferrer" class="btn-wa-header" style="font-size: 12px; padding: 7px 13px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.299.144.35.49 1.196.533 1.284.043.088.072.19.014.305-.058.115-.087.19-.173.289l-.26.303c-.087.088-.178.183-.076.357.101.174.45 0.742.965 1.201.662.59 1.221.774 1.394.86.173.086.275.072.376-.043.101-.116.433-.506.549-.68.116-.173.231-.144.39-.086s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z"/></svg>
+            <span>WhatsApp: 343-4536447</span>
+          </a>
+        </div>
+      </div>
+      <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 18px; font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px;">
+        <span>© 2026 SOF-IA Studio. Todos los derechos reservados.</span>
+        <span>Súper Actualizador PRO v2.0 • Edición Comercial Segura RSA-2048</span>
+      </div>
     </div>
   </footer>
 
@@ -1288,6 +1375,75 @@
       }
     }
 
+    function actualizarBadgesPago(regionKey) {
+      const container = document.getElementById('trustBadgesList');
+      const subtitle = document.getElementById('trustSubtitle');
+      if (!container) return;
+
+      if (regionKey === 'argentina') {
+        if (subtitle) subtitle.textContent = 'Transferencia directa en Pesos (ARS) o saldo Lemon Cash sin comisiones intermediarias.';
+        container.innerHTML = `
+          <div class="pay-pill" title="Transferencia CBU / CVU">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M15 10v11M19 10v11M12 2L2 7h20L12 2z"/></svg>
+            <span>Transferencia (CBU / CVU)</span>
+          </div>
+          <div class="pay-pill" style="border-color: rgba(250, 204, 21, 0.3);" title="Lemon Cash y Cripto">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9l6 6"/></svg>
+            <span>pagoslemon.cash</span>
+          </div>
+          <div class="pay-pill" style="border-color: rgba(56, 189, 248, 0.3);" title="Mercado Pago">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.6-4.6a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0L14 12"/><path d="m13 7-2-2a1 1 0 0 0-1.4 0L5 9.6a1 1 0 0 0 0 1.4l2 2a1 1 0 0 0 1.4 0L10 11"/></svg>
+            <span>Mercado Pago</span>
+          </div>
+          <div class="pay-pill" title="Tarjetas de Débito y Crédito">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Visa • Mastercard</span>
+          </div>
+        `;
+      } else if (regionKey === 'europa') {
+        if (subtitle) subtitle.textContent = 'Pasarela oficial europea con cobro en Euros (€) y factura comunitaria.';
+        container.innerHTML = `
+          <div class="pay-pill" title="Tarjetas Bancarias Europeas">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Visa • Mastercard • Maestro</span>
+          </div>
+          <div class="pay-pill" style="border-color: rgba(59, 130, 246, 0.3);" title="PayPal Oficial">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M10 6h5c2.5 0 4 1.5 3.5 3.5-.5 2.5-2.5 4-5 4h-2l-1.5 6h-2.5l2.5-13.5z"/></svg>
+            <span>PayPal</span>
+          </div>
+          <div class="pay-pill" style="border-color: rgba(34, 211, 238, 0.3);" title="Bizum y Transferencia SEPA">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>Bizum &amp; SEPA</span>
+          </div>
+          <div class="pay-pill" style="border-color: rgba(16, 185, 129, 0.35); color: #34d399;" title="Pasarela Segura SSL 256-Bit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>SSL 256-Bit • Gumroad / Whop</span>
+          </div>
+        `;
+      } else {
+        // LatAm
+        if (subtitle) subtitle.textContent = 'Pasarela internacional segura en Dólares (US$) para México, Colombia, Chile, Perú y toda la región.';
+        container.innerHTML = `
+          <div class="pay-pill" title="Tarjetas Internacionales">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Visa • Mastercard • AMEX</span>
+          </div>
+          <div class="pay-pill" style="border-color: rgba(59, 130, 246, 0.3);" title="PayPal Internacional">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M10 6h5c2.5 0 4 1.5 3.5 3.5-.5 2.5-2.5 4-5 4h-2l-1.5 6h-2.5l2.5-13.5z"/></svg>
+            <span>PayPal</span>
+          </div>
+          <div class="pay-pill" title="Apple Pay y Google Pay">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Apple Pay • Google Pay</span>
+          </div>
+          <div class="pay-pill" style="border-color: rgba(16, 185, 129, 0.35); color: #34d399;" title="Pasarela Segura SSL 256-Bit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>SSL 256-Bit • Whop / Gumroad</span>
+          </div>
+        `;
+      }
+    }
+
     function seleccionarRegion(regionKey, actualizarUrl = true) {
       if (!REGIONES[regionKey]) return;
       regionActual = regionKey;
@@ -1317,6 +1473,9 @@
 
       // Actualizar botones de descarga y metadata según SO y Región
       actualizarEnlacesDescarga();
+
+      // Actualizar insignias de medios de pago corporativos según Región
+      actualizarBadgesPago(regionKey);
 
       // Actualizar enlace de WhatsApp flotante
       const waFloat = document.querySelector('.wa-floating');
