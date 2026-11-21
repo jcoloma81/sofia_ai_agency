@@ -18,6 +18,7 @@ class Prospect(Base):
     name = Column(String, index=True)                            # e.g. "Distribuidora Río Paraná"
     contact_name = Column(String, nullable=True)                  # e.g. "Martín"
     phone = Column(String, index=True)                           # e.g. "5493434991122" (not globally unique so multiple merchants can share suppliers)
+    email = Column(String, nullable=True, index=True)           # e.g. "ventas@distribuidoraparana.com"
     city = Column(String, nullable=True)                         # e.g. "Paraná", "Santa Fe"
     units_count = Column(Integer, nullable=True)                 # Optional units/branches count
     status = Column(String, default="pending", index=True)        # pending, contacted, in_conversation, meeting_scheduled, human_takeover, not_interested

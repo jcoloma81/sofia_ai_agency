@@ -50,9 +50,12 @@ def run_auto_migrations(db_engine):
                         conn.execute(text("ALTER TABLE prospects ADD COLUMN employee_role VARCHAR DEFAULT 'owner'"))
                     if "can_dispatch" not in col_names:
                         conn.execute(text("ALTER TABLE prospects ADD COLUMN can_dispatch BOOLEAN DEFAULT 0"))
+                    if "email" not in col_names:
+                        conn.execute(text("ALTER TABLE prospects ADD COLUMN email VARCHAR"))
                     conn.commit()
                 conn.execute(text("DROP INDEX IF EXISTS ix_prospects_phone"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_email ON prospects (email)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone)"))
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_prospects_parent_merchant_phone ON prospects (parent_merchant_phone)"))
                 # Ensure appointments 48h/24h columns
@@ -144,6 +147,7 @@ def run_auto_migrations(db_engine):
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS can_dispatch BOOLEAN DEFAULT FALSE;
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS business_type VARCHAR;
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS campaign VARCHAR DEFAULT 'ai_agency';
+                    ALTER TABLE prospects ADD COLUMN IF NOT EXISTS email VARCHAR;
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'pending';
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS conversation_history TEXT DEFAULT '[]';
                     ALTER TABLE prospects ADD COLUMN IF NOT EXISTS notes TEXT;
@@ -152,6 +156,7 @@ def run_auto_migrations(db_engine):
                     ALTER TABLE waitlist_entries ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP;
                     DROP INDEX IF EXISTS ix_prospects_phone;
                     CREATE INDEX IF NOT EXISTS ix_prospects_phone ON prospects (phone);
+                    CREATE INDEX IF NOT EXISTS ix_prospects_email ON prospects (email);
                     CREATE INDEX IF NOT EXISTS ix_prospects_merchant_phone ON prospects (merchant_phone);
                     CREATE INDEX IF NOT EXISTS ix_prospects_parent_merchant_phone ON prospects (parent_merchant_phone);
 

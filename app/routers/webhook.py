@@ -2010,13 +2010,15 @@ async def receive_whatsapp_webhook(
     # 4. Check if lead is explicitly requesting the demo video (from template CTA)
     clean_lower = message.strip().lower()
     is_demo_intent = bool(re.search(
-        r'\b(demo|demostraci[oó]n|video|el video|la demo)\b',
+        r'\b(demo|demostraci[oó]n|video|el video|la demo|info|informaci[oó]n|actualizador)\b',
         clean_lower
     )) or any(phrase in clean_lower for phrase in [
         "mandame el video", "mandá el video", "pasame el video", "pasanos el video",
         "mandame la demo", "pasame la demo", "ver demostración", "ver demostracion",
         "ver la demo", "quiero ver", "me pasas el video", "me pasás el video",
-        "quiero la demo", "quiero ver la demo"
+        "quiero la demo", "quiero ver la demo", "quiero más info", "quiero mas info",
+        "ver cómo funciona", "ver como funciona", "sí, quiero probarla", "si, quiero probarla",
+        "contame más", "contame mas"
     ])
 
     if not is_non_distribuidora_demo and is_demo_intent:
@@ -2024,7 +2026,16 @@ async def receive_whatsapp_webhook(
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
         contact_str = f" {safe_name}" if safe_name else ""
         
-        if (prospect.campaign or "air_control") == "air_control":
+        if (prospect.campaign or "") == "actualizador_pro" or any(k in clean_lower for k in ["actualizador", "quiero más info", "quiero mas info", "ver cómo funciona", "ver como funciona"]):
+            demo_reply = (
+                f"¡Hola{contact_str}! Buenísimo que te interese ver cómo funciona el Actualizador Pro 🙌\n\n"
+                f"Acá podés ver en nuestra web todos los detalles y el software en acción:\n"
+                f"👉 https://sofia-ai-agency.onrender.com/actualizador\n\n"
+                f"Y acá podés seguirnos en Instagram para ver cómo lo usan otros comercios:\n"
+                f"👉 https://www.instagram.com/sof_ia.tech/\n\n"
+                f"Si querés hacer una prueba rápida de 1 minuto con alguna lista en PDF o Excel de tus proveedores, avísame por acá y te muestro cómo te la deja lista al instante con tus márgenes. ¿Con qué rubro o proveedores trabajás?"
+            )
+        elif (prospect.campaign or "air_control") == "air_control":
             city_str = (prospect.city or "").lower()
             is_parana = "paraná" in city_str or "parana" in city_str
             meeting_modality = (
