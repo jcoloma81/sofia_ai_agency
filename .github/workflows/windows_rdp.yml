@@ -2,12 +2,6 @@ name: "🖥️ Windows Laboratorio RDP"
 
 on:
   workflow_dispatch:
-    inputs:
-      ngrok_token:
-        description: "Ngrok Auth Token (dashboard.ngrok.com)"
-        required: false
-        type: string
-        default: ""
 
 jobs:
   windows_rdp:
@@ -40,51 +34,37 @@ jobs:
             Write-Host "Aviso: Puedes descargarlo manualmente desde Edge en el escritorio."
           }
 
-      - name: 4. Descargar y Configurar Ngrok
+      - name: 4. Iniciar Tunel TCP Directo (Sin Cuentas ni Tarjetas)
         shell: powershell
         run: |
-          $token = "${{ inputs.ngrok_token }}".Trim()
-          if (-not $token) {
-            $token = "${{ secrets.NGROK_AUTH_TOKEN }}".Trim()
-          }
-          if (-not $token) {
-            Write-Error "Falta el Ngrok Auth Token. Ingresalo al ejecutar el workflow en 'Run workflow' o configuralo en Secrets como NGROK_AUTH_TOKEN."
-            exit 1
-          }
-
-          New-Item -ItemType Directory -Path "C:\ngrok" -Force | Out-Null
-          Write-Host "Descargando Ngrok oficial..."
-          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "C:\ngrok\ngrok.zip"
-          Expand-Archive -Path "C:\ngrok\ngrok.zip" -DestinationPath "C:\ngrok" -Force
-          & C:\ngrok\ngrok.exe config add-authtoken $token
-          Write-Host "✅ Ngrok autenticado y listo."
-
-      - name: 5. Iniciar Tunel RDP y Mantener Sesion Activa
-        shell: powershell
-        run: |
-          Start-Process -FilePath "C:\ngrok\ngrok.exe" -ArgumentList "tcp 3389" -WindowStyle Hidden
+          New-Item -ItemType Directory -Path "C:\tunnel" -Force | Out-Null
           
+          # Iniciar tunel TCP SSH con Pinggy en segundo plano
+          Start-Process -FilePath "ssh" -ArgumentList "-T -p 443 -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R0:127.0.0.1:3389 tcp@a.pinggy.io" -RedirectStandardOutput "C:\tunnel\pinggy.log" -RedirectStandardError "C:\tunnel\pinggy_err.log"
+
           $addr = ""
-          for ($i = 0; $i -lt 15; $i++) {
+          for ($i = 0; $i -lt 25; $i++) {
             Start-Sleep -Seconds 2
-            try {
-              $resp = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels" -ErrorAction SilentlyContinue
-              if ($resp -and $resp.tunnels -and $resp.tunnels.Count -gt 0) {
-                $raw_url = $resp.tunnels[0].public_url
-                $addr = $raw_url -replace "tcp://", ""
+            if (Test-Path "C:\tunnel\pinggy.log") {
+              $log = Get-Content "C:\tunnel\pinggy.log" -Raw
+              if ($log -match "tcp://([^\s]+)") {
+                $addr = $matches[1].Trim()
                 break
               }
-            } catch {}
+            }
           }
 
           if (-not $addr) {
-            Write-Error "No se pudo obtener la direccion del tunel Ngrok. Revisa que tu Auth Token sea valido."
+            Write-Host "Logs de salida:"
+            Get-Content "C:\tunnel\pinggy.log" -ErrorAction SilentlyContinue
+            Get-Content "C:\tunnel\pinggy_err.log" -ErrorAction SilentlyContinue
+            Write-Error "No se pudo iniciar el túnel TCP."
             exit 1
           }
 
           Write-Host ""
           Write-Host "=========================================================="
-          Write-Host "🚀 ¡WINDOWS SERVER 100% REAL ESTA ACTIVO CON NGROK!"
+          Write-Host "🚀 ¡WINDOWS SERVER 100% REAL ESTA ACTIVO!"
           Write-Host "=========================================================="
           Write-Host ""
           Write-Host "👉 DIRECCION PARA REMMINA:  $addr"
@@ -94,14 +74,14 @@ jobs:
           Write-Host "=========================================================="
           Write-Host "Paso a paso en Remmina:"
           Write-Host "1. En tu Linux abri Remmina."
-          Write-Host "2. Protocolo: RDP"
-          Write-Host "3. Servidor:  $addr"
-          Write-Host "4. Usuario:   runneradmin"
-          Write-Host "5. Clave:     SuperActualizador2026!"
+          Write-Host "2. Asegurate que el protocolo sea RDP."
+          Write-Host "3. En el servidor pega: $addr"
+          Write-Host "4. Usuario: runneradmin | Clave: SuperActualizador2026!"
+          Write-Host "5. ¡Listo! Ya estas adentro del escritorio de Windows."
           Write-Host "=========================================================="
           Write-Host ""
 
-          # Mantener la máquina viva hasta 6 horas
+          # Mantener la sesión activa
           $max_minutos = 360
           for ($m = 1; $m -le $max_minutos; $m++) {
             Start-Sleep -Seconds 60
