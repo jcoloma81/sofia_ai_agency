@@ -2,6 +2,11 @@ name: "🖥️ Windows Laboratorio RDP"
 
 on:
   workflow_dispatch:
+    inputs:
+      tailscale_key:
+        description: "Tailscale Auth Key (dejar por defecto o pegar nueva)"
+        required: false
+        default: "tskey-auth-k8qEAciuQp11CNTRL-wi4wKos8PBTDhG9bYeY1CTpVyZTXF4HL"
 
 jobs:
   windows_rdp:
@@ -34,54 +39,44 @@ jobs:
             Write-Host "Aviso: Puedes descargarlo manualmente desde Edge en el escritorio."
           }
 
-      - name: 4. Iniciar Tunel TCP Directo (Sin Cuentas ni Tarjetas)
+      - name: 4. Conectar a Red Privada Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ inputs.tailscale_key }}
+          version: latest
+
+      - name: 5. Mostrar IP de Windows y Mantener Sesion Activa
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Path "C:\tunnel" -Force | Out-Null
-          
-          # Iniciar tunel TCP SSH con Pinggy en segundo plano
-          Start-Process -FilePath "ssh" -ArgumentList "-T -p 443 -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R0:127.0.0.1:3389 tcp@a.pinggy.io" -RedirectStandardOutput "C:\tunnel\pinggy.log" -RedirectStandardError "C:\tunnel\pinggy_err.log"
-
-          $addr = ""
-          for ($i = 0; $i -lt 25; $i++) {
+          $ip = ""
+          for ($i = 0; $i -lt 15; $i++) {
+            try {
+              $ip = (tailscale ip -4).Trim()
+              if ($ip) { break }
+            } catch {}
             Start-Sleep -Seconds 2
-            if (Test-Path "C:\tunnel\pinggy.log") {
-              $log = Get-Content "C:\tunnel\pinggy.log" -Raw
-              if ($log -match "tcp://([^\s]+)") {
-                $addr = $matches[1].Trim()
-                break
-              }
-            }
-          }
-
-          if (-not $addr) {
-            Write-Host "Logs de salida:"
-            Get-Content "C:\tunnel\pinggy.log" -ErrorAction SilentlyContinue
-            Get-Content "C:\tunnel\pinggy_err.log" -ErrorAction SilentlyContinue
-            Write-Error "No se pudo iniciar el túnel TCP."
-            exit 1
           }
 
           Write-Host ""
           Write-Host "=========================================================="
-          Write-Host "🚀 ¡WINDOWS SERVER 100% REAL ESTA ACTIVO!"
+          Write-Host "🚀 ¡WINDOWS SERVER CONECTADO A TU RED TAILSCALE!"
           Write-Host "=========================================================="
           Write-Host ""
-          Write-Host "👉 DIRECCION PARA REMMINA:  $addr"
-          Write-Host "👉 USUARIO:                 runneradmin"
-          Write-Host "👉 CONTRASENA:              SuperActualizador2026!"
+          Write-Host "👉 IP PRIVADA PARA REMMINA:  $ip"
+          Write-Host "👉 USUARIO:                  runneradmin"
+          Write-Host "👉 CONTRASENA:               SuperActualizador2026!"
           Write-Host ""
           Write-Host "=========================================================="
           Write-Host "Paso a paso en Remmina:"
           Write-Host "1. En tu Linux abri Remmina."
-          Write-Host "2. Asegurate que el protocolo sea RDP."
-          Write-Host "3. En el servidor pega: $addr"
-          Write-Host "4. Usuario: runneradmin | Clave: SuperActualizador2026!"
-          Write-Host "5. ¡Listo! Ya estas adentro del escritorio de Windows."
+          Write-Host "2. Protocolo: RDP"
+          Write-Host "3. Servidor:  $ip"
+          Write-Host "4. Usuario:   runneradmin"
+          Write-Host "5. Clave:     SuperActualizador2026!"
           Write-Host "=========================================================="
           Write-Host ""
 
-          # Mantener la sesión activa
+          # Mantener la máquina viva hasta 6 horas
           $max_minutos = 360
           for ($m = 1; $m -le $max_minutos; $m++) {
             Start-Sleep -Seconds 60
