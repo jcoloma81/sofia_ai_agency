@@ -9,7 +9,7 @@
           "unit_price": 0.0
         }
       ],
-      "updated_at": "2026-10-11T21:31:21.322932+00:00"
+      "updated_at": "2026-11-20T15:24:39.104630+00:00"
     },
     "distribuidora_alem": {
       "supplier_name": "Distribuidora Alem",
@@ -50,25 +50,13 @@
           "unit_price": 17500.0
         }
       ],
-      "updated_at": "2026-10-11T21:31:35.092360+00:00"
+      "updated_at": "2026-11-20T15:24:56.926812+00:00"
     }
   },
   "5493435111111": {},
   "5493435222222": {},
   "5493434112244": {},
-  "5493434112255": {
-    "distribuidora_alem": {
-      "supplier_name": "Distribuidora Alem",
-      "items": [
-        {
-          "product_name": "Azúcar Ledesma 1kg",
-          "quantity": 20,
-          "unit_price": 800.0
-        }
-      ],
-      "updated_at": "2026-10-28T16:46:04.129409+00:00"
-    }
-  },
+  "5493434112255": {},
   "pinturas_litoral": {
     "supplier_name": "Pinturas Litoral",
     "items": [
@@ -78,6 +66,6 @@
         "unit_price": 0.0
       }
     ],
-    "updated_at": "2026-10-11T21:31:21.322932+00:00"
+    "updated_at": "2026-11-20T15:24:39.104630+00:00"
   }
 }

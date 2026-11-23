@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import contextvars
 from typing import Optional, Any, List
 import httpx
 from datetime import datetime
@@ -8,6 +9,16 @@ from app.config.settings import settings
 from app.services.alerts import send_email_alert, build_meeting_html_email
 
 logger = logging.getLogger(__name__)
+
+_current_phone_number_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("_current_phone_number_id", default=None)
+
+def set_current_phone_id(phone_id: Optional[str]):
+    """Sets the active Meta Phone Number ID for the current async task context."""
+    _current_phone_number_id.set(phone_id)
+
+def get_current_phone_id() -> Optional[str]:
+    """Returns the contextual Meta Phone Number ID, or falls back to global settings."""
+    return _current_phone_number_id.get() or settings.META_PHONE_NUMBER_ID
 
 def get_phone_candidates(phone: str) -> List[str]:
     """
@@ -70,14 +81,15 @@ def split_whatsapp_message(text: str, max_chars: int = 3800) -> List[str]:
 
     return chunks
 
-async def _send_single_whatsapp_message(clean_phone: str, text: str) -> bool:
+async def _send_single_whatsapp_message(clean_phone: str, text: str, phone_number_id: Optional[str] = None) -> bool:
     """
     Sends a single chunk via Official Meta WhatsApp Cloud API (Primary Enterprise Gateway),
     or falls back to Whapi.Cloud, or simulation log.
     """
     # 1. Official Meta WhatsApp Cloud API (Primary Enterprise Gateway)
-    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
-        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+    active_phone_id = phone_number_id or get_current_phone_id()
+    if settings.META_ACCESS_TOKEN and active_phone_id:
+        meta_url = f"https://graph.facebook.com/v20.0/{active_phone_id}/messages"
         meta_headers = {
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
@@ -142,7 +154,7 @@ async def _send_single_whatsapp_message(clean_phone: str, text: str) -> bool:
         logger.error(f"Error sending WhatsApp message to {clean_phone}: {e}")
         return False
 
-async def send_whatsapp_message(to_phone: str, text: str) -> bool:
+async def send_whatsapp_message(to_phone: str, text: str, phone_number_id: Optional[str] = None) -> bool:
     """
     Sends a WhatsApp message via Official Meta WhatsApp Cloud API (Primary Enterprise Gateway),
     or falls back to Whapi.Cloud, or simulation log.
@@ -159,7 +171,7 @@ async def send_whatsapp_message(to_phone: str, text: str) -> bool:
         if i > 0:
             await asyncio.sleep(0.4)
 
-        chunk_sent = await _send_single_whatsapp_message(clean_phone, chunk)
+        chunk_sent = await _send_single_whatsapp_message(clean_phone, chunk, phone_number_id=phone_number_id)
         if not chunk_sent:
             all_success = False
 
@@ -206,8 +218,9 @@ async def send_whatsapp_template(
         except Exception as e:
             logger.error(f"Error checking tenant quota in send_whatsapp_template: {e}")
 
-    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
-        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+    active_phone_id = get_current_phone_id()
+    if settings.META_ACCESS_TOKEN and active_phone_id:
+        meta_url = f"https://graph.facebook.com/v20.0/{active_phone_id}/messages"
         meta_headers = {
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
@@ -271,8 +284,9 @@ async def send_whatsapp_document(
     clean_phone = "".join(filter(str.isdigit, to_phone))
 
     # 1. Official Meta WhatsApp Cloud API (Primary Enterprise Gateway)
-    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
-        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+    active_phone_id = get_current_phone_id()
+    if settings.META_ACCESS_TOKEN and active_phone_id:
+        meta_url = f"https://graph.facebook.com/v20.0/{active_phone_id}/messages"
         meta_headers = {
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
@@ -349,8 +363,9 @@ async def send_whatsapp_video(
     """
     clean_phone = "".join(filter(str.isdigit, to_phone))
 
-    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
-        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+    active_phone_id = get_current_phone_id()
+    if settings.META_ACCESS_TOKEN and active_phone_id:
+        meta_url = f"https://graph.facebook.com/v20.0/{active_phone_id}/messages"
         meta_headers = {
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
@@ -393,8 +408,9 @@ async def send_whatsapp_image(
     """
     clean_phone = "".join(filter(str.isdigit, to_phone))
 
-    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
-        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+    active_phone_id = get_current_phone_id()
+    if settings.META_ACCESS_TOKEN and active_phone_id:
+        meta_url = f"https://graph.facebook.com/v20.0/{active_phone_id}/messages"
         meta_headers = {
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"
@@ -445,8 +461,9 @@ async def send_whatsapp_interactive_buttons(
     """
     clean_phone = "".join(filter(str.isdigit, to_phone))
 
-    if settings.META_ACCESS_TOKEN and settings.META_PHONE_NUMBER_ID:
-        meta_url = f"https://graph.facebook.com/v20.0/{settings.META_PHONE_NUMBER_ID}/messages"
+    active_phone_id = get_current_phone_id()
+    if settings.META_ACCESS_TOKEN and active_phone_id:
+        meta_url = f"https://graph.facebook.com/v20.0/{active_phone_id}/messages"
         meta_headers = {
             "Authorization": f"Bearer {settings.META_ACCESS_TOKEN}",
             "Content-Type": "application/json"

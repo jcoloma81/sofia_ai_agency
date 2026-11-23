@@ -113,6 +113,9 @@ async def receive_whatsapp_webhook(
                     if "messages" in value and isinstance(value["messages"], list) and len(value["messages"]) > 0:
                         incoming_meta_msg = value["messages"][0]
                         meta_contacts = value.get("contacts", [])
+                        recipient_phone_id = value.get("metadata", {}).get("phone_number_id")
+                        if recipient_phone_id:
+                            whatsapp.set_current_phone_id(recipient_phone_id)
                         break
                 if incoming_meta_msg:
                     break
@@ -121,6 +124,9 @@ async def receive_whatsapp_webhook(
             if "messages" in value and isinstance(value["messages"], list) and len(value["messages"]) > 0:
                 incoming_meta_msg = value["messages"][0]
                 meta_contacts = value.get("contacts", [])
+                recipient_phone_id = value.get("metadata", {}).get("phone_number_id")
+                if recipient_phone_id:
+                    whatsapp.set_current_phone_id(recipient_phone_id)
 
         if not incoming_meta_msg:
             # Inspect delivery status updates (e.g. Meta Error 131047: 24h window closed)
@@ -2030,7 +2036,7 @@ async def receive_whatsapp_webhook(
             demo_reply = (
                 f"¡Hola{contact_str}! Buenísimo que te interese ver cómo funciona el Actualizador Pro 🙌\n\n"
                 f"Acá podés ver en nuestra web todos los detalles y el software en acción:\n"
-                f"👉 https://sofia-ai-agency.onrender.com/actualizador\n\n"
+                f"👉 https://sof-ia.site/actualizador\n\n"
                 f"Y acá podés seguirnos en Instagram para ver cómo lo usan otros comercios:\n"
                 f"👉 https://www.instagram.com/sof_ia.tech/\n\n"
                 f"Si querés hacer una prueba rápida de 1 minuto con alguna lista en PDF o Excel de tus proveedores, avísame por acá y te muestro cómo te la deja lista al instante con tus márgenes. ¿Con qué rubro o proveedores trabajás?"

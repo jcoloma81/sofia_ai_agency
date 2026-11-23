@@ -1,26 +1,63 @@
-import requests
-from bs4 import BeautifulSoup
-import urllib.parse
+import os
+import sys
 import re
 import time
 import json
+import urllib.parse
 import unicodedata
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+import requests
+from bs4 import BeautifulSoup
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+# Ensure parent directory is in sys.path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
+if PARENT_DIR not in sys.path:
+    sys.path.insert(0, PARENT_DIR)
+
+try:
+    from app.database.database import SessionLocal
+    from app.models.prospect import Prospect
+except Exception as e:
+    SessionLocal = None
+    Prospect = None
 
 EMAIL_REGEX = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
 PHONE_REGEX = re.compile(r'(?:\+?54\s?)?(?:9\s?)?(?:\d{2,4}\s?[-.\s]?\d{3,4}[-.\s]?\d{3,4})')
 
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Accept-Language': 'es-419,es;q=0.9,en;q=0.8'
+}
+
 DIRECTORY_DOMAINS = [
-    'duckduckgo.com', 'google.com', 'wikipedia.org', 'maps.google', 'yelp.com',
-    'findglocal.com', 'dentists10.com', 'paginasamarillas', 'yellowpages',
+    'google.com', 'wikipedia.org', 'maps.google', 'yelp.com',
     'cylex', 'mercadolibre', 'tripadvisor', 'booking.com', 'foursquare.com',
     'guia-local', 'habitissimo', 'linkedin.com', 'twitter.com', 'youtube.com',
-    'pinterest.com', 'github.com', 'wordpress.com', 'wixsite.com',
-    'despegar.com'
+    'pinterest.com', 'github.com', 'wordpress.com', 'wixsite.com'
 ]
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+# Area codes for key Argentine cities
+CITY_AREA_CODES = {
+    'parana': '343',
+    'paraná': '343',
+    'santa fe': '342',
+    'rosario': '341',
+    'cordoba': '351',
+    'córdoba': '351',
+    'buenos aires': '11',
+    'caba': '11',
+    'concepcion del uruguay': '3442',
+    'concepción del uruguay': '3442',
+    'colon': '3447',
+    'colón': '3447',
+    'concordia': '345',
+    'gualeguaychu': '3446',
+    'gualeguaychú': '3446'
 }
 
 def remove_accents(input_str):
@@ -29,7 +66,11 @@ def remove_accents(input_str):
     nfkd_form = unicodedata.normalize('NFKD', str(input_str))
     return "".join([c for c in nfkd_form if not unicodedata.combining(c)])
 
-def clean_phone_number(phone_raw):
+def clean_phone_number(phone_raw, city="Paraná"):
+    """
+    Normalizes Argentine phone numbers to E.164 international format:
+    e.g. 5493434074434, 5493424690429.
+    """
     if not phone_raw:
         return None
     digits = re.sub(r'[^\d]', '', str(phone_raw))
@@ -39,10 +80,9 @@ def clean_phone_number(phone_raw):
     # Strip leading zeros
     digits = re.sub(r'^0+', '', digits)
     
-    # Check if Brazil (+55)
-    if digits.startswith('55') and len(digits) in (12, 13):
-        return digits
-
+    city_norm = remove_accents(city).lower().strip()
+    default_ac = CITY_AREA_CODES.get(city_norm, '343')
+    
     # Check if already starts with 54 (Argentina)
     if digits.startswith('54'):
         if not digits.startswith('549'):
@@ -50,366 +90,486 @@ def clean_phone_number(phone_raw):
                 digits = '549' + digits[2:]
         return digits if len(digits) >= 11 else None
 
-    # Handle removal of '15' mobile prefix after area code (Argentina):
-    for ac in ['343', '342', '341', '11', '3442', '3447', '345']:
+    # Handle mobile prefix '15' right at start (e.g. 155312953 without area code)
+    if digits.startswith('15') and len(digits) == 9:
+        digits = default_ac + digits[2:]
+
+    # Handle removal of '15' mobile prefix after known area code:
+    for ac in ['343', '342', '341', '11', '351', '3442', '3447', '345', '3446']:
         if digits.startswith(ac + '15') and len(digits) >= len(ac) + 2 + 6:
             digits = ac + digits[len(ac)+2:]
             break
             
-    if len(digits) == 10: # e.g. 3434567890 (Argentina local mobile/landline)
+    if len(digits) == 10: # e.g. 3434567890 (area code + number)
         digits = '549' + digits
     elif len(digits) == 8 and digits.startswith(('4', '5', '6', '7')):
-        digits = '549343' + digits
-    elif len(digits) == 11 and digits[2] == '9' and digits[:2] in ['75', '71', '11', '21', '31', '41', '51', '61', '81', '85']:
-        # Brazil mobile without country code (DDD + 9 digits, e.g. 75988887777 for Feira de Santana/Bahia)
-        digits = '55' + digits
-    elif not digits.startswith('549') and not digits.startswith('55') and len(digits) >= 10:
+        # Local landline in Paraná without area code
+        digits = '549' + default_ac + digits
+    elif len(digits) == 7:
+        # Local 7-digit landline without area code
+        digits = '549' + default_ac + digits
+    elif not digits.startswith('549') and len(digits) >= 10:
         digits = '549' + digits
         
-    return digits
+    return digits if len(digits) in (12, 13) else None
 
 def clean_email_address(email_raw):
     if not email_raw:
         return None
     email = email_raw.lower().strip()
-    email = re.sub(r'[.,;:]$', '', email)
+    email = re.sub(r'[.,;:\'\"()\[\]{}]+$', '', email)
     
     if any(email.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.css', '.js', '.mp4', '.pdf']):
         return None
-    if any(bad in email for bad in ['email@email.com', 'correo@correo.com', 'example@', 'sentry.io', 'wix.com', 'domain.com', 'yourname@', 'u003e', 'welcomeargentina']):
+    if any(bad in email for bad in ['email@email.com', 'correo@correo.com', 'example@', 'sentry.io', 'wix.com', 'domain.com', 'yourname@', 'u003e', 'username@', 'test@']):
         return None
     return email
 
-# -------------------------------------------------------------
-# SEED SOURCE 1: WelcomeArgentina Directory
-# -------------------------------------------------------------
-def get_welcome_argentina_seeds(ciudad_raw):
-    clean_c = remove_accents(ciudad_raw).lower().strip()
-    slugs = [clean_c.replace(' ', ''), clean_c.replace(' ', '-')]
-    base_url = "https://www.welcomeargentina.com"
-    
-    seeds = []
-    visited_urls = set()
-    
-    for slug in set(slugs):
-        sections = [
-            f"/{slug}/hoteles.html",
-            f"/{slug}/cabanas.html",
-            f"/{slug}/alojamientos.html",
-            f"/{slug}/hospedajes.html",
-            f"/{slug}/apart-hoteles.html",
-            f"/{slug}/bungalows.html"
-        ]
-        
-        for sec in sections:
-            try:
-                r = requests.get(base_url + sec, headers=HEADERS, timeout=8)
-                if r.status_code == 200:
-                    soup = BeautifulSoup(r.text, 'html.parser')
-                    for a in soup.find_all('a', href=True):
-                        href = a['href']
-                        if href.startswith(f'/{slug}/') and href.endswith('.html') and not any(x in href for x in ['paseos', 'gastronomia', 'servicios', 'fotos', 'ubicacion', 'clima', 'comollegar', 'historia', 'mapa', 'lodging', 'alquilerdeautos', 'blog']):
-                            full_url = base_url + href
-                            if full_url not in visited_urls:
-                                visited_urls.add(full_url)
-                                name = a.get_text(strip=True) or href.split('/')[-1].replace('.html', '').replace('-', ' ').title()
-                                seeds.append({
-                                    'name': name,
-                                    'detail_url': full_url,
-                                    'source': 'WelcomeArgentina'
-                                })
-            except Exception:
-                pass
-    return seeds
+def classify_rubro(name, query_rubro="comercio"):
+    n = name.lower()
+    if any(k in n for k in ['ferreter', 'bulon', 'tornill', 'herramient', 'buloneria', 'bulonera']):
+        return 'Ferretería & Bulonera'
+    elif any(k in n for k in ['repuesto', 'motor', 'freno', 'embrague', 'taller', 'lubricentro', 'auto part', 'neumat', 'suspens']):
+        return 'Repuestos Automotor / Motos'
+    elif any(k in n for k in ['distribuidora', 'mayorista', 'distribuidor', 'al por mayor', 'abasto']):
+        return 'Distribuidora & Mayorista'
+    elif any(k in n for k in ['supermercado', 'autoservicio', 'almacen', 'minimercado', 'comestibles', 'chango']):
+        return 'Supermercado & Autoservicio'
+    elif any(k in n for k in ['corralon', 'corralón', 'materiales', 'arena', 'ladrill', 'cement']):
+        return 'Corralón & Materiales'
+    elif any(k in n for k in ['pinturer', 'pintura', 'revestimient']):
+        return 'Pinturería'
+    elif any(k in n for k in ['sanitario', 'plomer', 'gas', 'grifer']):
+        return 'Sanitarios & Plomería'
+    elif any(k in n for k in ['electric', 'iluminac', 'cables', 'led']):
+        return 'Electricidad & Iluminación'
+    elif any(k in n for k in ['bazar', 'plastico', 'limpieza', 'quimic']):
+        return 'Bazar & Limpieza Mayorista'
+    else:
+        return query_rubro.capitalize() if query_rubro else 'Comercio Minorista / Mayorista'
 
 # -------------------------------------------------------------
-# SEED SOURCE 2: DuckDuckGo Web Search Results
+# SOURCE 1: OpenStreetMap / Nominatim Geolocated API
 # -------------------------------------------------------------
-def get_ddg_search_seeds(rubro, ciudad):
-    ciudad_clean = remove_accents(ciudad)
-    queries = [
-        f"{rubro} {ciudad_clean} Argentina contacto telefono email",
-        f"alojamientos cabañas aparts {ciudad_clean} Argentina contacto",
-        f"hospedaje hotel hostel {ciudad_clean} contacto whatsapp"
-    ]
+def get_nominatim_leads(rubro_query, city="Paraná"):
+    city_clean = remove_accents(city)
+    q = f"{rubro_query} {city_clean} Argentina"
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(q)}&format=json&addressdetails=1&extratags=1&limit=50"
     
-    seeds = []
-    visited_links = set()
+    headers = {'User-Agent': 'SofiaActualizadorProspector/2.0 (colomajavier@gmail.com)'}
+    leads = []
     
-    for q in queries:
-        try:
-            url = "https://html.duckduckgo.com/html/"
-            res = requests.post(url, headers=HEADERS, data={'q': q}, timeout=8)
-            if res.status_code == 200:
-                soup = BeautifulSoup(res.text, 'html.parser')
-                for r in soup.select('.result'):
-                    title_tag = r.select_one('.result__title')
-                    snippet_tag = r.select_one('.result__snippet')
-                    url_tag = r.select_one('.result__url')
-                    
-                    if title_tag:
-                        title = title_tag.get_text(strip=True)
-                        link = url_tag.get_text(strip=True) if url_tag else ''
-                        snippet = snippet_tag.get_text(strip=True) if snippet_tag else ''
-                        
-                        if link and not link.startswith('http'):
-                            link = 'https://' + link
-                            
-                        if link and not any(dir_dom in link.lower() for dir_dom in DIRECTORY_DOMAINS):
-                            if link not in visited_links:
-                                visited_links.add(link)
-                                seeds.append({
-                                    'name': title,
-                                    'official_web': link,
-                                    'snippet': snippet,
-                                    'source': 'DuckDuckGo Web Search'
-                                })
-        except Exception:
-            pass
-    return seeds
+    try:
+        r = requests.get(url, headers=headers, timeout=8)
+        if r.status_code == 200:
+            for it in r.json():
+                if not isinstance(it, dict):
+                    continue
+                display_name = it.get('display_name', '')
+                raw_name = display_name.split(',')[0].strip()
+                if not raw_name or len(raw_name) < 3:
+                    continue
+                
+                tags = it.get('extratags') or {}
+                addr_info = it.get('address') or {}
+                
+                # Check phones
+                raw_phone = tags.get('phone') or tags.get('contact:phone') or tags.get('contact:mobile')
+                raw_email = tags.get('email') or tags.get('contact:email')
+                raw_web = tags.get('website') or tags.get('contact:website')
+                
+                street = addr_info.get('road', '')
+                num = addr_info.get('house_number', '')
+                address = f"{street} {num}".strip() or f"{city}, Argentina"
+                
+                leads.append({
+                    'name': raw_name,
+                    'city': city,
+                    'query_rubro': rubro_query,
+                    'raw_phone': raw_phone,
+                    'raw_email': raw_email,
+                    'website': raw_web or '',
+                    'address': address,
+                    'source': 'Nominatim OSM'
+                })
+    except Exception as e:
+        print(f"⚠️ Error en Nominatim ({q}): {e}")
+        
+    return leads
 
 # -------------------------------------------------------------
-# SEED SOURCE 3: OpenStreetMap / Nominatim API
+# SOURCE 2: Bing Web Search (High-Reliability Organic Results)
 # -------------------------------------------------------------
-def get_nominatim_seeds(rubro, ciudad):
-    ciudad_clean = remove_accents(ciudad)
-    queries = [f"{rubro} {ciudad_clean} Argentina"]
-    if any(k in rubro.lower() for k in ["hotel", "hospedaje", "alojamiento", "cabana", "apart", "hostel"]):
-        queries.extend([
-            f"hotel {ciudad_clean} Argentina",
-            f"hostel {ciudad_clean} Argentina",
-            f"cabana {ciudad_clean} Argentina",
-            f"apart {ciudad_clean} Argentina"
-        ])
-    seeds = []
-    seen = set()
+def get_bing_search_leads(rubro_query, city="Paraná"):
+    city_clean = remove_accents(city)
+    q = f"{rubro_query} {city_clean} Entre Rios Argentina contacto telefono" if 'parana' in city_clean.lower() else f"{rubro_query} {city_clean} Santa Fe Argentina contacto telefono"
+    url = f"https://www.bing.com/search?q={urllib.parse.quote(q)}"
     
-    for q in queries:
-        url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(q)}&format=json&addressdetails=1&extratags=1&limit=50"
-        try:
-            res = requests.get(url, headers={'User-Agent': 'AirControlProspector/1.0'}, timeout=8)
-            if res.status_code == 200:
-                items = res.json()
-                for item in items:
-                    if not isinstance(item, dict):
-                        continue
-                    display_name = item.get('display_name', '')
-                    name = display_name.split(',')[0].strip()
-                    if name and name not in seen:
-                        seen.add(name)
-                        tags = item.get('extratags') or {}
-                        addr = item.get('address') or {}
-                        seeds.append({
-                            'name': name,
-                            'osm_tags': tags,
-                            'osm_addr': addr,
-                            'source': 'OpenStreetMap'
-                        })
-        except Exception:
-            pass
-    return seeds
+    leads = []
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=8)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            for item in soup.select('.b_algo'):
+                h2 = item.select_one('h2')
+                a_tag = h2.select_one('a') if h2 else None
+                snippet_p = item.select_one('.b_caption p')
+                
+                if not a_tag:
+                    continue
+                
+                title = a_tag.get_text(strip=True)
+                link = a_tag.get('href', '')
+                snippet = snippet_p.get_text(strip=True) if snippet_p else ''
+                
+                if any(dom in link.lower() for dom in DIRECTORY_DOMAINS):
+                    continue
+                
+                # Extract any phone or email from snippet
+                phones_in_snip = PHONE_REGEX.findall(snippet)
+                emails_in_snip = EMAIL_REGEX.findall(snippet)
+                
+                # Clean title (remove pipe suffix like | Home, - Tienda)
+                clean_name = re.split(r'[-|–—]', title)[0].strip()
+                if len(clean_name) > 3:
+                    leads.append({
+                        'name': clean_name,
+                        'city': city,
+                        'query_rubro': rubro_query,
+                        'raw_phone': phones_in_snip[0] if phones_in_snip else None,
+                        'raw_email': emails_in_snip[0] if emails_in_snip else None,
+                        'website': link,
+                        'address': f"{city}, Argentina",
+                        'source': 'Bing Web Search'
+                    })
+    except Exception as e:
+        print(f"⚠️ Error en Bing Search ({q}): {e}")
+        
+    return leads
 
 # -------------------------------------------------------------
-# DEEP SCRAPER FOR A SEED ITEM
+# SOURCE 3: Deep Website Contact Crawler
 # -------------------------------------------------------------
-def scrape_seed_details(seed, rubro, ciudad):
-    if not seed or not isinstance(seed, dict):
-        return None
-        
-    name = str(seed.get('name') or '').strip()
-    if not name:
-        return None
-        
-    osm_tags = seed.get('osm_tags') or {}
-    osm_addr = seed.get('osm_addr') or {}
-    official_web = seed.get('official_web') or seed.get('detail_url') or osm_tags.get('website') or ''
-    
+def crawl_website_for_contacts(url, timeout=5):
+    """Crawls website looking for WhatsApp links, phone numbers and emails."""
     phones = set()
     emails = set()
-    address = f"{ciudad}, Argentina"
-    whatsapp_found = ""
-    instagram = ""
-    
-    # 1. Si viene de WelcomeArgentina
-    if seed.get('source') == 'WelcomeArgentina' and seed.get('detail_url'):
-        try:
-            r = requests.get(seed['detail_url'], headers=HEADERS, timeout=8)
-            if r.status_code == 200:
-                s = BeautifulSoup(r.text, 'html.parser')
-                h1 = s.find('h1')
-                if h1:
-                    name = h1.get_text(strip=True)
-                txt = s.get_text()
+    if not url or not url.startswith('http'):
+        return phones, emails
+        
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=timeout)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            text = soup.get_text()
+            
+            # Check emails
+            for m in EMAIL_REGEX.findall(r.text):
+                em = clean_email_address(m)
+                if em:
+                    emails.add(em)
+                    
+            # Check phones
+            for p in PHONE_REGEX.findall(text):
+                phones.add(p)
                 
-                for ph in PHONE_REGEX.findall(txt):
-                    cp = clean_phone_number(ph)
-                    if cp:
-                        phones.add(cp)
-                for mail in EMAIL_REGEX.findall(r.text):
-                    ce = clean_email_address(mail)
-                    if ce:
-                        emails.add(ce)
-                        
-                addr_m = re.search(r'(?:Dirección|Ubicación|Calle):\s*([^\n\r]+)', txt, re.IGNORECASE)
-                if addr_m:
-                    address = addr_m.group(1).strip()
-        except Exception:
-            pass
-
-    # 2. Si viene de OpenStreetMap
-    elif seed.get('source') == 'OpenStreetMap':
-        p = osm_tags.get('phone') or osm_tags.get('contact:phone') or osm_tags.get('contact:mobile')
-        e = osm_tags.get('email') or osm_tags.get('contact:email')
-        if p:
-            cp = clean_phone_number(p)
-            if cp:
-                phones.add(cp)
-        if e:
-            ce = clean_email_address(e)
-            if ce:
-                emails.add(ce)
-        st = osm_addr.get('road', '')
-        num = osm_addr.get('house_number', '')
-        if st:
-            address = f"{st} {num}".strip()
-
-    # 3. Si viene de búsqueda web DuckDuckGo (snippet u oficial)
-    if seed.get('snippet'):
-        snippet = seed['snippet']
-        for ph in PHONE_REGEX.findall(snippet):
-            cp = clean_phone_number(ph)
-            if cp:
-                phones.add(cp)
-        for mail in EMAIL_REGEX.findall(snippet):
-            ce = clean_email_address(mail)
-            if ce:
-                emails.add(ce)
-
-    # 4. Crawling profundo del sitio web oficial si existe
-    if official_web and official_web.startswith('http'):
-        try:
-            r = requests.get(official_web, headers=HEADERS, timeout=8)
-            if r.status_code == 200:
-                s = BeautifulSoup(r.text, 'html.parser')
-                txt = s.get_text()
-                
-                for mail in EMAIL_REGEX.findall(r.text):
-                    ce = clean_email_address(mail)
-                    if ce:
-                        emails.add(ce)
-                for ph in PHONE_REGEX.findall(txt):
-                    cp = clean_phone_number(ph)
-                    if cp:
-                        phones.add(cp)
-                        
-                for a in s.find_all('a', href=True):
-                    href = a['href']
-                    if href.startswith('mailto:'):
-                        ce = clean_email_address(href.replace('mailto:', '').split('?')[0])
-                        if ce:
-                            emails.add(ce)
-                    elif href.startswith('tel:'):
-                        cp = clean_phone_number(href.replace('tel:', ''))
-                        if cp:
-                            phones.add(cp)
-                    elif any(x in href for x in ['wa.me/', 'api.whatsapp.com/']):
-                        whatsapp_found = href
-                    elif 'instagram.com/' in href and not instagram:
-                        if not any(x in href for x in ['/p/', '/explore/']):
-                            instagram = href
-        except Exception:
-            pass
-
-    # WhatsApp principal
-    primary_wa = list(phones)[0] if phones else ""
-    if not primary_wa and whatsapp_found:
-        m = re.search(r'\d{8,15}', whatsapp_found)
-        if m:
-            primary_wa = m.group(0)
-
-    wa_formatted = clean_phone_number(primary_wa) if primary_wa else ""
-    wa_link = f"https://wa.me/{wa_formatted}" if wa_formatted else ""
-
-    lower_n = name.lower()
-    if 'hostel' in lower_n or 'albergue' in lower_n:
-        tipo = 'Hostel'
-    elif 'cabaña' in lower_n or 'bungalow' in lower_n or 'chalet' in lower_n:
-        tipo = 'Cabaña / Bungalow'
-    elif 'apart' in lower_n or 'departamento' in lower_n or 'ph' in lower_n or 'temporal' in lower_n:
-        tipo = 'Alquiler Temporario / Apart'
-    else:
-        tipo = 'Hotel / Hospedaje'
-
-    return {
-        'nombre': name,
-        'tipo': tipo,
-        'ciudad': ciudad,
-        'direccion': address,
-        'telefonos': list(phones),
-        'whatsapp_numero': wa_formatted,
-        'whatsapp_link': wa_link,
-        'emails': list(emails),
-        'website': official_web or '',
-        'instagram': instagram or ''
-    }
+            # Check links
+            for a in soup.find_all('a', href=True):
+                href = a['href']
+                if href.startswith('mailto:'):
+                    em = clean_email_address(href.replace('mailto:', '').split('?')[0])
+                    if em:
+                        emails.add(em)
+                elif 'wa.me/' in href or 'api.whatsapp.com/send' in href:
+                    m = re.search(r'\d{8,15}', href)
+                    if m:
+                        phones.add(m.group(0))
+                elif href.startswith('tel:'):
+                    phones.add(href.replace('tel:', '').strip())
+    except Exception:
+        pass
+        
+    return phones, emails
 
 # -------------------------------------------------------------
-# MAIN GENERATOR
+# MASTER EXTRACTION PIPELINE
 # -------------------------------------------------------------
-def prospect_leads_generator(rubro, ciudad):
-    yield {"type": "status", "message": f"🌐 Unificando fuentes de datos para {rubro} en {ciudad}..."}
+TARGET_CATEGORIES = [
+    # Ferreterías & Buloneras
+    "ferreteria",
+    "bulonera",
+    "tornilleria",
+    "herramientas industriales",
     
-    seeds = []
+    # Distribuidoras & Mayoristas
+    "distribuidora mayorista",
+    "mayorista alimentos bebidas",
+    "distribuidora limpieza",
     
-    # 1. Seeding desde WelcomeArgentina
-    wa_seeds = get_welcome_argentina_seeds(ciudad)
-    seeds.extend(wa_seeds)
-    yield {"type": "status", "message": f"📍 Directivos locales (WelcomeArgentina): {len(wa_seeds)} prospectos."}
+    # Repuestos automotor & motos
+    "repuestos automotor",
+    "repuestos motos",
+    "lubricentro",
     
-    # 2. Seeding desde Búsqueda Web (DuckDuckGo)
-    web_seeds = get_ddg_search_seeds(rubro, ciudad)
-    seeds.extend(web_seeds)
-    yield {"type": "status", "message": f"🌐 Búsqueda Web Profunda: {len(web_seeds)} sitios oficiales de {ciudad}."}
+    # Supermercados & Autoservicios
+    "supermercado mayorista",
+    "autoservicio",
     
-    # 3. Seeding desde OpenStreetMap (Nominatim)
-    osm_seeds = get_nominatim_seeds(rubro, ciudad)
-    seeds.extend(osm_seeds)
-    yield {"type": "status", "message": f"🗺️ OpenStreetMap / Nominatim: {len(osm_seeds)} fichas geolocalizadas."}
+    # Construcción & Corralones
+    "corralon materiales",
     
-    # Deduplicar semillas por nombre normalizado
-    unique_seeds = []
-    seen_names = set()
+    # Pinturerías
+    "pintureria",
     
-    bad_keywords = [
-        'hotelesen', 'cabanasen', 'alojamientos', 'mapade', 'galeria', 'historia',
-        'espanol', 'english', 'alquilerdeautos', 'blogdeturismo', 'comollegar',
-        'servicios', 'fotos', 'lodging'
+    # Sanitarios & Plomería
+    "sanitarios y griferia",
+    
+    # Electricidad e Iluminación
+    "electricidad e iluminacion"
+]
+
+def run_prospector_scan(cities=["Paraná", "Santa Fe"], target_leads=30, export_excel=True, save_to_db=True):
+    print("=" * 80)
+    print("🚀 SOFÍA AI AGENCY — MOTOR DE PROSPECCIÓN COMERCIAL B2B")
+    print("🎯 PRODUCTO: SÚPER ACTUALIZADOR PRO v2.0")
+    print(f"📍 CIUDADES OBJETIVO: {', '.join(cities).upper()}")
+    print(f"🛒 NICHOS: Ferreterías, Mayoristas, Repuestos, Supermercados, Corralones, Sanitarios")
+    print(f"🎯 META: Extraer y validar al menos {target_leads} comercios con WhatsApp / Teléfono E.164")
+    print("=" * 80)
+    
+    raw_seeds = []
+    seen_keys = set()
+    
+    # 1. Gather Seeds via Nominatim
+    for city in cities:
+        print(f"\n🗺️ [NOMINATIM OSM] Escaneando {city}...")
+        for cat in TARGET_CATEGORIES:
+            seeds = get_nominatim_leads(cat, city=city)
+            for s in seeds:
+                key = (remove_accents(s['name']).lower().strip(), city.lower())
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    raw_seeds.append(s)
+            time.sleep(0.3)
+            
+    # 2. Gather Seeds via Bing Search for high-intent queries
+    for city in cities:
+        print(f"🌐 [BING SEARCH] Escaneando sitios web y contactos de {city}...")
+        for cat in ["distribuidora mayorista", "ferreteria industrial", "repuestos automotor", "corralon", "supermercado mayorista"]:
+            seeds = get_bing_search_leads(cat, city=city)
+            for s in seeds:
+                key = (remove_accents(s['name']).lower().strip(), city.lower())
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    raw_seeds.append(s)
+            time.sleep(0.3)
+
+    print(f"\n📦 TOTAL DE SEMILLAS DETECTADAS: {len(raw_seeds)}")
+    print("🔬 Normalizando teléfonos E.164 (+54 9...) y ejecutando crawler de correos y WhatsApp...")
+    
+    processed_leads = []
+    seen_phones = set()
+    
+    for idx, s in enumerate(raw_seeds, 1):
+        name = s['name']
+        city = s['city']
+        rubro = classify_rubro(name, s.get('query_rubro', ''))
+        website = s.get('website', '')
+        address = s.get('address', f"{city}, Argentina")
+        
+        candidate_phones = []
+        if s.get('raw_phone'):
+            candidate_phones.extend(str(s['raw_phone']).split(';'))
+            
+        candidate_emails = []
+        if s.get('raw_email'):
+            candidate_emails.append(s['raw_email'])
+            
+        # Crawl website if present to harvest extra email/whatsapp
+        if website and website.startswith('http'):
+            web_phones, web_emails = crawl_website_for_contacts(website, timeout=4)
+            candidate_phones.extend(list(web_phones))
+            candidate_emails.extend(list(web_emails))
+            
+        # Normalise phone
+        valid_phone = None
+        for ph in candidate_phones:
+            cleaned = clean_phone_number(ph, city=city)
+            if cleaned:
+                valid_phone = cleaned
+                break
+                
+        # Normalise email
+        valid_email = None
+        for em in candidate_emails:
+            clem = clean_email_address(em)
+            if clem:
+                valid_email = clem
+                break
+                
+        # Only retain leads that have at least a phone or an email
+        if not valid_phone and not valid_email:
+            continue
+            
+        # Deduplicate by phone
+        if valid_phone:
+            if valid_phone in seen_phones:
+                continue
+            seen_phones.add(valid_phone)
+            
+        wa_link = f"https://wa.me/{valid_phone}" if valid_phone else ""
+        
+        lead_dict = {
+            'id': len(processed_leads) + 1,
+            'nombre': name,
+            'rubro': rubro,
+            'ciudad': city,
+            'direccion': address,
+            'whatsapp_link': wa_link,
+            'telefono': valid_phone or '',
+            'email': valid_email or '',
+            'website': website or '',
+            'estado': 'Pendiente',
+            'campana': 'actualizador_pro',
+            'fuente': s.get('source', 'Web')
+        }
+        
+        processed_leads.append(lead_dict)
+        print(f"  [{len(processed_leads):02d}] ✅ {name:<32} | {city:<10} | WA: +{valid_phone or 'Sin WA':<15} | Email: {valid_email or 'No detectado':<25} | [{rubro}]")
+        
+        if len(processed_leads) >= target_leads:
+            break
+
+    print("\n" + "=" * 80)
+    print(f"🎉 EXTRACCIÓN COMPLETADA CON ÉXITO: {len(processed_leads)} COMERCIOS REALES LISTOS")
+    print("=" * 80)
+
+    # 3. Save to Database
+    if save_to_db and SessionLocal and Prospect:
+        try:
+            db = SessionLocal()
+            existing_db_phones = set(p[0] for p in db.query(Prospect.phone).all() if p[0])
+            added_db_count = 0
+            for lead in processed_leads:
+                if lead['telefono'] and lead['telefono'] not in existing_db_phones:
+                    prospect = Prospect(
+                        name=lead['nombre'],
+                        phone=lead['telefono'],
+                        email=lead['email'] or None,
+                        city=lead['ciudad'],
+                        campaign=lead['campana'],
+                        business_type=lead['rubro'],
+                        status="pending",
+                        notes=f"Dir: {lead['direccion']} | Web: {lead['website']} | Fuente: {lead['fuente']}",
+                        conversation_history="[]"
+                    )
+                    db.add(prospect)
+                    existing_db_phones.add(lead['telefono'])
+                    added_db_count += 1
+            db.commit()
+            db.close()
+            print(f"💾 Guardados en Base de Datos ({Prospect.__tablename__}): {added_db_count} nuevos prospectos.")
+        except Exception as db_err:
+            print(f"⚠️ Error guardando en base de datos: {db_err}")
+
+    # 4. Export to Excel
+    excel_path = None
+    if export_excel and processed_leads:
+        excel_path = export_leads_to_excel(processed_leads, cities)
+
+    return processed_leads, excel_path
+
+# -------------------------------------------------------------
+# EXCEL EXPORTER (BEAUTIFUL FORMATTED WORKBOOK)
+# -------------------------------------------------------------
+def export_leads_to_excel(leads, cities):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Prospectos Actualizador PRO"
+    
+    # Headers
+    headers = [
+        "ID",
+        "Nombre del Comercio",
+        "Rubro Comercial",
+        "Ciudad",
+        "Dirección",
+        "WhatsApp Directo (Clic para Chat)",
+        "Teléfono E.164",
+        "Email Comercial",
+        "Sitio Web",
+        "Estado",
+        "Campaña",
+        "Fecha Extracción"
     ]
     
-    for s in seeds:
-        if not s or not isinstance(s, dict):
-            continue
-        raw_n = s.get('name') or ''
-        norm_name = remove_accents(raw_n).lower()
-        norm_name = re.sub(r'[^\w]', '', norm_name)
-        if norm_name and len(norm_name) > 3:
-            if any(bad in norm_name for bad in bad_keywords):
-                continue
-            if norm_name not in seen_names:
-                seen_names.add(norm_name)
-                unique_seeds.append(s)
+    ws.append(headers)
+    
+    # Styling
+    header_fill = PatternFill(start_color="1B365D", end_color="1B365D", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    data_font = Font(name="Calibri", size=10)
+    link_font = Font(name="Calibri", size=10, color="0000FF", underline="single")
+    border_side = Side(style="thin", color="E0E0E0")
+    thin_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
+    
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    for row_idx, lead in enumerate(leads, start=2):
+        wa_val = lead.get('whatsapp_link', '')
+        
+        row_data = [
+            lead.get('id'),
+            lead.get('nombre'),
+            lead.get('rubro'),
+            lead.get('ciudad'),
+            lead.get('direccion'),
+            wa_val if wa_val else "Sin WhatsApp",
+            f"+{lead.get('telefono')}" if lead.get('telefono') else "",
+            lead.get('email', ''),
+            lead.get('website', ''),
+            lead.get('estado', 'Pendiente'),
+            lead.get('campana', 'actualizador_pro'),
+            today_str
+        ]
+        ws.append(row_data)
+        
+        # Apply borders and formats
+        for col_idx in range(1, len(headers) + 1):
+            c = ws.cell(row=row_idx, column=col_idx)
+            c.border = thin_border
+            c.font = data_font
+            
+            # Hyperlink for WhatsApp
+            if col_idx == 6 and wa_val:
+                c.hyperlink = wa_val
+                c.font = link_font
+                c.alignment = Alignment(horizontal="center")
+            elif col_idx in (1, 4, 7, 10, 11, 12):
+                c.alignment = Alignment(horizontal="center")
+            else:
+                c.alignment = Alignment(horizontal="left")
+                
+    # Auto-adjust column widths
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 40)
+        
+    ws.row_dimensions[1].height = 28
+    
+    filename = f"prospectos_actualizador_{'_'.join(remove_accents(c).lower() for c in cities)}_{today_str}.xlsx"
+    filepath = os.path.join(PARENT_DIR, filename)
+    wb.save(filepath)
+    print(f"\n📊 Archivo Excel generado con éxito:")
+    print(f"👉 {filepath}")
+    return filepath
 
-    yield {"type": "status", "message": f"🎯 TOTAL UNIFICADO Y DEDUPLICADO: {len(unique_seeds)} ESTABLECIMIENTOS EN {ciudad.upper()}."}
-
-    processed_leads = []
-    for idx, seed in enumerate(unique_seeds, 1):
-        yield {"type": "progress", "current": idx, "total": len(unique_seeds), "name": seed.get('name', '')}
-        try:
-            lead = scrape_seed_details(seed, rubro, ciudad)
-            if lead and isinstance(lead, dict):
-                processed_leads.append(lead)
-                yield {"type": "lead", "lead": lead}
-        except Exception as e:
-            print(f"Error procesando lead: {e}")
-
-    yield {"type": "complete", "total": len(processed_leads), "leads": processed_leads}
+if __name__ == "__main__":
+    run_prospector_scan(cities=["Paraná", "Santa Fe"], target_leads=25)

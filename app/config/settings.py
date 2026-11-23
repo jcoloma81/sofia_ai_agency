@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://javi_admin:FhfRttqRX1ZMoz7yuhcEa6BmsKx7bi2Z@dpg-d75jlr4r85hc73cod45g-a.oregon-postgres.render.com/aircontrol_n6zf"
 
     # Server / App URL
-    APP_BASE_URL: str = "https://sofia-ai-agency.onrender.com"
+    APP_BASE_URL: str = "https://sof-ia.site"
     SECRET_KEY: str = "sofia_ai_agency_default_secret_key"
     DASHBOARD_USERNAME: str = "admin"
     DASHBOARD_PASSWORD: str = "IaSofia321#"
