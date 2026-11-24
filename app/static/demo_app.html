@@ -475,6 +475,18 @@
       gap: 14px;
     }
   </style>
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      var d = document.getElementById('debugErrorBox');
+      if (!d) {
+        d = document.createElement('div');
+        d.id = 'debugErrorBox';
+        d.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;background:#fee2e2;color:#b91c1c;padding:12px;border:2px solid #ef4444;border-radius:6px;z-index:999999;font-size:12px;font-family:monospace;max-height:150px;overflow:auto;box-shadow:0 10px 25px rgba(0,0,0,0.3);';
+        document.body ? document.body.appendChild(d) : window.addEventListener('DOMContentLoaded', function() { document.body.appendChild(d); });
+      }
+      d.innerHTML += '<div>⚠️ JS Error (' + line + ':' + col + '): ' + msg + '</div>';
+    };
+  </script>
 </head>
 <body>
 
@@ -528,14 +540,14 @@
   <main class="container">
     <!-- SOLAPAS ESTILO SISTEMA DE GESTIÓN -->
     <nav class="tabs-nav">
-      <button class="tab-btn active" onclick="cambiarPestana(1, this)">
+      <button type="button" class="tab-btn active" onclick="cambiarPestana(1, this)">
         <div class="tab-btn-title">
           <span>1. Actualizador de Precios</span>
         </div>
         <div class="tab-btn-desc">Cruce de listas en Excel, PDF o Facturas</div>
       </button>
 
-      <button class="tab-btn" onclick="cambiarPestana(2, this)">
+      <button type="button" class="tab-btn" onclick="cambiarPestana(2, this)">
         <div class="tab-btn-title">
           <span>2. Comparador de Proveedores</span>
           <span id="tagPruebasComp" class="pill pill-ok">EN VIVO</span>
@@ -543,7 +555,7 @@
         <div class="tab-btn-desc">Comparativa de costos y armado de pedidos</div>
       </button>
 
-      <button class="tab-btn" onclick="cambiarPestana(3, this)">
+      <button type="button" class="tab-btn" onclick="cambiarPestana(3, this)">
         <div class="tab-btn-title">
           <span>3. Consultar Precios de Mercado</span>
           <span id="tagPruebasML" class="pill pill-ok">EN VIVO</span>
@@ -551,7 +563,7 @@
         <div class="tab-btn-desc">Referencia en vivo para artículos sin lista</div>
       </button>
 
-      <button class="tab-btn" onclick="cambiarPestana(4, this)">
+      <button type="button" class="tab-btn" onclick="cambiarPestana(4, this)">
         <div class="tab-btn-title">
           <span>4. Red de Stock & Ecosistema</span>
           <span class="pill pill-ok">Pioneros</span>
@@ -1965,13 +1977,32 @@
     }
 
     function cambiarPestana(num, btnEl) {
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      const target = document.getElementById('panel-' + num);
-      if (target) target.classList.add('active');
-      if (btnEl) btnEl.classList.add('active');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      try {
+        var panels = document.querySelectorAll('.tab-panel');
+        for (var i = 0; i < panels.length; i++) {
+          panels[i].classList.remove('active');
+        }
+        var btns = document.querySelectorAll('.tab-btn');
+        for (var j = 0; j < btns.length; j++) {
+          btns[j].classList.remove('active');
+        }
+        var target = document.getElementById('panel-' + num);
+        if (target) {
+          target.classList.add('active');
+        }
+        if (btnEl && btnEl.classList) {
+          btnEl.classList.add('active');
+        } else if (btns[num - 1]) {
+          btns[num - 1].classList.add('active');
+        }
+        try {
+          window.scrollTo(0, 0);
+        } catch (e) {}
+      } catch (err) {
+        console.error('Error al cambiar pestaña:', err);
+      }
     }
+    window.cambiarPestana = cambiarPestana;
 
     async function cargarEstadoInicial() {
       try {
@@ -2223,7 +2254,7 @@
         `;
         pasosContainer.innerHTML = '';
       } else if (est.tipo === 'DEMO_7_DIAS') {
-        const dRest = est.dias_restantes ?? 7;
+        const dRest = (est.dias_restantes !== undefined && est.dias_restantes !== null) ? est.dias_restantes : 7;
         badge.textContent = `Licencia: DEMO (${dRest} días restantes)`;
         tagComp.textContent = 'DEMO 7D';
         tagComp.className = 'pill pill-ok';
@@ -2285,8 +2316,8 @@
           </div>
         `;
       } else if (est.tipo === 'BASE') {
-        const rc = est.pruebas_restantes?.comparador ?? 0;
-        const rm = est.pruebas_restantes?.radar_ml ?? 0;
+        const rc = (est.pruebas_restantes && est.pruebas_restantes.comparador !== undefined) ? est.pruebas_restantes.comparador : 0;
+        const rm = (est.pruebas_restantes && est.pruebas_restantes.radar_ml !== undefined) ? est.pruebas_restantes.radar_ml : 0;
         badge.textContent = `Licencia: BASE (Pruebas P2:${rc}/3 | P3:${rm}/3)`;
         tagComp.textContent = `${rc}/3 Gratis`;
         tagComp.className = rc > 0 ? 'pill pill-neutral' : 'pill pill-alert';
@@ -2299,7 +2330,7 @@
 
     function actualizarUIMemoria(mem) {
       if (!mem) return;
-      const total = mem.total_aprendizajes ?? mem.total_emparejamientos_aprendidos ?? 261;
+      const total = (mem.total_aprendizajes !== undefined) ? mem.total_aprendizajes : ((mem.total_emparejamientos_aprendidos !== undefined) ? mem.total_emparejamientos_aprendidos : 261);
       const el = document.getElementById('badgeMemoria');
       if (el) {
         el.textContent = `Memoria Inteligente: ${total} artículos`;
@@ -2757,7 +2788,8 @@
     }
 
     function actualizarBarraMarketplaceP3() {
-      const consulta = (document.getElementById('p3Consulta')?.value || '').trim() || 'herramientas';
+      const elP3Inp = document.getElementById('p3Consulta');
+      const consulta = (elP3Inp && elP3Inp.value ? elP3Inp.value : '').trim() || 'herramientas';
       const paisActivo = (window.PERFIL_ACTUAL && window.PERFIL_ACTUAL.id) || 'argentina';
       const enlaces = obtenerEnlacesMarketplaceFront(consulta, paisActivo);
       renderizarBotonesMarketplace(enlaces);
@@ -3416,8 +3448,10 @@
     }
 
     async function solicitarDemoAutomatica() {
-      const comercio = (document.getElementById('inputNombreComercioDemo')?.value || '').trim() || 'Comercio';
-      const whatsapp = (document.getElementById('inputWhatsappDemo')?.value || '').trim();
+      const elNomDemo = document.getElementById('inputNombreComercioDemo');
+      const comercio = (elNomDemo && elNomDemo.value ? elNomDemo.value : '').trim() || 'Comercio';
+      const elWpDemo = document.getElementById('inputWhatsappDemo');
+      const whatsapp = (elWpDemo && elWpDemo.value ? elWpDemo.value : '').trim();
       const btn = document.getElementById('btnPedirDemo');
       const statusDiv = document.getElementById('statusDemoAutomatica');
 
@@ -3581,7 +3615,18 @@
     window.addEventListener('DOMContentLoaded', () => {
       cargarEstadoInicial();
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/demo/sw.js').catch(err => console.log('SW reg error:', err));
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var i = 0; i < regs.length; i++) {
+            regs[i].unregister();
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (var i = 0; i < names.length; i++) {
+            caches.delete(names[i]);
+          }
+        });
       }
     });
   </script>
