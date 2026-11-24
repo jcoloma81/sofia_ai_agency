@@ -36,8 +36,10 @@ PERFIL_ARGENTINA = {
     "soporte_whatsapp": "5493434536447",
     "iva_defecto": 21.0,
     "pasarela_pago": "MERCADO_PAGO",
-    "precio_ars": 35000,
-    "texto_precio": "$35.000 ARS (Pago Único)",
+    "precio_base_valor": 44900,
+    "precio_pro_valor": 69900,
+    "precio_base_texto": "$ 44.900 ARS (Pago Único)",
+    "precio_pro_texto": "$ 69.900 ARS (Pago Único)",
 }
 
 PALABRAS_DESCARTE_REPUESTOS = [
