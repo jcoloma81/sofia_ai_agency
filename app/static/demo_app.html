@@ -1701,8 +1701,10 @@
       pasarela_pago: "MERCADO_PAGO",
       precio_base_valor: 44900,
       precio_pro_valor: 69900,
+      precio_enterprise_valor: 189000,
       precio_base_texto: "$ 44.900 ARS (Pago Único)",
-      precio_pro_texto: "$ 69.900 ARS (Pago Único)"
+      precio_pro_texto: "$ 69.900 ARS (Pago Único)",
+      precio_enterprise_texto: "$ 189.000 ARS (Pago Único)"
     };
 
     function buscarEjemploP3(texto) {
@@ -2182,17 +2184,22 @@
               </div>
 
               <!-- Cuadro Comparativo de Planes -->
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:12px;">
                 <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:10px;">
-                  <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;">Plan 1: Licencia BASE</div>
-                  <div style="font-size:15px; font-weight:800; color:#0f172a; margin:3px 0;">${reg.precio_base_texto || '$ 44.900 ARS'}</div>
-                  <div style="font-size:11px; color:#64748b; line-height:1.3;">Actualizador Masivo Ilimitado para siempre.</div>
+                  <div style="font-size:10.5px; font-weight:800; color:#475569; text-transform:uppercase;">Plan 1: BASE</div>
+                  <div style="font-size:14px; font-weight:800; color:#0f172a; margin:3px 0;">${reg.precio_base_texto || '$ 44.900 ARS'}</div>
+                  <div style="font-size:10.5px; color:#64748b; line-height:1.3;">Minoristas (hasta 3.000 ítems). Actualizador ilimitado.</div>
                 </div>
                 <div style="background:#f0fdf4; border:1.5px solid #22c55e; border-radius:6px; padding:10px; position:relative;">
-                  <div style="position:absolute; top:-8px; right:8px; background:#15803d; color:#fff; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:10px;">MÁS ELEGIDO</div>
-                  <div style="font-size:11px; font-weight:800; color:#15803d; text-transform:uppercase;">Plan 2: FULL PRO</div>
-                  <div style="font-size:15px; font-weight:800; color:#15803d; margin:3px 0;">${reg.precio_pro_texto || '$ 69.900 ARS'}</div>
-                  <div style="font-size:11px; color:#166534; line-height:1.3;">Actualizador + Comparador + Radar ML Ilimitado.</div>
+                  <div style="position:absolute; top:-8px; right:8px; background:#15803d; color:#fff; font-size:9px; font-weight:800; padding:1px 6px; border-radius:10px;">MÁS ELEGIDO</div>
+                  <div style="font-size:10.5px; font-weight:800; color:#15803d; text-transform:uppercase;">Plan 2: FULL PRO</div>
+                  <div style="font-size:14px; font-weight:800; color:#15803d; margin:3px 0;">${reg.precio_pro_texto || '$ 69.900 ARS'}</div>
+                  <div style="font-size:10.5px; color:#166534; line-height:1.3;">Ferreterías y Pymes (hasta 3.000 ítems) + Comparador 5 listas.</div>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #94a3b8; border-radius:6px; padding:10px;">
+                  <div style="font-size:10.5px; font-weight:800; color:#334155; text-transform:uppercase;">Plan 3: ENTERPRISE</div>
+                  <div style="font-size:14px; font-weight:800; color:#0f172a; margin:3px 0;">${reg.precio_enterprise_texto || '$ 189.000 ARS'}</div>
+                  <div style="font-size:10.5px; color:#64748b; line-height:1.3;">Distribuidoras y Autopartes (+5.000 a 25.000 ítems) + Motor Turbo.</div>
                 </div>
               </div>
 
@@ -2362,7 +2369,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
               <div>
                 <div style="font-size:12.5px; font-weight:700; color:#1e293b;">
-                  Planes de por vida: BASE (${reg.precio_base_texto || '$ 44.900'}) • FULL PRO (${reg.precio_pro_texto || '$ 69.900'})
+                  Planes de por vida: BASE (${reg.precio_base_texto || '$ 44.900'}) • FULL PRO (${reg.precio_pro_texto || '$ 69.900'}) • ENTERPRISE (${reg.precio_enterprise_texto || '$ 189.000'})
                 </div>
                 ${cobroFilaHtml}
               </div>

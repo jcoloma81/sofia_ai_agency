@@ -38,8 +38,10 @@ PERFIL_ARGENTINA = {
     "pasarela_pago": "MERCADO_PAGO",
     "precio_base_valor": 44900,
     "precio_pro_valor": 69900,
+    "precio_enterprise_valor": 189000,
     "precio_base_texto": "$ 44.900 ARS (Pago Único)",
     "precio_pro_texto": "$ 69.900 ARS (Pago Único)",
+    "precio_enterprise_texto": "$ 189.000 ARS (Pago Único)",
 }
 
 PALABRAS_DESCARTE_REPUESTOS = [
