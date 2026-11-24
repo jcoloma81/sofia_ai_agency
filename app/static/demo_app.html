@@ -1649,6 +1649,53 @@
   </div>
 
   <!-- =========================================================
+       MODAL 1B: AVISO SHOWROOM EN LA NUBE (DESCARGA DE ARCHIVOS)
+       ========================================================= -->
+  <div id="modalShowroomDescarga" class="modal-backdrop">
+    <div class="modal" style="max-width: 580px; border: 2px solid #0284c7; box-shadow: 0 16px 40px rgba(0,0,0,0.35);">
+      <div class="card-header" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 14px;">
+        <div class="card-title" style="display:inline-flex; align-items:center; gap:8px; color:#0f172a; font-size:16px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Modo Demostración en la Nube
+        </div>
+        <button class="btn" onclick="cerrarModalShowroomDescarga()" style="font-size:12px; padding:4px 10px;">✕ Cerrar</button>
+      </div>
+
+      <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; border-radius:8px; padding:16px 18px; margin-bottom:16px;">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.9;">Privacidad y Seguridad Garantizada</div>
+        <h3 style="margin:4px 0 6px 0; font-size:17px; font-weight:800;">Tus costos y listas no se suben a internet</h3>
+        <p style="margin:0; font-size:12.5px; opacity:0.95; line-height:1.4;">
+          Estás navegando en la vitrina interactiva. Por política de seguridad, el <strong>Súper Actualizador PRO</strong> procesa y exporta tus archivos Excel reales <strong>100% dentro de tu propia computadora</strong>, sin que nadie tenga acceso a tus proveedores ni a tus márgenes comerciales.
+        </p>
+      </div>
+
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin-bottom:16px;">
+        <h4 style="margin:0 0 6px 0; font-size:14px; font-weight:800; color:#1e293b;">
+          ¿Querés usarlo con las listas de tu negocio?
+        </h4>
+        <p style="margin:0 0 14px 0; font-size:12px; color:#64748b; line-height:1.4;">
+          Descargá el instalador oficial para Windows y probá todas las funciones (Actualizador Masivo, Comparador de 5 Mayoristas y Radar de MercadoLibre) sin cargo por 7 días.
+        </p>
+
+        <a class="btn btn-emerald" href="https://sof-ia.site/actualizador" target="_blank" style="width:100%; justify-content:center; padding:12px 16px; font-size:14px; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16,185,129,0.35);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Programa para tu PC (7 Días Gratis)
+        </a>
+
+        <div style="margin-top:14px; padding-top:12px; border-top:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div style="font-size:11.5px; color:#64748b;">
+            ¿Preferís coordinar la instalación asistida por WhatsApp?
+          </div>
+          <button class="btn" onclick="abrirWhatsAppAsistencia()" style="font-size:11.5px; padding:6px 12px; font-weight:700; color:#15803d; border-color:#bbf7d0; background:#f0fdf4; display:inline-flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.058.376-.058c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/></svg>
+            Coordinar por WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
        MODAL 2: CONFIGURACIÓN IA GOOGLE GEMINI
        ========================================================= -->
   <div id="modalIA" class="modal-backdrop">
@@ -2556,12 +2603,14 @@
       actualizarTotalesSeleccionP1();
 
       document.getElementById('p1BotonesDescarga').innerHTML = `
-        <a class="btn btn-emerald" href="/api/descargar/exportados/${res.archivo_salida}">
+        <button class="btn btn-emerald" onclick="abrirModalShowroomDescarga()" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar Excel Actualizado Completo (${res.archivo_salida})
-        </a>
-        <a class="btn" href="/api/descargar/backups/${res.archivo_backup}">
+        </button>
+        <button class="btn" onclick="abrirModalShowroomDescarga()" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar Copia de Respaldo Original
-        </a>
+        </button>
       `;
 
       filtrarTablaP1('TODOS');
@@ -2766,22 +2815,30 @@
           });
           msjWhatsApp += `%0ATotal estimado: ${formatoPesos(data.subtotal_pedido)}`;
 
-          const aPed = document.createElement('a');
-          aPed.href = data.url_pedido;
-          aPed.download = data.archivo_pedido;
-          aPed.click();
+          if (data.url_pedido) {
+            const aPed = document.createElement('a');
+            aPed.href = data.url_pedido;
+            aPed.download = data.archivo_pedido;
+            aPed.click();
 
-          setTimeout(() => {
-            if (confirm(`¡Pedido generado con éxito por ${formatoPesos(data.subtotal_pedido)} (${data.total_items_pedido} artículos)!\n¿Querés abrir WhatsApp Web para mandar el texto del pedido al proveedor ahora?`)) {
-              window.open(`https://api.whatsapp.com/send?text=${msjWhatsApp}`, '_blank');
-            }
-          }, 300);
+            setTimeout(() => {
+              if (confirm(`¡Pedido generado con éxito por ${formatoPesos(data.subtotal_pedido)} (${data.total_items_pedido} artículos)!\n¿Querés abrir WhatsApp Web para mandar el texto del pedido al proveedor ahora?`)) {
+                window.open(`https://api.whatsapp.com/send?text=${msjWhatsApp}`, '_blank');
+              }
+            }, 300);
+          } else {
+            abrirModalShowroomDescarga();
+          }
         } else {
-          const aCat = document.createElement('a');
-          aCat.href = data.url_catalogo;
-          aCat.download = data.archivo_catalogo;
-          aCat.click();
-          alert(`¡Catálogo personalizado descargado con éxito!\nSe actualizaron ${data.total_actualizados} artículos seleccionados. Los artículos desmarcados conservaron sus costos y precios de venta originales intactos.`);
+          if (data.url_catalogo) {
+            const aCat = document.createElement('a');
+            aCat.href = data.url_catalogo;
+            aCat.download = data.archivo_catalogo;
+            aCat.click();
+            alert(`¡Catálogo personalizado descargado con éxito!\nSe actualizaron ${data.total_actualizados} artículos seleccionados. Los artículos desmarcados conservaron sus costos y precios de venta originales intactos.`);
+          } else {
+            abrirModalShowroomDescarga();
+          }
         }
       })
       .catch(function(ex) {
@@ -3059,9 +3116,9 @@
       contenedorBtns.innerHTML = '';
       if (DATOS_P2_ACTUAL.resumen.archivo_comparativa_completa) {
         contenedorBtns.innerHTML += `
-          <a class="btn" style="background:#ffffff; border-color:#cbd5e1; color:#1b365d;" href="/api/descargar/exportados/${DATOS_P2_ACTUAL.resumen.archivo_comparativa_completa}">
+          <button class="btn" style="background:#ffffff; border-color:#cbd5e1; color:#1b365d; cursor:pointer;" onclick="abrirModalShowroomDescarga()">
             Comparativa Completa (Excel)
-          </a>
+          </button>
         `;
       }
 
@@ -3162,7 +3219,11 @@
         return resp.json();
       })
       .then(function(res) {
-        window.location.href = res.url;
+        if (res && res.url) {
+          window.location.href = res.url;
+        } else {
+          abrirModalShowroomDescarga();
+        }
       })
       .catch(function(e) {
         alert('Error de conexión al generar el archivo');
@@ -3492,6 +3553,22 @@
       }
     }
 
+    function abrirModalShowroomDescarga() {
+      var m = document.getElementById('modalShowroomDescarga');
+      if (m) m.classList.add('open');
+    }
+
+    function cerrarModalShowroomDescarga() {
+      var m = document.getElementById('modalShowroomDescarga');
+      if (m) m.classList.remove('open');
+    }
+
+    function abrirWhatsAppAsistencia() {
+      var tel = (window.CONFIG_REGION_DEFAULT && window.CONFIG_REGION_DEFAULT.soporte_whatsapp) || '5493434536447';
+      var url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent('Hola! Estaba probando la demo del Súper Actualizador PRO en la web y me interesa instalar la versión para mi negocio.');
+      window.open(url, '_blank');
+    }
+
     function copiarHardwareId() {
       const hw = document.getElementById('txtHardwareId').textContent.trim();
       navigator.clipboard.writeText(hw).then(() => {
@@ -3740,6 +3817,9 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       cargarEstadoInicial();
+      if (window.location.search && window.location.search.indexOf('showroom_descarga') !== -1) {
+        setTimeout(abrirModalShowroomDescarga, 400);
+      }
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
           for (var i = 0; i < regs.length; i++) {

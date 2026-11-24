@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 import requests
 from bs4 import BeautifulSoup
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 logger = logging.getLogger("sofia_ai_agency.actualizador_demo")
@@ -236,6 +236,13 @@ def api_pestana1_exportar_personalizado(req: ExportarPersonalizadoP1Req):
         "archivo_catalogo": "CATALOGO_ACTUALIZADO_DEMO.xlsx",
         "total_actualizados": len(req.items),
     }
+
+
+@router.get("/api/descargar/exportados/{archivo}")
+@router.get("/api/descargar/backups/{archivo}")
+def api_descargar_showroom_fallback(archivo: str):
+    """Redirige con elegancia al showroom con aviso de descarga local."""
+    return RedirectResponse(url="/demo?showroom_descarga=1", status_code=303)
 
 
 # =====================================================================
