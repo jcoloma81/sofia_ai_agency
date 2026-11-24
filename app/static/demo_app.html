@@ -537,14 +537,14 @@
     </div>
 
     <div class="top-actions">
-      <a href="/actualizador" target="_blank" class="btn btn-emerald" style="padding:5px 12px; font-size:11.5px; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+      <a id="btnDescargarHeader" href="/actualizador" target="_blank" class="btn btn-emerald" style="padding:5px 12px; font-size:11.5px; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Descargar para PC (7 Días)
       </a>
       <!-- Selector Regional de País / Moneda de Mostrador -->
       <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); padding:3px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.25);">
         <span style="font-size:11px; font-weight:700; color:#e2e8f0; text-transform:uppercase;">País:</span>
-        <select id="selectPaisRegional" disabled style="background:#0f172a; color:#ffffff; border:1px solid #334155; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:600; cursor:default; outline:none; opacity:0.95;">
+        <select id="selectPaisRegional" onchange="cambiarPaisManual(this.value)" style="background:#0f172a; color:#ffffff; border:1px solid #334155; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:600; cursor:pointer; outline:none; opacity:1;">
           <option value="argentina" selected>🇦🇷 Argentina ($ ARS)</option>
         </select>
       </div>
@@ -1677,7 +1677,7 @@
           Descargá el instalador oficial para Windows y probá todas las funciones (Actualizador Masivo, Comparador de 5 Mayoristas y Radar de MercadoLibre) sin cargo por 7 días.
         </p>
 
-        <a class="btn btn-emerald" href="https://sof-ia.site/actualizador" target="_blank" style="width:100%; justify-content:center; padding:12px 16px; font-size:14px; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16,185,129,0.35);">
+        <a id="btnDescargarModalShowroom" class="btn btn-emerald" href="https://sof-ia.site/actualizador" target="_blank" style="width:100%; justify-content:center; padding:12px 16px; font-size:14px; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16,185,129,0.35);">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar Programa para tu PC (7 Días Gratis)
         </a>
@@ -1770,6 +1770,8 @@
         moneda_codigo: "ARS",
         locale: "es-AR",
         decimales: 2,
+        factor_escala: 1.0,
+        url_landing: "/actualizador",
         iva_default: 21.0,
         iva_opciones: [
           { label: "+21% (IVA General)", valor: 21.0 },
@@ -1792,6 +1794,8 @@
         moneda_codigo: "MXN",
         locale: "es-MX",
         decimales: 2,
+        factor_escala: 0.015,
+        url_landing: "/actualizador-latam",
         iva_default: 16.0,
         iva_opciones: [
           { label: "+16% (IVA General México)", valor: 16.0 },
@@ -1815,6 +1819,8 @@
         moneda_codigo: "CLP",
         locale: "es-CL",
         decimales: 0,
+        factor_escala: 1.0,
+        url_landing: "/actualizador-latam",
         iva_default: 19.0,
         iva_opciones: [
           { label: "+19% (IVA General Chile)", valor: 19.0 },
@@ -1836,6 +1842,8 @@
         moneda_codigo: "PEN",
         locale: "es-PE",
         decimales: 2,
+        factor_escala: 0.004,
+        url_landing: "/actualizador-latam",
         iva_default: 18.0,
         iva_opciones: [
           { label: "+18% (IGV General Perú)", valor: 18.0 },
@@ -1858,6 +1866,8 @@
         moneda_codigo: "COP",
         locale: "es-CO",
         decimales: 0,
+        factor_escala: 1.0,
+        url_landing: "/actualizador-latam",
         iva_default: 19.0,
         iva_opciones: [
           { label: "+19% (IVA General Colombia)", valor: 19.0 },
@@ -1879,6 +1889,8 @@
         moneda_codigo: "EUR",
         locale: "es-ES",
         decimales: 2,
+        factor_escala: 0.001,
+        url_landing: "/actualizador-europa",
         iva_default: 21.0,
         iva_opciones: [
           { label: "+21% (IVA General España)", valor: 21.0 },
@@ -1902,6 +1914,8 @@
         moneda_codigo: "USD",
         locale: "en-US",
         decimales: 2,
+        factor_escala: 0.001,
+        url_landing: "/actualizador-latam",
         iva_default: 0.0,
         iva_opciones: [
           { label: "0% (Exento / Sin Impuesto)", valor: 0.0 },
@@ -1921,11 +1935,19 @@
       }
     };
 
-    window.PERFIL_ACTUAL = PERFILES_PAIS.argentina;
+    const regInitShowroom = (window.PERFIL_REGIONAL && window.PERFIL_REGIONAL.region_id) || 'argentina';
+    window.PERFIL_ACTUAL = PERFILES_PAIS[regInitShowroom] || PERFILES_PAIS.argentina;
 
     function formatoPesos(valor) {
       const p = window.PERFIL_ACTUAL || PERFILES_PAIS.argentina;
-      const num = Number(valor || 0);
+      let num = Number(valor || 0);
+      const factor = (typeof p.factor_escala === 'number')
+        ? p.factor_escala
+        : ((window.PERFIL_REGIONAL && typeof window.PERFIL_REGIONAL.factor_escala === 'number')
+          ? window.PERFIL_REGIONAL.factor_escala
+          : 1.0);
+      num = num * factor;
+
       try {
         const formatted = new Intl.NumberFormat(p.locale, {
           minimumFractionDigits: p.decimales,
@@ -1947,7 +1969,7 @@
     }
 
     function obtenerPaisesPermitidos() {
-      return ['argentina'];
+      return ['argentina', 'latam_usd', 'europa', 'chile', 'colombia', 'mexico', 'peru'];
     }
 
     function poblarSelectoresPais() {
@@ -1967,23 +1989,17 @@
           else if (pid === 'chile') opt.textContent = '🇨🇱 Chile (Pesos $ CLP)';
           else if (pid === 'peru') opt.textContent = '🇵🇪 Perú (Soles S/ PEN)';
           else if (pid === 'colombia') opt.textContent = '🇨🇴 Colombia (Pesos $ COP)';
-          else if (pid === 'argentina') opt.textContent = '🇦🇷 Argentina (Pesos $ ARS)';
-          else if (pid === 'europa') opt.textContent = '🇪🇸 España / Europa (Euros € EUR)';
-          else if (pid === 'latam_usd') opt.textContent = 'Internacional (Dólares US$ USD)';
+          else if (pid === 'argentina') opt.textContent = '🇦🇷 Argentina ($ ARS)';
+          else if (pid === 'europa') opt.textContent = '🇪🇸 España / Europa (€ EUR)';
+          else if (pid === 'latam_usd') opt.textContent = '🌎 LatAm / Internacional (US$ USD)';
           else opt.textContent = `${p.nombre} (${p.moneda_simbolo} ${p.moneda_codigo})`;
           el.appendChild(opt);
         });
 
         if (el.style) {
-          if (permitidos.length <= 1) {
-            el.disabled = true;
-            el.style.opacity = '0.9';
-            el.style.cursor = 'default';
-          } else {
-            el.disabled = false;
-            el.style.opacity = '1';
-            el.style.cursor = 'pointer';
-          }
+          el.disabled = false;
+          el.style.opacity = '1';
+          el.style.cursor = 'pointer';
         }
       });
     }
@@ -2000,6 +2016,13 @@
         if (el && el.value !== paisId) el.value = paisId;
       });
 
+      // Actualizar enlaces de descarga según región activa
+      const urlLanding = (window.PERFIL_ACTUAL && window.PERFIL_ACTUAL.url_landing) || (paisId === 'europa' ? '/actualizador-europa' : (paisId === 'latam_usd' ? '/actualizador-latam' : '/actualizador'));
+      const btnHeader = document.getElementById('btnDescargarHeader');
+      if (btnHeader) btnHeader.href = urlLanding;
+      const btnModal = document.getElementById('btnDescargarModalShowroom');
+      if (btnModal) btnModal.href = 'https://sof-ia.site' + urlLanding;
+
       aplicarConfiguracionRegional();
 
       // Refrescar tablas y KPIs si ya hay datos cargados en pantalla
@@ -2011,10 +2034,32 @@
           actualizarTotalesSeleccionP1();
         }
       }
+      if (typeof DATOS_P2_ACTUAL !== 'undefined' && DATOS_P2_ACTUAL && DATOS_P2_ACTUAL.resumen) {
+        const res = DATOS_P2_ACTUAL.resumen;
+        const elCaro = document.getElementById('kpiP2Caro');
+        const elOptimo = document.getElementById('kpiP2Optimo');
+        const elAhorro = document.getElementById('kpiP2Ahorro');
+        if (elCaro) elCaro.textContent = formatoPesos(res.costo_total_comprando_al_mas_caro);
+        if (elOptimo) elOptimo.textContent = formatoPesos(res.costo_total_compra_inteligente);
+        if (elAhorro) elAhorro.textContent = formatoPesos(res.ahorro_total_pesos);
+        if (typeof actualizarTotalesSeleccionP2 === 'function') {
+          actualizarTotalesSeleccionP2();
+        }
+        if (typeof filtrarTablaP2 === 'function') {
+          filtrarTablaP2(typeof PROV_FILTRO_ACTUAL_P2 !== 'undefined' ? PROV_FILTRO_ACTUAL_P2 : 'TODOS');
+        }
+      }
     }
 
     function aplicarConfiguracionRegional() {
       const p = window.PERFIL_ACTUAL || PERFILES_PAIS.argentina;
+
+      // Sincronizar botones de descarga con la landing correspondiente
+      const urlLanding = (p && p.url_landing) || '/actualizador';
+      const btnHeader = document.getElementById('btnDescargarHeader');
+      if (btnHeader) btnHeader.href = urlLanding;
+      const btnModal = document.getElementById('btnDescargarModalShowroom');
+      if (btnModal) btnModal.href = 'https://sof-ia.site' + urlLanding;
 
       // 1. Sincronizar todos los selectores de país
       ['selectPaisRegional', 'p1SelectPais', 'p2SelectPais'].forEach(id => {
@@ -2108,7 +2153,8 @@
     function cargarEstadoInicial() {
       try {
         poblarSelectoresPais();
-        cambiarPaisManual('argentina');
+        const regInit = (window.PERFIL_REGIONAL && window.PERFIL_REGIONAL.region_id) || 'argentina';
+        cambiarPaisManual(regInit);
 
         fetch('/api/licencia/estado')
           .then(function(rLic) {

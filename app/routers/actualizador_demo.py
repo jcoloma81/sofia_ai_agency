@@ -42,6 +42,44 @@ PERFIL_ARGENTINA = {
     "precio_base_texto": "$ 44.900 ARS (Pago Único)",
     "precio_pro_texto": "$ 69.900 ARS (Pago Único)",
     "precio_enterprise_texto": "$ 189.000 ARS (Pago Único)",
+    "factor_escala": 1.0,
+    "url_landing": "/actualizador",
+}
+
+PERFIL_LATAM = {
+    "region_id": "latam_usd",
+    "nombre_region": "Internacional / Dólares (LatAm)",
+    "moneda_simbolo": "US$",
+    "moneda_codigo": "USD",
+    "soporte_whatsapp": "5493434536447",
+    "iva_defecto": 16.0,
+    "pasarela_pago": "WHOP_GUMROAD",
+    "precio_base_valor": 39,
+    "precio_pro_valor": 69,
+    "precio_enterprise_valor": 189,
+    "precio_base_texto": "$ 39 USD (Pago Único)",
+    "precio_pro_texto": "$ 69 USD (Pago Único)",
+    "precio_enterprise_texto": "$ 189 USD (Pago Único)",
+    "factor_escala": 0.001,
+    "url_landing": "/actualizador-latam",
+}
+
+PERFIL_EUROPA = {
+    "region_id": "europa",
+    "nombre_region": "España / Unión Europea",
+    "moneda_simbolo": "€",
+    "moneda_codigo": "EUR",
+    "soporte_whatsapp": "5493434536447",
+    "iva_defecto": 21.0,
+    "pasarela_pago": "STRIPE_EUROPA",
+    "precio_base_valor": 49,
+    "precio_pro_valor": 89,
+    "precio_enterprise_valor": 189,
+    "precio_base_texto": "49 € (Pago Único)",
+    "precio_pro_texto": "89 € (Pago Único)",
+    "precio_enterprise_texto": "189 € (Pago Único)",
+    "factor_escala": 0.001,
+    "url_landing": "/actualizador-europa",
 }
 
 PALABRAS_DESCARTE_REPUESTOS = [
@@ -78,15 +116,29 @@ class ExportarPersonalizadoP1Req(BaseModel):
 
 @router.get("/demo", response_class=HTMLResponse)
 @router.get("/demo/", response_class=HTMLResponse)
+@router.get("/demo-latam", response_class=HTMLResponse)
+@router.get("/demo-latam/", response_class=HTMLResponse)
+@router.get("/demo-europa", response_class=HTMLResponse)
+@router.get("/demo-europa/", response_class=HTMLResponse)
 @router.get("/probar-actualizador", response_class=HTMLResponse)
-def serve_demo_app():
+def serve_demo_app(request: Request, region: Optional[str] = None):
     """Sirve la interfaz web interactiva con perfil regional y licencia demo activada."""
     html_path = STATIC_DIR / "demo_app.html"
     if not html_path.exists():
         raise HTTPException(status_code=404, detail="Plantilla demo no encontrada.")
 
+    path_url = request.url.path.lower()
+    reg_param = (region or "").lower()
+
+    if "europa" in path_url or reg_param == "europa":
+        perfil = PERFIL_EUROPA
+    elif "latam" in path_url or reg_param == "latam":
+        perfil = PERFIL_LATAM
+    else:
+        perfil = PERFIL_ARGENTINA
+
     contenido = html_path.read_text(encoding="utf-8")
-    tag_script = f"<script>window.PERFIL_REGIONAL = {json.dumps(PERFIL_ARGENTINA, ensure_ascii=False)};</script>\n</head>"
+    tag_script = f"<script>window.PERFIL_REGIONAL = {json.dumps(perfil, ensure_ascii=False)};</script>\n</head>"
     contenido = contenido.replace("</head>", tag_script, 1)
     headers = {
         "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -133,7 +185,13 @@ def serve_demo_icon_512():
 # =====================================================================
 
 @router.get("/api/config/regional")
-def api_config_regional():
+def api_config_regional(request: Request, region: Optional[str] = None):
+    referer = request.headers.get("referer", "").lower()
+    reg_param = (region or "").lower()
+    if "europa" in referer or reg_param == "europa":
+        return PERFIL_EUROPA
+    elif "latam" in referer or reg_param == "latam":
+        return PERFIL_LATAM
     return PERFIL_ARGENTINA
 
 
@@ -240,9 +298,15 @@ def api_pestana1_exportar_personalizado(req: ExportarPersonalizadoP1Req):
 
 @router.get("/api/descargar/exportados/{archivo}")
 @router.get("/api/descargar/backups/{archivo}")
-def api_descargar_showroom_fallback(archivo: str):
+def api_descargar_showroom_fallback(request: Request, archivo: str):
     """Redirige con elegancia al showroom con aviso de descarga local."""
-    return RedirectResponse(url="/demo?showroom_descarga=1", status_code=303)
+    referer = request.headers.get("referer", "").lower()
+    target = "/demo?showroom_descarga=1"
+    if "europa" in referer:
+        target = "/demo-europa?showroom_descarga=1"
+    elif "latam" in referer:
+        target = "/demo-latam?showroom_descarga=1"
+    return RedirectResponse(url=target, status_code=303)
 
 
 # =====================================================================
