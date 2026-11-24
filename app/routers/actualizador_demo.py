@@ -145,17 +145,19 @@ def api_config_estado():
 @router.get("/api/licencia/estado")
 def api_licencia_estado():
     return {
-        "activada": True,
-        "tipo": "DEMO_PIONEROS",
-        "cliente": "Comercio Invitado (Móvil)",
-        "hardware_id": "SAP-MOVIL-DEMO",
-        "dias_restantes": 365,
-        "expirada": False,
-        "fecha_fin": "2027-12-31",
-        "permisos": {
-            "pestana_1_actualizador": True,
-            "pestana_2_comparador": True,
-            "pestana_3_radar": True
+        "estado": {
+            "activada": True,
+            "tipo": "DEMO_PIONEROS",
+            "cliente": "Comercio Invitado (Móvil)",
+            "hardware_id": "SAP-MOVIL-DEMO",
+            "dias_restantes": 365,
+            "expirada": False,
+            "fecha_fin": "2027-12-31",
+            "permisos": {
+                "pestana_1_actualizador": True,
+                "pestana_2_comparador": True,
+                "pestana_3_radar": True
+            }
         }
     }
 
@@ -183,6 +185,16 @@ async def api_pestana1_actualizar(
     archivo_proveedor: Optional[UploadFile] = File(None),
 ):
     """Retorna en milisegundos el dataset de ferretería con 261 artículos cruzados."""
+    if not usar_ejemplo and (archivo_catalogo or archivo_proveedor):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "💡 Modo Demostración Web: Para procesar y actualizar los catálogos reales de tu negocio con total privacidad, "
+                "descargá el Súper Actualizador PRO para tu PC en https://sof-ia.site/actualizador. "
+                "En esta demo web podés probar la velocidad del cruce tocando 'Probar con Datos de Ejemplo Ahora' o consultar el Radar de Mercado en tiempo real."
+            ),
+        )
+
     sample_file = DATA_DIR / "sample_p1.json"
     if sample_file.exists():
         try:
@@ -234,6 +246,15 @@ async def api_pestana2_comparar(
     archivos_proveedores: Optional[List[UploadFile]] = File(None),
 ):
     """Retorna la comparativa multi-proveedor con ahorro inteligente de $10.4M ARS."""
+    if not usar_ejemplo and archivos_proveedores:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "💡 Modo Demostración Web: Para comparar listas reales de tus distribuidores, descargá el Súper Actualizador PRO para PC en https://sof-ia.site/actualizador. "
+                "En esta demo web podés probar la comparativa de 3 proveedores tocando 'Probar con Datos de Ejemplo Ahora'."
+            ),
+        )
+
     sample_file = DATA_DIR / "sample_p2.json"
     if sample_file.exists():
         try:
