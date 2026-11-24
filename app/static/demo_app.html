@@ -1,0 +1,3525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema Actualizador de Precios Pro - Gestión Comercial</title>
+  <link rel="manifest" href="/demo/manifest.json" />
+  <meta name="theme-color" content="#1b365d" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Actualizador Pro" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/demo/icon-192.png" />
+  <link rel="apple-touch-icon" href="/demo/icon-192.png" />
+  <style>
+    :root {
+      --bg-page: #eef1f5;
+      --bg-panel: #ffffff;
+      --bg-header: #1b365d;
+      --bg-sub: #f7f9fb;
+      --border: #ccd4dd;
+      --border-dark: #aeb9c6;
+      --text-main: #222b38;
+      --text-muted: #5a6878;
+      --primary: #1f5c99;
+      --primary-hover: #174675;
+      --success: #217346; /* Verde Excel clásico */
+      --success-hover: #195936;
+      --warning: #b45309;
+      --danger: #b91c1c;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-size: 13px;
+      line-height: 1.45;
+      padding-bottom: 50px;
+    }
+
+    /* BARRA SUPERIOR CLÁSICA DE SISTEMA */
+    .topbar {
+      background-color: var(--bg-header);
+      color: #ffffff;
+      padding: 10px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #12243f;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      background: #ffffff;
+      color: var(--bg-header);
+      font-weight: 800;
+      font-size: 14px;
+      padding: 5px 9px;
+      border-radius: 3px;
+      letter-spacing: 0.5px;
+      border: 1px solid #d0d7de;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: #c5d3e8;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-tag {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #ffffff;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* BOTONES ESTILO WINDOWS / ERP CLÁSICO */
+    .btn {
+      padding: 7px 14px;
+      border-radius: 3px;
+      border: 1px solid var(--border-dark);
+      background: #f8f9fa;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 12.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: #e9ecef;
+      border-color: #8c98a6;
+    }
+
+    .btn-header {
+      background: #2b4c7e;
+      color: #ffffff;
+      border-color: #486b9e;
+    }
+
+    .btn-header:hover {
+      background: #365d98;
+      color: #ffffff;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: #164473;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      color: #ffffff;
+    }
+
+    .btn-emerald {
+      background: var(--success);
+      border-color: #165231;
+      color: #ffffff;
+    }
+
+    .btn-emerald:hover {
+      background: var(--success-hover);
+      color: #ffffff;
+    }
+
+    .btn-amber {
+      background: #d97706;
+      border-color: #b45309;
+      color: #ffffff;
+    }
+
+    .btn-amber:hover {
+      background: #b45309;
+      color: #ffffff;
+    }
+
+    /* CONTENEDOR Y SOLAPAS TIPO CARPETA */
+    .container {
+      max-width: 1320px;
+      margin: 18px auto;
+      padding: 0 18px;
+    }
+
+    .tabs-nav {
+      display: flex;
+      border-bottom: 2px solid var(--primary);
+      gap: 4px;
+      margin-bottom: 0;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 10px 18px;
+      background: #dce3ec;
+      border: 1px solid var(--border-dark);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      color: #3b4859;
+      cursor: pointer;
+      text-align: left;
+      min-width: 220px;
+    }
+
+    .tab-btn:hover {
+      background: #e6ebf2;
+    }
+
+    .tab-btn.active {
+      background: var(--bg-panel);
+      color: var(--primary);
+      border-color: var(--primary);
+      border-top: 3px solid var(--primary);
+      font-weight: 700;
+      margin-bottom: -2px;
+      padding-bottom: 12px;
+    }
+
+    .tab-btn-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .tab-btn-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* PANELES Y FORMULARIOS */
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-standalone {
+      border-top: 1px solid var(--border);
+      border-radius: 3px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e1e6ed;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1b365d;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 920px) {
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .field input, .field select {
+      padding: 7px 10px;
+      border-radius: 3px;
+      border: 1px solid #b5c0ce;
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 13px;
+    }
+
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(31, 92, 153, 0.15);
+    }
+
+    /* RECUADROS CONTABLES / KPIS */
+    .kpi-card {
+      background: var(--bg-sub);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 14px;
+    }
+
+    .kpi-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .kpi-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* TABLAS ESTILO PLANILLA CONTABLE */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      background: #ffffff;
+    }
+
+    th {
+      background: #e6ecf2;
+      color: #1e293b;
+      font-weight: 700;
+      text-align: left;
+      padding: 9px 11px;
+      border-bottom: 2px solid var(--border-dark);
+      border-right: 1px solid var(--border);
+    }
+
+    td {
+      padding: 8px 11px;
+      border-bottom: 1px solid #dde3ea;
+      border-right: 1px solid #eef1f5;
+      color: #1e293b;
+    }
+
+    tbody tr:nth-child(even) td {
+      background-color: #f9fbfd;
+    }
+
+    tbody tr:hover td {
+      background-color: #edf4fc;
+    }
+
+    tr.row-alerta td {
+      background-color: #fef2f2 !important;
+      color: #991b1b;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .pill-ok {
+      background: #e6f4ea;
+      color: #137333;
+      border-color: #b7dfbf;
+    }
+
+    .pill-alert {
+      background: #fce8e6;
+      color: #c5221f;
+      border-color: #f5c2c0;
+    }
+
+    .pill-neutral {
+      background: #f1f3f4;
+      color: #3c4043;
+      border-color: #dadce0;
+    }
+
+    /* VENTANAS MODALES CLÁSICAS */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #ffffff;
+      border: 2px solid #1b365d;
+      border-radius: 4px;
+      max-width: 650px;
+      width: 100%;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .info-box {
+      background: #f0f6fc;
+      border: 1px solid #b6d4fe;
+      border-left: 4px solid var(--primary);
+      padding: 12px 14px;
+      border-radius: 3px;
+      font-size: 12.5px;
+      color: #1e293b;
+      line-height: 1.5;
+      margin: 12px 0;
+    }
+
+    .corporate-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 960px) {
+      .corporate-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .corp-card {
+      background: #ffffff;
+      border: 1px solid var(--border-dark);
+      border-top: 3px solid var(--primary);
+      border-radius: 3px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA SUPERIOR DE SISTEMA -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">SAP v2.0</div>
+      <div>
+        <div class="brand-title">Súper Actualizador de Precios Pro — Sistema de Gestión Comercial</div>
+        <div class="brand-sub">Ejecución 100% Local en PC • Base de Datos de Proveedores Integrada</div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <!-- Selector Regional de País / Moneda de Mostrador -->
+      <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); padding:3px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.25);">
+        <span style="font-size:11px; font-weight:700; color:#e2e8f0; text-transform:uppercase;">País:</span>
+        <select id="selectPaisRegional" onchange="cambiarPaisManual(this.value)" style="background:#0f172a; color:#ffffff; border:1px solid #334155; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:600; cursor:pointer; outline:none;">
+          <option value="mexico">🇲🇽 México ($ MXN)</option>
+          <option value="chile">🇨🇱 Chile ($ CLP)</option>
+          <option value="peru">🇵🇪 Perú (S/ PEN)</option>
+          <option value="colombia">🇨🇴 Colombia ($ COP)</option>
+          <option value="argentina">🇦🇷 Argentina ($ ARS)</option>
+          <option value="europa">🇪🇸 España / Europa (€ EUR)</option>
+          <option value="latam_usd">Internacional (US$ USD)</option>
+        </select>
+      </div>
+
+      <span id="badgeMemoria" class="status-tag">Memoria Inteligente: 0 artículos</span>
+      <span id="badgeLicencia" class="status-tag">Verificando licencia...</span>
+      <button class="btn btn-header" style="background:#fdf2f8; color:#db2777; border-color:#fce7f3; font-weight:700; display:inline-flex; align-items:center; gap:5px;" onclick="abrirModalVideos()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Videos y Demos
+      </button>
+      <button class="btn btn-header" style="display:inline-flex; align-items:center; gap:5px;" onclick="abrirModalBienvenida()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        Guía Rápida
+      </button>
+      <button class="btn btn-header" style="display:inline-flex; align-items:center; gap:5px;" onclick="abrirModalLicencia()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Licencia
+      </button>
+      <button class="btn btn-header" style="display:inline-flex; align-items:center; gap:5px;" onclick="abrirModalIA()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Configurar IA
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- SOLAPAS ESTILO SISTEMA DE GESTIÓN -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" onclick="cambiarPestana(1, this)">
+        <div class="tab-btn-title">
+          <span>1. Actualizador de Precios</span>
+        </div>
+        <div class="tab-btn-desc">Cruce de listas en Excel, PDF o Facturas</div>
+      </button>
+
+      <button class="tab-btn" onclick="cambiarPestana(2, this)">
+        <div class="tab-btn-title">
+          <span>2. Comparador de Proveedores</span>
+          <span id="tagPruebasComp" class="pill pill-alert">BLOQUEADO</span>
+        </div>
+        <div class="tab-btn-desc">Comparativa de costos y armado de pedidos</div>
+      </button>
+
+      <button class="tab-btn" onclick="cambiarPestana(3, this)">
+        <div class="tab-btn-title">
+          <span>3. Consultar Precios de Mercado</span>
+          <span id="tagPruebasML" class="pill pill-alert">BLOQUEADO</span>
+        </div>
+        <div class="tab-btn-desc">Referencia en vivo para artículos sin lista</div>
+      </button>
+
+      <button class="tab-btn" onclick="cambiarPestana(4, this)">
+        <div class="tab-btn-title">
+          <span>4. Red de Stock & Ecosistema</span>
+          <span class="pill pill-ok">Pioneros</span>
+        </div>
+        <div class="tab-btn-desc">Venta cruzada sin stock propio y módulos de expansión</div>
+      </button>
+    </nav>
+
+    <!-- =========================================================
+         PESTAÑA 1: ACTUALIZADOR DE PRECIOS
+         ========================================================= -->
+    <section id="panel-1" class="tab-panel active">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Actualización Masiva de Listas de Precios (Excel, PDF o Foto de Factura)</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+              Seleccione su archivo de catálogo actual y la lista enviada por el proveedor para calcular nuevos costos y precios de venta.
+            </div>
+          </div>
+        </div>
+
+        <!-- BANNER PROBAR CON DATOS DE EJEMPLO (EFECTO WOW INMEDIATO) -->
+        <div id="demoBannerP1" style="background:#f0fdf4; border:1.5px dashed #22c55e; border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:36px; height:36px; border-radius:8px; background:#dcfce7; display:flex; align-items:center; justify-content:center; color:#15803d; flex-shrink:0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#15803d; font-size:13.5px;">¿Querés probar el sistema ya mismo sin buscar tus planillas?</div>
+              <div style="font-size:12px; color:#166534;">Cargá 2 planillas de ferretería de ejemplo preparadas con 1 solo clic y mirá el cruce en 2 segundos.</div>
+            </div>
+          </div>
+          <button class="btn btn-emerald" onclick="probarEjemploP1()" style="font-weight:700; padding:8px 16px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Probar con Datos de Ejemplo Ahora
+          </button>
+        </div>
+
+        <div class="grid-3" style="margin-bottom:16px;">
+          <div class="field">
+            <label>1. Tu Excel Actual (Catálogo / Tango / Gestión)</label>
+            <input type="file" id="p1ArchivoCatalogo" accept=".xlsx,.xls,.csv" onchange="verificarHojasExcel(this.files[0], 'p1HojaCatContainer', 'p1HojaCatalogo', 'p1HojaCatCount')" />
+            <div id="p1HojaCatContainer" style="display:none; margin-top:8px; background:#eff6ff; padding:10px 12px; border-radius:8px; border:2px solid #2563eb; box-shadow:0 2px 8px rgba(37,99,235,0.12);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="color:#1e40af; font-size:11px; font-weight:800; display:flex; align-items:center; gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  SOLAPAS DETECTADAS EN TU EXCEL:
+                </span>
+                <span id="p1HojaCatCount" class="pill pill-success" style="font-size:10px; font-weight:700;">3 Solapas</span>
+              </div>
+              <label style="color:#1e3a8a; font-size:11px; font-weight:600; margin-bottom:4px; display:block;">Elegí qué solapa querés actualizar (o dejá todas):</label>
+              <select id="p1HojaCatalogo" style="font-size:12px; font-weight:600; padding:6px 8px; border:1px solid #3b82f6; width:100%; border-radius:6px; background:#fff;"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>2. Lista Nueva del Proveedor (Excel, PDF o Foto de Factura)</label>
+            <input type="file" id="p1ArchivoProveedor" accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp" onchange="verificarHojasExcel(this.files[0], 'p1HojaProvContainer', 'p1HojaProveedor', 'p1HojaProvCount')" />
+            <div id="p1HojaProvContainer" style="display:none; margin-top:8px; background:#eff6ff; padding:10px 12px; border-radius:8px; border:2px solid #2563eb; box-shadow:0 2px 8px rgba(37,99,235,0.12);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="color:#1e40af; font-size:11px; font-weight:800; display:flex; align-items:center; gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  SOLAPAS DEL PROVEEDOR:
+                </span>
+                <span id="p1HojaProvCount" class="pill pill-success" style="font-size:10px; font-weight:700;">2 Solapas</span>
+              </div>
+              <label style="color:#1e3a8a; font-size:11px; font-weight:600; margin-bottom:4px; display:block;">Elegí qué solapa querés leer (o dejá todas):</label>
+              <select id="p1HojaProveedor" style="font-size:12px; font-weight:600; padding:6px 8px; border:1px solid #3b82f6; width:100%; border-radius:6px; background:#fff;"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>3. Nombre del Proveedor (Para recordar sus artículos)</label>
+            <input type="text" id="p1NombreProveedor" placeholder="Ej: Bulonera del Sur / Distribuidora Norte" value="BULONERA Y HERRAMIENTAS DEL SUR" />
+          </div>
+        </div>
+
+        <!-- SELECTOR REGIONAL DESTACADO PANEL 1 -->
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #2563eb; border-radius:6px; padding:10px 14px; margin-bottom:16px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <label for="p1SelectPais" style="font-size:12px; font-weight:800; color:#0f172a; text-transform:uppercase; margin:0; display:flex; align-items:center; gap:5px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              País y Moneda de tu Comercio:
+            </label>
+            <select id="p1SelectPais" onchange="cambiarPaisManual(this.value)" style="font-size:13px; font-weight:700; padding:6px 12px; border:2px solid #2563eb; border-radius:6px; background:#ffffff; color:#0f172a; cursor:pointer; outline:none; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              <option value="mexico">🇲🇽 México (Pesos $ MXN)</option>
+              <option value="chile">🇨🇱 Chile (Pesos $ CLP)</option>
+              <option value="peru">🇵🇪 Perú (Soles S/ PEN)</option>
+              <option value="colombia">🇨🇴 Colombia (Pesos $ COP)</option>
+              <option value="argentina">🇦🇷 Argentina (Pesos $ ARS)</option>
+              <option value="europa">🇪🇸 España / Europa (Euros € EUR)</option>
+              <option value="latam_usd">Internacional / Dólares (US$ USD)</option>
+            </select>
+          </div>
+          <div id="p1AvisoRegional" style="font-size:12px; color:#475569; font-weight:600;">
+            Mostrador configurado para México: IVA y redondeos comerciales en pesos MXN.
+          </div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom:16px;">
+          <div class="field">
+            <label>Descuento del Proveedor (%)</label>
+            <input type="number" id="p1Desc1" value="0" step="0.5" />
+          </div>
+          <div class="field">
+            <label>2° Descuento Extra / Contado (%)</label>
+            <input type="number" id="p1Desc2" value="0" step="0.5" />
+          </div>
+          <div class="field">
+            <label>Condición de IVA a sumar</label>
+            <select id="p1Iva">
+              <option value="21" selected>+21% (Lista venía sin IVA)</option>
+              <option value="10.5">+10.5% (IVA Reducido)</option>
+              <option value="0">0% (IVA ya incluido / Exento)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Recargo Flete / Logística (%)</label>
+            <input type="number" id="p1Flete" value="0" step="0.5" />
+          </div>
+        </div>
+
+        <!-- DESCUENTOS POR MARCA / LÍNEA (OPCIONAL) -->
+        <div style="margin-bottom:12px; background:rgba(0,0,0,0.02); border:1px dashed #cbd5e1; border-radius:8px; padding:9px 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleDescuentosMarcas()">
+            <div style="font-size:12.5px; font-weight:600; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              <span>Bonificaciones Específicas por Marca o Rubro (Opcional)</span>
+              <span style="font-size:11px; font-weight:400; color:var(--text-muted);">(Hacé clic aquí si el proveedor tiene descuentos distintos por línea)</span>
+            </div>
+            <span id="p1ToggleMarcasIcon" style="font-size:11px; color:var(--text-muted); font-weight:700;">▼</span>
+          </div>
+          <div id="p1BoxMarcas" style="display:none; margin-top:8px;">
+            <input type="text" id="p1ReglasDto" placeholder="Ej: BOSCH: 15, STANLEY: 25, BAHCO: 20" style="width:100%; font-size:12px; padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px;" />
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+              Si el proveedor aplica descuentos según la marca, indicalos separados por coma (ej: <code>BOSCH: 15, STANLEY: 25</code>). Se aplicará ese porcentaje exacto a los artículos de esa marca.
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-4" style="align-items:end;">
+          <div class="field">
+            <label>Modo de Margen de Ganancia</label>
+            <select id="p1ModoMargen">
+              <option value="RESPETAR_EXCEL" selected>Respetar margen individual (Excel o Histórico de Venta)</option>
+              <option value="FIJO">Aplicar Margen Fijo a toda la lista</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Margen Fijo / Por defecto (%)</label>
+            <input type="number" id="p1MargenFijo" value="45" step="1" />
+          </div>
+          <div class="field">
+            <label>Redondeo del Precio de Venta Final</label>
+            <select id="p1Redondeo">
+              <option value="2_DECIMALES">Sin redondear — Con centavos exactos (Ej: $1.432,38)</option>
+              <option value="REDONDEO_10" selected>Redondear a $10 para mostrador (Ej: $1.440)</option>
+              <option value="REDONDEO_50">Redondear a $50 para mostrador (Ej: $1.450)</option>
+              <option value="REDONDEO_100">Redondear a $100 para mostrador (Ej: $1.500)</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center; padding:9px;" onclick="ejecutarActualizador(false)">
+              Procesar y Actualizar Precios
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTADOS PESTAÑA 1 -->
+      <div id="p1ResultadosBox" class="card card-standalone" style="display:none;">
+        <div class="card-header">
+          <div class="card-title">Resultado de la Actualización y Control de Variaciones</div>
+          <div id="p1BotonesDescarga" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom:14px;">
+          <div class="kpi-card" style="cursor:pointer;" onclick="filtrarTablaP1('TODOS')">
+            <div class="kpi-label">Total Artículos Catálogo (Ver Todos)</div>
+            <div id="kpiP1Total" class="kpi-value">0</div>
+          </div>
+          <div class="kpi-card" style="cursor:pointer; background:#f0fdf4; border-color:#86efac;" onclick="filtrarTablaP1('ACTUALIZADO')">
+            <div class="kpi-label" style="color:#166534;">Artículos Actualizados Hoy (Clic para filtrar)</div>
+            <div id="kpiP1Actualizados" class="kpi-value" style="color:var(--success);">0</div>
+          </div>
+          <div class="kpi-card" style="cursor:pointer; background:#fef2f2; border-color:#fca5a5;" onclick="filtrarTablaP1('ALERTA_ROJA')">
+            <div class="kpi-label" style="color:#991b1b;">Alertas por Suba/Baja Brusca (Clic para filtrar)</div>
+            <div id="kpiP1Alertas" class="kpi-value" style="color:var(--danger);">0</div>
+          </div>
+          <div class="kpi-card" style="cursor:pointer;" onclick="filtrarTablaP1('SIN_CAMBIOS')">
+            <div class="kpi-label">Sin Cambios en esta Lista (Clic para filtrar)</div>
+            <div id="kpiP1Huerfanos" class="kpi-value" style="color:var(--warning);">0</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="btnFiltroP1_TODOS" onclick="filtrarTablaP1('TODOS')">Mostrar Todos</button>
+            <button class="btn" id="btnFiltroP1_ACTUALIZADO" onclick="filtrarTablaP1('ACTUALIZADO')">Solo Actualizados Hoy</button>
+            <button class="btn" id="btnFiltroP1_ALERTA_ROJA" onclick="filtrarTablaP1('ALERTA_ROJA')">Solo Alertas de Variación</button>
+            <button class="btn" id="btnFiltroP1_SIN_CAMBIOS" onclick="filtrarTablaP1('SIN_CAMBIOS')">Sin Cambios en esta Lista</button>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted);">
+            Nota: El archivo Excel descargado ya incluye las celdas actualizadas pintadas en verde y las alertas en rojo.
+          </div>
+        </div>
+
+        <!-- BARRA DE SELECCIÓN Y ARMADOR DE PEDIDOS PESTAÑA 1 -->
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-main); text-transform:uppercase;">Control de Selección:</span>
+            <button type="button" class="btn" style="padding:4px 9px; font-size:11.5px;" onclick="seleccionarTodosP1(true)">Tildar Todos</button>
+            <button type="button" class="btn" style="padding:4px 9px; font-size:11.5px;" onclick="seleccionarTodosP1(false)">Desmarcar Todos</button>
+            <button type="button" class="btn" style="padding:4px 9px; font-size:11.5px; background:#fef2f2; color:#b91c1c; border-color:#fca5a5; display:inline-flex; align-items:center; gap:5px;" onclick="desmarcarAlertasRojasP1()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Desmarcar Alertas Rojas
+            </button>
+            <span style="font-size:12.5px; color:var(--text-muted); margin-left:6px;">
+              Seleccionados: <b id="p1CountSeleccionados" style="color:var(--primary);">0</b> de <span id="p1CountTotal">0</span>
+            </span>
+            <span style="font-size:12.5px; color:var(--text-muted); margin-left:10px;">
+              Presupuesto Pedido: <b id="p1TotalPresupuestoPedido" style="color:var(--success); font-size:14px;">$0,00</b>
+            </span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-emerald" style="padding:6px 12px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px;" onclick="exportarCatalogoPersonalizadoP1(false)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Guardar Catálogo (Solo Seleccionados)
+            </button>
+            <button type="button" class="btn btn-primary" style="padding:6px 12px; font-size:12.5px; display:inline-flex; align-items:center; gap:6px;" onclick="exportarCatalogoPersonalizadoP1(true)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Exportar Pedido a Medida
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px; text-align:center;"><input type="checkbox" id="p1MasterCheckbox" checked onchange="seleccionarTodosP1(this.checked)" title="Seleccionar/Deseleccionar todos"></th>
+                <th>Código</th>
+                <th>Descripción en Catálogo</th>
+                <th style="text-align:center; min-width:85px;">Cant. Pedir</th>
+                <th>Costo Ant.</th>
+                <th>Costo Nuevo Limpio</th>
+                <th>Variación</th>
+                <th>Precio Venta Nuevo</th>
+                <th>Método de Cruce</th>
+                <th>Estado / Acción</th>
+              </tr>
+            </thead>
+            <tbody id="p1TablaBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         PESTAÑA 2: COMPARADOR DE PROVEEDORES
+         ========================================================= -->
+    <section id="panel-2" class="tab-panel">
+      <div class="card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div class="card-title">Comparador de Listas de Proveedores (Cálculo de Costo Real Limpio)</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+              Compare hasta 5 listas de mayoristas aplicando los descuentos e IVA de cada uno para detectar dónde comprar más barato cada ítem.
+            </div>
+          </div>
+          <button class="btn" onclick="agregarTarjetaProveedorExtra()" id="btnAgregarProv">
+            + Agregar otro Proveedor (4° / 5°)
+          </button>
+        </div>
+
+        <!-- BARRA REGIONAL PANEL 2 -->
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #2563eb; border-radius:6px; padding:10px 14px; margin-bottom:16px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <label for="p2SelectPais" style="font-size:12px; font-weight:800; color:#0f172a; text-transform:uppercase; margin:0; display:flex; align-items:center; gap:5px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              País y Moneda de Comparación:
+            </label>
+            <select id="p2SelectPais" onchange="cambiarPaisManual(this.value)" style="font-size:13px; font-weight:700; padding:6px 12px; border:2px solid #2563eb; border-radius:6px; background:#ffffff; color:#0f172a; cursor:pointer; outline:none; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              <option value="mexico">🇲🇽 México (Pesos $ MXN)</option>
+              <option value="chile">🇨🇱 Chile (Pesos $ CLP)</option>
+              <option value="peru">🇵🇪 Perú (Soles S/ PEN)</option>
+              <option value="colombia">🇨🇴 Colombia (Pesos $ COP)</option>
+              <option value="argentina">🇦🇷 Argentina (Pesos $ ARS)</option>
+              <option value="europa">🇪🇸 España / Europa (Euros € EUR)</option>
+              <option value="latam_usd">Internacional / Dólares (US$ USD)</option>
+            </select>
+          </div>
+          <div id="p2AvisoRegional" style="font-size:12px; color:#475569; font-weight:600;">
+            Precios comparativos y cálculos de IVA según normativa del país seleccionado.
+          </div>
+        </div>
+
+        <div class="grid-3" id="p2ContenedorProveedores" style="margin-bottom:16px;">
+          <!-- PROVEEDOR 1 -->
+          <div class="kpi-card">
+            <div style="font-weight:700; margin-bottom:10px; color:#1b365d; border-bottom:1px solid var(--border); padding-bottom:6px;">
+              Proveedor 1
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Nombre del Mayorista</label>
+              <input type="text" id="p2Nom1" placeholder="Ej: Mayorista del Norte" value="Mayorista del Norte" />
+            </div>
+            <div class="grid-2" style="margin-bottom:9px;">
+              <div class="field">
+                <label>Descuento Proveedor (%)</label>
+                <input type="number" id="p2Desc1" value="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label>2° Desc. Extra / Contado (%)</label>
+                <input type="number" id="p2Desc2_1" value="0" step="0.5" />
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Condición de IVA a sumar</label>
+              <select id="p2Iva1">
+                <option value="21" selected>+21% (Lista venía sin IVA)</option>
+                <option value="10.5">+10.5% (IVA Reducido)</option>
+                <option value="0">0% (IVA ya incluido / Exento)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Lista de Precios (Excel, PDF o Foto)</label>
+              <input type="file" id="p2File1" accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp" onchange="verificarHojasExcel(this.files[0], 'p2HojaCont1', 'p2Hoja1', 'p2HojaCount1')" />
+              <div id="p2HojaCont1" style="display:none; margin-top:8px; background:#eff6ff; padding:8px 10px; border-radius:8px; border:2px solid #2563eb; box-shadow:0 2px 8px rgba(37,99,235,0.12);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                  <span style="color:#1e40af; font-size:10px; font-weight:800; display:flex; align-items:center; gap:4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    SOLAPAS PROVEEDOR 1:
+                  </span>
+                  <span id="p2HojaCount1" class="pill pill-success" style="font-size:9px; font-weight:700;">2 Solapas</span>
+                </div>
+                <select id="p2Hoja1" style="font-size:11px; font-weight:600; padding:4px 6px; border:1px solid #3b82f6; width:100%; border-radius:5px; background:#fff;"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROVEEDOR 2 -->
+          <div class="kpi-card">
+            <div style="font-weight:700; margin-bottom:10px; color:#1b365d; border-bottom:1px solid var(--border); padding-bottom:6px;">
+              Proveedor 2
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Nombre del Mayorista</label>
+              <input type="text" id="p2Nom2" placeholder="Ej: Distribuidora Oeste" value="Distribuidora Oeste" />
+            </div>
+            <div class="grid-2" style="margin-bottom:9px;">
+              <div class="field">
+                <label>Descuento Proveedor (%)</label>
+                <input type="number" id="p2Desc2" value="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label>2° Desc. Extra / Contado (%)</label>
+                <input type="number" id="p2Desc2_2" value="0" step="0.5" />
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Condición de IVA a sumar</label>
+              <select id="p2Iva2">
+                <option value="21" selected>+21% (Lista venía sin IVA)</option>
+                <option value="10.5">+10.5% (IVA Reducido)</option>
+                <option value="0">0% (IVA ya incluido / Exento)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Lista de Precios (Excel, PDF o Foto)</label>
+              <input type="file" id="p2File2" accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp" onchange="verificarHojasExcel(this.files[0], 'p2HojaCont2', 'p2Hoja2', 'p2HojaCount2')" />
+              <div id="p2HojaCont2" style="display:none; margin-top:8px; background:#eff6ff; padding:8px 10px; border-radius:8px; border:2px solid #2563eb; box-shadow:0 2px 8px rgba(37,99,235,0.12);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                  <span style="color:#1e40af; font-size:10px; font-weight:800; display:flex; align-items:center; gap:4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    SOLAPAS PROVEEDOR 2:
+                  </span>
+                  <span id="p2HojaCount2" class="pill pill-success" style="font-size:9px; font-weight:700;">2 Solapas</span>
+                </div>
+                <select id="p2Hoja2" style="font-size:11px; font-weight:600; padding:4px 6px; border:1px solid #3b82f6; width:100%; border-radius:5px; background:#fff;"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROVEEDOR 3 -->
+          <div class="kpi-card">
+            <div style="font-weight:700; margin-bottom:10px; color:#1b365d; border-bottom:1px solid var(--border); padding-bottom:6px;">
+              Proveedor 3
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Nombre del Mayorista</label>
+              <input type="text" id="p2Nom3" placeholder="Ej: Importadora Central" value="Importadora Central" />
+            </div>
+            <div class="grid-2" style="margin-bottom:9px;">
+              <div class="field">
+                <label>Descuento Proveedor (%)</label>
+                <input type="number" id="p2Desc3" value="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label>2° Desc. Extra / Contado (%)</label>
+                <input type="number" id="p2Desc2_3" value="0" step="0.5" />
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Condición de IVA a sumar</label>
+              <select id="p2Iva3">
+                <option value="21" selected>+21% (Lista venía sin IVA)</option>
+                <option value="10.5">+10.5% (IVA Reducido)</option>
+                <option value="0">0% (IVA ya incluido / Exento)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Lista de Precios (Excel, PDF o Foto)</label>
+              <input type="file" id="p2File3" accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp" onchange="verificarHojasExcel(this.files[0], 'p2HojaCont3', 'p2Hoja3', 'p2HojaCount3')" />
+              <div id="p2HojaCont3" style="display:none; margin-top:8px; background:#eff6ff; padding:8px 10px; border-radius:8px; border:2px solid #2563eb; box-shadow:0 2px 8px rgba(37,99,235,0.12);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                  <span style="color:#1e40af; font-size:10px; font-weight:800; display:flex; align-items:center; gap:4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    SOLAPAS PROVEEDOR 3:
+                  </span>
+                  <span id="p2HojaCount3" class="pill pill-success" style="font-size:9px; font-weight:700;">2 Solapas</span>
+                </div>
+                <select id="p2Hoja3" style="font-size:11px; font-weight:600; padding:4px 6px; border:1px solid #3b82f6; width:100%; border-radius:5px; background:#fff;"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROVEEDOR 4 -->
+          <div class="kpi-card" id="cardProv4" style="display:none;">
+            <div style="font-weight:700; margin-bottom:10px; color:#1b365d; border-bottom:1px solid var(--border); padding-bottom:6px;">
+              Proveedor 4
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Nombre del Mayorista</label>
+              <input type="text" id="p2Nom4" placeholder="Ej: Mayorista 4" value="Mayorista 4" />
+            </div>
+            <div class="grid-2" style="margin-bottom:9px;">
+              <div class="field">
+                <label>Descuento Proveedor (%)</label>
+                <input type="number" id="p2Desc4" value="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label>2° Desc. Extra / Contado (%)</label>
+                <input type="number" id="p2Desc2_4" value="0" step="0.5" />
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Condición de IVA a sumar</label>
+              <select id="p2Iva4">
+                <option value="21" selected>+21% (Lista venía sin IVA)</option>
+                <option value="10.5">+10.5% (IVA Reducido)</option>
+                <option value="0">0% (IVA ya incluido / Exento)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Lista de Precios (Excel, PDF o Foto)</label>
+              <input type="file" id="p2File4" accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp" onchange="verificarHojasExcel(this.files[0], 'p2HojaCont4', 'p2Hoja4', 'p2HojaCount4')" />
+              <div id="p2HojaCont4" style="display:none; margin-top:8px; background:#eff6ff; padding:8px 10px; border-radius:8px; border:2px solid #2563eb; box-shadow:0 2px 8px rgba(37,99,235,0.12);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                  <span style="color:#1e40af; font-size:10px; font-weight:800; display:flex; align-items:center; gap:4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    SOLAPAS PROVEEDOR 4:
+                  </span>
+                  <span id="p2HojaCount4" class="pill pill-success" style="font-size:9px; font-weight:700;">2 Solapas</span>
+                </div>
+                <select id="p2Hoja4" style="font-size:11px; font-weight:600; padding:4px 6px; border:1px solid #3b82f6; width:100%; border-radius:5px; background:#fff;"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROVEEDOR 5 -->
+          <div class="kpi-card" id="cardProv5" style="display:none;">
+            <div style="font-weight:700; margin-bottom:10px; color:#1b365d; border-bottom:1px solid var(--border); padding-bottom:6px;">
+              Proveedor 5
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Nombre del Mayorista</label>
+              <input type="text" id="p2Nom5" placeholder="Ej: Mayorista 5" value="Mayorista 5" />
+            </div>
+            <div class="grid-2" style="margin-bottom:9px;">
+              <div class="field">
+                <label>Descuento Proveedor (%)</label>
+                <input type="number" id="p2Desc5" value="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label>2° Desc. Extra / Contado (%)</label>
+                <input type="number" id="p2Desc2_5" value="0" step="0.5" />
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:9px;">
+              <label>Condición de IVA a sumar</label>
+              <select id="p2Iva5">
+                <option value="21" selected>+21% (Lista venía sin IVA)</option>
+                <option value="10.5">+10.5% (IVA Reducido)</option>
+                <option value="0">0% (IVA ya incluido / Exento)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Lista de Precios (Excel, PDF o Foto)</label>
+              <input type="file" id="p2File5" accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp" onchange="verificarHojasExcel(this.files[0], 'p2HojaCont5', 'p2Hoja5', 'p2HojaCount5')" />
+              <div id="p2HojaCont5" style="display:none; margin-top:8px; background:#eff6ff; padding:8px 10px; border-radius:8px; border:2px solid #2563eb; box-shadow:0 2px 8px rgba(37,99,235,0.12);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                  <span style="color:#1e40af; font-size:10px; font-weight:800; display:flex; align-items:center; gap:4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    SOLAPAS PROVEEDOR 5:
+                  </span>
+                  <span id="p2HojaCount5" class="pill pill-success" style="font-size:9px; font-weight:700;">2 Solapas</span>
+                </div>
+                <select id="p2Hoja5" style="font-size:11px; font-weight:600; padding:4px 6px; border:1px solid #3b82f6; width:100%; border-radius:5px; background:#fff;"></select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="ejecutarComparador(false)">
+          Comparar Proveedores y Generar Pedidos Separados
+        </button>
+      </div>
+
+      <!-- RESULTADOS PESTAÑA 2 -->
+      <div id="p2ResultadosBox" class="card card-standalone" style="display:none;">
+        <div class="card-header">
+          <div class="card-title">Tabla Comparativa de Costos y Pedidos por Proveedor</div>
+          <div id="p2BotonesPedidos" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+        </div>
+
+        <div class="grid-3" style="margin-bottom:14px;">
+          <div class="kpi-card">
+            <div class="kpi-label">Costo Comprando sin Comparar</div>
+            <div id="kpiP2Caro" class="kpi-value" style="color:var(--text-muted);">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Costo Compra Optimizada (Mejor Proveedor)</div>
+            <div id="kpiP2Optimo" class="kpi-value" style="color:var(--primary);">$0</div>
+          </div>
+          <div class="kpi-card" style="background:#f0fdf4; border-color:#86efac;">
+            <div class="kpi-label" style="color:#166534;">Ahorro Directo en este Pedido</div>
+            <div id="kpiP2Ahorro" class="kpi-value" style="color:var(--success);">$0</div>
+          </div>
+        </div>
+
+        <!-- ARMADOR DE PEDIDOS A MEDIDA / PRESUPUESTO -->
+        <div class="info-box" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; background:#f8fafc; border-left:4px solid #137333;">
+          <div style="font-size:13px;">
+            <strong style="color:#1b365d; display:inline-flex; align-items:center; gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Pedido a Medida / Presupuesto:</strong>
+            <span id="txtP2Seleccionados" style="margin-left:8px; font-weight:700; color:#137333;">0 artículos</span>
+            <span style="margin:0 6px; color:#cbd5e1;">|</span>
+            <span>Total a pagar: <strong id="txtP2TotalSeleccionado" style="color:#1b365d;">$0</strong></span>
+            <span style="margin:0 6px; color:#cbd5e1;">|</span>
+            <span>Ahorro: <strong id="txtP2AhorroSeleccionado" style="color:#137333;">$0</strong></span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-sm" onclick="marcarTodosP2(true)">Marcar Todos</button>
+            <button class="btn btn-sm" onclick="marcarTodosP2(false)">Desmarcar Todos</button>
+          </div>
+        </div>
+
+        <div id="p2FiltrosGanador" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr id="p2TablaHeadRow"></tr>
+            </thead>
+            <tbody id="p2TablaBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         PESTAÑA 3: CONSULTAR PRECIOS DE MERCADO / MERCADOLIBRE
+         ========================================================= -->
+    <section id="panel-3" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Buscador de Precios de Referencia en el Mercado Nacional (Con Filtro Inteligente de Repuestos)</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+              Consulte a cuánto se está vendiendo hoy un artículo en el mercado. El sistema filtra repuestos o accesorios para no distorsionar el promedio.
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-3" style="align-items:end;">
+          <div class="field">
+            <label>Producto a buscar en el mercado</label>
+            <input type="text" id="p3Consulta" value="" placeholder="Ej: Taladro Percutor Makita HP1630 710W" onkeydown="if(event.key==='Enter') { event.preventDefault(); ejecutarRadarML(); }" />
+          </div>
+          <div class="field">
+            <label>Descuento Mostrador vs. Precio Online (%) — Poner 0% para igualar</label>
+            <input type="number" id="p3Comision" value="25" min="0" max="50" step="1" />
+          </div>
+          <div>
+            <button type="button" id="btnEjecutarRadarML" class="btn btn-primary" style="width:100%; justify-content:center; padding:9px;" onclick="ejecutarRadarML()">
+              Buscar Precios de Referencia Ahora
+            </button>
+          </div>
+        </div>
+
+        <!-- ACCESOS DIRECTOS A MARKETPLACES LÍDERES SEGÚN PAÍS -->
+        <div id="p3BarraMarketplacesDirectos" style="margin-top:14px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:12px; color:#475569; display:flex; align-items:center; gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span style="font-weight:600;">Accesos directos al mercado en vivo (1 clic):</span>
+          </div>
+          <div id="p3ContenedorBotonesMarketplace" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <div id="p3ResultadosBox" class="card card-standalone" style="display:none;">
+        <div id="p3BannerConfianza" style="display:none; margin-bottom:16px; padding:12px 16px; border-radius:8px; font-size:13px; font-weight:600; align-items:center; gap:10px;"></div>
+
+        <div class="grid-4" style="margin-bottom:16px;">
+          <div class="kpi-card">
+            <div class="kpi-label">Precio Promedio Relevado</div>
+            <div id="kpiP3PromML" class="kpi-value">$0</div>
+          </div>
+          <div class="kpi-card" style="background:#f0fdf4; border-color:#86efac;">
+            <div class="kpi-label" style="color:#166534;">Precio Sugerido de Mostrador</div>
+            <div id="kpiP3Mostrador" class="kpi-value" style="color:var(--success);">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Publicaciones Válidas Tomadas</div>
+            <div id="kpiP3Aprobados" class="kpi-value" style="color:var(--primary);">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Repuestos / Atípicos Excluidos</div>
+            <div id="kpiP3Descartados" class="kpi-value" style="color:var(--warning);">0</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <h4 style="margin-bottom:8px; color:#137333; font-size:13px;">Publicaciones Válidas Incluidas en el Promedio</h4>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Publicación / Comercio</th>
+                    <th>Precio</th>
+                  </tr>
+                </thead>
+                <tbody id="p3BodyAprobados"></tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h4 style="margin-bottom:8px; color:#b91c1c; font-size:13px;">Publicaciones Excluidas Automáticamente (Repuestos / Accesorios)</h4>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Publicación Detectada</th>
+                    <th>Precio</th>
+                    <th>Motivo de Exclusión</th>
+                  </tr>
+                </thead>
+                <tbody id="p3BodyDescartados"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         PESTAÑA 4: MÓDULOS CORPORATIVOS ADICIONALES
+         ========================================================= -->
+    <section id="panel-4" class="tab-panel">
+      <!-- 1. HERO CARD: RED DE AUXILIO DE STOCK INTER-COMERCIOS -->
+      <div class="card" style="margin-bottom:16px; border-top: 3px solid #16a34a;">
+        <div class="card-header" style="padding-bottom:10px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+              <span class="pill pill-ok" style="background:#dcfce7; color:#15803d; font-weight:800;">FASE PIONEROS FUNDADORES</span>
+              <span class="pill pill-neutral" id="p4BadgeNodoRegional">Nodo Regional en Activación</span>
+            </div>
+            <div class="card-title" style="font-size:17px; color:#1b365d;">
+              Red de Auxilio de Stock Inter-Comercios (B2B Local)
+            </div>
+            <div style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">
+              Venda mercadería que no tiene en mostrador utilizando el stock disponible de comercios colegas en su ciudad.
+            </div>
+          </div>
+        </div>
+
+        <div id="redStockLiveContainer" style="padding:16px 20px;">
+          <!-- CONTENEDOR TEASER / PROTOCOLO DE CONCIENCIA -->
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:16px; margin-bottom:16px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; align-items:center;">
+              <div>
+                <h4 style="margin:0 0 6px 0; font-size:14px; font-weight:800; color:#1e293b;">
+                  ¿Cómo funciona la Red de Auxilio de Mostrador?
+                </h4>
+                <p style="margin:0 0 10px 0; font-size:12px; color:#64748b; line-height:1.5;">
+                  Si un cliente le pide un artículo que no tiene en stock, no pierda la venta: el sistema consulta en 1 segundo qué comercio colega de su zona lo tiene disponible para que usted lo cobre en su caja, lo haga traer por cadetería y se quede con la ganancia neta.
+                </p>
+                <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px; color:#334155;">
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <strong>Libertad Absoluta:</strong> Nadie está obligado a vender. Cada pedido se acepta o rechaza con 1 clic.
+                  </div>
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <strong>Piso Mínimo de Red (15%):</strong> Descuento gremio base garantizado para cubrir cadetería y asegurar ganancia en ambas cajas.
+                  </div>
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <strong>Privacidad y Anonimato Total:</strong> Sus listas de costos nunca son públicas ni visibles para otros.
+                  </div>
+                </div>
+              </div>
+
+              <!-- CAJA DE ESTADO Y PROGRESO DE ZONA -->
+              <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:14px; text-align:center;">
+                <div style="font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+                  Estado de Activación de tu Zona
+                </div>
+                <div id="p4TituloZona" style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:8px;">
+                  Nodo Regional Paraná & Santa Fe
+                </div>
+                <div style="background:#e0f2fe; border-radius:10px; height:8px; overflow:hidden; margin-bottom:8px;">
+                  <div id="p4BarraProgreso" style="background:#0284c7; width:50%; height:100%; border-radius:10px;"></div>
+                </div>
+                <div id="p4TextoComercios" style="font-size:11.5px; color:#475569; margin-bottom:12px;">
+                  <strong>Fase de Incorporación:</strong> Se activa de forma automática al contar con 2 comercios del mismo rubro en tu localidad.
+                </div>
+                <button class="btn btn-emerald" onclick="consultarAdhesionRed()" style="width:100%; justify-content:center; padding:9px 12px; font-size:12px; font-weight:700; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7.5" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                  Solicitar Adhesión Pionera sin Costo
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIMULADOR INTERACTIVO DE MOSTRADOR -->
+          <div style="border:1px dashed #cbd5e1; border-radius:6px; padding:14px 16px; background:#ffffff;">
+            <div style="font-size:12.5px; font-weight:700; color:#1e293b; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <span>Simulador de Búsqueda de Stock en Red (Mostrador):</span>
+              <span style="font-size:11px; color:#64748b;">Pruebe cómo respondería el sistema en una consulta real</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="p4InputSimulador" placeholder="Ej: Amoladora Bosch GWS 700 o Bomba Sumergible Gamma" style="flex:1; padding:8px 12px; font-size:12px; border:1px solid #cbd5e1; border-radius:4px;" onkeydown="if(event.key==='Enter'){ simularBusquedaRed(); }" />
+              <button type="button" class="btn btn-primary" onclick="simularBusquedaRed()" style="padding:8px 16px; font-size:12px;">
+                Simular Consulta
+              </button>
+            </div>
+            <div id="p4ResultadoSimulacion" style="margin-top:10px; display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. MÓDULOS CORPORATIVOS DE VALOR REAL (2 COLUMNAS) -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <!-- MÓDULO A: SOFÍA WHATSAPP 24/7 -->
+        <div class="corp-card">
+          <div>
+            <span class="pill pill-ok" style="margin-bottom:8px;">ATENCIÓN AUTOMÁTICA</span>
+            <h3 style="font-size:15px; color:#1b365d; margin-bottom:6px;">Vendedor y Consultor por WhatsApp 24/7 (Sofía IA)</h3>
+            <p style="color:var(--text-muted); font-size:12px; margin-bottom:8px;">
+              Conecte su lista de precios recién actualizada al WhatsApp oficial de su negocio:
+            </p>
+            <ul style="font-size:12px; color:var(--text-main); padding-left:18px; line-height:1.5;">
+              <li>Atiende consultas de clientes y envía presupuestos en PDF con precios vigentes en segundos.</li>
+              <li>Reconoce audios y fotos de productos enviados por clientes en mostrador o fuera de horario.</li>
+              <li>Recibe y notifica al instante las alertas de venta cuando un colega de la Red le compra stock.</li>
+            </ul>
+          </div>
+          <a class="btn btn-emerald" style="justify-content:center; margin-top:8px;" href="https://wa.me/5493434536447?text=Hola!%20Tengo%20el%20S%C3%BAper%20Actualizador%20Pro%20y%20quiero%20conectar%20el%20Vendedor%20IA%20Sof%C3%ADa%20a%20mi%20WhatsApp" target="_blank">
+            Solicitar Demo de Sofía WhatsApp 24/7
+          </a>
+        </div>
+
+        <!-- MÓDULO B: GENERADOR DE CATÁLOGO PDF Y ETIQUETAS DE GÓNDOLA -->
+        <div class="corp-card">
+          <div>
+            <span class="pill pill-neutral" style="margin-bottom:8px;">MOSTRADOR Y ESTANTERÍAS</span>
+            <h3 style="font-size:15px; color:#1b365d; margin-bottom:6px;">Catálogo Digital en PDF + Impresión de Etiquetas A4</h3>
+            <p style="color:var(--text-muted); font-size:12px; margin-bottom:8px;">
+              Convierta en 1 solo clic su catálogo actualizado en material profesional de mostrador:
+            </p>
+            <ul style="font-size:12px; color:var(--text-main); padding-left:18px; line-height:1.5;">
+              <li><strong>Lista de Precios en PDF con el Logo de su comercio</strong> (ocultando sus costos y márgenes) lista para enviar a contratistas.</li>
+              <li><strong>Impresión en A4 de etiquetas de góndola:</strong> Imprime únicamente los cartelitos de los artículos que aumentaron en el día.</li>
+              <li>Opción de incluir código de barras o código QR para lectura con celular.</li>
+            </ul>
+          </div>
+          <a class="btn btn-primary" style="justify-content:center; margin-top:8px;" href="https://wa.me/5493434536447?text=Hola!%20Tengo%20el%20S%C3%BAper%20Actualizador%20Pro%20y%20quiero%20el%20M%C3%B3dulo%20de%20Cat%C3%A1logo%20PDF%20y%20Etiquetas%20de%20G%C3%B3ndola" target="_blank">
+            Consultar por Módulo Catálogo PDF y Etiquetas
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================
+       MODAL 0: BIENVENIDA GUIADA (ONBOARDING PRIMER ARRANQUE)
+       ========================================================= -->
+  <div id="modalBienvenida" class="modal-backdrop">
+    <div class="modal" style="max-width: 720px; border: 2px solid #2563eb; box-shadow: 0 20px 45px rgba(0,0,0,0.35);">
+      <div class="card-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:14px 18px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:38px; height:38px; border-radius:8px; background:#eff6ff; display:flex; align-items:center; justify-content:center; color:#2563eb; flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="font-size:17px; color:#1e3a8a;">Bienvenido al Súper Actualizador de Precios Pro</div>
+            <div style="font-size:12px; color:#64748b;">Sistema comercial para actualización masiva de listas, control de márgenes y comparativa mayorista.</div>
+          </div>
+        </div>
+        <button class="btn" onclick="cerrarModalBienvenida(true)" style="font-size:14px; padding:4px 10px;">✕</button>
+      </div>
+
+      <div style="padding:16px 20px;">
+        <!-- 3 PILARES CLAVE -->
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:18px;">
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px;">
+            <div style="color:#166534; margin-bottom:6px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <div style="font-size:13px; font-weight:800; color:#166534;">Actualizador Masivo</div>
+            <div style="font-size:11.5px; color:#15803d; margin-top:4px; line-height:1.4;">
+              Cruce de miles de artículos en 2 segundos aplicando descuentos, IVA y margen comercial.
+            </div>
+          </div>
+
+          <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px;">
+            <div style="color:#1e40af; margin-bottom:6px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <div style="font-size:13px; font-weight:800; color:#1e40af;">Comparador de Costos</div>
+            <div style="font-size:11.5px; color:#1d4ed8; margin-top:4px; line-height:1.4;">
+              Compará hasta 5 mayoristas simultáneos y consultá precios en vivo en Mercado Libre.
+            </div>
+          </div>
+
+          <div style="background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:12px;">
+            <div style="color:#6b21a8; margin-bottom:6px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div style="font-size:13px; font-weight:800; color:#6b21a8;">100% Seguro y Privado</div>
+            <div style="font-size:11.5px; color:#7e22ce; margin-top:4px; line-height:1.4;">
+              Tus archivos y costos se procesan adentro de tu computadora. <strong>Nunca suben a internet</strong>.
+            </div>
+          </div>
+        </div>
+
+        <!-- EFECTO WOW / LLAMADO A LA ACCION -->
+        <div style="background:#f8fafc; border:1.5px dashed #3b82f6; border-radius:8px; padding:16px; margin-bottom:16px; text-align:center;">
+          <h4 style="margin:0 0 6px 0; font-size:15px; color:#1e293b; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#2563eb"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            ¿Querés ver cómo funciona en 2 segundos?
+          </h4>
+          <p style="margin:0 0 14px 0; font-size:12.5px; color:#64748b;">
+            Incluimos 2 listas de ejemplo de Ferretería preparadas para que no tengas que buscar tus propios archivos ahora.
+          </p>
+          <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-emerald" onclick="iniciarConEjemploDesdeBienvenida()" style="padding:10px 20px; font-size:13.5px; font-weight:800; box-shadow:0 4px 10px rgba(16,185,129,0.3); display:inline-flex; align-items:center; gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Probar con Datos de Ejemplo Ahora
+            </button>
+            <button class="btn" onclick="cerrarModalBienvenida(true); abrirModalVideos();" style="padding:10px 18px; font-size:13px; font-weight:700; color:#db2777; border-color:#fce7f3; background:#fff; display:inline-flex; align-items:center; gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              Ver Demos y Tutoriales
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:#94a3b8;">
+          <span>Podés volver a abrir esta guía en cualquier momento desde "Guía Rápida".</span>
+          <button class="btn" onclick="cerrarModalBienvenida(true)" style="font-size:11.5px; padding:5px 12px;">
+            Entendido, ir al sistema
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL VIDEOS: CENTRO ÚNICO DE VIDEOS TUTORIALES
+       ========================================================= -->
+  <!-- MODAL TUTORIALES / VIDEOS -->
+  <div id="modalVideos" class="modal-backdrop">
+    <div class="modal" style="max-width: 840px;">
+      <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:36px; height:36px; border-radius:8px; background:#fdf2f8; display:flex; align-items:center; justify-content:center; color:#db2777; flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div>
+            <div class="card-title" style="font-size:16px;">Centro de Demos y Tutoriales con Locución Oficial</div>
+            <div style="font-size:12px; color:var(--text-muted);">Mirá cada función en acción con voz en off en nuestro Instagram oficial <strong>@sof_ia.tech</strong>.</div>
+          </div>
+        </div>
+        <button class="btn" onclick="cerrarModales()">✕ Cerrar</button>
+      </div>
+
+      <!-- CANAL OFICIAL REELS INSTAGRAM CON VOZ EN OFF -->
+      <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color:#fff; border-radius:10px; padding:14px 18px; margin-top:14px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; box-shadow:0 4px 14px rgba(49,46,129,0.25);">
+        <div>
+          <span style="background:rgba(255,255,255,0.2); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">Canal Oficial en Instagram</span>
+          <div style="font-weight:800; font-size:15px; margin-top:4px;">Demos y Tutoriales con Locución Oficial (@sof_ia.tech)</div>
+          <div style="font-size:12px; opacity:0.9;">Mirá cada función explicada paso a paso con voz en off en nuestros Reels.</div>
+        </div>
+        <a href="https://www.instagram.com/sof_ia.tech/reels/" target="_blank" rel="noopener noreferrer" class="btn btn-emerald" style="font-weight:800; padding:10px 18px; gap:8px; box-shadow:0 3px 8px rgba(16,185,129,0.35); text-decoration:none; font-size:13px; display:inline-flex; align-items:center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          Ver Reels en Instagram ↗
+        </a>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; margin-top:14px;">
+        <!-- VIDEO 1 -->
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <div style="background:#fdf2f8; padding:10px 14px; border-bottom:1px solid #fce7f3; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:11px; font-weight:800; color:#db2777; text-transform:uppercase;">Pestaña 1</span>
+            <span style="font-size:11px; color:#9d174d; font-weight:700;">1 min</span>
+          </div>
+          <div style="padding:14px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="font-weight:800; font-size:13.5px; color:#1e293b; margin-bottom:6px;">Actualizador Masivo</div>
+              <p style="font-size:12px; color:#64748b; line-height:1.4; margin:0 0 12px 0;">
+                Cómo cruzar tu catálogo y la lista del mayorista, aplicar descuentos, márgenes y descargar el Excel listo en 2 segundos.
+              </p>
+            </div>
+            <a href="https://www.instagram.com/sof_ia.tech/reels/" target="_blank" rel="noopener noreferrer" class="btn" style="background:linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color:#fff; border:none; font-weight:700; font-size:12px; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(220,39,67,0.25); text-decoration:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              Ver Demo en Instagram ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- VIDEO 2 -->
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <div style="background:#fdf2f8; padding:10px 14px; border-bottom:1px solid #fce7f3; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:11px; font-weight:800; color:#db2777; text-transform:uppercase;">Pestaña 2</span>
+            <span style="font-size:11px; color:#9d174d; font-weight:700;">1 min</span>
+          </div>
+          <div style="padding:14px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="font-weight:800; font-size:13.5px; color:#1e293b; margin-bottom:6px;">Comparador de Proveedores</div>
+              <p style="font-size:12px; color:#64748b; line-height:1.4; margin:0 0 12px 0;">
+                Cómo comparar hasta 5 mayoristas simultáneamente para saber a quién comprarle cada artículo más barato.
+              </p>
+            </div>
+            <a href="https://www.instagram.com/sof_ia.tech/reels/" target="_blank" rel="noopener noreferrer" class="btn" style="background:linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color:#fff; border:none; font-weight:700; font-size:12px; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(220,39,67,0.25); text-decoration:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              Ver Demo en Instagram ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- VIDEO 3 -->
+        <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <div style="background:#fdf2f8; padding:10px 14px; border-bottom:1px solid #fce7f3; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:11px; font-weight:800; color:#db2777; text-transform:uppercase;">Pestaña 3</span>
+            <span style="font-size:11px; color:#9d174d; font-weight:700;">1 min</span>
+          </div>
+          <div style="padding:14px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="font-weight:800; font-size:13.5px; color:#1e293b; margin-bottom:6px;">Precios de Referencia (Mercado)</div>
+              <p style="font-size:12px; color:#64748b; line-height:1.4; margin:0 0 12px 0;">
+                Cómo consultar precios de venta al público en vivo para no quedar fuera de mercado ni perder margen.
+              </p>
+            </div>
+            <a href="https://www.instagram.com/sof_ia.tech/reels/" target="_blank" rel="noopener noreferrer" class="btn" style="background:linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color:#fff; border:none; font-weight:700; font-size:12px; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(220,39,67,0.25); text-decoration:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              Ver Demo en Instagram ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL 1: LICENCIA DEL SISTEMA Y ACTIVACIÓN OBLIGATORIA
+       ========================================================= -->
+  <div id="modalLicencia" class="modal-backdrop">
+    <div class="modal" style="max-width: 680px;">
+      <div class="card-header">
+        <div class="card-title" id="tituloModalLicencia" style="display:inline-flex; align-items:center; gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Activación del Sistema
+        </div>
+        <button id="btnCerrarModalLicencia" class="btn" onclick="cerrarModales()">Cerrar</button>
+      </div>
+
+      <!-- BANNER DINAMICO SEGUN ESTADO -->
+      <div id="bannerLicenciaContainer"></div>
+
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div class="kpi-card">
+          <div class="kpi-label">1. Código Único de esta PC (Hardware ID)</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px;">
+            <div id="txtHardwareId" style="font-family:Consolas, monospace; font-size:15px; font-weight:700; color:var(--primary);">SAP-...</div>
+            <button class="btn" id="btnCopiarHw" style="padding:4px 9px; font-size:11.5px;" onclick="copiarHardwareId()">Copiar ID</button>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">2. Estado de Licencia</div>
+          <div id="txtNivelLicencia" style="font-size:16px; font-weight:700; color:var(--success);">SIN_ACTIVAR</div>
+          <div id="txtDetallePruebas" style="font-size:11.5px; color:var(--text-muted); margin-top:3px;"></div>
+        </div>
+      </div>
+
+      <!-- CONTENEDOR DE PASOS DINÁMICO -->
+      <div id="pasosLicenciaContainer"></div>
+
+      <div class="field" style="margin-bottom:14px;">
+        <label style="font-weight:700;" id="lblInputClave">Pegá aquí tu Clave de Activación Oficial:</label>
+        <div style="display:flex; gap:8px; margin-top:4px;">
+          <input type="text" id="inputClaveLicencia" style="flex:1; font-family:Consolas, monospace; font-size:13px;" placeholder="LIC-DEMO_7_DIAS-... o LIC-FULL_PRO-..." />
+          <button class="btn btn-emerald" onclick="activarClaveManual()" id="btnEjecutarActivacion" style="font-weight:700; padding:8px 18px; box-shadow:0 2px 6px rgba(16,185,129,0.3); display:inline-flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Activar Sistema
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL 2: CONFIGURACIÓN IA GOOGLE GEMINI
+       ========================================================= -->
+  <div id="modalIA" class="modal-backdrop">
+    <div class="modal">
+      <div class="card-header">
+        <div class="card-title">Configuración de Lectura Inteligente (API Key de Google Gemini)</div>
+        <button class="btn" onclick="cerrarModales()">Cerrar</button>
+      </div>
+
+      <p style="font-size:12.5px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+        El cruce por Código/SKU, el Diccionario Comercial Argentino y la Memoria Inteligente funcionan localmente sin costo.
+        La conexión con <strong>Google Gemini</strong> habilita la lectura de <strong>Facturas en PDF / Fotos</strong> y el emparejamiento automático de artículos con descripciones muy diferentes.
+      </p>
+
+      <div style="margin-bottom:12px;">
+        <a class="btn btn-primary" href="https://aistudio.google.com/apikey" target="_blank" style="width:100%; justify-content:center; padding:9px;">
+          1. Abrir Google AI Studio para obtener la API Key (aistudio.google.com/apikey)
+        </a>
+      </div>
+
+      <div class="info-box">
+        <strong>Recomendación de Configuración en Google AI Studio:</strong><br/>
+        Google ofrece un nivel gratuito sin tarjeta para volúmenes bajos, o bien permite vincular una tarjeta en <em>Set up Billing</em> para uso comercial intensivo:
+        <ul style="margin-top:5px; padding-left:18px;">
+          <li><strong>Sin demoras:</strong> Procesa listas extensas y múltiples fotos de facturas sin esperas.</li>
+          <li><strong>Privacidad de datos:</strong> Las cuentas con facturación activa cuentan con garantía contractual de privacidad de datos.</li>
+          <li><strong>Costo mínimo:</strong> El procesamiento es de pocos centavos de dólar y, gracias a la <strong>Memoria Inteligente local</strong>, cada artículo nuevo se aprende una única vez.</li>
+        </ul>
+      </div>
+
+      <div class="field" style="margin-bottom:10px;">
+        <label>2. Pegue aquí su API Key de Google Gemini (AIzaSy...)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="password" id="inputGeminiKey" style="flex:1;" placeholder="Pegue aquí la clave copiada de Google AI Studio..." />
+          <button class="btn btn-emerald" onclick="guardarGeminiKey()">Guardar Clave</button>
+        </div>
+        <div id="estadoGeminiTxt" style="font-size:12px; color:var(--text-muted); margin-top:4px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PERFILES_PAIS = {
+      argentina: {
+        id: "argentina",
+        nombre: "Argentina",
+        moneda_simbolo: "$",
+        moneda_codigo: "ARS",
+        locale: "es-AR",
+        decimales: 2,
+        iva_default: 21.0,
+        iva_opciones: [
+          { label: "+21% (IVA General)", valor: 21.0 },
+          { label: "+10.5% (IVA Reducido)", valor: 10.5 },
+          { label: "+27% (IVA Telecom / Serv)", valor: 27.0 },
+          { label: "0% (Exento / Monotributo)", valor: 0.0 }
+        ],
+        redondeo_default: "REDONDEO_10",
+        redondeos: [
+          { valor: "2_DECIMALES", label: "Sin redondear — Centavos exactos (Ej: 1.432,38 pesos ARS)" },
+          { valor: "REDONDEO_10", label: "Redondear a 10 pesos (Ej: 1.440 pesos ARS)" },
+          { valor: "REDONDEO_50", label: "Redondear a 50 pesos (Ej: 1.450 pesos ARS)" },
+          { valor: "REDONDEO_100", label: "Redondear a 100 pesos (Ej: 1.500 pesos ARS)" }
+        ]
+      },
+      mexico: {
+        id: "mexico",
+        nombre: "México",
+        moneda_simbolo: "$",
+        moneda_codigo: "MXN",
+        locale: "es-MX",
+        decimales: 2,
+        iva_default: 16.0,
+        iva_opciones: [
+          { label: "+16% (IVA General México)", valor: 16.0 },
+          { label: "+8% (IVA Región Fronteriza Norte)", valor: 8.0 },
+          { label: "0% (Tasa Cero / Exento)", valor: 0.0 }
+        ],
+        redondeo_default: "2_DECIMALES",
+        redondeos: [
+          { valor: "2_DECIMALES", label: "Centavos exactos (Ej: 1,432.38 pesos MXN)" },
+          { valor: "TERMINACION_99", label: "Terminación comercial en .99 (Ej: 1,432.99 pesos MXN)" },
+          { valor: "TERMINACION_90", label: "Terminación comercial en .90 (Ej: 1,432.90 pesos MXN)" },
+          { valor: "REDONDEO_050", label: "Múltiplos de 50 centavos (Ej: 1,432.50 pesos MXN)" },
+          { valor: "REDONDEO_ENTERO", label: "Redondear al peso entero (Ej: 1,433 pesos MXN)" },
+          { valor: "REDONDEO_10", label: "Redondear a 10 pesos (Ej: 1,440 pesos MXN)" }
+        ]
+      },
+      chile: {
+        id: "chile",
+        nombre: "Chile",
+        moneda_simbolo: "$",
+        moneda_codigo: "CLP",
+        locale: "es-CL",
+        decimales: 0,
+        iva_default: 19.0,
+        iva_opciones: [
+          { label: "+19% (IVA General Chile)", valor: 19.0 },
+          { label: "0% (Exento / Sin Impuesto)", valor: 0.0 }
+        ],
+        redondeo_default: "REDONDEO_10",
+        redondeos: [
+          { valor: "SIN_DECIMALES", label: "Sin decimales exacto (Ej: 14.532 pesos CLP)" },
+          { valor: "REDONDEO_10", label: "Ley de Redondeo a 10 pesos (Ej: 14.540 pesos CLP)" },
+          { valor: "TERMINACION_990", label: "Precio comercial .990 (Ej: 14.990 pesos CLP)" },
+          { valor: "REDONDEO_50", label: "Redondear a 50 pesos (Ej: 14.550 pesos CLP)" },
+          { valor: "REDONDEO_100", label: "Redondear a 100 pesos (Ej: 14.600 pesos CLP)" }
+        ]
+      },
+      peru: {
+        id: "peru",
+        nombre: "Perú",
+        moneda_simbolo: "S/",
+        moneda_codigo: "PEN",
+        locale: "es-PE",
+        decimales: 2,
+        iva_default: 18.0,
+        iva_opciones: [
+          { label: "+18% (IGV General Perú)", valor: 18.0 },
+          { label: "+10% (IGV Especial Mype/Turismo)", valor: 10.0 },
+          { label: "0% (Exonerado / Inafecto)", valor: 0.0 }
+        ],
+        redondeo_default: "2_DECIMALES",
+        redondeos: [
+          { valor: "2_DECIMALES", label: "Céntimos exactos (Ej: S/ 14.32 soles PEN)" },
+          { valor: "TERMINACION_90", label: "Terminación comercial en .90 (Ej: S/ 14.90 soles PEN)" },
+          { valor: "TERMINACION_99", label: "Terminación en .99 (Ej: S/ 14.99 soles PEN)" },
+          { valor: "REDONDEO_050", label: "Múltiplos de 50 céntimos (Ej: S/ 14.50 soles PEN)" },
+          { valor: "REDONDEO_ENTERO", label: "Al Sol entero más cercano (Ej: S/ 15 soles PEN)" }
+        ]
+      },
+      colombia: {
+        id: "colombia",
+        nombre: "Colombia",
+        moneda_simbolo: "$",
+        moneda_codigo: "COP",
+        locale: "es-CO",
+        decimales: 0,
+        iva_default: 19.0,
+        iva_opciones: [
+          { label: "+19% (IVA General Colombia)", valor: 19.0 },
+          { label: "+5% (IVA Reducido)", valor: 5.0 },
+          { label: "0% (Excluido / Exento)", valor: 0.0 }
+        ],
+        redondeo_default: "REDONDEO_500",
+        redondeos: [
+          { valor: "SIN_DECIMALES", label: "Sin decimales exacto (Ej: 145.320 pesos COP)" },
+          { valor: "REDONDEO_100", label: "Redondear a 100 pesos (Ej: 145.400 pesos COP)" },
+          { valor: "REDONDEO_500", label: "Redondear a 500 pesos (Ej: 145.500 pesos COP)" },
+          { valor: "REDONDEO_1000", label: "Redondear a 1.000 pesos (Ej: 146.000 pesos COP)" }
+        ]
+      },
+      europa: {
+        id: "europa",
+        nombre: "España / Europa",
+        moneda_simbolo: "€",
+        moneda_codigo: "EUR",
+        locale: "es-ES",
+        decimales: 2,
+        iva_default: 21.0,
+        iva_opciones: [
+          { label: "+21% (IVA General España)", valor: 21.0 },
+          { label: "+10% (IVA Reducido)", valor: 10.0 },
+          { label: "+4% (IVA Superreducido)", valor: 4.0 },
+          { label: "0% (Exento / Intracomunitario)", valor: 0.0 }
+        ],
+        redondeo_default: "2_DECIMALES",
+        redondeos: [
+          { valor: "2_DECIMALES", label: "Céntimos exactos (Ej: 14,32 euros EUR)" },
+          { valor: "TERMINACION_99", label: "Terminación en ,99 € (Ej: 14,99 euros EUR)" },
+          { valor: "TERMINACION_90", label: "Terminación en ,90 € (Ej: 14,90 euros EUR)" },
+          { valor: "REDONDEO_050", label: "Múltiplos de 0,50 € (Ej: 14,50 euros EUR)" },
+          { valor: "REDONDEO_ENTERO", label: "Al Euro entero más cercano (Ej: 15 euros EUR)" }
+        ]
+      },
+      latam_usd: {
+        id: "latam_usd",
+        nombre: "Internacional / Dólares",
+        moneda_simbolo: "US$",
+        moneda_codigo: "USD",
+        locale: "en-US",
+        decimales: 2,
+        iva_default: 0.0,
+        iva_opciones: [
+          { label: "0% (Exento / Sin Impuesto)", valor: 0.0 },
+          { label: "+16% (IVA Internacional 16%)", valor: 16.0 },
+          { label: "+19% (IVA Internacional 19%)", valor: 19.0 },
+          { label: "+18% (IVA Internacional 18%)", valor: 18.0 },
+          { label: "+21% (IVA Internacional 21%)", valor: 21.0 }
+        ],
+        redondeo_default: "2_DECIMALES",
+        redondeos: [
+          { valor: "2_DECIMALES", label: "Centavos exactos (Ej: US$ 14.32 USD)" },
+          { valor: "TERMINACION_99", label: "Terminación comercial en .99 (Ej: US$ 14.99 USD)" },
+          { valor: "TERMINACION_90", label: "Terminación comercial en .90 (Ej: US$ 14.90 USD)" },
+          { valor: "REDONDEO_050", label: "Múltiplos de 50 centavos (Ej: US$ 14.50 USD)" },
+          { valor: "REDONDEO_ENTERO", label: "Al Dólar entero más cercano (Ej: US$ 15.00 USD)" }
+        ]
+      }
+    };
+
+    window.PERFIL_ACTUAL = PERFILES_PAIS.argentina;
+
+    function formatoPesos(valor) {
+      const p = window.PERFIL_ACTUAL || PERFILES_PAIS.argentina;
+      const num = Number(valor || 0);
+      try {
+        const formatted = new Intl.NumberFormat(p.locale, {
+          minimumFractionDigits: p.decimales,
+          maximumFractionDigits: p.decimales
+        }).format(num);
+
+        if (p.moneda_codigo === 'EUR') {
+          return formatted + ' €';
+        } else if (p.moneda_codigo === 'PEN') {
+          return 'S/ ' + formatted;
+        } else if (p.moneda_codigo === 'USD') {
+          return 'US$ ' + formatted;
+        } else {
+          return '$ ' + formatted + ' ' + p.moneda_codigo;
+        }
+      } catch (e) {
+        return (p.moneda_simbolo || '$') + ' ' + num.toFixed(p.decimales || 2) + ' ' + (p.moneda_codigo || '');
+      }
+    }
+
+    function obtenerPaisesPermitidos() {
+      const reg = window.PERFIL_REGIONAL || {};
+      const rid = (reg.region_id || '').toLowerCase();
+
+      if (rid.includes('argentina')) {
+        return ['argentina'];
+      }
+      if (rid.includes('europa')) {
+        return ['europa'];
+      }
+      // Edición LATAM: Exclusivamente países latinoamericanos
+      return ['mexico', 'chile', 'peru', 'colombia', 'latam_usd'];
+    }
+
+    function poblarSelectoresPais() {
+      const permitidos = obtenerPaisesPermitidos();
+      const ids = ['selectPaisRegional', 'p1SelectPais', 'p2SelectPais'];
+
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '';
+        permitidos.forEach(pid => {
+          const p = PERFILES_PAIS[pid];
+          if (!p) return;
+          const opt = document.createElement('option');
+          opt.value = pid;
+          if (pid === 'mexico') opt.textContent = '🇲🇽 México (Pesos $ MXN)';
+          else if (pid === 'chile') opt.textContent = '🇨🇱 Chile (Pesos $ CLP)';
+          else if (pid === 'peru') opt.textContent = '🇵🇪 Perú (Soles S/ PEN)';
+          else if (pid === 'colombia') opt.textContent = '🇨🇴 Colombia (Pesos $ COP)';
+          else if (pid === 'argentina') opt.textContent = '🇦🇷 Argentina (Pesos $ ARS)';
+          else if (pid === 'europa') opt.textContent = '🇪🇸 España / Europa (Euros € EUR)';
+          else if (pid === 'latam_usd') opt.textContent = 'Internacional (Dólares US$ USD)';
+          else opt.textContent = `${p.nombre} (${p.moneda_simbolo} ${p.moneda_codigo})`;
+          el.appendChild(opt);
+        });
+
+        if (el.style) {
+          if (permitidos.length <= 1) {
+            el.disabled = true;
+            el.style.opacity = '0.9';
+            el.style.cursor = 'default';
+          } else {
+            el.disabled = false;
+            el.style.opacity = '1';
+            el.style.cursor = 'pointer';
+          }
+        }
+      });
+    }
+
+    function cambiarPaisManual(paisId) {
+      if (!PERFILES_PAIS[paisId]) return;
+      window.PERFIL_ACTUAL = PERFILES_PAIS[paisId];
+      try {
+        localStorage.setItem('sap_pais_seleccionado', paisId);
+      } catch (e) {}
+
+      ['selectPaisRegional', 'p1SelectPais', 'p2SelectPais'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value !== paisId) el.value = paisId;
+      });
+
+      aplicarConfiguracionRegional();
+
+      // Refrescar tablas y KPIs si ya hay datos cargados en pantalla
+      if (typeof DATOS_P1_ITEMS !== 'undefined' && DATOS_P1_ITEMS && DATOS_P1_ITEMS.length > 0) {
+        if (typeof filtrarTablaP1 === 'function') {
+          filtrarTablaP1(typeof FILTRO_P1_ACTUAL !== 'undefined' ? FILTRO_P1_ACTUAL : 'TODOS');
+        }
+        if (typeof actualizarTotalesSeleccionP1 === 'function') {
+          actualizarTotalesSeleccionP1();
+        }
+      }
+    }
+
+    function aplicarConfiguracionRegional() {
+      const p = window.PERFIL_ACTUAL || PERFILES_PAIS.argentina;
+
+      // 1. Sincronizar todos los selectores de país
+      ['selectPaisRegional', 'p1SelectPais', 'p2SelectPais'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value !== p.id) el.value = p.id;
+      });
+
+      // 2. Llenar los 6 selectores de IVA dinámicamente con los impuestos del país
+      const ivaIds = ['p1Iva', 'p2Iva1', 'p2Iva2', 'p2Iva3', 'p2Iva4', 'p2Iva5'];
+      if (p.iva_opciones && Array.isArray(p.iva_opciones) && p.iva_opciones.length > 0) {
+        ivaIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.innerHTML = '';
+          p.iva_opciones.forEach(op => {
+            const opt = document.createElement('option');
+            opt.value = op.valor;
+            opt.textContent = op.label;
+            if (Math.abs(Number(op.valor) - Number(p.iva_default)) < 0.01) {
+              opt.selected = true;
+            }
+            el.appendChild(opt);
+          });
+        });
+      }
+
+      // 3. Llenar el selector de redondeo dinámicamente según el mostrador del país
+      const elRedondeo = document.getElementById('p1Redondeo');
+      if (elRedondeo && p.redondeos && p.redondeos.length > 0) {
+        elRedondeo.innerHTML = '';
+        p.redondeos.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.valor;
+          opt.textContent = r.label;
+          if (r.valor === p.redondeo_default) {
+            opt.selected = true;
+          }
+          elRedondeo.appendChild(opt);
+        });
+      }
+
+      // 4. Personalizar encabezado con nombre de país
+      const brandSub = document.querySelector('.brand-sub');
+      if (brandSub) {
+        brandSub.innerHTML = `Edición de Mostrador: <strong>${p.nombre}</strong> (${p.moneda_simbolo} ${p.moneda_codigo}) • Base de Datos Integrada`;
+      }
+
+      // 5. Mensajes de aviso regional en los paneles
+      const p1Av = document.getElementById('p1AvisoRegional');
+      if (p1Av) {
+        p1Av.innerHTML = `Mostrador configurado para <strong>${p.nombre}</strong>: Impuestos oficiales y redondeo comercial en <strong>${p.moneda_codigo}</strong>.`;
+      }
+      const p2Av = document.getElementById('p2AvisoRegional');
+      if (p2Av) {
+        p2Av.innerHTML = `Comparador configurado para <strong>${p.nombre}</strong>: Impuestos oficiales en <strong>${p.moneda_codigo}</strong>.`;
+      }
+
+      if (typeof actualizarBarraMarketplaceP3 === 'function') {
+        actualizarBarraMarketplaceP3();
+      }
+    }
+
+    function cambiarPestana(num, btnEl) {
+      const est = window.ESTADO_LICENCIA_ACTUAL;
+      if ((num === 2 || num === 3) && est && !est.activada) {
+        abrirModalLicencia();
+        return;
+      }
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('panel-' + num).classList.add('active');
+      if (btnEl) btnEl.classList.add('active');
+    }
+
+    async function cargarEstadoInicial() {
+      try {
+        poblarSelectoresPais();
+
+        const permitidos = obtenerPaisesPermitidos();
+        let paisInicial = '';
+        try {
+          paisInicial = localStorage.getItem('sap_pais_seleccionado');
+        } catch (e) {}
+
+        // En edición LATAM, si no hay país o había quedado 'europa', 'argentina' o 'latam_usd' en la caché del navegador,
+        // forzar siempre el arranque limpio en México (Pesos MXN)
+        if (!paisInicial || !permitidos.includes(paisInicial) || (permitidos.includes('mexico') && (paisInicial === 'latam_usd' || paisInicial === 'europa' || paisInicial === 'argentina'))) {
+          paisInicial = permitidos[0];
+        }
+
+        cambiarPaisManual(paisInicial);
+
+        const rLic = await fetch('/api/licencia/estado');
+        const dLic = await rLic.json();
+        actualizarUILicencia(dLic.estado);
+
+        const rConf = await fetch('/api/config/estado');
+        const dConf = await rConf.json();
+        actualizarUIMemoria(dConf.memoria);
+        document.getElementById('estadoGeminiTxt').textContent = dConf.tiene_api_key
+          ? `Clave API activa (${dConf.api_key_mascara})`
+          : 'Sin clave API cargada (Operando con Diccionario Comercial + Memoria Inteligente Local)';
+
+        // Solo mostrar la bienvenida si la licencia ya está activa
+        if (dLic.estado && dLic.estado.activada) {
+          verificarPrimerArranque();
+        }
+
+        // Conectar hook cloud de la Red de Auxilio de Stock
+        conectarHookRedCloud();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function actualizarUILicencia(est) {
+      if (!est) return;
+      window.ESTADO_LICENCIA_ACTUAL = est;
+      const reg = window.PERFIL_REGIONAL || {};
+      document.getElementById('txtHardwareId').textContent = est.hardware_id || 'SAP-LOCAL';
+      document.getElementById('txtNivelLicencia').textContent = est.tipo || 'SIN_LICENCIA';
+      document.getElementById('inputClaveLicencia').value = '';
+
+      const btnCerrar = document.getElementById('btnCerrarModalLicencia');
+      const badge = document.getElementById('badgeLicencia');
+      const tagComp = document.getElementById('tagPruebasComp');
+      const tagML = document.getElementById('tagPruebasML');
+      const bannerContainer = document.getElementById('bannerLicenciaContainer');
+      const pasosContainer = document.getElementById('pasosLicenciaContainer');
+      const tituloModal = document.getElementById('tituloModalLicencia');
+
+      if (!est.activada) {
+        if (btnCerrar) btnCerrar.style.display = 'none';
+        tagComp.textContent = 'BLOQUEADO';
+        tagComp.className = 'pill pill-alert';
+        tagML.textContent = 'BLOQUEADO';
+        tagML.className = 'pill pill-alert';
+
+        if (est.vencida || est.tipo === 'VENCIDA') {
+          badge.textContent = 'Licencia Vencida';
+          badge.style.background = '#fef2f2';
+          badge.style.color = '#dc2626';
+          tituloModal.textContent = 'Período de Prueba Finalizado — Activación Definitiva';
+          document.getElementById('txtNivelLicencia').textContent = 'PRUEBA VENCIDA';
+          document.getElementById('txtNivelLicencia').style.color = 'var(--alert)';
+          document.getElementById('txtDetallePruebas').textContent = 'Tu prueba de 7 días caducó. Pasate a FULL PRO permanente.';
+
+          bannerContainer.innerHTML = `
+            <div style="background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%); color: #ffffff; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">
+              <span style="background:rgba(255,255,255,0.22); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">Prueba Finalizada</span>
+              <h3 style="margin:6px 0 4px 0; font-size:17px; font-weight:800;">Tu período de prueba de 7 días ha finalizado</h3>
+              <p style="margin:0; font-size:12px; opacity:0.95; line-height:1.4;">
+                Para continuar utilizando el sistema sin límites y de forma permanente en esta PC, solicitá tu activación definitiva por WhatsApp.
+              </p>
+            </div>
+          `;
+
+          const esArgentina = reg.region_id === 'argentina' && !!reg.metodo_pago_alias;
+
+          const pagoCardHtml = esArgentina
+            ? `
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="font-size:11.5px; font-weight:800; color:#0369a1; text-transform:uppercase;">Paso 2: Cobro por Transferencia</div>
+                    <div style="font-size:11.5px; color:#64748b; margin-top:3px; line-height:1.4;">
+                      Transferí a Lemon Cash (o por CVU/Alias desde cualquier banco o billetera):
+                    </div>
+                    <div style="font-family:Consolas, monospace; font-size:13.5px; font-weight:800; color:#0f172a; margin-top:5px; background:#eff6ff; border:1px solid #bfdbfe; padding:4px 8px; border-radius:4px; display:inline-block;">
+                      ${reg.metodo_pago_alias || 'pagoslemon.cash'}
+                    </div>
+                  </div>
+                  <button class="btn" id="btnCopiarAlias" onclick="copiarAliasMP()" style="width:100%; justify-content:center; margin-top:10px; padding:8px 10px; font-size:12px; font-weight:700; background:#f0f9ff; border-color:#bae6fd; color:#0284c7; display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copiar Alias (Lemon Cash)
+                  </button>
+                </div>
+              `
+            : `
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="font-size:11.5px; font-weight:800; color:#0369a1; text-transform:uppercase;">${reg.metodo_pago_titulo || 'Paso 2: Pasarela Internacional'}</div>
+                    <div style="font-size:11.5px; color:#64748b; margin-top:3px; line-height:1.4;">
+                      ${reg.metodo_pago_subtitulo || 'Pago seguro internacional con tarjeta o PayPal:'}
+                    </div>
+                    <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-top:5px;">
+                      Acepta Visa, Mastercard, AMEX y PayPal
+                    </div>
+                  </div>
+                  <a class="btn btn-primary" href="${reg.metodo_pago_url || '#'}" target="_blank" style="width:100%; justify-content:center; margin-top:10px; padding:8px 10px; font-size:12px; font-weight:700; text-decoration:none; text-align:center; display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Pagar en Pasarela Segura
+                  </a>
+                </div>
+              `;
+
+          pasosContainer.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px 16px; margin-bottom:14px;">
+              <div style="font-size:13px; font-weight:700; color:#1e293b; margin-bottom:8px;">
+                Elegí tu Licencia Definitiva (${reg.nombre_region || 'Comercio'}):
+              </div>
+
+              <!-- Cuadro Comparativo de Planes -->
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:10px;">
+                  <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;">Plan 1: Licencia BASE</div>
+                  <div style="font-size:15px; font-weight:800; color:#0f172a; margin:3px 0;">${reg.precio_base_texto || '$ 44.900 ARS'}</div>
+                  <div style="font-size:11px; color:#64748b; line-height:1.3;">Actualizador Masivo Ilimitado para siempre.</div>
+                </div>
+                <div style="background:#f0fdf4; border:1.5px solid #22c55e; border-radius:6px; padding:10px; position:relative;">
+                  <div style="position:absolute; top:-8px; right:8px; background:#15803d; color:#fff; font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:10px;">MÁS ELEGIDO</div>
+                  <div style="font-size:11px; font-weight:800; color:#15803d; text-transform:uppercase;">Plan 2: FULL PRO</div>
+                  <div style="font-size:15px; font-weight:800; color:#15803d; margin:3px 0;">${reg.precio_pro_texto || '$ 69.900 ARS'}</div>
+                  <div style="font-size:11px; color:#166534; line-height:1.3;">Actualizador + Comparador + Radar ML Ilimitado.</div>
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:10px;">
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="font-size:11.5px; font-weight:800; color:#15803d; text-transform:uppercase;">Paso 1: Asistencia / Asesor Oficial</div>
+                    <div style="font-size:11.5px; color:#64748b; margin-top:3px; line-height:1.4;">
+                      Te emitimos tu clave permanente oficial al instante.
+                    </div>
+                  </div>
+                  <button class="btn btn-emerald" onclick="enviarHardwareIdPorWhatsApp()" style="width:100%; justify-content:center; margin-top:10px; padding:8px 10px; font-size:12px; font-weight:700; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.058.376-.058c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/></svg>
+                    Contactar con un Asesor
+                  </button>
+                </div>
+                ${pagoCardHtml}
+              </div>
+            </div>
+          `;
+        } else {
+          // SIN ACTIVAR (NUEVO CLIENTE)
+          badge.textContent = 'Requiere Activación (7 Días Gratis)';
+          badge.style.background = '#fef3c7';
+          badge.style.color = '#92400e';
+          tituloModal.textContent = 'Activación de Prueba: 7 Días de Acceso FULL PRO';
+          document.getElementById('txtNivelLicencia').textContent = 'SIN ACTIVAR';
+          document.getElementById('txtNivelLicencia').style.color = '#b45309';
+          document.getElementById('txtDetallePruebas').textContent = 'Activá tus 7 días al instante o pedí tu clave a un asesor.';
+
+          bannerContainer.innerHTML = `
+            <div style="background: linear-gradient(135deg, #15803d 0%, #16a34a 100%); color: #ffffff; border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">
+              <span style="background:rgba(255,255,255,0.22); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">Regalo de Bienvenida</span>
+              <h3 style="margin:6px 0 4px 0; font-size:18px; font-weight:800;">Tenés 7 Días de Acceso FULL PRO de Regalo</h3>
+              <p style="margin:0; font-size:12.5px; opacity:0.95; line-height:1.4;">
+                Probá el <strong>Actualizador Ultrarrápido</strong>, el <strong>Comparador Multiproveedor</strong> y el <strong>Radar de MercadoLibre</strong> sin límites ni costo por 7 días en esta PC.
+              </p>
+            </div>
+          `;
+
+          pasosContainer.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:18px; margin-bottom:14px; text-align:center;">
+              <h4 style="margin:0 0 6px 0; font-size:15px; font-weight:800; color:#1e293b;">
+                Activación Inmediata con 1 Solo Clic
+              </h4>
+              <p style="margin:0 0 14px 0; font-size:12px; color:#64748b; line-height:1.4;">
+                No tenés que registrarte ni esperar. Hacé clic en el botón verde y probá el programa completo por 7 días en esta computadora.
+              </p>
+
+              <button class="btn btn-emerald" id="btnPedirDemo" onclick="solicitarDemoAutomatica()" style="width:100%; justify-content:center; padding:12px 18px; font-size:14px; font-weight:800; box-shadow:0 4px 12px rgba(16,185,129,0.35); gap:8px; display:inline-flex; align-items:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Comenzar Mi Prueba de 7 Días Ahora
+              </button>
+              <div id="statusDemoAutomatica" style="font-size:12px; margin-top:8px; text-align:center;"></div>
+
+              <div style="margin-top:14px; padding-top:12px; border-top:1px dashed #cbd5e1; text-align:left;">
+                <details style="cursor:pointer; font-size:11.5px; color:#475569;">
+                  <summary style="font-weight:700; color:#0284c7; outline:none;">
+                    ¿Deseás vincular soporte técnico gratuito para tus listas? (Opcional)
+                  </summary>
+                  <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                      <label style="font-size:11px; font-weight:700; color:#334155; display:block; margin-bottom:3px;">Comercio / Titular (Opcional):</label>
+                      <input type="text" id="inputNombreComercioDemo" placeholder="Ej: Mi Ferretería" style="width:100%; padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;" />
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:700; color:#334155; display:block; margin-bottom:3px;">Tu WhatsApp (Opcional):</label>
+                      <input type="text" id="inputWhatsappDemo" placeholder="Ej: 343 4567890" style="width:100%; padding:6px 10px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;" />
+                    </div>
+                  </div>
+                  <div style="font-size:10.5px; color:#64748b; margin-top:5px;">
+                    Si tus listas tienen formatos complejos o difíciles, un especialista de Sofía AI te ayuda a calibrarlas en el día sin costo.
+                  </div>
+                </details>
+              </div>
+
+              <div style="margin-top:12px; padding-top:10px; border-top:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:11px; color:#64748b;">
+                  ¿Sin internet en este equipo o preferís coordinar por WhatsApp?
+                </div>
+                <button class="btn" onclick="enviarHardwareIdPorWhatsApp()" style="font-size:11px; padding:5px 9px; color:#15803d; border-color:#bbf7d0; background:#f0fdf4; display:inline-flex; align-items:center; gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.058.376-.058c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/></svg>
+                  Contactar con un Asesor por WhatsApp
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        abrirModalLicencia();
+        return;
+      }
+
+      // ACTIVADA
+      if (btnCerrar) btnCerrar.style.display = 'inline-block';
+      badge.style.background = '';
+      badge.style.color = '';
+
+      if (est.tipo === 'FULL_PRO') {
+        badge.textContent = 'Licencia: FULL PRO (Ilimitada)';
+        tagComp.textContent = 'ILIMITADO';
+        tagComp.className = 'pill pill-ok';
+        tagML.textContent = 'ILIMITADO';
+        tagML.className = 'pill pill-ok';
+        tituloModal.textContent = 'Licencia del Sistema: FULL PRO Activa';
+        document.getElementById('txtNivelLicencia').textContent = 'FULL PRO (Ilimitada)';
+        document.getElementById('txtNivelLicencia').style.color = 'var(--success)';
+        document.getElementById('txtDetallePruebas').textContent = 'Todas las funciones habilitadas de forma permanente.';
+
+        bannerContainer.innerHTML = `
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+            <span style="background:rgba(255,255,255,0.22); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:800; text-transform:uppercase;">Licencia Activa</span>
+            <h3 style="margin:6px 0 4px 0; font-size:17px; font-weight:800;">Plan FULL PRO Permanente</h3>
+            <p style="margin:0; font-size:12px; opacity:0.95; line-height:1.4;">
+              Este equipo cuenta con activación ilimitada para todos los módulos.
+            </p>
+          </div>
+        `;
+        pasosContainer.innerHTML = '';
+      } else if (est.tipo === 'DEMO_7_DIAS') {
+        const dRest = est.dias_restantes ?? 7;
+        badge.textContent = `Licencia: DEMO (${dRest} días restantes)`;
+        tagComp.textContent = 'DEMO 7D';
+        tagComp.className = 'pill pill-ok';
+        tagML.textContent = 'DEMO 7D';
+        tagML.className = 'pill pill-ok';
+        tituloModal.textContent = `Licencia de Prueba Activa (${dRest} días restantes)`;
+        document.getElementById('txtNivelLicencia').textContent = `DEMO 7 DÍAS (${dRest} d. restantes)`;
+        document.getElementById('txtNivelLicencia').style.color = '#2563eb';
+        document.getElementById('txtDetallePruebas').textContent = `Vencimiento: ${est.fecha_vencimiento || 'Próximamente'}.`;
+
+        bannerContainer.innerHTML = `
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <span style="background:rgba(255,255,255,0.22); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:800; text-transform:uppercase;">Prueba Activa</span>
+                <h3 style="margin:6px 0 4px 0; font-size:17px; font-weight:800;">Período de Prueba: ${dRest} días restantes</h3>
+                <p style="margin:0; font-size:12px; opacity:0.95; line-height:1.4;">
+                  Tenés acceso FULL PRO total hasta el ${est.fecha_vencimiento || ''}. Podés adquirir tu licencia permanente en cualquier momento.
+                </p>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const esArgActiva = reg.region_id === 'argentina' && !!reg.metodo_pago_alias;
+        const cobroFilaHtml = esArgActiva
+          ? `
+              <div style="font-size:11.5px; color:#64748b; margin-top:2px;">
+                Alias Lemon Cash / Transferencia: <strong style="color:#0f172a; font-family:Consolas, monospace;">${reg.metodo_pago_alias || 'pagoslemon.cash'}</strong>
+              </div>
+            `
+          : `
+              <div style="font-size:11.5px; color:#64748b; margin-top:2px;">
+                Pago Internacional Seguro con Tarjetas o PayPal: <strong style="color:#0284c7;">${reg.metodo_pago_titulo || 'Pasarela Online'}</strong>
+              </div>
+            `;
+
+        const btnCobroHtml = esArgActiva
+          ? `<button class="btn" id="btnCopiarAlias" onclick="copiarAliasMP()" style="font-size:11.5px; padding:6px 10px; display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar Alias (Lemon Cash)</button>`
+          : `<a class="btn btn-primary" href="${reg.metodo_pago_url || '#'}" target="_blank" style="font-size:11.5px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pagar Online</a>`;
+
+        pasosContainer.innerHTML = `
+          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px; margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div>
+                <div style="font-size:12.5px; font-weight:700; color:#1e293b;">
+                  Planes de por vida: BASE (${reg.precio_base_texto || '$ 44.900'}) • FULL PRO (${reg.precio_pro_texto || '$ 69.900'})
+                </div>
+                ${cobroFilaHtml}
+              </div>
+              <div style="display:flex; gap:6px;">
+                ${btnCobroHtml}
+                <button class="btn btn-emerald" onclick="enviarHardwareIdPorWhatsApp()" style="font-size:11.5px; padding:6px 12px; font-weight:700; display:inline-flex; align-items:center; gap:5px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.007c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.058.376-.058c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824z"/></svg>
+                  Contactar con un Asesor
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (est.tipo === 'BASE') {
+        const rc = est.pruebas_restantes?.comparador ?? 0;
+        const rm = est.pruebas_restantes?.radar_ml ?? 0;
+        badge.textContent = `Licencia: BASE (Pruebas P2:${rc}/3 | P3:${rm}/3)`;
+        tagComp.textContent = `${rc}/3 Gratis`;
+        tagComp.className = rc > 0 ? 'pill pill-neutral' : 'pill pill-alert';
+        tagML.textContent = `${rm}/3 Gratis`;
+        tagML.className = rm > 0 ? 'pill pill-neutral' : 'pill pill-alert';
+        document.getElementById('txtDetallePruebas').textContent =
+          `Pestaña 1 Ilimitada. Pruebas restantes -> Comparador: ${rc}/3 | Precios Mercado: ${rm}/3.`;
+      }
+    }
+
+    function actualizarUIMemoria(mem) {
+      if (!mem) return;
+      document.getElementById('badgeMemoria').textContent =
+        `Memoria Inteligente: ${mem.total_emparejamientos_aprendidos} artículos recordados`;
+    }
+
+    function toggleDescuentosMarcas() {
+      const box = document.getElementById('p1BoxMarcas');
+      const icon = document.getElementById('p1ToggleMarcasIcon');
+      if (!box) return;
+      if (box.style.display === 'none') {
+        box.style.display = 'block';
+        if (icon) icon.textContent = '▲';
+      } else {
+        box.style.display = 'none';
+        if (icon) icon.textContent = '▼';
+      }
+    }
+
+    /* PESTAÑA 1: ACTUALIZADOR */
+    async function ejecutarActualizador(usarEjemplo) {
+      const fd = new FormData();
+      fd.append('usar_ejemplo', usarEjemplo ? 'true' : 'false');
+      fd.append('nombre_proveedor', document.getElementById('p1NombreProveedor').value);
+      fd.append('descuento_1', document.getElementById('p1Desc1').value);
+      fd.append('descuento_2', document.getElementById('p1Desc2').value);
+      const elReglasDto = document.getElementById('p1ReglasDto');
+      if (elReglasDto && elReglasDto.value) {
+        fd.append('reglas_descuento', elReglasDto.value.trim());
+      }
+      fd.append('iva_porc', document.getElementById('p1Iva').value);
+      fd.append('flete_porc', document.getElementById('p1Flete').value);
+      fd.append('modo_margen', document.getElementById('p1ModoMargen').value);
+      fd.append('margen_fijo_porc', document.getElementById('p1MargenFijo').value);
+      fd.append('modo_redondeo', document.getElementById('p1Redondeo').value);
+
+      const fCat = document.getElementById('p1ArchivoCatalogo').files[0];
+      const fProv = document.getElementById('p1ArchivoProveedor').files[0];
+      if (!usarEjemplo) {
+        if (!fCat || !fProv) {
+          alert('Por favor, seleccione su Excel actual (1) y la Lista nueva del proveedor (2) para actualizar los precios.');
+          return;
+        }
+        fd.append('archivo_catalogo', fCat);
+        fd.append('archivo_proveedor', fProv);
+      }
+
+      const selHojaCat = document.getElementById('p1HojaCatalogo');
+      if (selHojaCat && selHojaCat.value) {
+        fd.append('hoja_catalogo', selHojaCat.value);
+      }
+      const selHojaProv = document.getElementById('p1HojaProveedor');
+      if (selHojaProv && selHojaProv.value) {
+        fd.append('hoja_proveedor', selHojaProv.value);
+      }
+
+      const resp = await fetch('/api/pestana1/actualizar', { method: 'POST', body: fd });
+      if (!resp.ok) {
+        const err = await resp.json();
+        alert(err.detail || 'Error al procesar los archivos.');
+        return;
+      }
+      const data = await resp.json();
+      renderizarResultadosP1(data);
+      if (data.memoria) actualizarUIMemoria(data.memoria);
+    }
+
+    let DATOS_P1_ITEMS = [];
+    let SELECCION_P1 = {};
+    let RESUMEN_P1 = null;
+    let FILTRO_P1_ACTUAL = 'TODOS';
+    let DATOS_P2_ACTUAL = null;
+
+    async function verificarHojasExcel(file, containerId, selectId, countId) {
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      const cont = document.getElementById(containerId);
+      const sel = document.getElementById(selectId);
+      const cnt = countId ? document.getElementById(countId) : null;
+      if (ext !== 'xlsx' && ext !== 'xls' && ext !== 'xlsm') {
+        if (cont) cont.style.display = 'none';
+        if (sel) sel.innerHTML = '';
+        return;
+      }
+      const fd = new FormData();
+      fd.append('archivo', file);
+      try {
+        const res = await fetch('/api/inspeccionar-hojas', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.hojas && data.hojas.length > 1) {
+          if (cnt) cnt.textContent = `${data.hojas.length} Solapas`;
+          sel.innerHTML = `
+            <option value="__TODAS__">Todas las hojas combinadas (${data.hojas.length} solapas)</option>
+            ${data.hojas.map(h => `<option value="${h}">Hoja: ${h}</option>`).join('')}
+          `;
+          cont.style.display = 'block';
+        } else {
+          cont.style.display = 'none';
+          sel.innerHTML = '';
+        }
+      } catch (err) {
+        if (cont) cont.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const inCat = document.getElementById('p1ArchivoCatalogo');
+      if (inCat) {
+        inCat.addEventListener('change', async (e) => {
+          const f = e.target.files[0];
+          if (f) await verificarHojasExcel(f, 'p1HojaCatContainer', 'p1HojaCatalogo', 'p1HojaCatCount');
+        });
+      }
+      const inProv = document.getElementById('p1ArchivoProveedor');
+      if (inProv) {
+        inProv.addEventListener('change', async (e) => {
+          const f = e.target.files[0];
+          if (f) await verificarHojasExcel(f, 'p1HojaProvContainer', 'p1HojaProveedor', 'p1HojaProvCount');
+        });
+      }
+      for (let i = 1; i <= 5; i++) {
+        const inP2 = document.getElementById('p2File' + i);
+        if (inP2) {
+          inP2.addEventListener('change', async (e) => {
+            const f = e.target.files[0];
+            if (f) await verificarHojasExcel(f, 'p2HojaCont' + i, 'p2Hoja' + i, 'p2HojaCount' + i);
+          });
+        }
+      }
+    });
+
+    function renderizarResultadosP1(data) {
+      const res = data.resumen;
+      RESUMEN_P1 = res;
+      DATOS_P1_ITEMS = data.items || [];
+      SELECCION_P1 = {};
+
+      DATOS_P1_ITEMS.forEach(it => {
+        SELECCION_P1[it.codigo] = { seleccionado: true, cantidad: 0 };
+      });
+
+      document.getElementById('p1ResultadosBox').style.display = 'block';
+      document.getElementById('kpiP1Total').textContent = res.total_catalogo;
+      document.getElementById('kpiP1Actualizados').textContent = res.actualizados;
+      document.getElementById('kpiP1Alertas').textContent = res.alertas_rojas;
+      document.getElementById('kpiP1Huerfanos').textContent = res.sin_cambios;
+
+      actualizarTotalesSeleccionP1();
+
+      document.getElementById('p1BotonesDescarga').innerHTML = `
+        <a class="btn btn-emerald" href="/api/descargar/exportados/${res.archivo_salida}">
+          Descargar Excel Actualizado Completo (${res.archivo_salida})
+        </a>
+        <a class="btn" href="/api/descargar/backups/${res.archivo_backup}">
+          Descargar Copia de Respaldo Original
+        </a>
+      `;
+
+      filtrarTablaP1('TODOS');
+    }
+
+    function actualizarTotalesSeleccionP1() {
+      let countSel = 0;
+      let totalPresupuesto = 0.0;
+      DATOS_P1_ITEMS.forEach(item => {
+        const sel = SELECCION_P1[item.codigo] || { seleccionado: true, cantidad: 0 };
+        if (sel.seleccionado) {
+          countSel++;
+          if (sel.cantidad > 0) {
+            totalPresupuesto += (item.costo_nuevo_limpio * sel.cantidad);
+          }
+        }
+      });
+
+      const elCount = document.getElementById('p1CountSeleccionados');
+      if (elCount) elCount.textContent = countSel;
+      const elTotal = document.getElementById('p1CountTotal');
+      if (elTotal) elTotal.textContent = DATOS_P1_ITEMS.length;
+      const elPresupuesto = document.getElementById('p1TotalPresupuestoPedido');
+      if (elPresupuesto) elPresupuesto.textContent = formatoPesos(totalPresupuesto);
+
+      const master = document.getElementById('p1MasterCheckbox');
+      if (master) {
+        master.checked = countSel === DATOS_P1_ITEMS.length && DATOS_P1_ITEMS.length > 0;
+        master.indeterminate = countSel > 0 && countSel < DATOS_P1_ITEMS.length;
+      }
+    }
+
+    function onP1CheckChange(codigo, checked) {
+      if (!SELECCION_P1[codigo]) SELECCION_P1[codigo] = { seleccionado: true, cantidad: 0 };
+      SELECCION_P1[codigo].seleccionado = checked;
+      const tr = document.getElementById('fila_p1_' + codigo);
+      if (tr) {
+        tr.style.opacity = checked ? '1' : '0.45';
+      }
+      actualizarTotalesSeleccionP1();
+    }
+
+    function onP1CantidadChange(codigo, cantVal) {
+      const c = parseInt(cantVal) || 0;
+      if (!SELECCION_P1[codigo]) SELECCION_P1[codigo] = { seleccionado: true, cantidad: 0 };
+      SELECCION_P1[codigo].cantidad = c >= 0 ? c : 0;
+      actualizarTotalesSeleccionP1();
+    }
+
+    function seleccionarTodosP1(tildar) {
+      DATOS_P1_ITEMS.forEach(item => {
+        if (!SELECCION_P1[item.codigo]) SELECCION_P1[item.codigo] = { seleccionado: true, cantidad: 0 };
+        SELECCION_P1[item.codigo].seleccionado = tildar;
+      });
+      filtrarTablaP1(FILTRO_P1_ACTUAL);
+    }
+
+    function desmarcarAlertasRojasP1() {
+      let desmarcados = 0;
+      DATOS_P1_ITEMS.forEach(item => {
+        if (!SELECCION_P1[item.codigo]) SELECCION_P1[item.codigo] = { seleccionado: true, cantidad: 0 };
+        if (item.estado === 'ALERTA_ROJA') {
+          SELECCION_P1[item.codigo].seleccionado = false;
+          desmarcados++;
+        }
+      });
+      filtrarTablaP1(FILTRO_P1_ACTUAL);
+      alert(`Se desmarcaron ${desmarcados} artículos con alertas rojas de aumento brusco.\nAl guardar el catálogo, estos productos conservarán su costo y precio viejo.`);
+    }
+
+    function filtrarTablaP1(filtro) {
+      FILTRO_P1_ACTUAL = filtro;
+      ['TODOS', 'ACTUALIZADO', 'ALERTA_ROJA', 'SIN_CAMBIOS'].forEach(f => {
+        const b = document.getElementById('btnFiltroP1_' + f);
+        if (b) b.className = (f === filtro) ? 'btn btn-primary' : 'btn';
+      });
+
+      const tbody = document.getElementById('p1TablaBody');
+      tbody.innerHTML = '';
+
+      DATOS_P1_ITEMS.forEach(item => {
+        if (filtro === 'ACTUALIZADO' && item.estado === 'SIN_CAMBIOS') return;
+        if (filtro === 'ALERTA_ROJA' && item.estado !== 'ALERTA_ROJA') return;
+        if (filtro === 'SIN_CAMBIOS' && item.estado !== 'SIN_CAMBIOS') return;
+
+        const sel = SELECCION_P1[item.codigo] || { seleccionado: true, cantidad: 0 };
+        const tr = document.createElement('tr');
+        tr.id = 'fila_p1_' + item.codigo;
+        if (item.estado === 'ALERTA_ROJA') tr.className = 'row-alerta';
+        if (!sel.seleccionado) tr.style.opacity = '0.45';
+
+        const esActualizado = item.estado === 'ACTUALIZADO' || item.estado === 'ALERTA_ROJA';
+        let badgeEstado = `<span class="pill pill-ok">PRECIO ACTUALIZADO</span>`;
+        if (item.estado === 'ALERTA_ROJA') {
+          badgeEstado = `<span class="pill pill-alert">${item.motivo_alerta}</span>`;
+        } else if (item.estado === 'SIN_CAMBIOS') {
+          badgeEstado = `
+            <span class="pill pill-neutral">Sin cambios en lista</span>
+            <button class="btn" style="padding:3px 7px; font-size:11px; margin-left:5px;"
+              onclick="irARadarConProducto('${item.articulo_catalogo.replace(/'/g, "")}')">
+              Consultar Mercado
+            </button>
+          `;
+        }
+
+        const varColor = item.variacion_porc > 35 ? '#b91c1c' : (item.variacion_porc > 0 ? '#137333' : '#64748b');
+        const bgCeldaNueva = item.estado === 'ACTUALIZADO' ? 'background:#e6f4ea;' : '';
+
+        tr.innerHTML = `
+          <td style="text-align:center;">
+            <input type="checkbox" class="chk-p1" ${sel.seleccionado ? 'checked' : ''} onchange="onP1CheckChange('${item.codigo}', this.checked)">
+          </td>
+          <td style="font-family:Consolas, monospace; font-weight:700;">${item.codigo}</td>
+          <td>
+            <strong>${item.articulo_catalogo}</strong>
+            <div style="font-size:11.5px; color:var(--text-muted);">${item.articulo_proveedor}</div>
+          </td>
+          <td style="text-align:center;">
+            <input type="number" min="0" value="${sel.cantidad || 0}" style="width:65px; padding:3px 6px; font-weight:700; text-align:center; border-radius:6px; border:1px solid #cbd5e1;" oninput="onP1CantidadChange('${item.codigo}', this.value)">
+          </td>
+          <td>${formatoPesos(item.costo_anterior)}</td>
+          <td style="font-weight:700; ${bgCeldaNueva}">${formatoPesos(item.costo_nuevo_limpio)}</td>
+          <td style="font-weight:700; color:${varColor}; ${bgCeldaNueva}">${esActualizado ? ((item.variacion_porc > 0 ? '+' : '') + item.variacion_porc + '%') : '—'}</td>
+          <td style="font-weight:700; color:${esActualizado ? 'var(--success)' : 'var(--text-muted)'}; font-size:13.5px; ${bgCeldaNueva}">
+            ${formatoPesos(item.venta_nueva)}
+            ${esActualizado && item.margen_porc ? `<div style="font-size:11px; font-weight:400; color:var(--text-muted);">${item.tipo_margen || ('Margen ' + item.margen_porc + '%')}</div>` : ''}
+          </td>
+          <td><span class="pill pill-neutral">${item.metodo_cruce}</span></td>
+          <td>${badgeEstado}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      actualizarTotalesSeleccionP1();
+    }
+
+    async function exportarCatalogoPersonalizadoP1(esPedido) {
+      if (!RESUMEN_P1 || !DATOS_P1_ITEMS.length) {
+        alert('Primero procesá una actualización de lista.');
+        return;
+      }
+
+      const itemsPayload = [];
+      DATOS_P1_ITEMS.forEach(item => {
+        const sel = SELECCION_P1[item.codigo] || { seleccionado: true, cantidad: 0 };
+        if (sel.seleccionado) {
+          itemsPayload.push({
+            codigo: item.codigo,
+            seleccionado: true,
+            cantidad: sel.cantidad || 0,
+            articulo_catalogo: item.articulo_catalogo,
+            costo_anterior: item.costo_anterior,
+            costo_nuevo_limpio: item.costo_nuevo_limpio,
+            variacion_porc: item.variacion_porc,
+            venta_nueva: item.venta_nueva
+          });
+        }
+      });
+
+      if (!itemsPayload.length) {
+        alert('No hay ningún artículo seleccionado para procesar.');
+        return;
+      }
+
+      const modoMargen = document.getElementById('p1ModoMargen').value;
+      const margenFijo = parseFloat(document.getElementById('p1MargenFijo').value) || 45.0;
+      const selHojaCat = document.getElementById('p1HojaCatalogo');
+      const hojaCat = (selHojaCat && selHojaCat.value) ? selHojaCat.value : null;
+
+      try {
+        const resp = await fetch('/api/pestana1/exportar-personalizado', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre_backup: RESUMEN_P1.archivo_backup,
+            nombre_proveedor: RESUMEN_P1.proveedor,
+            items: itemsPayload,
+            modo_margen: modoMargen,
+            margen_fijo_porc: margenFijo,
+            hoja_catalogo: hojaCat
+          })
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          alert(err.detail || 'Error al exportar.');
+          return;
+        }
+
+        const data = await resp.json();
+
+        if (esPedido) {
+          if (!data.archivo_pedido) {
+            alert('Para exportar un pedido de compra, primero escribí la cantidad que querés pedir (ej: 5, 10, 20) en la columna "Cant. Pedir" de los productos que te interesen.');
+            return;
+          }
+
+          const itemsConCant = itemsPayload.filter(it => it.cantidad > 0);
+          let msjWhatsApp = `Hola ${RESUMEN_P1.proveedor}, te paso un pedido:%0A%0A`;
+          itemsConCant.forEach(it => {
+            msjWhatsApp += `• ${it.cantidad}x ${it.articulo_catalogo} (${it.codigo}) - ${formatoPesos(it.costo_nuevo_limpio)} c/u%0A`;
+          });
+          msjWhatsApp += `%0ATotal estimado: ${formatoPesos(data.subtotal_pedido)}`;
+
+          const aPed = document.createElement('a');
+          aPed.href = data.url_pedido;
+          aPed.download = data.archivo_pedido;
+          aPed.click();
+
+          setTimeout(() => {
+            if (confirm(`¡Pedido generado con éxito por ${formatoPesos(data.subtotal_pedido)} (${data.total_items_pedido} artículos)!\n¿Querés abrir WhatsApp Web para mandar el texto del pedido al proveedor ahora?`)) {
+              window.open(`https://api.whatsapp.com/send?text=${msjWhatsApp}`, '_blank');
+            }
+          }, 300);
+        } else {
+          const aCat = document.createElement('a');
+          aCat.href = data.url_catalogo;
+          aCat.download = data.archivo_catalogo;
+          aCat.click();
+          alert(`¡Catálogo personalizado descargado con éxito!\nSe actualizaron ${data.total_actualizados} artículos seleccionados. Los artículos desmarcados conservaron sus costos y precios de venta originales intactos.`);
+        }
+      } catch (ex) {
+        alert('Error al exportar catálogo personalizado: ' + ex.message);
+      }
+    }
+
+    function simplificarConsultaFront(txt) {
+      if (!txt) return "";
+      let c = txt.replace(/\(.*?\)/g, "").replace(/\[.*?\]/g, "");
+      c = c.replace(/\b(caja|pack|bolsa|set|kit|blister)\s*(x|de)?\s*\d+\s*(u|un|unid|unidades)?\b/gi, "");
+      c = c.replace(/\b\d+\s*(u|un|unid|unidades|piezas|pzs)\b/gi, "");
+      c = c.replace(/\b(pulgadas|pulg|milimetros|mm|metros|mts|arandela vulcanizada|con arandela|dorado|zincado|hexagonal|paso|rosca|fresada)\b/gi, "");
+      c = c.replace(/\s+/g, " ").trim();
+      const palabras = c.split(" ").filter(p => p.length > 0);
+      if (palabras.length > 8) return palabras.slice(0, 8).join(" ");
+      return c;
+    }
+
+    function obtenerEnlacesMarketplaceFront(consulta, paisId) {
+      const q = encodeURIComponent(simplificarConsultaFront(consulta || 'herramientas'));
+      const pais = (paisId || (window.PERFIL_ACTUAL && window.PERFIL_ACTUAL.id) || 'argentina').toLowerCase();
+      if (pais === 'argentina' || pais === 'ar') {
+        return [
+          { nombre: 'Mercado Libre Argentina', url: `https://listado.mercadolibre.com.ar/${q}`, tipo: 'meli' },
+          { nombre: 'Easy Argentina', url: `https://www.easy.com.ar/${q}`, tipo: 'easy' }
+        ];
+      } else if (pais === 'mexico' || pais === 'mx') {
+        return [
+          { nombre: 'Mercado Libre México', url: `https://listado.mercadolibre.com.mx/${q}`, tipo: 'meli' },
+          { nombre: 'Amazon México', url: `https://www.amazon.com.mx/s?k=${q}`, tipo: 'amazon' },
+          { nombre: 'The Home Depot México', url: `https://www.homedepot.com.mx/buscar?text=${q}`, tipo: 'homedepot' }
+        ];
+      } else if (pais === 'colombia' || pais === 'co') {
+        return [
+          { nombre: 'Mercado Libre Colombia', url: `https://listado.mercadolibre.com.co/${q}`, tipo: 'meli' },
+          { nombre: 'Homecenter Colombia', url: `https://www.homecenter.com.co/homecenter-co/search?Ntt=${q}`, tipo: 'homecenter' }
+        ];
+      } else if (pais === 'chile' || pais === 'cl') {
+        return [
+          { nombre: 'Mercado Libre Chile', url: `https://listado.mercadolibre.cl/${q}`, tipo: 'meli' },
+          { nombre: 'Sodimac Chile', url: `https://sodimac.falabella.com/sodimac-cl/search?Ntt=${q}`, tipo: 'sodimac' }
+        ];
+      } else if (pais === 'peru' || pais === 'pe') {
+        return [
+          { nombre: 'Mercado Libre Perú', url: `https://listado.mercadolibre.com.pe/${q}`, tipo: 'meli' },
+          { nombre: 'Sodimac Perú', url: `https://sodimac.falabella.com.pe/sodimac-pe/search?Ntt=${q}`, tipo: 'sodimac' }
+        ];
+      } else if (pais === 'espana' || pais === 'es' || pais === 'europa' || pais === 'europa_eur') {
+        return [
+          { nombre: 'Amazon España', url: `https://www.amazon.es/s?k=${q}`, tipo: 'amazon' },
+          { nombre: 'Leroy Merlin España', url: `https://www.leroymerlin.es/search?q=${q}`, tipo: 'leroy' },
+          { nombre: 'ManoMano España', url: `https://www.manomano.es/busqueda/${q}`, tipo: 'manomano' }
+        ];
+      } else {
+        return [
+          { nombre: 'Amazon Internacional (US$)', url: `https://www.amazon.com/s?k=${q}`, tipo: 'amazon' }
+        ];
+      }
+    }
+
+    function renderizarBotonesMarketplace(enlaces) {
+      const cont = document.getElementById('p3ContenedorBotonesMarketplace');
+      if (!cont) return;
+      cont.innerHTML = '';
+      if (!enlaces || enlaces.length === 0) return;
+      enlaces.forEach(m => {
+        const a = document.createElement('a');
+        a.href = m.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'btn';
+        a.style.cssText = 'padding:6px 12px; font-size:12px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid #cbd5e1; color:#1e293b; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.05);';
+        a.innerHTML = `
+          <span>${m.nombre}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        `;
+        cont.appendChild(a);
+      });
+    }
+
+    function actualizarBarraMarketplaceP3() {
+      const consulta = (document.getElementById('p3Consulta')?.value || '').trim() || 'herramientas';
+      const paisActivo = (window.PERFIL_ACTUAL && window.PERFIL_ACTUAL.id) || 'argentina';
+      const enlaces = obtenerEnlacesMarketplaceFront(consulta, paisActivo);
+      renderizarBotonesMarketplace(enlaces);
+    }
+
+    function irARadarConProducto(nombreProd) {
+      const limpia = simplificarConsultaFront(nombreProd);
+      document.getElementById('p3Consulta').value = limpia || nombreProd;
+      const btnTab3 = document.querySelectorAll('.tab-btn')[2];
+      cambiarPestana(3, btnTab3);
+      ejecutarRadarML();
+    }
+
+    /* PESTAÑA 2: COMPARADOR DE PROVEEDORES */
+    function agregarTarjetaProveedorExtra() {
+      const c4 = document.getElementById('cardProv4');
+      const c5 = document.getElementById('cardProv5');
+      if (c4.style.display === 'none') {
+        c4.style.display = 'block';
+      } else if (c5.style.display === 'none') {
+        c5.style.display = 'block';
+        document.getElementById('btnAgregarProv').style.display = 'none';
+      }
+    }
+
+    async function ejecutarComparador(usarEjemplo) {
+      const fd = new FormData();
+      fd.append('usar_ejemplo', usarEjemplo ? 'true' : 'false');
+      for (let i = 1; i <= 5; i++) {
+        const nomEl = document.getElementById('p2Nom' + i);
+        const d1El = document.getElementById('p2Desc' + i);
+        const d2El = document.getElementById('p2Desc2_' + i);
+        const ivaEl = document.getElementById('p2Iva' + i);
+        const fEl = document.getElementById('p2File' + i);
+        const hEl = document.getElementById('p2Hoja' + i);
+
+        if (nomEl) fd.append('nombre_p' + i, nomEl.value);
+        if (d1El) fd.append('desc_p' + i, d1El.value);
+        if (d2El) fd.append('desc2_p' + i, d2El.value);
+        if (ivaEl) fd.append('iva_p' + i, ivaEl.value);
+        if (hEl && hEl.value) fd.append('hoja_p' + i, hEl.value);
+        if (!usarEjemplo && fEl && fEl.files[0]) {
+          fd.append('archivo_p' + i, fEl.files[0]);
+        }
+      }
+
+      const resp = await fetch('/api/pestana2/comparar', { method: 'POST', body: fd });
+      if (!resp.ok) {
+        const err = await resp.json();
+        if (resp.status === 403) {
+          alert(err.detail || 'No permitido');
+          abrirModalLicencia();
+        } else {
+          alert(err.detail || 'Seleccione al menos 2 archivos de proveedores para comparar.');
+        }
+        return;
+      }
+
+      const data = await resp.json();
+      if (data.estado_licencia) actualizarUILicencia(data.estado_licencia);
+      renderizarResultadosP2(data);
+    }
+
+    let SELECCION_P2 = {};
+    let PROV_FILTRO_ACTUAL_P2 = 'TODOS';
+
+    function renderizarResultadosP2(data) {
+      DATOS_P2_ACTUAL = data;
+      SELECCION_P2 = {};
+      (data.items || []).forEach(it => {
+        SELECCION_P2[it.sku] = {
+          seleccionado: true,
+          cantidad: it.cantidad || 1,
+        };
+      });
+
+      const res = data.resumen;
+      document.getElementById('p2ResultadosBox').style.display = 'block';
+      document.getElementById('kpiP2Caro').textContent = formatoPesos(res.costo_total_comprando_al_mas_caro);
+      document.getElementById('kpiP2Optimo').textContent = formatoPesos(res.costo_total_compra_inteligente);
+      document.getElementById('kpiP2Ahorro').textContent = formatoPesos(res.ahorro_total_pesos);
+
+      const provs = res.proveedores_analizados || [];
+      const divFiltros = document.getElementById('p2FiltrosGanador');
+      divFiltros.innerHTML = `<button class="btn btn-primary" onclick="filtrarTablaP2('TODOS', this)">Mostrar Todos (${data.items.length})</button>`;
+      provs.forEach(p => {
+        const cantGanados = data.items.filter(x => x.ganador === p).length;
+        divFiltros.innerHTML += `
+          <button class="btn" onclick="filtrarTablaP2('${p.replace(/'/g, "")}', this)">
+            Más barato en ${p} (${cantGanados})
+          </button>
+        `;
+      });
+
+      PROV_FILTRO_ACTUAL_P2 = 'TODOS';
+      actualizarTotalesSeleccionP2();
+      filtrarTablaP2('TODOS', divFiltros.querySelector('button'));
+    }
+
+    function actualizarTotalesSeleccionP2() {
+      if (!DATOS_P2_ACTUAL) return;
+
+      let cantSelTotal = 0;
+      let totalPagar = 0.0;
+      let totalAhorro = 0.0;
+
+      const itemsPorProv = {};
+      (DATOS_P2_ACTUAL.resumen.proveedores_analizados || []).forEach(p => {
+        itemsPorProv[p] = { count: 0, subtotal: 0.0, ahorro: 0.0 };
+      });
+
+      DATOS_P2_ACTUAL.items.forEach(it => {
+        const sel = SELECCION_P2[it.sku];
+        if (sel && sel.seleccionado) {
+          cantSelTotal++;
+          const c = sel.cantidad;
+          const sub = it.mejor_costo * c;
+          const a = (it.peor_costo - it.mejor_costo) * c;
+          totalPagar += sub;
+          totalAhorro += a;
+
+          if (itemsPorProv[it.ganador]) {
+            itemsPorProv[it.ganador].count++;
+            itemsPorProv[it.ganador].subtotal += sub;
+            itemsPorProv[it.ganador].ahorro += a;
+          }
+        }
+      });
+
+      document.getElementById('txtP2Seleccionados').textContent = `${cantSelTotal} de ${DATOS_P2_ACTUAL.items.length} artículos`;
+      document.getElementById('txtP2TotalSeleccionado').textContent = formatoPesos(totalPagar);
+      document.getElementById('txtP2AhorroSeleccionado').textContent = formatoPesos(totalAhorro);
+
+      // Actualizar botones de pedidos por proveedor
+      const contenedorBtns = document.getElementById('p2BotonesPedidos');
+      contenedorBtns.innerHTML = '';
+      if (DATOS_P2_ACTUAL.resumen.archivo_comparativa_completa) {
+        contenedorBtns.innerHTML += `
+          <a class="btn" style="background:#ffffff; border-color:#cbd5e1; color:#1b365d;" href="/api/descargar/exportados/${DATOS_P2_ACTUAL.resumen.archivo_comparativa_completa}">
+            Comparativa Completa (Excel)
+          </a>
+        `;
+      }
+
+      Object.entries(itemsPorProv).forEach(([prov, stats]) => {
+        if (stats.count > 0) {
+          contenedorBtns.innerHTML += `
+            <button class="btn btn-emerald" onclick="descargarPedidoPersonalizado('${prov}')">
+              Descargar Pedido ${prov} (${stats.count} ítems - ${formatoPesos(stats.subtotal)})
+            </button>
+          `;
+        }
+      });
+    }
+
+    function cambiarCheckItemP2(sku, checked) {
+      if (!SELECCION_P2[sku]) SELECCION_P2[sku] = { seleccionado: true, cantidad: 1 };
+      SELECCION_P2[sku].seleccionado = checked;
+      const fila = document.getElementById('fila_p2_' + sku);
+      if (fila) {
+        fila.style.opacity = checked ? '1.0' : '0.45';
+        fila.style.background = checked ? '' : '#f8fafc';
+      }
+      actualizarTotalesSeleccionP2();
+    }
+
+    function cambiarCantidadItemP2(sku, nuevaCant) {
+      const c = parseInt(nuevaCant) || 1;
+      if (!SELECCION_P2[sku]) SELECCION_P2[sku] = { seleccionado: true, cantidad: c };
+      SELECCION_P2[sku].cantidad = Math.max(1, c);
+
+      // Actualizar celda de ahorro local en la fila
+      const it = DATOS_P2_ACTUAL.items.find(x => x.sku === sku);
+      if (it) {
+        const celdaAhorro = document.getElementById('ahorro_p2_' + sku);
+        if (celdaAhorro) {
+          const ah = (it.peor_costo - it.mejor_costo) * SELECCION_P2[sku].cantidad;
+          celdaAhorro.textContent = `${formatoPesos(ah)} (-${it.ahorro_porc}%)`;
+        }
+      }
+      actualizarTotalesSeleccionP2();
+    }
+
+    function marcarTodosP2(estado) {
+      if (!DATOS_P2_ACTUAL) return;
+      DATOS_P2_ACTUAL.items.forEach(it => {
+        if (PROV_FILTRO_ACTUAL_P2 === 'TODOS' || it.ganador === PROV_FILTRO_ACTUAL_P2) {
+          if (!SELECCION_P2[it.sku]) SELECCION_P2[it.sku] = { seleccionado: true, cantidad: it.cantidad || 1 };
+          SELECCION_P2[it.sku].seleccionado = estado;
+        }
+      });
+      filtrarTablaP2(PROV_FILTRO_ACTUAL_P2, null);
+      actualizarTotalesSeleccionP2();
+    }
+
+    function toggleSeleccionarTodosP2(checked) {
+      marcarTodosP2(checked);
+    }
+
+    async function descargarPedidoPersonalizado(prov) {
+      if (!DATOS_P2_ACTUAL) return;
+      const itemsProv = [];
+      DATOS_P2_ACTUAL.items.forEach(it => {
+        if (it.ganador === prov && SELECCION_P2[it.sku] && SELECCION_P2[it.sku].seleccionado) {
+          const c = SELECCION_P2[it.sku].cantidad || 1;
+          itemsProv.push({
+            sku: it.sku,
+            articulo: it.articulo,
+            cantidad: c,
+            costo_limpio_unitario: it.mejor_costo,
+            subtotal_estimado: Math.round(it.mejor_costo * c * 100) / 100,
+            ahorro_vs_mas_caro: Math.round((it.peor_costo - it.mejor_costo) * c * 100) / 100,
+          });
+        }
+      });
+
+      if (itemsProv.length === 0) {
+        alert('No hay artículos seleccionados para ' + prov + '. Marcá los casilleros de los productos que quieras pedir.');
+        return;
+      }
+
+      try {
+        const resp = await fetch('/api/pestana2/generar-pedido-personalizado', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ proveedor: prov, items: itemsProv })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          alert(err.detail || 'Error al generar el archivo de pedido');
+          return;
+        }
+        const res = await resp.json();
+        window.location.href = res.url;
+      } catch (e) {
+        alert('Error de conexión al generar el archivo');
+      }
+    }
+
+    function filtrarTablaP2(provFiltro, btnEl) {
+      if (!DATOS_P2_ACTUAL) return;
+      PROV_FILTRO_ACTUAL_P2 = provFiltro;
+      if (btnEl) {
+        document.querySelectorAll('#p2FiltrosGanador .btn').forEach(b => b.className = 'btn');
+        btnEl.className = 'btn btn-primary';
+      }
+
+      const res = DATOS_P2_ACTUAL.resumen;
+      const provs = res.proveedores_analizados || [];
+      const headRow = document.getElementById('p2TablaHeadRow');
+      headRow.innerHTML = `
+        <th style="width:35px; text-align:center;"><input type="checkbox" id="checkP2Todos" onchange="toggleSeleccionarTodosP2(this.checked)" checked title="Marcar/Desmarcar todos"></th>
+        <th>SKU</th>
+        <th>Artículo Equivalente</th>
+        <th style="width:90px; text-align:center;">Cant. a Pedir</th>
+        ${provs.map(p => `<th>${p} (Costo Final)</th>`).join('')}
+        <th>Proveedor Más Barato</th>
+        <th>Ahorro en el Ítem</th>
+      `;
+
+      const tbody = document.getElementById('p2TablaBody');
+      tbody.innerHTML = '';
+      DATOS_P2_ACTUAL.items.forEach(item => {
+        if (provFiltro !== 'TODOS' && item.ganador !== provFiltro) return;
+        const sel = SELECCION_P2[item.sku] || { seleccionado: true, cantidad: item.cantidad || 1 };
+        const tr = document.createElement('tr');
+        tr.id = 'fila_p2_' + item.sku;
+        if (!sel.seleccionado) {
+          tr.style.opacity = '0.45';
+          tr.style.background = '#f8fafc';
+        }
+
+        const celdasProvs = provs.map(p => {
+          const of = item.ofertas[p];
+          if (!of) return `<td>—</td>`;
+          const esGanador = p === item.ganador;
+          const bgGanador = esGanador ? 'background:#e6f4ea; color:#137333; font-weight:700;' : '';
+          return `<td style="${bgGanador}">
+            ${formatoPesos(of.costo_limpio)} ${esGanador ? '(Más barato)' : ''}
+          </td>`;
+        }).join('');
+
+        const ahorroActual = (item.peor_costo - item.mejor_costo) * sel.cantidad;
+
+        tr.innerHTML = `
+          <td style="text-align:center;">
+            <input type="checkbox" ${sel.seleccionado ? 'checked' : ''} onchange="cambiarCheckItemP2('${item.sku}', this.checked)">
+          </td>
+          <td style="font-family:Consolas, monospace; font-weight:700;">${item.sku}</td>
+          <td><strong>${item.articulo}</strong></td>
+          <td style="text-align:center;">
+            <input type="number" min="1" max="9999" value="${sel.cantidad}" style="width:65px; text-align:center; padding:3px; border:1px solid #cbd5e1; border-radius:3px; font-weight:700;" onchange="cambiarCantidadItemP2('${item.sku}', this.value)">
+          </td>
+          ${celdasProvs}
+          <td><span class="pill pill-ok">${item.ganador}</span></td>
+          <td id="ahorro_p2_${item.sku}" style="font-weight:700; color:var(--success);">${formatoPesos(ahorroActual)} (-${item.ahorro_porc}%)</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* PESTAÑA 3: PRECIOS DE MERCADO */
+    async function ejecutarRadarML() {
+      const consulta = document.getElementById('p3Consulta').value.trim();
+      const comision = parseFloat(document.getElementById('p3Comision').value || '0');
+      if (!consulta) {
+        alert('Por favor, escriba el nombre del producto que desea consultar.');
+        return;
+      }
+
+      const btn = document.getElementById('btnEjecutarRadarML');
+      const textoOriginal = btn ? btn.innerHTML : 'Buscar Precios de Referencia Ahora';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite; display:inline-block; vertical-align:middle; margin-right:6px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg> Relevando precios en tiendas online...`;
+      }
+
+      // Mostrar caja de resultados con feedback inmediato de carga y desplazamiento visible
+      const resBox = document.getElementById('p3ResultadosBox');
+      if (resBox) {
+        resBox.style.display = 'block';
+        resBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      const bAprob = document.getElementById('p3BodyAprobados');
+      if (bAprob) {
+        bAprob.innerHTML = `
+          <tr>
+            <td colspan="2" style="text-align:center; padding:28px 16px; color:#2563eb;">
+              <div style="font-weight:700; font-size:14px; margin-bottom:6px; display:flex; align-items:center; justify-content:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                Relevando precios en tiempo real...
+              </div>
+              <div style="font-size:12px; color:#64748b;">Consultando catálogos comerciales y verificando publicaciones activas. Aguarde unos segundos...</div>
+            </td>
+          </tr>
+        `;
+      }
+
+      try {
+        const paisActivo = (window.PERFIL_ACTUAL && window.PERFIL_ACTUAL.id) || 'argentina';
+        const resp = await fetch('/api/pestana3/radar-ml', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consulta, comision_ml_porc: comision, pais_id: paisActivo })
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          alert(err.detail || 'No se pudo completar la consulta de precios.');
+          abrirModalLicencia();
+          return;
+        }
+
+        const data = await resp.json();
+        if (data.estado_licencia) actualizarUILicencia(data.estado_licencia);
+
+        document.getElementById('kpiP3PromML').textContent = formatoPesos(data.promedio_mercadolibre);
+        document.getElementById('kpiP3Mostrador').textContent = formatoPesos(data.precio_mostrador_sugerido);
+        document.getElementById('kpiP3Aprobados').textContent = data.cantidad_aprobados;
+        document.getElementById('kpiP3Descartados').textContent = data.cantidad_descartados;
+
+        // Actualizar botones de acceso directo a marketplaces según el país y la consulta
+        if (data.enlaces_marketplaces) {
+          renderizarBotonesMarketplace(data.enlaces_marketplaces);
+        }
+
+        if (resBox) {
+          resBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Semáforo de Nivel de Confianza Estadística
+        const banner = document.getElementById('p3BannerConfianza');
+        if (data.nivel_confianza === 'ALTA') {
+          banner.style.display = 'flex';
+          banner.style.background = '#f0fdf4';
+          banner.style.border = '1px solid #86efac';
+          banner.style.color = '#166534';
+          banner.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg> <div><strong>Nivel de Confiabilidad Alto:</strong> Promedio estadístico sólido respaldado por ${data.cantidad_aprobados} comercios coincidentes.</div>`;
+        } else if (data.nivel_confianza === 'MEDIA') {
+          banner.style.display = 'flex';
+          banner.style.background = '#fefce8';
+          banner.style.border = '1px solid #fde047';
+          banner.style.color = '#854d0e';
+          banner.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#854d0e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> <div><strong>Nivel de Confiabilidad Medio:</strong> Promedio basado en ${data.cantidad_aprobados} publicaciones. Buen precio de referencia de mostrador.</div>`;
+        } else if (data.nivel_confianza === 'BAJA') {
+          banner.style.display = 'flex';
+          banner.style.background = '#fef2f2';
+          banner.style.border = '1px solid #fca5a5';
+          banner.style.color = '#991b1b';
+          banner.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#991b1b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> <div><strong>Atención (Muestra Reducida):</strong> Solo se encontró 1 publicación en catálogo directo. Se sugiere usar con precaución como referencia preliminar o consultar los enlaces directos de mercado.</div>`;
+        } else {
+          banner.style.display = 'none';
+        }
+
+        bAprob.innerHTML = '';
+        if (!data.resultados_aprobados || data.resultados_aprobados.length === 0) {
+          const enlaces = data.enlaces_marketplaces || (typeof obtenerEnlacesMarketplaceFront === 'function' ? obtenerEnlacesMarketplaceFront(consulta, paisActivo) : []);
+          const enlacesHtml = (enlaces || []).map(m => `
+            <a href="${m.url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="padding:7px 14px; font-size:12px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+              <span>Ver en ${m.nombre}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          `).join('');
+
+          bAprob.innerHTML = `
+            <tr>
+              <td colspan="2" style="text-align:center; padding:24px 16px; color:var(--text-muted);">
+                <div style="width:40px; height:40px; border-radius:50%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; margin:0 auto 10px auto; color:#64748b;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <div style="font-size:14px; font-weight:700; color:var(--text-main); margin-bottom:6px;">
+                  Búsqueda completada: No se hallaron ofertas en catálogos abiertos para este artículo específico
+                </div>
+                <div style="font-size:12px; line-height:1.5; max-width:560px; margin:0 auto 14px auto; color:#64748b;">
+                  Para consultar las publicaciones de vendedores y distribuidores en tiempo real, abrí la búsqueda directa con 1 clic sin bloqueos de seguridad:
+                </div>
+                <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
+                  ${enlacesHtml}
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+          (data.resultados_aprobados || []).forEach(r => {
+            bAprob.innerHTML += `
+              <tr>
+                <td><a href="${r.link}" target="_blank" style="color:var(--primary); text-decoration:underline;">${r.titulo}</a></td>
+                <td style="font-weight:700; color:var(--success);">${formatoPesos(r.precio)}</td>
+              </tr>
+            `;
+          });
+        }
+
+        const bDesc = document.getElementById('p3BodyDescartados');
+        bDesc.innerHTML = '';
+        if ((data.resultados_descartados || []).length === 0) {
+          bDesc.innerHTML = `<tr><td colspan="3" style="color:var(--text-muted);">No se detectaron repuestos ni precios fuera de rango en esta búsqueda.</td></tr>`;
+        } else {
+          data.resultados_descartados.forEach(r => {
+            bDesc.innerHTML += `
+              <tr>
+                <td style="color:var(--text-muted);">${r.titulo}</td>
+                <td>${formatoPesos(r.precio)}</td>
+                <td><span class="pill pill-alert">${r.motivo_descarte}</span></td>
+              </tr>
+            `;
+          });
+        }
+      } catch (err) {
+        alert('Ocurrió un error al consultar precios en vivo: ' + (err.message || err));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = textoOriginal;
+        }
+      }
+    }
+
+    /* MODALES ONBOARDING, LICENCIA E IA */
+    function verificarPrimerArranque() {
+      const visto = localStorage.getItem('sap_onboarding_visto');
+      if (!visto) {
+        abrirModalBienvenida();
+      }
+    }
+
+    function abrirModalBienvenida() {
+      document.getElementById('modalBienvenida').classList.add('open');
+    }
+
+    function cerrarModalBienvenida(marcarVisto = true) {
+      if (marcarVisto) {
+        localStorage.setItem('sap_onboarding_visto', 'true');
+      }
+      document.getElementById('modalBienvenida').classList.remove('open');
+    }
+
+    async function iniciarConEjemploDesdeBienvenida() {
+      cerrarModalBienvenida(true);
+      cambiarPestana(1, document.querySelectorAll('.tab-btn')[0]);
+      await probarEjemploP1();
+    }
+
+    async function probarEjemploP1() {
+      const banner = document.getElementById('demoBannerP1');
+      if (banner) {
+        banner.style.background = '#fef3c7';
+        banner.style.borderColor = '#f59e0b';
+        banner.innerHTML = '<div style="font-weight:700; color:#b45309; padding:8px 0;">⏳ Cargando planillas de ejemplo de Ferretería y cruzando precios en 2 segundos...</div>';
+      }
+      try {
+        await ejecutarActualizador(true);
+        if (banner) {
+          banner.style.background = '#f0fdf4';
+          banner.style.borderColor = '#22c55e';
+          banner.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
+              <div style="color:#15803d; font-size:13px; font-weight:700;">
+                ¡Excelente! Se cruzó tu catálogo completo de 700 artículos (261 precios actualizados) en menos de 2 segundos. Mirá abajo el resultado remarcado y descargá tu Excel.
+              </div>
+              <button class="btn" onclick="restaurarBannerDemoP1()" style="font-size:11px; padding:3px 8px;">Restablecer</button>
+            </div>
+          `;
+        }
+      } catch (err) {
+        alert('Error al probar ejemplo: ' + err);
+        restaurarBannerDemoP1();
+      }
+    }
+
+    function restaurarBannerDemoP1() {
+      const banner = document.getElementById('demoBannerP1');
+      if (banner) {
+        banner.style.background = '#f0fdf4';
+        banner.style.borderColor = '#22c55e';
+        banner.innerHTML = `
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:36px; height:36px; border-radius:8px; background:#dcfce7; display:flex; align-items:center; justify-content:center; color:#15803d; flex-shrink:0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#15803d; font-size:13.5px;">¿Querés probar el sistema ya mismo sin buscar tus planillas?</div>
+              <div style="font-size:12px; color:#166534;">Cargá 2 planillas de ferretería de ejemplo preparadas con 1 solo clic y mirá el cruce en 2 segundos.</div>
+            </div>
+          </div>
+          <button class="btn btn-emerald" onclick="probarEjemploP1()" style="font-weight:700; padding:8px 16px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Probar con Datos de Ejemplo Ahora
+          </button>
+        `;
+      }
+    }
+
+    function abrirModalLicencia() {
+      document.getElementById('modalLicencia').classList.add('open');
+    }
+    function abrirModalVideos() {
+      document.getElementById('modalVideos').classList.add('open');
+    }
+    function abrirModalIA() {
+      document.getElementById('modalIA').classList.add('open');
+    }
+    function cerrarModales() {
+      if (!window.ESTADO_LICENCIA_ACTUAL || !window.ESTADO_LICENCIA_ACTUAL.activada) {
+        // Bloqueo total: Si no hay licencia activa, no se permite cerrar el modal de licencia
+        document.querySelectorAll('.modal-backdrop:not(#modalLicencia)').forEach(m => m.classList.remove('open'));
+        return;
+      }
+      document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+    }
+
+    function copiarHardwareId() {
+      const hw = document.getElementById('txtHardwareId').textContent.trim();
+      navigator.clipboard.writeText(hw).then(() => {
+        const btn = document.getElementById('btnCopiarHw');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copiado';
+          setTimeout(() => { btn.textContent = orig; }, 2000);
+        } else {
+          alert('Código Hardware ID copiado al portapapeles: ' + hw);
+        }
+      });
+    }
+
+    function copiarAliasMP() {
+      const reg = window.PERFIL_REGIONAL || {};
+      const alias = reg.metodo_pago_alias;
+      if (!alias) {
+        if (reg.metodo_pago_url) {
+          window.open(reg.metodo_pago_url, '_blank');
+        } else {
+          alert('Por favor contactá a soporte por WhatsApp para coordinar tu pago.');
+        }
+        return;
+      }
+      navigator.clipboard.writeText(alias).then(() => {
+        const btn = document.getElementById('btnCopiarAlias');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '¡Copiado!';
+          setTimeout(() => { btn.innerHTML = orig; }, 2500);
+        } else {
+          alert('Alias copiado: ' + alias);
+        }
+      }).catch(() => {
+        prompt('Copia el alias de Lemon Cash:', alias);
+      });
+    }
+
+    function enviarHardwareIdPorWhatsApp() {
+      const hw = document.getElementById('txtHardwareId').textContent.trim();
+      const est = window.ESTADO_LICENCIA_ACTUAL || {};
+      const reg = window.PERFIL_REGIONAL || {};
+      let msg = '';
+      if (!est.activada) {
+        if (est.vencida || est.tipo === 'VENCIDA') {
+          msg = `Hola! Finalizó mi período de prueba de 7 días del Actualizador de Precios (${reg.nombre_region || 'Comercio'}) y quiero activar la versión definitiva FULL PRO para mi negocio. Mi Hardware ID es: ${hw}`;
+        } else {
+          msg = `Hola! Acabo de instalar el Súper Actualizador de Precios Pro (${reg.nombre_region || 'Comercio'}) en mi negocio y quiero activar mi prueba gratuita de 7 días. Mi Hardware ID es: ${hw}`;
+        }
+      } else {
+        msg = `Hola! Tengo el Súper Actualizador de Precios Pro (${reg.nombre_region || 'Comercio'}) y quiero consultar para activar la versión definitiva FULL PRO para mi negocio. Mi Hardware ID es: ${hw}`;
+      }
+      const tel = (reg.soporte_whatsapp || '5493434536447').replace(/[^0-9]/g, '');
+      window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    async function solicitarDemoAutomatica() {
+      const comercio = (document.getElementById('inputNombreComercioDemo')?.value || '').trim() || 'Comercio';
+      const whatsapp = (document.getElementById('inputWhatsappDemo')?.value || '').trim();
+      const btn = document.getElementById('btnPedirDemo');
+      const statusDiv = document.getElementById('statusDemoAutomatica');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Activando tus 7 días de regalo...';
+      }
+      if (statusDiv) {
+        statusDiv.innerHTML = '<span style="color:#2563eb; font-weight:700;">Conectando con el servidor de activación oficial...</span>';
+      }
+
+      try {
+        const resp = await fetch('/api/licencia/solicitar-demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ comercio, whatsapp })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          const msg = data.detail || 'No se pudo activar la demo.';
+          if (statusDiv) {
+            statusDiv.innerHTML = `<span style="color:#dc2626; font-weight:700;">${msg}</span>`;
+          }
+          alert('Aviso de Activación: ' + msg);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Comenzar Mi Prueba de 7 Días Ahora';
+          }
+          return;
+        }
+        actualizarUILicencia(data.estado);
+        alert('¡Felicitaciones! Tu período de prueba de 7 días ha sido activado con éxito. ¡Bienvenido a Súper Actualizador PRO!');
+        document.getElementById('modalLicencia').classList.remove('open');
+        abrirModalBienvenida();
+      } catch (err) {
+        console.error(err);
+        alert('Error al conectar: ' + err.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Comenzar Mi Prueba de 7 Días Ahora';
+        }
+        if (statusDiv) {
+          statusDiv.innerHTML = '<span style="color:#dc2626;">Error de conexión. Podés solicitar la clave a un asesor.</span>';
+        }
+      }
+    }
+
+    async function activarClaveManual() {
+      let clave = (document.getElementById('inputClaveLicencia').value || '').trim();
+      clave = clave.replace(/[^A-Za-z0-9_.-]/g, '');
+      if (!clave) {
+        alert('Por favor ingrese la clave de licencia.');
+        return;
+      }
+      const resp = await fetch('/api/licencia/activar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clave })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        alert('Error: ' + (data.detail || 'Clave inválida'));
+        return;
+      }
+      actualizarUILicencia(data.estado);
+      alert('¡Felicitaciones! Licencia activada correctamente: ' + data.estado.tipo);
+      document.getElementById('modalLicencia').classList.remove('open');
+      abrirModalBienvenida();
+    }
+
+    async function guardarGeminiKey() {
+      const api_key = document.getElementById('inputGeminiKey').value.trim();
+      const resp = await fetch('/api/config/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key })
+      });
+      if (resp.ok) {
+        await cargarEstadoInicial();
+        alert('Clave API de Google Gemini guardada correctamente.');
+      }
+    }
+
+    /* =====================================================================
+       PESTAÑA 4: RED DE AUXILIO DE STOCK & HOOK CLOUD
+       ===================================================================== */
+    function consultarAdhesionRed() {
+      const reg = window.PERFIL_REGIONAL || {};
+      const cel = reg.soporte_whatsapp || '5493434536447';
+      const numLimpio = cel.replace(/[^0-9]/g, '');
+      const hw = (window.ESTADO_LICENCIA_ACTUAL && window.ESTADO_LICENCIA_ACTUAL.hardware_id) || 'SAP-LOCAL';
+      const txt = encodeURIComponent(`Hola! Tengo el Súper Actualizador Pro (ID: ${hw}) y me interesa registrar mi comercio como Pionero Fundador en la Red de Auxilio de Stock de mi localidad.`);
+      window.open(`https://wa.me/${numLimpio}?text=${txt}`, '_blank');
+    }
+
+    function simularBusquedaRed() {
+      const inp = document.getElementById('p4InputSimulador');
+      const val = inp ? inp.value.trim() : '';
+      const resDiv = document.getElementById('p4ResultadoSimulacion');
+      if (!val) {
+        alert('Por favor ingrese un nombre de artículo para la simulación.');
+        return;
+      }
+      resDiv.style.display = 'block';
+      resDiv.innerHTML = `
+        <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; padding:12px; font-size:12px; color:#14532d;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+            <strong style="font-size:13px; color:#166534;">✓ Coincidencia Encontrada en Red Local:</strong>
+            <span class="pill pill-ok" style="background:#bbf7d0; color:#14532d;">A 14 cuadras (Comercio #04)</span>
+          </div>
+          <div style="color:#1e293b; font-weight:700; margin-bottom:8px;">${val} — Stock Inmediato para Despacho</div>
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; background:#ffffff; border:1px solid #bbf7d0; border-radius:4px; padding:8px; text-align:center; margin-bottom:8px;">
+            <div><span style="color:#64748b; font-size:10.5px; display:block;">PVP Mostrador</span><strong style="color:#0f172a; font-size:13px;">$ 115.000</strong></div>
+            <div><span style="color:#64748b; font-size:10.5px; display:block;">Costo en Red (-15%)</span><strong style="color:#0284c7; font-size:13px;">$ 97.750</strong></div>
+            <div><span style="color:#64748b; font-size:10.5px; display:block;">Cadete en Moto</span><strong style="color:#d97706; font-size:13px;">$ 2.500</strong></div>
+            <div><span style="color:#15803d; font-size:10.5px; display:block;">Tu Ganancia Limpia</span><strong style="color:#15803d; font-size:13px; font-weight:800;">$ 14.750</strong></div>
+          </div>
+          <div style="font-size:11px; color:#166534; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span>💡 <em>Así funciona la Red: El cliente abona en tu caja, el cadete retira en 20 min y vos te quedás con el margen.</em></span>
+            <button type="button" class="btn btn-emerald" style="padding:4px 10px; font-size:11px;" onclick="consultarAdhesionRed()">Activar mi Comercio</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function conectarHookRedCloud() {
+      try {
+        const reg = window.PERFIL_REGIONAL || {};
+        const regNombre = reg.nombre_region || 'Paraná & Santa Fe';
+        const elNodo = document.getElementById('p4BadgeNodoRegional');
+        const elTitulo = document.getElementById('p4TituloZona');
+        if (elNodo) elNodo.textContent = `Nodo: ${regNombre}`;
+        if (elTitulo) elTitulo.textContent = `Nodo Regional: ${regNombre}`;
+
+        // Hook Cloud asincrónico resiliente (no bloqueante, timeout 2s)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const hw = (window.ESTADO_LICENCIA_ACTUAL && window.ESTADO_LICENCIA_ACTUAL.hardware_id) || 'SAP-LOCAL';
+        const resp = await fetch(`https://sof-ia.site/api/red/v1/nodo-estado?region=${reg.region_id || 'argentina'}&hw=${hw}`, {
+          signal: controller.signal
+        }).catch(() => null);
+        clearTimeout(timeoutId);
+
+        if (resp && resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          if (data && data.activo && data.html_vivo) {
+            const cont = document.getElementById('redStockLiveContainer');
+            if (cont) cont.innerHTML = data.html_vivo;
+          } else if (data && data.total_comercios) {
+            const elTxt = document.getElementById('p4TextoComercios');
+            const elBarra = document.getElementById('p4BarraProgreso');
+            if (elTxt) elTxt.innerHTML = `<strong>Fase de Incorporación:</strong> ${data.total_comercios} de 2 comercios conectados en tu zona.`;
+            if (elBarra) elBarra.style.width = `${Math.min(100, (data.total_comercios / 2) * 100)}%`;
+          }
+        }
+      } catch (e) {
+        // Fallback silencioso: se mantiene el teaser pionero sin afectar nada
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      cargarEstadoInicial();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/demo/sw.js').catch(err => console.log('SW reg error:', err));
+      }
+    });
+  </script>
+</body>
+</html>

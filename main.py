@@ -19,6 +19,7 @@ from app.routers.payments import router as payments_router
 from app.routers.onboarding import router as onboarding_router
 from app.routers.sync import router as sync_router
 from app.routers.licencias import router as licencias_router
+from app.routers.actualizador_demo import router as actualizador_demo_router
 from app.models.actualizador import ActualizadorLead, ActualizadorDownloadLog
 from app.config.settings import settings
 
@@ -393,6 +394,7 @@ app.include_router(onboarding_router)
 app.include_router(onboarding_router, prefix="/api/v1")
 app.include_router(sync_router)
 app.include_router(licencias_router)
+app.include_router(actualizador_demo_router)
 
 # Backward compatibility routes
 app.include_router(webhook_router, prefix="/api/v1/prospecting", tags=["Prospecting Compatibility"])
