@@ -486,6 +486,33 @@
       }
       d.innerHTML += '<div>⚠️ JS Error (' + line + ':' + col + '): ' + msg + '</div>';
     };
+
+    // Polyfill universal de compatibilidad para tablets y navegadores heredados
+    if (!Object.entries) {
+      Object.entries = function(obj) {
+        var ownProps = Object.keys ? Object.keys(obj) : [];
+        if (!Object.keys) {
+          ownProps = [];
+          for (var k in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, k)) ownProps.push(k);
+          }
+        }
+        var i = ownProps.length, resArray = new Array(i);
+        while (i--) {
+          resArray[i] = [ownProps[i], obj[ownProps[i]]];
+        }
+        return resArray;
+      };
+    }
+    if (!Object.values) {
+      Object.values = function(obj) {
+        var res = [];
+        for (var k in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, k)) res.push(obj[k]);
+        }
+        return res;
+      };
+    }
   </script>
 </head>
 <body>
@@ -3006,8 +3033,13 @@
         `;
       }
 
-      Object.entries(itemsPorProv).forEach(([prov, stats]) => {
-        if (stats.count > 0) {
+      var listaProveedoresP2 = (DATOS_P2_ACTUAL.proveedores && DATOS_P2_ACTUAL.proveedores.length > 0)
+        ? DATOS_P2_ACTUAL.proveedores
+        : Object.keys(itemsPorProv);
+
+      listaProveedoresP2.forEach(function(prov) {
+        var stats = itemsPorProv[prov];
+        if (stats && stats.count > 0) {
           contenedorBtns.innerHTML += `
             <button class="btn btn-emerald" onclick="descargarPedidoPersonalizado('${prov}')">
               Descargar Pedido ${prov} (${stats.count} ítems - ${formatoPesos(stats.subtotal)})
