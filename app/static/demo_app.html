@@ -2467,6 +2467,11 @@
 
     /* PESTAÑA 1: ACTUALIZADOR */
     function ejecutarActualizador(usarEjemplo) {
+      if (!usarEjemplo) {
+        abrirModalShowroomDescarga();
+        return Promise.resolve();
+      }
+
       const fd = new FormData();
       fd.append('usar_ejemplo', usarEjemplo ? 'true' : 'false');
       fd.append('nombre_proveedor', document.getElementById('p1NombreProveedor').value);
@@ -2949,6 +2954,11 @@
     }
 
     function ejecutarComparador(usarEjemplo) {
+      if (!usarEjemplo) {
+        abrirModalShowroomDescarga();
+        return Promise.resolve();
+      }
+
       const fd = new FormData();
       fd.append('usar_ejemplo', usarEjemplo ? 'true' : 'false');
       for (let i = 1; i <= 5; i++) {

@@ -194,7 +194,7 @@ async def api_pestana1_actualizar(
     archivo_proveedor: Optional[UploadFile] = File(None),
 ):
     """Retorna en milisegundos el dataset de ferretería con 261 artículos cruzados."""
-    if not usar_ejemplo and (archivo_catalogo or archivo_proveedor):
+    if not usar_ejemplo:
         raise HTTPException(
             status_code=400,
             detail=(
@@ -262,11 +262,12 @@ async def api_pestana2_comparar(
     archivos_proveedores: Optional[List[UploadFile]] = File(None),
 ):
     """Retorna la comparativa multi-proveedor con ahorro inteligente de $10.4M ARS."""
-    if not usar_ejemplo and archivos_proveedores:
+    if not usar_ejemplo:
         raise HTTPException(
             status_code=400,
             detail=(
-                "💡 Modo Demostración Web: Para comparar listas reales de tus distribuidores, descargá el Súper Actualizador PRO para PC en https://sof-ia.site/actualizador. "
+                "💡 Modo Demostración Web: Para comparar listas reales de tus distribuidores con total privacidad, "
+                "descargá el Súper Actualizador PRO para PC en https://sof-ia.site/actualizador. "
                 "En esta demo web podés probar la comparativa de 3 proveedores tocando 'Probar con Datos de Ejemplo Ahora'."
             ),
         )
