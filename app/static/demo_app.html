@@ -513,6 +513,12 @@
         return res;
       };
     }
+    if (window.NodeList && !NodeList.prototype.forEach) {
+      NodeList.prototype.forEach = Array.prototype.forEach;
+    }
+    if (window.HTMLCollection && !HTMLCollection.prototype.forEach) {
+      HTMLCollection.prototype.forEach = Array.prototype.forEach;
+    }
   </script>
 </head>
 <body>
@@ -3141,7 +3147,10 @@
       if (!DATOS_P2_ACTUAL) return;
       PROV_FILTRO_ACTUAL_P2 = provFiltro;
       if (btnEl) {
-        document.querySelectorAll('#p2FiltrosGanador .btn').forEach(b => b.className = 'btn');
+        var btnsFiltro = document.querySelectorAll('#p2FiltrosGanador .btn');
+        for (var bIdx = 0; bIdx < btnsFiltro.length; bIdx++) {
+          btnsFiltro[bIdx].className = 'btn';
+        }
         btnEl.className = 'btn btn-primary';
       }
 
@@ -3445,12 +3454,16 @@
       document.getElementById('modalIA').classList.add('open');
     }
     function cerrarModales() {
+      var modales;
       if (!window.ESTADO_LICENCIA_ACTUAL || !window.ESTADO_LICENCIA_ACTUAL.activada) {
         // Bloqueo total: Si no hay licencia activa, no se permite cerrar el modal de licencia
-        document.querySelectorAll('.modal-backdrop:not(#modalLicencia)').forEach(m => m.classList.remove('open'));
-        return;
+        modales = document.querySelectorAll('.modal-backdrop:not(#modalLicencia)');
+      } else {
+        modales = document.querySelectorAll('.modal-backdrop');
       }
-      document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+      for (var mIdx = 0; mIdx < modales.length; mIdx++) {
+        modales[mIdx].classList.remove('open');
+      }
     }
 
     function copiarHardwareId() {
