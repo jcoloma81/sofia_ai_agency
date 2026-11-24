@@ -2004,31 +2004,40 @@
     }
     window.cambiarPestana = cambiarPestana;
 
-    async function cargarEstadoInicial() {
+    function cargarEstadoInicial() {
       try {
         poblarSelectoresPais();
         cambiarPaisManual('argentina');
 
-        const rLic = await fetch('/api/licencia/estado');
-        if (rLic && rLic.ok) {
-          const dLic = await rLic.json();
-          actualizarUILicencia(dLic.estado || dLic);
-        }
-
-        const rConf = await fetch('/api/config/estado');
-        if (rConf && rConf.ok) {
-          const dConf = await rConf.json();
-          actualizarUIMemoria(dConf.memoria);
-          const elGemini = document.getElementById('estadoGeminiTxt');
-          if (elGemini) {
-            elGemini.textContent = dConf.tiene_api_key
-              ? `Clave API activa (${dConf.api_key_mascara})`
-              : 'Sin clave API cargada (Operando con Diccionario Comercial + Memoria Inteligente Local)';
-          }
-        }
-
-        // Conectar hook cloud de la Red de Auxilio de Stock
-        conectarHookRedCloud();
+        fetch('/api/licencia/estado')
+          .then(function(rLic) {
+            if (rLic && rLic.ok) return rLic.json();
+            return null;
+          })
+          .then(function(dLic) {
+            if (dLic) actualizarUILicencia(dLic.estado || dLic);
+            return fetch('/api/config/estado');
+          })
+          .then(function(rConf) {
+            if (rConf && rConf.ok) return rConf.json();
+            return null;
+          })
+          .then(function(dConf) {
+            if (dConf) {
+              actualizarUIMemoria(dConf.memoria);
+              var elGemini = document.getElementById('estadoGeminiTxt');
+              if (elGemini) {
+                elGemini.textContent = dConf.tiene_api_key
+                  ? ('Clave API activa (' + dConf.api_key_mascara + ')')
+                  : 'Sin clave API cargada (Operando con Diccionario Comercial + Memoria Inteligente Local)';
+              }
+            }
+            conectarHookRedCloud();
+          })
+          .catch(function(e) {
+            console.error('Error al inicializar estado:', e);
+            conectarHookRedCloud();
+          });
       } catch (e) {
         console.error('Error al inicializar estado:', e);
       }
@@ -2351,7 +2360,7 @@
     }
 
     /* PESTAÑA 1: ACTUALIZADOR */
-    async function ejecutarActualizador(usarEjemplo) {
+    function ejecutarActualizador(usarEjemplo) {
       const fd = new FormData();
       fd.append('usar_ejemplo', usarEjemplo ? 'true' : 'false');
       fd.append('nombre_proveedor', document.getElementById('p1NombreProveedor').value);
@@ -2372,7 +2381,7 @@
       if (!usarEjemplo) {
         if (!fCat || !fProv) {
           alert('Por favor, seleccione su Excel actual (1) y la Lista nueva del proveedor (2) para actualizar los precios.');
-          return;
+          return Promise.reject(new Error('Archivos faltantes'));
         }
         fd.append('archivo_catalogo', fCat);
         fd.append('archivo_proveedor', fProv);
@@ -2387,15 +2396,21 @@
         fd.append('hoja_proveedor', selHojaProv.value);
       }
 
-      const resp = await fetch('/api/pestana1/actualizar', { method: 'POST', body: fd });
-      if (!resp.ok) {
-        const err = await resp.json();
-        alert(err.detail || 'Error al procesar los archivos.');
-        return;
-      }
-      const data = await resp.json();
-      renderizarResultadosP1(data);
-      if (data.memoria) actualizarUIMemoria(data.memoria);
+      return fetch('/api/pestana1/actualizar', { method: 'POST', body: fd })
+        .then(function(resp) {
+          if (!resp.ok) {
+            return resp.json().then(function(err) {
+              alert(err.detail || 'Error al procesar los archivos.');
+              throw new Error(err.detail || 'Error al procesar');
+            });
+          }
+          return resp.json();
+        })
+        .then(function(data) {
+          renderizarResultadosP1(data);
+          if (data.memoria) actualizarUIMemoria(data.memoria);
+          return data;
+        });
     }
 
     let DATOS_P1_ITEMS = [];
@@ -2404,7 +2419,7 @@
     let FILTRO_P1_ACTUAL = 'TODOS';
     let DATOS_P2_ACTUAL = null;
 
-    async function verificarHojasExcel(file, containerId, selectId, countId) {
+    function verificarHojasExcel(file, containerId, selectId, countId) {
       if (!file) return;
       const ext = file.name.split('.').pop().toLowerCase();
       const cont = document.getElementById(containerId);
@@ -2417,46 +2432,47 @@
       }
       const fd = new FormData();
       fd.append('archivo', file);
-      try {
-        const res = await fetch('/api/inspeccionar-hojas', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.hojas && data.hojas.length > 1) {
-          if (cnt) cnt.textContent = `${data.hojas.length} Solapas`;
-          sel.innerHTML = `
-            <option value="__TODAS__">Todas las hojas combinadas (${data.hojas.length} solapas)</option>
-            ${data.hojas.map(h => `<option value="${h}">Hoja: ${h}</option>`).join('')}
-          `;
-          cont.style.display = 'block';
-        } else {
-          cont.style.display = 'none';
-          sel.innerHTML = '';
-        }
-      } catch (err) {
-        if (cont) cont.style.display = 'none';
-      }
+      fetch('/api/inspeccionar-hojas', { method: 'POST', body: fd })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.hojas && data.hojas.length > 1) {
+            if (cnt) cnt.textContent = `${data.hojas.length} Solapas`;
+            sel.innerHTML = `
+              <option value="__TODAS__">Todas las hojas combinadas (${data.hojas.length} solapas)</option>
+              ${data.hojas.map(h => `<option value="${h}">Hoja: ${h}</option>`).join('')}
+            `;
+            cont.style.display = 'block';
+          } else {
+            if (cont) cont.style.display = 'none';
+            if (sel) sel.innerHTML = '';
+          }
+        })
+        .catch(function(err) {
+          if (cont) cont.style.display = 'none';
+        });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       const inCat = document.getElementById('p1ArchivoCatalogo');
       if (inCat) {
-        inCat.addEventListener('change', async (e) => {
+        inCat.addEventListener('change', (e) => {
           const f = e.target.files[0];
-          if (f) await verificarHojasExcel(f, 'p1HojaCatContainer', 'p1HojaCatalogo', 'p1HojaCatCount');
+          if (f) verificarHojasExcel(f, 'p1HojaCatContainer', 'p1HojaCatalogo', 'p1HojaCatCount');
         });
       }
       const inProv = document.getElementById('p1ArchivoProveedor');
       if (inProv) {
-        inProv.addEventListener('change', async (e) => {
+        inProv.addEventListener('change', (e) => {
           const f = e.target.files[0];
-          if (f) await verificarHojasExcel(f, 'p1HojaProvContainer', 'p1HojaProveedor', 'p1HojaProvCount');
+          if (f) verificarHojasExcel(f, 'p1HojaProvContainer', 'p1HojaProveedor', 'p1HojaProvCount');
         });
       }
       for (let i = 1; i <= 5; i++) {
         const inP2 = document.getElementById('p2File' + i);
         if (inP2) {
-          inP2.addEventListener('change', async (e) => {
+          inP2.addEventListener('change', (e) => {
             const f = e.target.files[0];
-            if (f) await verificarHojasExcel(f, 'p2HojaCont' + i, 'p2Hoja' + i, 'p2HojaCount' + i);
+            if (f) verificarHojasExcel(f, 'p2HojaCont' + i, 'p2Hoja' + i, 'p2HojaCount' + i);
           });
         }
       }
@@ -2623,7 +2639,7 @@
       actualizarTotalesSeleccionP1();
     }
 
-    async function exportarCatalogoPersonalizadoP1(esPedido) {
+    function exportarCatalogoPersonalizadoP1(esPedido) {
       if (!RESUMEN_P1 || !DATOS_P1_ITEMS.length) {
         alert('Primero procesá una actualización de lista.');
         return;
@@ -2656,28 +2672,28 @@
       const selHojaCat = document.getElementById('p1HojaCatalogo');
       const hojaCat = (selHojaCat && selHojaCat.value) ? selHojaCat.value : null;
 
-      try {
-        const resp = await fetch('/api/pestana1/exportar-personalizado', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nombre_backup: RESUMEN_P1.archivo_backup,
-            nombre_proveedor: RESUMEN_P1.proveedor,
-            items: itemsPayload,
-            modo_margen: modoMargen,
-            margen_fijo_porc: margenFijo,
-            hoja_catalogo: hojaCat
-          })
-        });
-
+      fetch('/api/pestana1/exportar-personalizado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre_backup: RESUMEN_P1.archivo_backup,
+          nombre_proveedor: RESUMEN_P1.proveedor,
+          items: itemsPayload,
+          modo_margen: modoMargen,
+          margen_fijo_porc: margenFijo,
+          hoja_catalogo: hojaCat
+        })
+      })
+      .then(function(resp) {
         if (!resp.ok) {
-          const err = await resp.json();
-          alert(err.detail || 'Error al exportar.');
-          return;
+          return resp.json().then(function(err) {
+            alert(err.detail || 'Error al exportar.');
+            throw new Error(err.detail || 'Error');
+          });
         }
-
-        const data = await resp.json();
-
+        return resp.json();
+      })
+      .then(function(data) {
         if (esPedido) {
           if (!data.archivo_pedido) {
             alert('Para exportar un pedido de compra, primero escribí la cantidad que querés pedir (ej: 5, 10, 20) en la columna "Cant. Pedir" de los productos que te interesen.');
@@ -2708,9 +2724,10 @@
           aCat.click();
           alert(`¡Catálogo personalizado descargado con éxito!\nSe actualizaron ${data.total_actualizados} artículos seleccionados. Los artículos desmarcados conservaron sus costos y precios de venta originales intactos.`);
         }
-      } catch (ex) {
-        alert('Error al exportar catálogo personalizado: ' + ex.message);
-      }
+      })
+      .catch(function(ex) {
+        alert('Error al exportar catálogo personalizado: ' + (ex.message || ex));
+      });
     }
 
     function simplificarConsultaFront(txt) {
@@ -2815,7 +2832,7 @@
       }
     }
 
-    async function ejecutarComparador(usarEjemplo) {
+    function ejecutarComparador(usarEjemplo) {
       const fd = new FormData();
       fd.append('usar_ejemplo', usarEjemplo ? 'true' : 'false');
       for (let i = 1; i <= 5; i++) {
@@ -2836,48 +2853,54 @@
         }
       }
 
-      const resp = await fetch('/api/pestana2/comparar', { method: 'POST', body: fd });
-      if (!resp.ok) {
-        const err = await resp.json();
-        if (resp.status === 403) {
-          alert(err.detail || 'No permitido');
-          abrirModalLicencia();
-        } else {
-          alert(err.detail || 'Seleccione al menos 2 archivos de proveedores para comparar.');
-        }
-        return;
-      }
-
-      const data = await resp.json();
-      if (data.estado_licencia) actualizarUILicencia(data.estado_licencia);
-      renderizarResultadosP2(data);
+      return fetch('/api/pestana2/comparar', { method: 'POST', body: fd })
+        .then(function(resp) {
+          if (!resp.ok) {
+            return resp.json().then(function(err) {
+              if (resp.status === 403) {
+                alert(err.detail || 'No permitido');
+                abrirModalLicencia();
+              } else {
+                alert(err.detail || 'Seleccione al menos 2 archivos de proveedores para comparar.');
+              }
+              throw new Error(err.detail || 'Error en comparativa');
+            });
+          }
+          return resp.json();
+        })
+        .then(function(data) {
+          if (data.estado_licencia) actualizarUILicencia(data.estado_licencia);
+          renderizarResultadosP2(data);
+          return data;
+        });
     }
 
-    async function probarEjemploP2() {
+    function probarEjemploP2() {
       const banner = document.getElementById('demoBannerP2');
       if (banner) {
         banner.style.background = '#fef3c7';
         banner.style.borderColor = '#f59e0b';
         banner.innerHTML = '<div style="font-weight:700; color:#b45309; padding:8px 0;">⏳ Comparando 3 proveedores de Ferretería y calculando el costo más bajo...</div>';
       }
-      try {
-        await ejecutarComparador(true);
-        if (banner) {
-          banner.style.background = '#f0fdf4';
-          banner.style.borderColor = '#22c55e';
-          banner.innerHTML = `
-            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
-              <div style="color:#15803d; font-size:13px; font-weight:700;">
-                ¡Comparativa completada! Mirá abajo la tabla comparativa con el mejor precio y los pedidos divididos por proveedor.
+      ejecutarComparador(true)
+        .then(function() {
+          if (banner) {
+            banner.style.background = '#f0fdf4';
+            banner.style.borderColor = '#22c55e';
+            banner.innerHTML = `
+              <div style="display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
+                <div style="color:#15803d; font-size:13px; font-weight:700;">
+                  ¡Comparativa completada! Mirá abajo la tabla comparativa con el mejor precio y los pedidos divididos por proveedor.
+                </div>
+                <button class="btn" onclick="restaurarBannerDemoP2()" style="font-size:11px; padding:3px 8px;">Restablecer</button>
               </div>
-              <button class="btn" onclick="restaurarBannerDemoP2()" style="font-size:11px; padding:3px 8px;">Restablecer</button>
-            </div>
-          `;
-        }
-      } catch (err) {
-        alert('Error al probar comparador: ' + (err.message || err));
-        restaurarBannerDemoP2();
-      }
+            `;
+          }
+        })
+        .catch(function(err) {
+          alert('Error al probar comparador: ' + (err.message || err));
+          restaurarBannerDemoP2();
+        });
     }
 
     function restaurarBannerDemoP2() {
@@ -3038,7 +3061,7 @@
       marcarTodosP2(checked);
     }
 
-    async function descargarPedidoPersonalizado(prov) {
+    function descargarPedidoPersonalizado(prov) {
       if (!DATOS_P2_ACTUAL) return;
       const itemsProv = [];
       DATOS_P2_ACTUAL.items.forEach(it => {
@@ -3060,22 +3083,26 @@
         return;
       }
 
-      try {
-        const resp = await fetch('/api/pestana2/generar-pedido-personalizado', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ proveedor: prov, items: itemsProv })
-        });
+      fetch('/api/pestana2/generar-pedido-personalizado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proveedor: prov, items: itemsProv })
+      })
+      .then(function(resp) {
         if (!resp.ok) {
-          const err = await resp.json();
-          alert(err.detail || 'Error al generar el archivo de pedido');
-          return;
+          return resp.json().then(function(err) {
+            alert(err.detail || 'Error al generar el archivo de pedido');
+            throw new Error(err.detail || 'Error');
+          });
         }
-        const res = await resp.json();
+        return resp.json();
+      })
+      .then(function(res) {
         window.location.href = res.url;
-      } catch (e) {
+      })
+      .catch(function(e) {
         alert('Error de conexión al generar el archivo');
-      }
+      });
     }
 
     function filtrarTablaP2(provFiltro, btnEl) {
@@ -3141,7 +3168,7 @@
     }
 
     /* PESTAÑA 3: PRECIOS DE MERCADO */
-    async function ejecutarRadarML() {
+    function ejecutarRadarML() {
       const consulta = document.getElementById('p3Consulta').value.trim();
       const comision = parseFloat(document.getElementById('p3Comision').value || '0');
       if (!consulta) {
@@ -3177,22 +3204,23 @@
         `;
       }
 
-      try {
-        const paisActivo = (window.PERFIL_ACTUAL && window.PERFIL_ACTUAL.id) || 'argentina';
-        const resp = await fetch('/api/pestana3/radar-ml', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ consulta, comision_ml_porc: comision, pais_id: paisActivo })
-        });
-
+      const paisActivo = (window.PERFIL_ACTUAL && window.PERFIL_ACTUAL.id) || 'argentina';
+      fetch('/api/pestana3/radar-ml', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consulta, comision_ml_porc: comision, pais_id: paisActivo })
+      })
+      .then(function(resp) {
         if (!resp.ok) {
-          const err = await resp.json().catch(() => ({}));
-          alert(err.detail || 'No se pudo completar la consulta de precios.');
-          abrirModalLicencia();
-          return;
+          return resp.json().catch(function() { return {}; }).then(function(err) {
+            alert(err.detail || 'No se pudo completar la consulta de precios.');
+            abrirModalLicencia();
+            throw new Error(err.detail || 'Error en radar');
+          });
         }
-
-        const data = await resp.json();
+        return resp.json();
+      })
+      .then(function(data) {
         if (data.estado_licencia) actualizarUILicencia(data.estado_licencia);
 
         document.getElementById('kpiP3PromML').textContent = formatoPesos(data.promedio_mercadolibre);
@@ -3287,14 +3315,16 @@
             `;
           });
         }
-      } catch (err) {
+      })
+      .catch(function(err) {
         alert('Ocurrió un error al consultar precios en vivo: ' + (err.message || err));
-      } finally {
+      })
+      .then(function() {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = textoOriginal;
         }
-      }
+      });
     }
 
     /* MODALES ONBOARDING, LICENCIA E IA */
@@ -3316,37 +3346,38 @@
       document.getElementById('modalBienvenida').classList.remove('open');
     }
 
-    async function iniciarConEjemploDesdeBienvenida() {
+    function iniciarConEjemploDesdeBienvenida() {
       cerrarModalBienvenida(true);
       cambiarPestana(1, document.querySelectorAll('.tab-btn')[0]);
-      await probarEjemploP1();
+      probarEjemploP1();
     }
 
-    async function probarEjemploP1() {
+    function probarEjemploP1() {
       const banner = document.getElementById('demoBannerP1');
       if (banner) {
         banner.style.background = '#fef3c7';
         banner.style.borderColor = '#f59e0b';
         banner.innerHTML = '<div style="font-weight:700; color:#b45309; padding:8px 0;">⏳ Cargando planillas de ejemplo de Ferretería y cruzando precios en 2 segundos...</div>';
       }
-      try {
-        await ejecutarActualizador(true);
-        if (banner) {
-          banner.style.background = '#f0fdf4';
-          banner.style.borderColor = '#22c55e';
-          banner.innerHTML = `
-            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
-              <div style="color:#15803d; font-size:13px; font-weight:700;">
-                ¡Excelente! Se cruzó tu catálogo completo de 700 artículos (261 precios actualizados) en menos de 2 segundos. Mirá abajo el resultado remarcado y descargá tu Excel.
+      ejecutarActualizador(true)
+        .then(function() {
+          if (banner) {
+            banner.style.background = '#f0fdf4';
+            banner.style.borderColor = '#22c55e';
+            banner.innerHTML = `
+              <div style="display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
+                <div style="color:#15803d; font-size:13px; font-weight:700;">
+                  ¡Excelente! Se cruzó tu catálogo completo de 700 artículos (261 precios actualizados) en menos de 2 segundos. Mirá abajo el resultado remarcado y descargá tu Excel.
+                </div>
+                <button class="btn" onclick="restaurarBannerDemoP1()" style="font-size:11px; padding:3px 8px;">Restablecer</button>
               </div>
-              <button class="btn" onclick="restaurarBannerDemoP1()" style="font-size:11px; padding:3px 8px;">Restablecer</button>
-            </div>
-          `;
-        }
-      } catch (err) {
-        alert('Error al probar ejemplo: ' + err);
-        restaurarBannerDemoP1();
-      }
+            `;
+          }
+        })
+        .catch(function(err) {
+          alert('Error al probar ejemplo: ' + (err.message || err));
+          restaurarBannerDemoP1();
+        });
     }
 
     function restaurarBannerDemoP1() {
@@ -3447,7 +3478,7 @@
       window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
-    async function solicitarDemoAutomatica() {
+    function solicitarDemoAutomatica() {
       const elNomDemo = document.getElementById('inputNombreComercioDemo');
       const comercio = (elNomDemo && elNomDemo.value ? elNomDemo.value : '').trim() || 'Comercio';
       const elWpDemo = document.getElementById('inputWhatsappDemo');
@@ -3463,32 +3494,34 @@
         statusDiv.innerHTML = '<span style="color:#2563eb; font-weight:700;">Conectando con el servidor de activación oficial...</span>';
       }
 
-      try {
-        const resp = await fetch('/api/licencia/solicitar-demo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comercio, whatsapp })
+      fetch('/api/licencia/solicitar-demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comercio, whatsapp })
+      })
+      .then(function(resp) {
+        return resp.json().then(function(data) {
+          if (!resp.ok) {
+            const msg = data.detail || 'No se pudo activar la demo.';
+            if (statusDiv) {
+              statusDiv.innerHTML = `<span style="color:#dc2626; font-weight:700;">${msg}</span>`;
+            }
+            alert('Aviso de Activación: ' + msg);
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = 'Comenzar Mi Prueba de 7 Días Ahora';
+            }
+            return;
+          }
+          actualizarUILicencia(data.estado);
+          alert('¡Felicitaciones! Tu período de prueba de 7 días ha sido activado con éxito. ¡Bienvenido a Súper Actualizador PRO!');
+          document.getElementById('modalLicencia').classList.remove('open');
+          abrirModalBienvenida();
         });
-        const data = await resp.json();
-        if (!resp.ok) {
-          const msg = data.detail || 'No se pudo activar la demo.';
-          if (statusDiv) {
-            statusDiv.innerHTML = `<span style="color:#dc2626; font-weight:700;">${msg}</span>`;
-          }
-          alert('Aviso de Activación: ' + msg);
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Comenzar Mi Prueba de 7 Días Ahora';
-          }
-          return;
-        }
-        actualizarUILicencia(data.estado);
-        alert('¡Felicitaciones! Tu período de prueba de 7 días ha sido activado con éxito. ¡Bienvenido a Súper Actualizador PRO!');
-        document.getElementById('modalLicencia').classList.remove('open');
-        abrirModalBienvenida();
-      } catch (err) {
+      })
+      .catch(function(err) {
         console.error(err);
-        alert('Error al conectar: ' + err.message);
+        alert('Error al conectar: ' + (err.message || err));
         if (btn) {
           btn.disabled = false;
           btn.textContent = 'Comenzar Mi Prueba de 7 Días Ahora';
@@ -3496,43 +3529,54 @@
         if (statusDiv) {
           statusDiv.innerHTML = '<span style="color:#dc2626;">Error de conexión. Podés solicitar la clave a un asesor.</span>';
         }
-      }
+      });
     }
 
-    async function activarClaveManual() {
+    function activarClaveManual() {
       let clave = (document.getElementById('inputClaveLicencia').value || '').trim();
       clave = clave.replace(/[^A-Za-z0-9_.-]/g, '');
       if (!clave) {
         alert('Por favor ingrese la clave de licencia.');
         return;
       }
-      const resp = await fetch('/api/licencia/activar', {
+      fetch('/api/licencia/activar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clave })
+      })
+      .then(function(resp) {
+        return resp.json().then(function(data) {
+          if (!resp.ok) {
+            alert('Error: ' + (data.detail || 'Clave inválida'));
+            return;
+          }
+          actualizarUILicencia(data.estado);
+          alert('¡Felicitaciones! Licencia activada correctamente: ' + data.estado.tipo);
+          document.getElementById('modalLicencia').classList.remove('open');
+          abrirModalBienvenida();
+        });
+      })
+      .catch(function(e) {
+        alert('Error al activar clave: ' + (e.message || e));
       });
-      const data = await resp.json();
-      if (!resp.ok) {
-        alert('Error: ' + (data.detail || 'Clave inválida'));
-        return;
-      }
-      actualizarUILicencia(data.estado);
-      alert('¡Felicitaciones! Licencia activada correctamente: ' + data.estado.tipo);
-      document.getElementById('modalLicencia').classList.remove('open');
-      abrirModalBienvenida();
     }
 
-    async function guardarGeminiKey() {
+    function guardarGeminiKey() {
       const api_key = document.getElementById('inputGeminiKey').value.trim();
-      const resp = await fetch('/api/config/gemini', {
+      fetch('/api/config/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key })
+      })
+      .then(function(resp) {
+        if (resp.ok) {
+          cargarEstadoInicial();
+          alert('Clave API de Google Gemini guardada correctamente.');
+        }
+      })
+      .catch(function(e) {
+        alert('Error al guardar clave API: ' + (e.message || e));
       });
-      if (resp.ok) {
-        await cargarEstadoInicial();
-        alert('Clave API de Google Gemini guardada correctamente.');
-      }
     }
 
     /* =====================================================================
@@ -3577,7 +3621,7 @@
       `;
     }
 
-    async function conectarHookRedCloud() {
+    function conectarHookRedCloud() {
       try {
         const reg = window.PERFIL_REGIONAL || {};
         const regNombre = reg.nombre_region || 'Paraná & Santa Fe';
@@ -3586,27 +3630,28 @@
         if (elNodo) elNodo.textContent = `Nodo: ${regNombre}`;
         if (elTitulo) elTitulo.textContent = `Nodo Regional: ${regNombre}`;
 
-        // Hook Cloud asincrónico resiliente (no bloqueante, timeout 2s)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
         const hw = (window.ESTADO_LICENCIA_ACTUAL && window.ESTADO_LICENCIA_ACTUAL.hardware_id) || 'SAP-LOCAL';
-        const resp = await fetch(`https://sof-ia.site/api/red/v1/nodo-estado?region=${reg.region_id || 'argentina'}&hw=${hw}`, {
-          signal: controller.signal
-        }).catch(() => null);
-        clearTimeout(timeoutId);
-
-        if (resp && resp.ok) {
-          const data = await resp.json().catch(() => ({}));
-          if (data && data.activo && data.html_vivo) {
-            const cont = document.getElementById('redStockLiveContainer');
-            if (cont) cont.innerHTML = data.html_vivo;
-          } else if (data && data.total_comercios) {
-            const elTxt = document.getElementById('p4TextoComercios');
-            const elBarra = document.getElementById('p4BarraProgreso');
-            if (elTxt) elTxt.innerHTML = `<strong>Fase de Incorporación:</strong> ${data.total_comercios} de 2 comercios conectados en tu zona.`;
-            if (elBarra) elBarra.style.width = `${Math.min(100, (data.total_comercios / 2) * 100)}%`;
-          }
-        }
+        const url = `https://sof-ia.site/api/red/v1/nodo-estado?region=${reg.region_id || 'argentina'}&hw=${hw}`;
+        
+        fetch(url)
+          .then(function(resp) {
+            if (resp && resp.ok) return resp.json();
+            return null;
+          })
+          .then(function(data) {
+            if (data && data.activo && data.html_vivo) {
+              const cont = document.getElementById('redStockLiveContainer');
+              if (cont) cont.innerHTML = data.html_vivo;
+            } else if (data && data.total_comercios) {
+              const elTxt = document.getElementById('p4TextoComercios');
+              const elBarra = document.getElementById('p4BarraProgreso');
+              if (elTxt) elTxt.innerHTML = `<strong>Fase de Incorporación:</strong> ${data.total_comercios} de 2 comercios conectados en tu zona.`;
+              if (elBarra) elBarra.style.width = `${Math.min(100, (data.total_comercios / 2) * 100)}%`;
+            }
+          })
+          .catch(function(e) {
+            // Fallback silencioso
+          });
       } catch (e) {
         // Fallback silencioso: se mantiene el teaser pionero sin afectar nada
       }
