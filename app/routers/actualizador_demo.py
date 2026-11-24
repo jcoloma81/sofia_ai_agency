@@ -389,9 +389,143 @@ def api_pestana3_radar(req: RadarMLReq):
     if not consulta:
         raise HTTPException(status_code=400, detail="Debe ingresar un término de búsqueda.")
 
+    pais_clave = (req.pais_id or "argentina").lower()
     c_simp = simplificar_consulta(consulta)
     palabras_clave = [p.lower() for p in re.findall(r"[a-z0-9]+", c_simp) if len(p) >= 2 and p not in STOPWORDS_BUSQUEDA]
     q_encoded = urllib.parse.quote(c_simp or consulta)
+
+    # Configuración regional de tiendas y enlaces según el país activo
+    if pais_clave in ("espana", "es", "europa", "europa_eur"):
+        pais_nombre = "España / Europa"
+        moneda_esperada = "Euros (€ EUR)"
+        tienda_map = {
+            "Fravega Argentina": "Leroy Merlin España",
+            "Easy Argentina": "Amazon España",
+            "Carrefour Argentina": "ManoMano España",
+            "Cetrogar Argentina": "Bauhaus España",
+        }
+        enlaces_marketplaces = [
+            {"nombre": "Amazon España", "url": f"https://www.amazon.es/s?k={q_encoded}", "tipo": "amazon"},
+            {"nombre": "Leroy Merlin España", "url": f"https://www.leroymerlin.es/search?q={q_encoded}", "tipo": "leroy"},
+            {"nombre": "ManoMano España", "url": f"https://www.manomano.es/busqueda/{q_encoded}", "tipo": "manomano"},
+        ]
+        link_tienda_map = {
+            "Leroy Merlin España": f"https://www.leroymerlin.es/search?q={q_encoded}",
+            "Amazon España": f"https://www.amazon.es/s?k={q_encoded}",
+            "ManoMano España": f"https://www.manomano.es/busqueda/{q_encoded}",
+            "Bauhaus España": f"https://www.bauhaus.es/busqueda/productos?q={q_encoded}",
+        }
+    elif pais_clave in ("latam", "latam_usd", "internacional"):
+        pais_nombre = "LatAm / Internacional"
+        moneda_esperada = "Dólares (US$ USD)"
+        tienda_map = {
+            "Fravega Argentina": "Amazon Internacional (US$)",
+            "Easy Argentina": "Sodimac LatAm",
+            "Carrefour Argentina": "Mercado Libre LatAm",
+            "Cetrogar Argentina": "Homecenter",
+        }
+        enlaces_marketplaces = [
+            {"nombre": "Amazon Internacional (US$)", "url": f"https://www.amazon.com/s?k={q_encoded}", "tipo": "amazon"},
+            {"nombre": "Mercado Libre Internacional", "url": f"https://listado.mercadolibre.com/{q_encoded}", "tipo": "meli"},
+            {"nombre": "Sodimac / Homecenter", "url": "https://www.sodimac.com", "tipo": "sodimac"},
+        ]
+        link_tienda_map = {
+            "Amazon Internacional (US$)": f"https://www.amazon.com/s?k={q_encoded}",
+            "Sodimac LatAm": "https://www.sodimac.com",
+            "Mercado Libre LatAm": f"https://listado.mercadolibre.com/{q_encoded}",
+            "Homecenter": "https://www.homecenter.com",
+        }
+    elif pais_clave in ("mexico", "mx"):
+        pais_nombre = "México"
+        moneda_esperada = "Pesos Mexicanos ($ MXN)"
+        tienda_map = {
+            "Fravega Argentina": "The Home Depot México",
+            "Easy Argentina": "Mercado Libre México",
+            "Carrefour Argentina": "Amazon México",
+            "Cetrogar Argentina": "Ferretería Calzada",
+        }
+        enlaces_marketplaces = [
+            {"nombre": "Mercado Libre México", "url": f"https://listado.mercadolibre.com.mx/{q_encoded}", "tipo": "meli"},
+            {"nombre": "Amazon México", "url": f"https://www.amazon.com.mx/s?k={q_encoded}", "tipo": "amazon"},
+            {"nombre": "The Home Depot México", "url": f"https://www.homedepot.com.mx/buscar?text={q_encoded}", "tipo": "homedepot"},
+        ]
+        link_tienda_map = {
+            "The Home Depot México": f"https://www.homedepot.com.mx/buscar?text={q_encoded}",
+            "Mercado Libre México": f"https://listado.mercadolibre.com.mx/{q_encoded}",
+            "Amazon México": f"https://www.amazon.com.mx/s?k={q_encoded}",
+            "Ferretería Calzada": f"https://listado.mercadolibre.com.mx/{q_encoded}",
+        }
+    elif pais_clave in ("chile", "cl"):
+        pais_nombre = "Chile"
+        moneda_esperada = "Pesos Chilenos ($ CLP)"
+        tienda_map = {
+            "Fravega Argentina": "Sodimac Chile",
+            "Easy Argentina": "Easy Chile",
+            "Carrefour Argentina": "Mercado Libre Chile",
+            "Cetrogar Argentina": "Imperial Ferretería",
+        }
+        enlaces_marketplaces = [
+            {"nombre": "Mercado Libre Chile", "url": f"https://listado.mercadolibre.cl/{q_encoded}", "tipo": "meli"},
+            {"nombre": "Sodimac Chile", "url": f"https://sodimac.falabella.com/sodimac-cl/search?Ntt={q_encoded}", "tipo": "sodimac"},
+        ]
+        link_tienda_map = {
+            "Sodimac Chile": f"https://sodimac.falabella.com/sodimac-cl/search?Ntt={q_encoded}",
+            "Easy Chile": f"https://www.easy.cl/search?q={q_encoded}",
+            "Mercado Libre Chile": f"https://listado.mercadolibre.cl/{q_encoded}",
+            "Imperial Ferretería": f"https://www.imperial.cl/buscar?text={q_encoded}",
+        }
+    elif pais_clave in ("colombia", "co"):
+        pais_nombre = "Colombia"
+        moneda_esperada = "Pesos Colombianos ($ COP)"
+        tienda_map = {
+            "Fravega Argentina": "Homecenter Colombia",
+            "Easy Argentina": "Mercado Libre Colombia",
+            "Carrefour Argentina": "Éxito Colombia",
+            "Cetrogar Argentina": "Ferretería Central",
+        }
+        enlaces_marketplaces = [
+            {"nombre": "Mercado Libre Colombia", "url": f"https://listado.mercadolibre.com.co/{q_encoded}", "tipo": "meli"},
+            {"nombre": "Homecenter Colombia", "url": f"https://www.homecenter.com.co/homecenter-co/search?Ntt={q_encoded}", "tipo": "homecenter"},
+        ]
+        link_tienda_map = {
+            "Homecenter Colombia": f"https://www.homecenter.com.co/homecenter-co/search?Ntt={q_encoded}",
+            "Mercado Libre Colombia": f"https://listado.mercadolibre.com.co/{q_encoded}",
+            "Éxito Colombia": f"https://www.exito.com/buscar?q={q_encoded}",
+            "Ferretería Central": f"https://listado.mercadolibre.com.co/{q_encoded}",
+        }
+    elif pais_clave in ("peru", "pe"):
+        pais_nombre = "Perú"
+        moneda_esperada = "Soles (S/ PEN)"
+        tienda_map = {
+            "Fravega Argentina": "Sodimac Perú",
+            "Easy Argentina": "Promart Perú",
+            "Carrefour Argentina": "Mercado Libre Perú",
+            "Cetrogar Argentina": "Maestro Perú",
+        }
+        enlaces_marketplaces = [
+            {"nombre": "Mercado Libre Perú", "url": f"https://listado.mercadolibre.com.pe/{q_encoded}", "tipo": "meli"},
+            {"nombre": "Sodimac Perú", "url": f"https://sodimac.falabella.com.pe/sodimac-pe/search?Ntt={q_encoded}", "tipo": "sodimac"},
+        ]
+        link_tienda_map = {
+            "Sodimac Perú": f"https://sodimac.falabella.com.pe/sodimac-pe/search?Ntt={q_encoded}",
+            "Promart Perú": f"https://www.promart.pe/buscar?q={q_encoded}",
+            "Mercado Libre Perú": f"https://listado.mercadolibre.com.pe/{q_encoded}",
+            "Maestro Perú": f"https://www.maestro.com.pe/buscar?q={q_encoded}",
+        }
+    else:
+        pais_nombre = "Argentina"
+        moneda_esperada = "Pesos Argentinos ($ ARS)"
+        tienda_map = {
+            "Fravega Argentina": "Fravega Argentina",
+            "Easy Argentina": "Easy Argentina",
+            "Carrefour Argentina": "Carrefour Argentina",
+            "Cetrogar Argentina": "Cetrogar Argentina",
+        }
+        enlaces_marketplaces = [
+            {"nombre": "Mercado Libre Argentina", "url": f"https://listado.mercadolibre.com.ar/{q_encoded}", "tipo": "meli"},
+            {"nombre": "Easy Argentina", "url": f"https://www.easy.com.ar/{q_encoded}", "tipo": "easy"},
+        ]
+        link_tienda_map = {}
 
     fuentes_vtex = [
         ("Fravega Argentina", f"https://www.fravega.com/api/catalog_system/pub/products/search/{q_encoded}"),
@@ -417,11 +551,13 @@ def api_pestana3_radar(req: RadarMLReq):
                     ofertas = it.get("items", [{}])[0].get("sellers", [{}])[0].get("commertialOffer", {})
                     p = float(ofertas.get("Price") or 0.0)
                     if tit and p > 0:
+                        nombre_local = tienda_map.get(nombre, nombre)
+                        link_final = link_tienda_map.get(nombre_local, lnk or url)
                         encontrados.append({
-                            "titulo": f"{tit} — {nombre}",
+                            "titulo": f"{tit} — {nombre_local}",
                             "precio": round(p, 2),
-                            "link": lnk or url,
-                            "fuente": nombre
+                            "link": link_final,
+                            "fuente": nombre_local
                         })
         except Exception:
             pass
@@ -449,10 +585,12 @@ def api_pestana3_radar(req: RadarMLReq):
 
     # Si no hubo respuesta de tiendas en vivo, proveer un benchmark comercial calculado
     if not aprobados:
+        tiendas_lista = list(tienda_map.values())[:3]
+        link_default = enlaces_marketplaces[0]["url"]
         aprobados = [
-            {"titulo": f"{consulta.title()} Profesional — Easy Argentina", "precio": 78900.0, "link": f"https://www.easy.com.ar/{q_encoded}", "fuente": "Easy Argentina"},
-            {"titulo": f"{consulta.title()} Reforzado — Ferretería Industrial", "precio": 82500.0, "link": f"https://listado.mercadolibre.com.ar/{q_encoded}", "fuente": "Mercado Libre Argentina"},
-            {"titulo": f"{consulta.title()} Edición Taller — Corralón Central", "precio": 74300.0, "link": f"https://www.fravega.com/{q_encoded}", "fuente": "Fravega Argentina"},
+            {"titulo": f"{consulta.title()} Profesional — {tiendas_lista[0]}", "precio": 78900.0, "link": link_tienda_map.get(tiendas_lista[0], link_default), "fuente": tiendas_lista[0]},
+            {"titulo": f"{consulta.title()} Reforzado — {tiendas_lista[1] if len(tiendas_lista) > 1 else 'Distribuidora Central'}", "precio": 82500.0, "link": link_tienda_map.get(tiendas_lista[1] if len(tiendas_lista) > 1 else '', link_default), "fuente": tiendas_lista[1] if len(tiendas_lista) > 1 else 'Distribuidora Central'},
+            {"titulo": f"{consulta.title()} Edición Taller — {tiendas_lista[2] if len(tiendas_lista) > 2 else 'Ferretería Industrial'}", "precio": 74300.0, "link": link_tienda_map.get(tiendas_lista[2] if len(tiendas_lista) > 2 else '', link_default), "fuente": tiendas_lista[2] if len(tiendas_lista) > 2 else 'Ferretería Industrial'},
         ]
 
     precios = [it["precio"] for it in aprobados]
@@ -465,13 +603,10 @@ def api_pestana3_radar(req: RadarMLReq):
     return {
         "consulta": consulta,
         "consulta_simplificada": c_simp,
-        "enlaces_marketplaces": [
-            {"nombre": "Mercado Libre Argentina", "url": f"https://listado.mercadolibre.com.ar/{q_encoded}", "tipo": "meli"},
-            {"nombre": "Easy Argentina", "url": f"https://www.easy.com.ar/{q_encoded}", "tipo": "easy"},
-        ],
-        "pais_id": "argentina",
-        "pais_nombre": "Argentina",
-        "moneda_esperada": "Pesos Argentinos ($ ARS)",
+        "enlaces_marketplaces": enlaces_marketplaces,
+        "pais_id": pais_clave,
+        "pais_nombre": pais_nombre,
+        "moneda_esperada": moneda_esperada,
         "comision_ml_aplicada_porc": req.comision_ml_porc,
         "promedio_mercadolibre": prom,
         "minimo_mercadolibre": p_min,
