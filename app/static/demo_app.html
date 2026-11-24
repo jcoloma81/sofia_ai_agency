@@ -499,19 +499,13 @@
       <!-- Selector Regional de País / Moneda de Mostrador -->
       <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); padding:3px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.25);">
         <span style="font-size:11px; font-weight:700; color:#e2e8f0; text-transform:uppercase;">País:</span>
-        <select id="selectPaisRegional" onchange="cambiarPaisManual(this.value)" style="background:#0f172a; color:#ffffff; border:1px solid #334155; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:600; cursor:pointer; outline:none;">
-          <option value="mexico">🇲🇽 México ($ MXN)</option>
-          <option value="chile">🇨🇱 Chile ($ CLP)</option>
-          <option value="peru">🇵🇪 Perú (S/ PEN)</option>
-          <option value="colombia">🇨🇴 Colombia ($ COP)</option>
-          <option value="argentina">🇦🇷 Argentina ($ ARS)</option>
-          <option value="europa">🇪🇸 España / Europa (€ EUR)</option>
-          <option value="latam_usd">Internacional (US$ USD)</option>
+        <select id="selectPaisRegional" disabled style="background:#0f172a; color:#ffffff; border:1px solid #334155; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:600; cursor:default; outline:none; opacity:0.95;">
+          <option value="argentina" selected>🇦🇷 Argentina ($ ARS)</option>
         </select>
       </div>
 
-      <span id="badgeMemoria" class="status-tag">Memoria Inteligente: 0 artículos</span>
-      <span id="badgeLicencia" class="status-tag">Verificando licencia...</span>
+      <span id="badgeMemoria" class="status-tag">Memoria Inteligente: 261 artículos</span>
+      <span id="badgeLicencia" class="status-tag">Demo Showroom en Vivo</span>
       <button class="btn btn-header" style="background:#fdf2f8; color:#db2777; border-color:#fce7f3; font-weight:700; display:inline-flex; align-items:center; gap:5px;" onclick="abrirModalVideos()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Videos y Demos
@@ -544,7 +538,7 @@
       <button class="tab-btn" onclick="cambiarPestana(2, this)">
         <div class="tab-btn-title">
           <span>2. Comparador de Proveedores</span>
-          <span id="tagPruebasComp" class="pill pill-alert">BLOQUEADO</span>
+          <span id="tagPruebasComp" class="pill pill-ok">EN VIVO</span>
         </div>
         <div class="tab-btn-desc">Comparativa de costos y armado de pedidos</div>
       </button>
@@ -552,7 +546,7 @@
       <button class="tab-btn" onclick="cambiarPestana(3, this)">
         <div class="tab-btn-title">
           <span>3. Consultar Precios de Mercado</span>
-          <span id="tagPruebasML" class="pill pill-alert">BLOQUEADO</span>
+          <span id="tagPruebasML" class="pill pill-ok">EN VIVO</span>
         </div>
         <div class="tab-btn-desc">Referencia en vivo para artículos sin lista</div>
       </button>
@@ -641,18 +635,12 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               País y Moneda de tu Comercio:
             </label>
-            <select id="p1SelectPais" onchange="cambiarPaisManual(this.value)" style="font-size:13px; font-weight:700; padding:6px 12px; border:2px solid #2563eb; border-radius:6px; background:#ffffff; color:#0f172a; cursor:pointer; outline:none; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-              <option value="mexico">🇲🇽 México (Pesos $ MXN)</option>
-              <option value="chile">🇨🇱 Chile (Pesos $ CLP)</option>
-              <option value="peru">🇵🇪 Perú (Soles S/ PEN)</option>
-              <option value="colombia">🇨🇴 Colombia (Pesos $ COP)</option>
-              <option value="argentina">🇦🇷 Argentina (Pesos $ ARS)</option>
-              <option value="europa">🇪🇸 España / Europa (Euros € EUR)</option>
-              <option value="latam_usd">Internacional / Dólares (US$ USD)</option>
+            <select id="p1SelectPais" disabled style="font-size:13px; font-weight:700; padding:6px 12px; border:2px solid #2563eb; border-radius:6px; background:#ffffff; color:#0f172a; cursor:default; outline:none; opacity:0.95; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              <option value="argentina" selected>🇦🇷 Argentina (Pesos $ ARS)</option>
             </select>
           </div>
           <div id="p1AvisoRegional" style="font-size:12px; color:#475569; font-weight:600;">
-            Mostrador configurado para México: IVA y redondeos comerciales en pesos MXN.
+            Mostrador configurado para <strong>Argentina</strong>: Impuestos oficiales (+21%) y redondeo comercial en <strong>ARS</strong>.
           </div>
         </div>
 
@@ -839,19 +827,30 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               País y Moneda de Comparación:
             </label>
-            <select id="p2SelectPais" onchange="cambiarPaisManual(this.value)" style="font-size:13px; font-weight:700; padding:6px 12px; border:2px solid #2563eb; border-radius:6px; background:#ffffff; color:#0f172a; cursor:pointer; outline:none; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-              <option value="mexico">🇲🇽 México (Pesos $ MXN)</option>
-              <option value="chile">🇨🇱 Chile (Pesos $ CLP)</option>
-              <option value="peru">🇵🇪 Perú (Soles S/ PEN)</option>
-              <option value="colombia">🇨🇴 Colombia (Pesos $ COP)</option>
-              <option value="argentina">🇦🇷 Argentina (Pesos $ ARS)</option>
-              <option value="europa">🇪🇸 España / Europa (Euros € EUR)</option>
-              <option value="latam_usd">Internacional / Dólares (US$ USD)</option>
+            <select id="p2SelectPais" disabled style="font-size:13px; font-weight:700; padding:6px 12px; border:2px solid #2563eb; border-radius:6px; background:#ffffff; color:#0f172a; cursor:default; outline:none; opacity:0.95; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              <option value="argentina" selected>🇦🇷 Argentina (Pesos $ ARS)</option>
             </select>
           </div>
           <div id="p2AvisoRegional" style="font-size:12px; color:#475569; font-weight:600;">
-            Precios comparativos y cálculos de IVA según normativa del país seleccionado.
+            Comparador configurado para <strong>Argentina</strong>: Impuestos oficiales (+21%) en <strong>ARS</strong>.
           </div>
+        </div>
+
+        <!-- BANNER PROBAR COMPARADOR CON DATOS DE EJEMPLO -->
+        <div id="demoBannerP2" style="background:#eff6ff; border:1.5px dashed #3b82f6; border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:36px; height:36px; border-radius:8px; background:#dbeafe; display:flex; align-items:center; justify-content:center; color:#1d4ed8; flex-shrink:0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:700; color:#1e40af; font-size:13.5px;">¿Querés comparar 3 mayoristas de Ferretería ahora mismo?</div>
+              <div style="font-size:12px; color:#2563eb;">Cargá 3 listas de proveedores simuladas con 1 solo clic y descubrí el mejor costo producto por producto.</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="probarEjemploP2()" style="font-weight:700; padding:8px 16px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(37,99,235,0.3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Comparar 3 Proveedores con Ejemplo Ahora
+          </button>
         </div>
 
         <div class="grid-3" id="p2ContenedorProveedores" style="margin-bottom:16px;">
@@ -1145,6 +1144,12 @@
           <div class="field">
             <label>Producto a buscar en el mercado</label>
             <input type="text" id="p3Consulta" value="" placeholder="Ej: Taladro Percutor Makita HP1630 710W" onkeydown="if(event.key==='Enter') { event.preventDefault(); ejecutarRadarML(); }" />
+            <div style="margin-top:5px; display:flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:11px; color:#64748b;">
+              <span>Ejemplos:</span>
+              <button type="button" class="btn" style="padding:2px 7px; font-size:10.5px; background:#f1f5f9;" onclick="buscarEjemploP3('Taladro Percutor Makita HP1630')">Taladro Makita</button>
+              <button type="button" class="btn" style="padding:2px 7px; font-size:10.5px; background:#f1f5f9;" onclick="buscarEjemploP3('Amoladora DeWalt DWE4020')">Amoladora DeWalt</button>
+              <button type="button" class="btn" style="padding:2px 7px; font-size:10.5px; background:#f1f5f9;" onclick="buscarEjemploP3('Termofusora Acqua System 800W')">Termofusora</button>
+            </div>
           </div>
           <div class="field">
             <label>Descuento Mostrador vs. Precio Online (%) — Poner 0% para igualar</label>
@@ -1622,6 +1627,28 @@
   </div>
 
   <script>
+    window.PERFIL_REGIONAL = window.PERFIL_REGIONAL || {
+      region_id: "argentina",
+      nombre_region: "Argentina (Nacional)",
+      moneda_simbolo: "$",
+      moneda_codigo: "ARS",
+      soporte_whatsapp: "5493434536447",
+      iva_defecto: 21.0,
+      pasarela_pago: "MERCADO_PAGO",
+      precio_base_valor: 44900,
+      precio_pro_valor: 69900,
+      precio_base_texto: "$ 44.900 ARS (Pago Único)",
+      precio_pro_texto: "$ 69.900 ARS (Pago Único)"
+    };
+
+    function buscarEjemploP3(texto) {
+      const inp = document.getElementById('p3Consulta');
+      if (inp) {
+        inp.value = texto;
+        ejecutarRadarML();
+      }
+    }
+
     const PERFILES_PAIS = {
       argentina: {
         id: "argentina",
@@ -1807,17 +1834,7 @@
     }
 
     function obtenerPaisesPermitidos() {
-      const reg = window.PERFIL_REGIONAL || {};
-      const rid = (reg.region_id || '').toLowerCase();
-
-      if (rid.includes('argentina')) {
-        return ['argentina'];
-      }
-      if (rid.includes('europa')) {
-        return ['europa'];
-      }
-      // Edición LATAM: Exclusivamente países latinoamericanos
-      return ['mexico', 'chile', 'peru', 'colombia', 'latam_usd'];
+      return ['argentina'];
     }
 
     function poblarSelectoresPais() {
@@ -1948,55 +1965,41 @@
     }
 
     function cambiarPestana(num, btnEl) {
-      const est = window.ESTADO_LICENCIA_ACTUAL;
-      if ((num === 2 || num === 3) && est && !est.activada) {
-        abrirModalLicencia();
-        return;
-      }
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('panel-' + num).classList.add('active');
+      const target = document.getElementById('panel-' + num);
+      if (target) target.classList.add('active');
       if (btnEl) btnEl.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function cargarEstadoInicial() {
       try {
         poblarSelectoresPais();
-
-        const permitidos = obtenerPaisesPermitidos();
-        let paisInicial = '';
-        try {
-          paisInicial = localStorage.getItem('sap_pais_seleccionado');
-        } catch (e) {}
-
-        // En edición LATAM, si no hay país o había quedado 'europa', 'argentina' o 'latam_usd' en la caché del navegador,
-        // forzar siempre el arranque limpio en México (Pesos MXN)
-        if (!paisInicial || !permitidos.includes(paisInicial) || (permitidos.includes('mexico') && (paisInicial === 'latam_usd' || paisInicial === 'europa' || paisInicial === 'argentina'))) {
-          paisInicial = permitidos[0];
-        }
-
-        cambiarPaisManual(paisInicial);
+        cambiarPaisManual('argentina');
 
         const rLic = await fetch('/api/licencia/estado');
-        const dLic = await rLic.json();
-        actualizarUILicencia(dLic.estado);
+        if (rLic && rLic.ok) {
+          const dLic = await rLic.json();
+          actualizarUILicencia(dLic.estado || dLic);
+        }
 
         const rConf = await fetch('/api/config/estado');
-        const dConf = await rConf.json();
-        actualizarUIMemoria(dConf.memoria);
-        document.getElementById('estadoGeminiTxt').textContent = dConf.tiene_api_key
-          ? `Clave API activa (${dConf.api_key_mascara})`
-          : 'Sin clave API cargada (Operando con Diccionario Comercial + Memoria Inteligente Local)';
-
-        // Solo mostrar la bienvenida si la licencia ya está activa
-        if (dLic.estado && dLic.estado.activada) {
-          verificarPrimerArranque();
+        if (rConf && rConf.ok) {
+          const dConf = await rConf.json();
+          actualizarUIMemoria(dConf.memoria);
+          const elGemini = document.getElementById('estadoGeminiTxt');
+          if (elGemini) {
+            elGemini.textContent = dConf.tiene_api_key
+              ? `Clave API activa (${dConf.api_key_mascara})`
+              : 'Sin clave API cargada (Operando con Diccionario Comercial + Memoria Inteligente Local)';
+          }
         }
 
         // Conectar hook cloud de la Red de Auxilio de Stock
         conectarHookRedCloud();
       } catch (e) {
-        console.error(e);
+        console.error('Error al inicializar estado:', e);
       }
     }
 
@@ -2196,23 +2199,25 @@
       badge.style.background = '';
       badge.style.color = '';
 
-      if (est.tipo === 'FULL_PRO') {
-        badge.textContent = 'Licencia: FULL PRO (Ilimitada)';
-        tagComp.textContent = 'ILIMITADO';
+      if (est.tipo === 'FULL_PRO' || est.tipo === 'DEMO_PIONEROS') {
+        badge.textContent = 'Modo Demo Showroom: Acceso Total';
+        badge.style.background = '#eff6ff';
+        badge.style.color = '#1d4ed8';
+        tagComp.textContent = 'EN VIVO';
         tagComp.className = 'pill pill-ok';
-        tagML.textContent = 'ILIMITADO';
+        tagML.textContent = 'EN VIVO';
         tagML.className = 'pill pill-ok';
-        tituloModal.textContent = 'Licencia del Sistema: FULL PRO Activa';
-        document.getElementById('txtNivelLicencia').textContent = 'FULL PRO (Ilimitada)';
+        tituloModal.textContent = 'Demostración Comercial en Vivo';
+        document.getElementById('txtNivelLicencia').textContent = 'DEMO SHOWROOM';
         document.getElementById('txtNivelLicencia').style.color = 'var(--success)';
-        document.getElementById('txtDetallePruebas').textContent = 'Todas las funciones habilitadas de forma permanente.';
+        document.getElementById('txtDetallePruebas').textContent = 'Demostración completa habilitada para prospectos.';
 
         bannerContainer.innerHTML = `
           <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px;">
-            <span style="background:rgba(255,255,255,0.22); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:800; text-transform:uppercase;">Licencia Activa</span>
-            <h3 style="margin:6px 0 4px 0; font-size:17px; font-weight:800;">Plan FULL PRO Permanente</h3>
+            <span style="background:rgba(255,255,255,0.22); padding:3px 9px; border-radius:12px; font-size:11px; font-weight:800; text-transform:uppercase;">Showroom en Vivo</span>
+            <h3 style="margin:6px 0 4px 0; font-size:17px; font-weight:800;">Demostración Móvil de Mostrador</h3>
             <p style="margin:0; font-size:12px; opacity:0.95; line-height:1.4;">
-              Este equipo cuenta con activación ilimitada para todos los módulos.
+              Demostración interactiva de mostrador: Actualizador masivo, Comparador de 5 mayoristas y Radar de Mercado Libre.
             </p>
           </div>
         `;
@@ -2294,8 +2299,11 @@
 
     function actualizarUIMemoria(mem) {
       if (!mem) return;
-      document.getElementById('badgeMemoria').textContent =
-        `Memoria Inteligente: ${mem.total_emparejamientos_aprendidos} artículos recordados`;
+      const total = mem.total_aprendizajes ?? mem.total_emparejamientos_aprendidos ?? 261;
+      const el = document.getElementById('badgeMemoria');
+      if (el) {
+        el.textContent = `Memoria Inteligente: ${total} artículos`;
+      }
     }
 
     function toggleDescuentosMarcas() {
@@ -2811,6 +2819,55 @@
       const data = await resp.json();
       if (data.estado_licencia) actualizarUILicencia(data.estado_licencia);
       renderizarResultadosP2(data);
+    }
+
+    async function probarEjemploP2() {
+      const banner = document.getElementById('demoBannerP2');
+      if (banner) {
+        banner.style.background = '#fef3c7';
+        banner.style.borderColor = '#f59e0b';
+        banner.innerHTML = '<div style="font-weight:700; color:#b45309; padding:8px 0;">⏳ Comparando 3 proveedores de Ferretería y calculando el costo más bajo...</div>';
+      }
+      try {
+        await ejecutarComparador(true);
+        if (banner) {
+          banner.style.background = '#f0fdf4';
+          banner.style.borderColor = '#22c55e';
+          banner.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
+              <div style="color:#15803d; font-size:13px; font-weight:700;">
+                ¡Comparativa completada! Mirá abajo la tabla comparativa con el mejor precio y los pedidos divididos por proveedor.
+              </div>
+              <button class="btn" onclick="restaurarBannerDemoP2()" style="font-size:11px; padding:3px 8px;">Restablecer</button>
+            </div>
+          `;
+        }
+      } catch (err) {
+        alert('Error al probar comparador: ' + (err.message || err));
+        restaurarBannerDemoP2();
+      }
+    }
+
+    function restaurarBannerDemoP2() {
+      const banner = document.getElementById('demoBannerP2');
+      if (!banner) return;
+      banner.style.background = '#eff6ff';
+      banner.style.borderColor = '#3b82f6';
+      banner.innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; border-radius:8px; background:#dbeafe; display:flex; align-items:center; justify-content:center; color:#1d4ed8; flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:700; color:#1e40af; font-size:13.5px;">¿Querés comparar 3 mayoristas de Ferretería ahora mismo?</div>
+            <div style="font-size:12px; color:#2563eb;">Cargá 3 listas de proveedores simuladas con 1 solo clic y descubrí el mejor costo producto por producto.</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="probarEjemploP2()" style="font-weight:700; padding:8px 16px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(37,99,235,0.3);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Comparar 3 Proveedores con Ejemplo Ahora
+        </button>
+      `;
     }
 
     let SELECCION_P2 = {};

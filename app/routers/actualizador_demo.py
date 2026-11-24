@@ -86,7 +86,12 @@ def serve_demo_app():
     contenido = html_path.read_text(encoding="utf-8")
     tag_script = f"<script>window.PERFIL_REGIONAL = {json.dumps(PERFIL_ARGENTINA, ensure_ascii=False)};</script>\n</head>"
     contenido = contenido.replace("</head>", tag_script, 1)
-    return HTMLResponse(content=contenido)
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+    return HTMLResponse(content=contenido, headers=headers)
 
 
 @router.get("/demo/manifest.json")
