@@ -1999,7 +1999,17 @@
     }
 
     function obtenerPaisesPermitidos() {
-      return ['argentina', 'latam_usd', 'europa', 'chile', 'colombia', 'mexico', 'peru'];
+      const reg = window.PERFIL_REGIONAL || {};
+      const rid = (reg.region_id || '').toLowerCase();
+
+      if (rid.includes('argentina')) {
+        return ['argentina'];
+      }
+      if (rid.includes('europa') || rid.includes('espana')) {
+        return ['europa'];
+      }
+      // Edición LATAM: Exclusivamente países latinoamericanos
+      return ['latam_usd', 'mexico', 'chile', 'colombia', 'peru'];
     }
 
     function poblarSelectoresPais() {
@@ -2027,9 +2037,15 @@
         });
 
         if (el.style) {
-          el.disabled = false;
-          el.style.opacity = '1';
-          el.style.cursor = 'pointer';
+          if (permitidos.length <= 1) {
+            el.disabled = true;
+            el.style.opacity = '1';
+            el.style.cursor = 'default';
+          } else {
+            el.disabled = false;
+            el.style.opacity = '1';
+            el.style.cursor = 'pointer';
+          }
         }
       });
     }
