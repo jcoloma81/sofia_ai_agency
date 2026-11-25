@@ -1951,7 +1951,7 @@
       const linkModal = document.getElementById('linkDescargaDirectaModal');
       const metaContainer = document.getElementById('downloadMetaContainer');
 
-      const soQuery = soActual === 'linux' ? '?so=linux' : '';
+      const soQuery = (soActual === 'linux' ? '?so=linux' : '?so=windows') + '&t=' + Date.now();
       const finalUrl = data.url + soQuery;
 
       if (btnMain) btnMain.href = finalUrl;
@@ -2118,7 +2118,7 @@
       const whatsapp = document.getElementById('landingWhatsapp').value.trim();
       const btn = document.getElementById('btnDescargarConSoporte');
       const baseUrl = REGIONES[regionActual] ? REGIONES[regionActual].url : '/descargar-actualizador';
-      const targetUrl = baseUrl + (soActual === 'linux' ? '?so=linux' : '');
+      const targetUrl = baseUrl + (soActual === 'linux' ? '?so=linux' : '?so=windows') + '&t=' + Date.now();
 
       if (whatsapp && whatsapp.length >= 6) {
         btn.textContent = 'Registrando solicitud...';
