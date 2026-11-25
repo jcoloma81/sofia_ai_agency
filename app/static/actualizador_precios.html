@@ -2204,9 +2204,9 @@
       }
       seleccionarRegion(targetReg, false);
 
-      // Windows SIEMPRE predeterminado para el 99% de los comercios
+      // Detectar SO automáticamente si no viene forzado en la URL
       const soParam = (params.get('so') || '').toLowerCase();
-      if (soParam === 'linux') {
+      if (soParam === 'linux' || (!soParam && detectarSO() === 'linux')) {
         seleccionarSO('linux');
       } else {
         seleccionarSO('windows');

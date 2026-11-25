@@ -333,10 +333,16 @@ def serve_descargar_actualizador(
 
     zip_path = os.path.join(os.path.dirname(__file__), "app", "static", "packages", target_filename)
     if os.path.exists(zip_path):
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
         return FileResponse(
             zip_path,
             filename=target_filename,
-            media_type="application/zip"
+            media_type="application/zip",
+            headers=headers
         )
     from fastapi.responses import RedirectResponse
     drive_direct_url = "https://drive.usercontent.google.com/download?id=1gFGJtHyQB8smRKCvUV7ZGuT5KpEn__Nq&export=download&confirm=t"
