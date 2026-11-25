@@ -119,8 +119,19 @@ def activar_demo_endpoint(
     ahora_utc = datetime.now(timezone.utc).replace(tzinfo=None)
 
     if lead_existente:
+        # Caso 1: El cliente YA COMPRÓ una Licencia Definitiva (FULL_PRO o BASE permanente)
+        if lead_existente.tipo_licencia in ("FULL_PRO", "BASE") and lead_existente.clave_licencia:
+            logger.info(f"✨ Restauración automática de licencia comprada {lead_existente.tipo_licencia} para HW: {hw_clean}")
+            return {
+                "success": True,
+                "clave": lead_existente.clave_licencia,
+                "tipo": lead_existente.tipo_licencia,
+                "vence": "PERMANENTE",
+                "mensaje": f"¡Bienvenido de nuevo! Se restauró tu Licencia {lead_existente.tipo_licencia} registrada para este equipo.",
+            }
+
         vence_naive = lead_existente.vence_at.replace(tzinfo=None) if lead_existente.vence_at else None
-        # Si ya tiene una clave y aún está vigente, se la devolvemos para que no se trabe
+        # Caso 2: Si ya tiene una clave de demo y aún está vigente, se la devolvemos para que no se trabe
         if vence_naive and vence_naive > ahora_utc and lead_existente.clave_licencia:
             logger.info(f"Re-emisión de demo vigente para HW: {hw_clean} ({comercio_clean})")
             return {
@@ -131,7 +142,7 @@ def activar_demo_endpoint(
                 "mensaje": "Demo recuperada con éxito.",
             }
 
-        # Si ya venció la demo:
+        # Caso 3: Si ya venció la demo:
         if vence_naive and vence_naive <= ahora_utc:
             logger.warning(f"Intento de demo duplicada ya vencida para HW: {hw_clean}")
             raise HTTPException(
