@@ -2100,7 +2100,7 @@ async def receive_whatsapp_webhook(
                 f"👉 https://sof-ia.site/actualizador\n\n"
                 f"También podés entrar a nuestra página de Instagram para ver las demos:\n"
                 f"👉 https://www.instagram.com/sof_ia.tech/\n\n"
-                f"O también podés hablar con Javier, nuestro asesor del sistema.\n\n"
+                f"O también podés hablar directamente con Javier, nuestro asesor técnico.\n\n"
                 f"Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero."
             )
         elif (prospect.campaign or "air_control") == "air_control":
