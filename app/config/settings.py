@@ -50,6 +50,14 @@ class Settings(BaseSettings):
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
 
+    # Brevo Corporate B2B Outreach SMTP
+    BREVO_SMTP_SERVER: str = "smtp-relay.brevo.com"
+    BREVO_SMTP_PORT: int = 587
+    BREVO_SMTP_USER: Optional[str] = None
+    BREVO_SMTP_PASSWORD: Optional[str] = None
+    BREVO_MAIL_FROM: str = "javier@sof-ia.site"
+    BREVO_MAIL_REPLY_TO: str = "colomajavier@gmail.com"
+
     @field_validator("DATABASE_URL")
     @classmethod
     def clean_database_url(cls, v: str) -> str:
