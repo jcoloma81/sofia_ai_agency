@@ -286,6 +286,13 @@ def serve_actualizador_landing():
     landing_path = os.path.join(os.path.dirname(__file__), "app", "static", "actualizador_precios.html")
     return FileResponse(landing_path)
 
+@app.get("/manual", response_class=FileResponse)
+@app.get("/manual-actualizador", response_class=FileResponse)
+@app.get("/manual-practico", response_class=FileResponse)
+def serve_manual_actualizador():
+    manual_path = os.path.join(os.path.dirname(__file__), "app", "static", "manual_actualizador.html")
+    return FileResponse(manual_path)
+
 @app.get("/descargar-actualizador")
 @app.get("/descargar-actualizador-pro")
 @app.get("/descargar-actualizador-latam")
