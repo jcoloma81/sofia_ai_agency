@@ -103,6 +103,7 @@ REGLAS DE ORO Y BLINDAJE DE CONTEXTO (ESTRICTO):
    - Respuestas breves y al grano (máximo 2 a 3 oraciones).
    - Si preguntan precio: Deciles que en https://sof-ia.site/actualizador están todos los planes transparentes, pero que lo ideal es que primero descarguen la prueba gratis de 7 días para familiarizarse con las 4 pestañas en su computadora.
    - Si tienen dudas técnicas o de instalación: Deciles que funciona en cualquier PC con Windows y que es súper liviano y fácil de usar.
+   - Si el usuario dice que quiere hablar con Javier o con un asesor (o dice "sí", "dale", "bueno", "me gustaría hablar con él" cuando se le ofreció hablar con Javier): Respondé EXACTAMENTE: "¡No hay problema! Javier se va a comunicar a este número para explicarte en detalle sobre el sistema. ¡Muchas gracias!"
 """
 
 SYSTEM_PROMPT_FUTBOL = """Sos Sofía, ejecutiva comercial de soluciones de Inteligencia Artificial para complejos deportivos y canchas de fútbol 5.
@@ -504,6 +505,7 @@ def rule_based_consultative_response(
             f"👉 https://sof-ia.site/actualizador\n\n"
             f"También podés entrar a nuestra página de Instagram para ver las demos:\n"
             f"👉 https://www.instagram.com/sof_ia.tech/\n\n"
+            f"O también podés hablar con Javier, nuestro asesor del sistema.\n\n"
             f"Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.",
             False,
             None

@@ -2022,6 +2022,56 @@ async def receive_whatsapp_webhook(
                     "meeting_confirmed": False
                 }
 
+    # 3.9 Check if lead in actualizador_pro wants to talk to Javier (Advisor Handoff)
+    clean_lower = message.strip().lower()
+    is_actualizador_lead = (
+        (prospect.campaign or "") == "actualizador_pro"
+        or is_actualizador_line
+        or any(k in clean_lower for k in ["actualizador", "lista de precios", "listas"])
+    )
+    is_javier_advisor_request = (
+        is_actualizador_lead
+        and (
+            any(k in clean_lower for k in [
+                "javier", "hablar con javier", "quiero hablar con javier", "pasame con javier",
+                "que me llame javier", "comunicar con javier", "llamar a javier", "charla con javier",
+                "charlar con javier", "asesor", "hablar con un asesor", "hablar con el asesor",
+                "hablar con alguien", "llamame", "llamenme", "quiero que me llamen", "que me llamen",
+                "hablar por telefono", "hablar por teléfono", "llamada"
+            ])
+            or (clean_lower in ["si", "sí", "dale", "bueno", "dale si", "dale sí", "me gustaria", "me gustaría", "quiero", "dale dale"] and any("javier" in (msg.get("text") or "").lower() for msg in history[-2:]))
+        )
+    )
+
+    if is_javier_advisor_request:
+        advisor_reply = "¡No hay problema! Javier se va a comunicar a este número para explicarte en detalle sobre el sistema. ¡Muchas gracias!"
+        history.append({"sender": "ai", "text": advisor_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
+        prospect.conversation_history = json.dumps(history, ensure_ascii=False)
+        prospect.status = "meeting_scheduled"
+        prospect.campaign = "actualizador_pro"
+        prospect.updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        if settings.WHATSAPP_ALERT_PHONE:
+            alert_msg = (
+                f"🚨 *CLIENTE PIDE HABLAR CON JAVIER (Actualizador PRO)* 💼\n\n"
+                f"• *Comercio:* {prospect.name}\n"
+                f"• *Contacto:* {prospect.contact_name or 'Titular'}\n"
+                f"• *Teléfono:* +{clean_phone}\n"
+                f"• *Ciudad:* {prospect.city or 'S/D'}\n"
+                f"• *Mensaje:* \"{message}\"\n\n"
+                f"👉 Sofía ya le confirmó que te vas a comunicar a este número."
+            )
+            asyncio.create_task(whatsapp.send_whatsapp_message(to_phone=settings.WHATSAPP_ALERT_PHONE, text=alert_msg))
+
+        await whatsapp.send_whatsapp_message(to_phone=clean_phone, text=advisor_reply)
+        return {
+            "status": "success",
+            "action": "advisor_requested",
+            "reply": advisor_reply,
+            "meeting_confirmed": True
+        }
+
     # 4. Check if lead is explicitly requesting the demo video (from template CTA)
     clean_lower = message.strip().lower()
     is_demo_intent = bool(re.search(
@@ -2050,6 +2100,7 @@ async def receive_whatsapp_webhook(
                 f"👉 https://sof-ia.site/actualizador\n\n"
                 f"También podés entrar a nuestra página de Instagram para ver las demos:\n"
                 f"👉 https://www.instagram.com/sof_ia.tech/\n\n"
+                f"O también podés hablar con Javier, nuestro asesor del sistema.\n\n"
                 f"Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero."
             )
         elif (prospect.campaign or "air_control") == "air_control":
