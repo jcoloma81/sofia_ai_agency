@@ -24,15 +24,16 @@ from app.config.settings import settings
 def build_email_content(merchant_name: str, contact_name: Optional[str] = None) -> tuple[str, str, str]:
     """Generates ultra-clean 1-on-1 conversational B2B email to land in Gmail Primary inbox."""
     saludo_nombre = f" {contact_name.strip()}" if contact_name and contact_name.strip() else ""
+    comercio_ref = f"a {merchant_name.strip()}" if merchant_name and merchant_name.strip() else "tu comercio"
     nombre_comercio = merchant_name.strip() if merchant_name else "tu comercio"
 
     subject = f"Consulta rápida sobre listas de proveedores ({nombre_comercio})"
 
     plain_text = f"""Hola{saludo_nombre}, ¿cómo estás?
 
-Te escribo porque encontré a {nombre_comercio} en Google Maps y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?
+Te escribo porque encontré {comercio_ref} en Google Maps y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?
 
-Desarrollamos un software para Windows (Súper Actualizador PRO) pensado para comercios de la zona: subís la lista tal cual te la manda el mayorista y, según la cantidad de filas, puede actualizar tu lista en menos de 10 segundos con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo.
+Desarrollamos un software para Windows (Súper Actualizador PRO) pensado para comercios y distribuidores: subís la lista tal cual te la manda el mayorista y, según la cantidad de filas de tu Excel o PDF, puede actualizar tu lista en menos de 10 segundos con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo y exportar tu lista a cada proveedor lista con cada pedido (esto es lo más potente del Actualizador PRO). Te hace ahorrar tiempo y dinero para que siempre compres al más barato y no pases horas actualizando precios.
 
 Podés probar el sistema durante 7 días en tu computadora para conocer el software y familiarizarte con las 4 pestañas:
 https://sof-ia.site/actualizador
@@ -59,9 +60,9 @@ Web: https://sof-ia.site/actualizador
 <body style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #1f2937; line-height: 1.6; margin: 0; padding: 10px 0;">
   <p>Hola<strong>{saludo_nombre}</strong>, ¿cómo estás?</p>
   
-  <p>Te escribo porque encontré a <strong>{nombre_comercio}</strong> en Google Maps y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?</p>
+  <p>Te escribo porque encontré <strong>{comercio_ref}</strong> en Google Maps y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?</p>
 
-  <p>Desarrollamos un software para Windows (<strong>Súper Actualizador PRO</strong>) pensado para comercios de la zona: subís la lista tal cual te la manda el mayorista y, según la cantidad de filas, puede actualizar tu lista en menos de 10 segundos con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo.</p>
+  <p>Desarrollamos un software para Windows (<strong>Súper Actualizador PRO</strong>) pensado para comercios y distribuidores: subís la lista tal cual te la manda el mayorista y, según la cantidad de filas de tu Excel o PDF, puede actualizar tu lista en menos de 10 segundos con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo y exportar tu lista a cada proveedor lista con cada pedido (esto es lo más potente del Actualizador PRO). Te hace ahorrar tiempo y dinero para que siempre compres al más barato y no pases horas actualizando precios.</p>
 
   <p>Podés probar el sistema durante 7 días en tu computadora para conocer el software y familiarizarte con las 4 pestañas:<br>
   <a href="https://sof-ia.site/actualizador" style="color: #0f766e;">https://sof-ia.site/actualizador</a></p>
