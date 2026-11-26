@@ -26,28 +26,28 @@ def build_email_content(merchant_name: str, contact_name: Optional[str] = None) 
     saludo_nombre = f" {contact_name.strip()}" if contact_name and contact_name.strip() else ""
     nombre_comercio = merchant_name.strip() if merchant_name else "tu comercio"
 
-    subject = f"Consulta sobre listas de precios ({nombre_comercio})"
+    subject = f"Consulta rápida sobre listas de proveedores ({nombre_comercio})"
 
-    plain_text = f"""Hola{saludo_nombre}, como estas?
+    plain_text = f"""Hola{saludo_nombre}, ¿cómo estás?
 
-Te escribo porque encontre la ficha de {nombre_comercio} y queria hacerte una consulta: como se estan manejando hoy cuando los distribuidores o proveedores les mandan listas en Excel o PDF con aumentos de precios?
+Te escribo porque encontré a {nombre_comercio} en Google Maps y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?
 
-Desarrollamos un programa para Windows (Super Actualizador PRO) pensado para comercios de la zona: subis la lista tal cual te la manda el mayorista y en pocos segundos te calcula todos tus precios de venta con tus margenes de ganancia, ademas de comparar entre varios proveedores para saber quien tiene el precio mas conveniente en cada articulo.
+Desarrollamos un software para Windows (Súper Actualizador PRO) pensado para comercios de la zona: subís la lista tal cual te la manda el mayorista y, según la cantidad de filas, puede actualizar tu lista en menos de 10 segundos con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo.
 
-Podes probarlo durante 7 dias en tu computadora para conocerlo y familiarizarte con las 4 pestanas del sistema:
+Podés probar el sistema durante 7 días en tu computadora para conocer el software y familiarizarte con las 4 pestañas:
 https://sof-ia.site/actualizador
 
-Tambien podes ver las demostraciones en video en nuestro Instagram oficial:
+También podés entrar a nuestra página de Instagram para ver las demos:
 https://www.instagram.com/sof_ia.tech/
 
-O si preferis, podes responderme a este correo o escribirme directamente por WhatsApp al +54 9 343 570-8612.
+O si preferís, podés hablar directamente conmigo como asesor técnico respondiendo a este mensaje o por WhatsApp al +54 9 343 453-6447.
 
-Estamos convencidos de que es una solucion muy util para hacerte ahorrar tiempo y dinero.
+Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.
 
 Un saludo cordial,
 Javier Coloma
-Asesor Tecnico • Sofia Tech
-WhatsApp: +54 9 343 570-8612
+Asesor Técnico • Sofía Tech
+WhatsApp: +54 9 343 453-6447 (Paraná, Entre Ríos, Argentina)
 Web: https://sof-ia.site/actualizador
 """
 
@@ -59,33 +59,31 @@ Web: https://sof-ia.site/actualizador
 <body style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #1f2937; line-height: 1.6; margin: 0; padding: 10px 0;">
   <p>Hola<strong>{saludo_nombre}</strong>, ¿cómo estás?</p>
   
-  <p>Te escribo porque encontré la ficha de <strong>{nombre_comercio}</strong> y quería hacerte una consulta: ¿cómo se están manejando hoy cuando los distribuidores o proveedores les mandan listas en Excel o PDF con aumentos de precios?</p>
+  <p>Te escribo porque encontré a <strong>{nombre_comercio}</strong> en Google Maps y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?</p>
 
-  <p>Desarrollamos un programa para Windows (<strong>Súper Actualizador PRO</strong>) pensado para comercios de la zona: subís la lista tal cual te la manda el mayorista y en pocos segundos te calcula todos tus precios de venta con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién tiene el precio más conveniente en cada artículo.</p>
+  <p>Desarrollamos un software para Windows (<strong>Súper Actualizador PRO</strong>) pensado para comercios de la zona: subís la lista tal cual te la manda el mayorista y, según la cantidad de filas, puede actualizar tu lista en menos de 10 segundos con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo.</p>
 
-  <p>Podés probarlo durante 7 días en tu computadora para conocerlo y familiarizarte con las 4 pestañas del sistema:<br>
-  <a href="https://sof-ia.site/actualizador" style="color: #0f766e;">https://sof-ia.site/actualizador</a> (ahí podés ver la demo en video de 1 minuto y los precios transparentes).</p>
+  <p>Podés probar el sistema durante 7 días en tu computadora para conocer el software y familiarizarte con las 4 pestañas:<br>
+  <a href="https://sof-ia.site/actualizador" style="color: #0f766e;">https://sof-ia.site/actualizador</a></p>
 
-  <p>También podés ver las demostraciones en video en nuestro Instagram oficial:<br>
+  <p>También podés entrar a nuestra página de Instagram para ver las demos:<br>
   <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0f766e;">https://www.instagram.com/sof_ia.tech/</a></p>
 
-  <p>O también podés hablar directamente conmigo como asesor técnico respondiendo a este correo o escribiéndome por WhatsApp.</p>
+  <p>O si preferís, podés hablar directamente conmigo como asesor técnico respondiendo a este mensaje o por WhatsApp al +54 9 343 453-6447.</p>
 
-  <p>Estamos convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.</p>
+  <p>Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.</p>
 
   <p style="margin-top: 25px; margin-bottom: 5px;">Un saludo cordial,</p>
   <p style="margin-top: 0; line-height: 1.4;">
     <strong>Javier Coloma</strong><br>
     <span style="color: #0f766e; font-size: 14px;">Asesor Técnico • Sofía Tech</span><br>
     <span style="font-size: 13px; color: #4b5563;">
-      WhatsApp: <a href="https://wa.me/5493435708612" style="color: #111827; text-decoration: none;">+54 9 343 570-8612</a><br>
+      WhatsApp: <a href="https://wa.me/5493434536447" style="color: #111827; text-decoration: none;">+54 9 343 453-6447</a> (Paraná, Entre Ríos, Argentina)<br>
       Web: <a href="https://sof-ia.site/actualizador" style="color: #0f766e; text-decoration: none;">sof-ia.site/actualizador</a>
     </span>
   </p>
 </body>
 </html>"""
-
-    return subject, plain_text, html_text
 
     return subject, plain_text, html_text
 
