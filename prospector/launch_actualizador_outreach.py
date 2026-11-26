@@ -17,12 +17,33 @@ from app.models.prospect import Prospect
 from app.services import whatsapp
 from app.config.settings import settings
 
+import requests
+
+def get_best_available_template() -> str:
+    """Checks Meta API for the highest version approved template for Actualizador Pro."""
+    try:
+        headers = {"Authorization": f"Bearer {settings.META_ACCESS_TOKEN}"}
+        url = f"https://graph.facebook.com/v21.0/{settings.META_WABA_ID}/message_templates"
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            templates = res.json().get("data", [])
+            status_map = {t.get("name"): t.get("status") for t in templates}
+            for candidate in ["actualizador_comercios_v4", "actualizador_comercios_v3", "actualizador_comercios_v2"]:
+                if status_map.get(candidate) == "APPROVED":
+                    return candidate
+    except Exception as e:
+        print(f"⚠️ Error consultando estado de plantillas Meta: {e}")
+    return "actualizador_comercios_v2"
+
+
 async def run_actualizador_campaign(
     limit: int = 15,
     dry_run: bool = False,
     delay_seconds: int = 25,
-    template_name: str = "actualizador_comercios_v2"
+    template_name: str = "auto"
 ):
+    if template_name == "auto":
+        template_name = get_best_available_template()
     db = SessionLocal()
     try:
         leads = db.query(Prospect).filter(
@@ -86,7 +107,7 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=15, help="Cantidad de comercios a enviar (default: 15)")
     parser.add_argument("--dry-run", action="store_true", help="Simula el envío sin disparar mensajes reales")
     parser.add_argument("--delay", type=int, default=25, help="Segundos entre envíos (default: 25)")
-    parser.add_argument("--template", type=str, default="actualizador_comercios_v2", help="Nombre de plantilla Meta")
+    parser.add_argument("--template", type=str, default="auto", help="Nombre de plantilla Meta (default: auto - elige v4 si está aprobada o v2)")
 
     args = parser.parse_args()
     asyncio.run(run_actualizador_campaign(

@@ -2044,7 +2044,7 @@ async def receive_whatsapp_webhook(
     )
 
     if is_javier_advisor_request:
-        advisor_reply = "¡No hay problema! Javier se va a comunicar a este número para explicarte en detalle sobre el sistema. ¡Muchas gracias!"
+        advisor_reply = "¡No hay problema! Javier se va a comunicar a este número a la brevedad para asesorarte en detalle. O si preferís escribirle directamente ahora, su WhatsApp personal es +54 9 343 453-6447. ¡Muchas gracias!"
         history.append({"sender": "ai", "text": advisor_reply, "timestamp": datetime.now(timezone.utc).isoformat()})
         prospect.conversation_history = json.dumps(history, ensure_ascii=False)
         prospect.status = "meeting_scheduled"
@@ -2075,7 +2075,7 @@ async def receive_whatsapp_webhook(
     # 4. Check if lead is explicitly requesting the demo video (from template CTA)
     clean_lower = message.strip().lower()
     is_demo_intent = bool(re.search(
-        r'\b(demo|demostraci[oó]n|video|el video|la demo|info|informaci[oó]n|actualizador)\b',
+        r'\b(demo|demostraci[oó]n|video|el video|la demo|info|informaci[oó]n|actualizador|probar)\b',
         clean_lower
     )) or any(phrase in clean_lower for phrase in [
         "mandame el video", "mandá el video", "pasame el video", "pasanos el video",
@@ -2083,6 +2083,8 @@ async def receive_whatsapp_webhook(
         "ver la demo", "quiero ver", "me pasas el video", "me pasás el video",
         "quiero la demo", "quiero ver la demo", "quiero más info", "quiero mas info",
         "ver cómo funciona", "ver como funciona", "sí, quiero probarla", "si, quiero probarla",
+        "probar 7 días gratis", "probar 7 dias gratis", "probar gratis", "probarlo gratis",
+        "probar el software", "probarlo", "quiero probar", "quiero probarlo",
         "contame más", "contame mas"
     ])
 
@@ -2091,7 +2093,7 @@ async def receive_whatsapp_webhook(
         safe_name = brain.sanitize_contact_first_name(prospect.contact_name)
         contact_str = f" {safe_name}" if safe_name else ""
         
-        if (prospect.campaign or "") == "actualizador_pro" or any(k in clean_lower for k in ["actualizador", "quiero más info", "quiero mas info", "ver cómo funciona", "ver como funciona"]):
+        if (prospect.campaign or "") == "actualizador_pro" or any(k in clean_lower for k in ["actualizador", "quiero más info", "quiero mas info", "ver cómo funciona", "ver como funciona", "probar 7 días gratis", "probar 7 dias gratis", "probar gratis"]):
             saludo = f"¡Hola{contact_str}! " if safe_name else ""
             demo_reply = (
                 f"{saludo}¡Perfecto!\n\n"
