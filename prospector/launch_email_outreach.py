@@ -21,29 +21,26 @@ from app.database import SessionLocal
 from app.models.prospect import Prospect
 from app.config.settings import settings
 
-def build_email_content(merchant_name: str, contact_name: Optional[str] = None) -> tuple[str, str]:
-    """Generates the plain text and responsive HTML content for cold B2B email outreach."""
+def build_email_content(merchant_name: str, contact_name: Optional[str] = None) -> tuple[str, str, str]:
+    """Generates ultra-clean 1-on-1 conversational B2B email to land in Gmail Primary inbox."""
     saludo_nombre = f" {contact_name.strip()}" if contact_name and contact_name.strip() else ""
-    nombre_comercio = merchant_name.strip() if merchant_name else "tu negocio"
+    nombre_comercio = merchant_name.strip() if merchant_name else "tu comercio"
 
-    subject = f"Actualización de listas y comparador de proveedores en 3 segundos ({nombre_comercio})"
+    subject = f"Consulta sobre listas de proveedores ({nombre_comercio})"
 
     plain_text = f"""Hola{saludo_nombre}, ¿cómo estás?
 
-Te escribo desde Sofía Tech porque encontramos tu comercio ({nombre_comercio}) y queríamos comentarte sobre una herramienta pensada para ahorrarte muchas horas y dinero: el Súper Actualizador PRO.
+Te escribo porque encontré la ficha de {nombre_comercio} y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?
 
-Si en tu negocio trabajan con varios proveedores y pierden tiempo recalculando aumentos de precios a mano en Excel o PDF, nuestro sistema hace esto:
+Desarrollamos un software para Windows (Súper Actualizador PRO) pensado para comercios: subís la lista tal cual te la envía el mayorista y en 3 segundos te recalcula todos tus precios con tus márgenes, además de comparar entre varios distribuidores para saber quién vende más barato cada artículo.
 
-1. Actualización en 3 segundos: Subís la lista tal cual te la envía el mayorista (sin editar nada) y te devuelve la lista nueva lista con los márgenes de ganancia que elijas.
-2. Comparador automático de proveedores: Cruza listas para decirte al instante a quién te conviene comprarle cada artículo para pagar menos.
+Podés probar el sistema durante 7 días en tu computadora para conocerlo y familiarizarte con las 4 pestañas:
+https://sof-ia.site/actualizador
 
-Podés entrar a nuestra web y probar el sistema durante 7 días gratis en tu computadora para familiarizarte con las 4 pestañas del software:
-👉 https://sof-ia.site/actualizador
+También podés ver las demos en video en nuestro Instagram:
+https://www.instagram.com/sof_ia.tech/
 
-También podés ver los videos demostrativos en nuestro Instagram oficial:
-👉 https://www.instagram.com/sof_ia.tech/
-
-O si preferís una atención personalizada, podés responder directamente a este correo o escribirme por WhatsApp al +54 9 343 570-8612.
+O si preferís, podés hablar directamente conmigo como asesor técnico respondiendo a este mensaje o por WhatsApp al +54 9 343 570-8612.
 
 Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.
 
@@ -58,49 +55,32 @@ Web: https://sof-ia.site/actualizador
 <html>
 <head>
   <meta charset="utf-8">
-  <title>{subject}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #222222; line-height: 1.6; max-width: 600px; margin: 0; padding: 15px 0;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #1f2937; line-height: 1.6; margin: 0; padding: 10px 0;">
   <p>Hola<strong>{saludo_nombre}</strong>, ¿cómo estás?</p>
   
-  <p>Te escribo porque encontramos la ficha de <strong>{nombre_comercio}</strong> y quería comentarte sobre una herramienta pensada para ahorrarte mucho tiempo y cuidar tus márgenes de ganancia: el <strong>Súper Actualizador PRO</strong>.</p>
+  <p>Te escribo porque encontré la ficha de <strong>{nombre_comercio}</strong> y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?</p>
 
-  <p>Si en tu negocio trabajan con varios distribuidores o proveedores y pierden horas recalculando aumentos de precios a mano en Excel o PDF, el sistema hace dos cosas clave:</p>
+  <p>Desarrollamos un software para Windows (<strong>Súper Actualizador PRO</strong>) pensado para comercios: subís la lista tal cual te la envía el mayorista y en 3 segundos te recalcula todos tus precios de venta con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo.</p>
 
-  <p style="margin-left: 15px;">
-    ⚡ <strong>1. Actualización en 3 segundos:</strong> Subís la lista tal cual te la manda el mayorista (sin editar nada) y te devuelve la lista nueva armada con los márgenes de ganancia que elijas.<br><br>
-    🔍 <strong>2. Comparador automático de proveedores:</strong> Cruza listas de distintos distribuidores para decirte al instante a quién te conviene comprarle cada artículo para pagar menos.
-  </p>
+  <p>Podés probar el sistema durante 7 días en tu computadora para conocer el software y familiarizarte con las 4 pestañas:<br>
+  👉 <a href="https://sof-ia.site/actualizador" style="color: #0f766e; font-weight: bold;">https://sof-ia.site/actualizador</a> (ahí podés ver la demo en video de 1 minuto y los precios transparentes).</p>
 
-  <p>Podés entrar a nuestra web y <strong>probar el sistema durante 7 días gratis</strong> en tu computadora para que conozcas el software y te familiarices con las 4 pestañas del Actualizador PRO:<br>
-  👉 <a href="https://sof-ia.site/actualizador" style="color: #0d9488; font-weight: bold; text-decoration: underline;">https://sof-ia.site/actualizador</a> (ahí podés ver la demo en video de 1 minuto y los precios transparentes).</p>
+  <p>También podés entrar a nuestra página de Instagram para ver las demos:<br>
+  👉 <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0f766e;">https://www.instagram.com/sof_ia.tech/</a></p>
 
-  <p>También podés entrar a nuestra página de Instagram para ver las demos y cómo lo usan otros comercios:<br>
-  👉 <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0d9488; text-decoration: underline;">https://www.instagram.com/sof_ia.tech/</a></p>
-
-  <p>O si preferís, podés hablar directamente conmigo como asesor técnico respondiendo a este correo o escribiéndome por WhatsApp.</p>
+  <p>O también podés hablar directamente conmigo como asesor técnico respondiendo a este correo o escribiéndome por WhatsApp.</p>
 
   <p>Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.</p>
 
-  <p style="margin-top: 30px; margin-bottom: 5px;">Un saludo cordial,</p>
-
-  <!-- Firma Profesional Humana -->
-  <table style="border-collapse: collapse; margin-top: 10px;">
-    <tr>
-      <td style="border-left: 3px solid #0d9488; padding-left: 12px;">
-        <strong style="font-size: 16px; color: #111827;">Javier Coloma</strong><br>
-        <span style="font-size: 13px; color: #0d9488; font-weight: 600;">Asesor Técnico • Sofía Tech</span><br>
-        <span style="font-size: 13px; color: #4b5563;">
-          📱 WhatsApp: <a href="https://wa.me/5493435708612" style="color: #111827; text-decoration: none; font-weight: bold;">+54 9 343 570-8612</a><br>
-          🌐 Web: <a href="https://sof-ia.site/actualizador" style="color: #0d9488; text-decoration: none;">sof-ia.site/actualizador</a><br>
-          📸 Instagram: <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0d9488; text-decoration: none;">@sof_ia.tech</a>
-        </span>
-      </td>
-    </tr>
-  </table>
-
-  <p style="font-size: 11px; color: #9ca3af; margin-top: 40px;">
-    Si no deseas recibir más avisos sobre el Actualizador PRO, simplemente responde 'baja' a este correo.
+  <p style="margin-top: 25px; margin-bottom: 5px;">Un saludo cordial,</p>
+  <p style="margin-top: 0; line-height: 1.4;">
+    <strong>Javier Coloma</strong><br>
+    <span style="color: #0f766e; font-size: 14px;">Asesor Técnico • Sofía Tech</span><br>
+    <span style="font-size: 13px; color: #4b5563;">
+      WhatsApp: <a href="https://wa.me/5493435708612" style="color: #111827; text-decoration: none;">+54 9 343 570-8612</a><br>
+      Web: <a href="https://sof-ia.site/actualizador" style="color: #0f766e; text-decoration: none;">sof-ia.site/actualizador</a>
+    </span>
   </p>
 </body>
 </html>"""
