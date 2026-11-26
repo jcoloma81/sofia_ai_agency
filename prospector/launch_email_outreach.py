@@ -58,90 +58,50 @@ Web: https://sof-ia.site/actualizador
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{subject}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; line-height: 1.6;">
-  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
-    
-    <!-- Encabezado Estético Oficial -->
-    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px 25px; text-align: center; border-bottom: 3px solid #10b981;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Súper Actualizador <span style="color: #10b981;">PRO</span></h1>
-      <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 14px; font-weight: 500;">Sofía Tech • Soluciones de Automatización para Comercios</p>
-    </div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #222222; line-height: 1.6; max-width: 600px; margin: 0; padding: 15px 0;">
+  <p>Hola<strong>{saludo_nombre}</strong>, ¿cómo estás?</p>
+  
+  <p>Te escribo porque encontramos la ficha de <strong>{nombre_comercio}</strong> y quería comentarte sobre una herramienta pensada para ahorrarte mucho tiempo y cuidar tus márgenes de ganancia: el <strong>Súper Actualizador PRO</strong>.</p>
 
-    <!-- Cuerpo del Mensaje -->
-    <div style="padding: 30px 25px;">
-      <p style="font-size: 16px; margin-top: 0;">Hola<strong>{saludo_nombre}</strong>, ¿cómo estás?</p>
-      
-      <p style="font-size: 15px; color: #334155;">
-        Te escribimos porque encontramos la ficha de <strong>{nombre_comercio}</strong> y queríamos comentarte sobre una herramienta pensada exclusivamente para hacerte ahorrar tiempo y proteger tus márgenes comerciales: el <strong>Súper Actualizador PRO</strong>.
-      </p>
+  <p>Si en tu negocio trabajan con varios distribuidores o proveedores y pierden horas recalculando aumentos de precios a mano en Excel o PDF, el sistema hace dos cosas clave:</p>
 
-      <p style="font-size: 15px; color: #334155;">
-        Si en tu local manejan varios proveedores y pierden horas los fines de semana recalculando aumentos de precios a mano en Excel o PDF, nuestro sistema resuelve dos problemas clave:
-      </p>
+  <p style="margin-left: 15px;">
+    ⚡ <strong>1. Actualización en 3 segundos:</strong> Subís la lista tal cual te la manda el mayorista (sin editar nada) y te devuelve la lista nueva armada con los márgenes de ganancia que elijas.<br><br>
+    🔍 <strong>2. Comparador automático de proveedores:</strong> Cruza listas de distintos distribuidores para decirte al instante a quién te conviene comprarle cada artículo para pagar menos.
+  </p>
 
-      <!-- Bloque de Beneficios -->
-      <div style="background-color: #f1f5f9; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
-        <div style="margin-bottom: 14px;">
-          <strong style="color: #0f172a; font-size: 15px;">⚡ 1. Actualización en 3 segundos:</strong>
-          <p style="margin: 4px 0 0 0; font-size: 14px; color: #475569;">Subís la lista tal cual te la manda el mayorista (sin editar nada) y te devuelve la lista lista con los márgenes de ganancia que elijas.</p>
-        </div>
-        <div>
-          <strong style="color: #0f172a; font-size: 15px;">🔍 2. Comparador automático de proveedores:</strong>
-          <p style="margin: 4px 0 0 0; font-size: 14px; color: #475569;">Cruza listas de distintos distribuidores para decirte al instante a quién te conviene comprarle cada producto más barato.</p>
-        </div>
-      </div>
+  <p>Podés entrar a nuestra web y <strong>probar el sistema durante 7 días gratis</strong> en tu computadora para que conozcas el software y te familiarices con las 4 pestañas del Actualizador PRO:<br>
+  👉 <a href="https://sof-ia.site/actualizador" style="color: #0d9488; font-weight: bold; text-decoration: underline;">https://sof-ia.site/actualizador</a> (ahí podés ver la demo en video de 1 minuto y los precios transparentes).</p>
 
-      <!-- Llamado a la Acción (CTA) -->
-      <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 18px; text-align: center; margin: 25px 0;">
-        <p style="color: #065f46; font-size: 15px; font-weight: 700; margin: 0 0 12px 0;">🎁 Prueba gratis por 7 días en tu computadora</p>
-        <p style="color: #047857; font-size: 13px; margin: 0 0 16px 0;">Podés descargarlo y probarlo sin compromiso para familiarizarte con las 4 pestañas del sistema.</p>
-        <a href="https://sof-ia.site/actualizador" target="_blank" style="background-color: #10b981; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">
-          Ver Video Demo y Precios →
-        </a>
-      </div>
+  <p>También podés entrar a nuestra página de Instagram para ver las demos y cómo lo usan otros comercios:<br>
+  👉 <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0d9488; text-decoration: underline;">https://www.instagram.com/sof_ia.tech/</a></p>
 
-      <p style="font-size: 14px; color: #475569;">
-        También podés seguirnos en Instagram para ver demos y tutoriales de cómo lo usan otros negocios:<br>
-        👉 <a href="https://www.instagram.com/sof_ia.tech/" target="_blank" style="color: #10b981; font-weight: 600; text-decoration: none;">@sof_ia.tech en Instagram</a>
-      </p>
+  <p>O si preferís, podés hablar directamente conmigo como asesor técnico respondiendo a este correo o escribiéndome por WhatsApp.</p>
 
-      <p style="font-size: 14px; color: #475569;">
-        O si preferís una atención personalizada, podés responder directamente a este correo o hablar conmigo por WhatsApp.
-      </p>
+  <p>Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.</p>
 
-      <p style="font-size: 14px; color: #334155; font-weight: 600; margin-top: 25px;">
-        Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.
-      </p>
+  <p style="margin-top: 30px; margin-bottom: 5px;">Un saludo cordial,</p>
 
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0;">
+  <!-- Firma Profesional Humana -->
+  <table style="border-collapse: collapse; margin-top: 10px;">
+    <tr>
+      <td style="border-left: 3px solid #0d9488; padding-left: 12px;">
+        <strong style="font-size: 16px; color: #111827;">Javier Coloma</strong><br>
+        <span style="font-size: 13px; color: #0d9488; font-weight: 600;">Asesor Técnico • Sofía Tech</span><br>
+        <span style="font-size: 13px; color: #4b5563;">
+          📱 WhatsApp: <a href="https://wa.me/5493435708612" style="color: #111827; text-decoration: none; font-weight: bold;">+54 9 343 570-8612</a><br>
+          🌐 Web: <a href="https://sof-ia.site/actualizador" style="color: #0d9488; text-decoration: none;">sof-ia.site/actualizador</a><br>
+          📸 Instagram: <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0d9488; text-decoration: none;">@sof_ia.tech</a>
+        </span>
+      </td>
+    </tr>
+  </table>
 
-      <!-- Firma Oficial Javier Coloma -->
-      <table style="width: 100%; border-collapse: collapse;">
-        <tr>
-          <td style="vertical-align: middle;">
-            <p style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">Javier Coloma</p>
-            <p style="margin: 2px 0 6px 0; font-size: 13px; color: #10b981; font-weight: 600;">Asesor Técnico • Sofía Tech</p>
-            <p style="margin: 0; font-size: 13px; color: #64748b;">
-              📱 WhatsApp: <a href="https://wa.me/5493435708612" style="color: #0f172a; text-decoration: none; font-weight: 600;">+54 9 343 570-8612</a><br>
-              🌐 Web Oficial: <a href="https://sof-ia.site/actualizador" style="color: #10b981; text-decoration: none;">sof-ia.site/actualizador</a><br>
-              📸 Instagram: <a href="https://www.instagram.com/sof_ia.tech/" style="color: #10b981; text-decoration: none;">@sof_ia.tech</a>
-            </p>
-          </td>
-        </tr>
-      </table>
-
-    </div>
-
-    <!-- Pie Antispam Oficial -->
-    <div style="background-color: #f8fafc; padding: 15px 25px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
-      <p style="margin: 0;">Sofía Tech • Paraná, Entre Ríos, Argentina.</p>
-      <p style="margin: 4px 0 0 0;">Has recibido esta información como contacto comercial de {nombre_comercio}. Si no deseas recibir más avisos, simplemente responde 'baja' a este correo.</p>
-    </div>
-
-  </div>
+  <p style="font-size: 11px; color: #9ca3af; margin-top: 40px;">
+    Si no deseas recibir más avisos sobre el Actualizador PRO, simplemente responde 'baja' a este correo.
+  </p>
 </body>
 </html>"""
 
