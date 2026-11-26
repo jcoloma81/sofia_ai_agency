@@ -493,9 +493,15 @@ def rule_based_consultative_response(
     # Bridge all inquiries soberly to meeting setting without fake cheerfulness
     pregunta_cierre = f"¿Qué día y horario te quedaría más cómodo, {safe_name}?" if safe_name else "¿Con quién tengo el gusto y qué día y horario te quedaría más cómodo?"
     if campaign == "actualizador_pro":
+        saludo = f"¡Hola {safe_name}! " if safe_name else ""
         return (
-            f"¡Hola {safe_name}! En nuestra web podés ver la demo en video, los precios y descargar la prueba gratis por 7 días para tu PC: https://sof-ia.site/actualizador\n\n"
-            f"O si querés, pasame por acá un archivo en Excel o PDF de tus proveedores y te armo una muestra en 30 segundos con tus márgenes. ¿Con qué rubro o mayoristas estás trabajando?",
+            f"{saludo}¡Perfecto!\n\n"
+            f"Podés entrar a nuestra web y probar el sistema durante 7 días gratis, para que conozcas el sistema y puedas familiarizarte con las 4 pestañas del Actualizador PRO.\n\n"
+            f"Podés descargarlo gratis para probarlo desde:\n"
+            f"👉 https://sof-ia.site/actualizador\n\n"
+            f"También podés entrar a nuestra página de Instagram para ver las demos:\n"
+            f"👉 https://www.instagram.com/sof_ia.tech/\n\n"
+            f"Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.",
             False,
             None
         )

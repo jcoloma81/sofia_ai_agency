@@ -2033,17 +2033,15 @@ async def receive_whatsapp_webhook(
         contact_str = f" {safe_name}" if safe_name else ""
         
         if (prospect.campaign or "") == "actualizador_pro" or any(k in clean_lower for k in ["actualizador", "quiero más info", "quiero mas info", "ver cómo funciona", "ver como funciona"]):
+            saludo = f"¡Hola{contact_str}! " if safe_name else ""
             demo_reply = (
-                f"¡Hola{contact_str}! Buenísimo que te interese ver cómo funciona el Súper Actualizador PRO 🙌\n\n"
-                f"Está pensado para que no pierdas más horas recalculando aumentos ni márgenes a mano: cargás la lista tal cual te la manda tu proveedor y en 3 segundos te deja todos tus precios de venta listos.\n\n"
-                f"🎁 *Prueba gratis por 7 días:*\n"
-                f"Podés descargarlo y usarlo gratis durante una semana en tu PC con tus propias listas, sin costo ni compromiso alguno.\n\n"
-                f"💻 *Mirá la demo en video y los precios del sistema:*\n"
-                f"👉 https://sof-ia.site/actualizador\n"
-                f"*(En la web tenés un video de 1 minuto mostrándote el software en acción y todos los planes transparentes)*\n\n"
-                f"📱 *Seguinos en Instagram para ver cómo lo usan otros comercios:*\n"
+                f"{saludo}¡Perfecto!\n\n"
+                f"Podés entrar a nuestra web y probar el sistema durante 7 días gratis, para que conozcas el sistema y puedas familiarizarte con las 4 pestañas del Actualizador PRO.\n\n"
+                f"Podés descargarlo gratis para probarlo desde:\n"
+                f"👉 https://sof-ia.site/actualizador\n\n"
+                f"También podés entrar a nuestra página de Instagram para ver las demos:\n"
                 f"👉 https://www.instagram.com/sof_ia.tech/\n\n"
-                f"Si querés hacer una prueba rápida ahora mismo, pasame por acá un archivo en Excel o PDF de algún proveedor tuyo y te armo una muestra en 30 segundos con tus márgenes. ¿Con qué rubro o mayoristas trabajás hoy?"
+                f"Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero."
             )
         elif (prospect.campaign or "air_control") == "air_control":
             city_str = (prospect.city or "").lower()
