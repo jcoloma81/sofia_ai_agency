@@ -98,6 +98,7 @@ async def receive_whatsapp_webhook(
     image_mime = "image/jpeg"
     button_id = body.get("button_id") or body.get("interactive_button_id")
     is_incoming_voice = False
+    recipient_phone_id = None
 
     # 0. Handle Official Meta WhatsApp Cloud API format (Production & Dashboard Test Tool)
     if body.get("object") == "whatsapp_business_account" or ("value" in body and isinstance(body.get("value"), dict) and "messages" in body["value"]):
@@ -698,19 +699,27 @@ async def receive_whatsapp_webhook(
     else:
         prospect = db.query(Prospect).filter(Prospect.phone.in_(cand_phones)).first()
 
+    # Enforce campaign isolation for dedicated Actualizador Pro line (1409866025551880)
+    is_actualizador_line = (recipient_phone_id == "1409866025551880" or getattr(settings, "META_PHONE_NUMBER_ID", "") == "1409866025551880")
+    if is_actualizador_line and prospect and prospect.campaign != "actualizador_pro":
+        prospect.campaign = "actualizador_pro"
+        db.commit()
+
     if not prospect:
         default_city = "Paraná / Entre Ríos" if not clean_phone.startswith("55") else "Feira de Santana / Bahia (Brasil)"
         inferred_campaign = body.get("campaign")
         if not inferred_campaign:
             msg_and_name = f"{message} {body.get('complex_name', '')} {body.get('name', '')}".lower()
-            if any(w in msg_and_name for w in ["cabaña", "cabañas", "alojamiento", "hospedaje", "aire acondicionado", "air control"]):
+            if is_actualizador_line or any(w in msg_and_name for w in ["actualizador", "quiero más info", "quiero mas info", "ver cómo funciona", "ver como funciona", "pestaña", "pestañas", "lista de precios", "listas", "proveedor", "proveedores"]):
+                inferred_campaign = "actualizador_pro"
+            elif any(w in msg_and_name for w in ["cabaña", "cabañas", "alojamiento", "hospedaje", "aire acondicionado", "air control"]):
                 inferred_campaign = "air_control"
             elif any(w in msg_and_name for w in ["cancha", "futbol", "fútbol", "torneo"]):
                 inferred_campaign = "canchas_futbol"
             else:
                 inferred_campaign = "ai_agency"
 
-        default_name = f"Alojamiento ({clean_phone})" if inferred_campaign == "air_control" else f"Prospecto ({clean_phone})"
+        default_name = f"Comercio ({clean_phone})" if inferred_campaign == "actualizador_pro" else (f"Alojamiento ({clean_phone})" if inferred_campaign == "air_control" else f"Prospecto ({clean_phone})")
         prospect = Prospect(
             phone=clean_phone,
             name=body.get("complex_name") or body.get("name") or default_name,
