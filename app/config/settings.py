@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     BREVO_SMTP_USER: Optional[str] = None
     BREVO_SMTP_PASSWORD: Optional[str] = None
     BREVO_MAIL_FROM: str = "javier@sof-ia.site"
-    BREVO_MAIL_REPLY_TO: str = "colomajavier@gmail.com"
+    BREVO_MAIL_REPLY_TO: str = "javiercolma82@gmail.com"
 
     @field_validator("DATABASE_URL")
     @classmethod

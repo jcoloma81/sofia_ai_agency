@@ -155,7 +155,7 @@ def send_email_via_brevo(to_email: str, subject: str, plain_text: str, html_text
     smtp_user = settings.BREVO_SMTP_USER
     smtp_pass = settings.BREVO_SMTP_PASSWORD
     from_email = settings.BREVO_MAIL_FROM or "javier@sof-ia.site"
-    reply_to = settings.BREVO_MAIL_REPLY_TO or "colomajavier@gmail.com"
+    reply_to = settings.BREVO_MAIL_REPLY_TO or "javiercolma82@gmail.com"
 
     if not smtp_user or not smtp_pass:
         print("❌ Error: Credenciales de Brevo SMTP no configuradas en settings/.env")
