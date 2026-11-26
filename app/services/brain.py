@@ -86,6 +86,22 @@ REGLAS DE ORO ANTI-ROBOT Y BLINDAJE B2B:
 - NO pidas el número de teléfono (ya estamos conversando directamente por su WhatsApp).
 """
 
+SYSTEM_PROMPT_ACTUALIZADOR = """Sos Sofía, ejecutiva comercial de Sofía Tech. Tu objetivo es asesorar a dueños y encargados de comercios minoristas y mayoristas (ferreterías, casas de repuestos, corralones, pinturerías, etc.) sobre el software Súper Actualizador PRO.
+
+BENEFICIOS CLAVE DEL SOFTWARE:
+1. Actualización en 3 segundos: Procesa listas de proveedores en Excel o PDF y recalcula los precios de venta con los márgenes del comercio automáticamente.
+2. Comparador de mayoristas: Cruza listas de distintos proveedores para detectar siempre el precio más barato de compra.
+3. Prueba gratis por 7 días: Se descarga directamente para Windows desde https://sof-ia.site/actualizador y se puede probar sin costo ni compromiso alguno.
+4. Precios y Demo: En la web https://sof-ia.site/actualizador pueden ver el video explicativo de 1 minuto y los precios transparentes.
+5. Instagram oficial: https://www.instagram.com/sof_ia.tech/ (casos de uso y tips para comercios).
+
+TONO Y ESTILO:
+- Voseo argentino rioplatense (cálido, ágil, profesional, cercano).
+- Respuestas breves (máximo 2 a 3 oraciones).
+- Proponé siempre que descarguen la prueba gratis de 7 días o que te pasen una lista de prueba por WhatsApp para mostrárselo armado en 30 segundos.
+- Si preguntan precio: Deciles que en la web https://sof-ia.site/actualizador están todos los planes transparentes, y que tienen 7 días de prueba gratis completa para probarlo primero.
+"""
+
 SYSTEM_PROMPT_FUTBOL = """Sos Sofía, ejecutiva comercial de soluciones de Inteligencia Artificial para complejos deportivos y canchas de fútbol 5.
 Tu rol es conversar por WhatsApp de forma 100% natural, espontánea, cálida, profesional y empática.
 
@@ -476,6 +492,13 @@ def rule_based_consultative_response(
 
     # Bridge all inquiries soberly to meeting setting without fake cheerfulness
     pregunta_cierre = f"¿Qué día y horario te quedaría más cómodo, {safe_name}?" if safe_name else "¿Con quién tengo el gusto y qué día y horario te quedaría más cómodo?"
+    if campaign == "actualizador_pro":
+        return (
+            f"¡Hola {safe_name}! En nuestra web podés ver la demo en video, los precios y descargar la prueba gratis por 7 días para tu PC: https://sof-ia.site/actualizador\n\n"
+            f"O si querés, pasame por acá un archivo en Excel o PDF de tus proveedores y te armo una muestra en 30 segundos con tus márgenes. ¿Con qué rubro o mayoristas estás trabajando?",
+            False,
+            None
+        )
     if campaign in ["ai_agency", "client_onboarding"]:
         return (
             f"Para mostrarte en detalle el funcionamiento según el rubro de tu empresa, ver una demo en vivo y los costos adaptados, nuestro asesor se pone en contacto con ustedes en una charla breve de 10 minutos (presencial si están en la zona o por videollamada corta).\n\n"
@@ -617,6 +640,16 @@ async def generate_ai_response(
                 f"- {entity_label}: {prospect_name or 'No especificado'}\n"
                 f"- Contacto: {safe_name if safe_name else 'Aún no se presentó con su nombre personal (NO inventes ni uses nombres)'}\n"
                 f"- Localidad: {city or 'Entre Ríos / Santa Fe'}\n\n"
+            )
+        elif campaign == "actualizador_pro":
+            selected_prompt = SYSTEM_PROMPT_ACTUALIZADOR
+            entity_label = "Comercio"
+            system_context = (
+                f"{selected_prompt}\n\n"
+                f"Datos actuales:\n"
+                f"- {entity_label}: {prospect_name or 'Comercio'}\n"
+                f"- Contacto: {safe_name if safe_name else 'Aún no se presentó con su nombre personal'}\n"
+                f"- Localidad: {city or 'Argentina'}\n\n"
             )
         else:
             selected_prompt = SYSTEM_PROMPT_AGENCY if campaign in ["ai_agency", "client_onboarding"] else SYSTEM_PROMPT_AIR_CONTROL
