@@ -26,27 +26,27 @@ def build_email_content(merchant_name: str, contact_name: Optional[str] = None) 
     saludo_nombre = f" {contact_name.strip()}" if contact_name and contact_name.strip() else ""
     nombre_comercio = merchant_name.strip() if merchant_name else "tu comercio"
 
-    subject = f"Consulta sobre listas de proveedores ({nombre_comercio})"
+    subject = f"Consulta sobre listas de precios ({nombre_comercio})"
 
-    plain_text = f"""Hola{saludo_nombre}, ¿cómo estás?
+    plain_text = f"""Hola{saludo_nombre}, como estas?
 
-Te escribo porque encontré la ficha de {nombre_comercio} y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?
+Te escribo porque encontre la ficha de {nombre_comercio} y queria hacerte una consulta: como se estan manejando hoy cuando los distribuidores o proveedores les mandan listas en Excel o PDF con aumentos de precios?
 
-Desarrollamos un software para Windows (Súper Actualizador PRO) pensado para comercios: subís la lista tal cual te la envía el mayorista y en 3 segundos te recalcula todos tus precios con tus márgenes, además de comparar entre varios distribuidores para saber quién vende más barato cada artículo.
+Desarrollamos un programa para Windows (Super Actualizador PRO) pensado para comercios de la zona: subis la lista tal cual te la manda el mayorista y en pocos segundos te calcula todos tus precios de venta con tus margenes de ganancia, ademas de comparar entre varios proveedores para saber quien tiene el precio mas conveniente en cada articulo.
 
-Podés probar el sistema durante 7 días en tu computadora para conocerlo y familiarizarte con las 4 pestañas:
+Podes probarlo durante 7 dias en tu computadora para conocerlo y familiarizarte con las 4 pestanas del sistema:
 https://sof-ia.site/actualizador
 
-También podés ver las demos en video en nuestro Instagram:
+Tambien podes ver las demostraciones en video en nuestro Instagram oficial:
 https://www.instagram.com/sof_ia.tech/
 
-O si preferís, podés hablar directamente conmigo como asesor técnico respondiendo a este mensaje o por WhatsApp al +54 9 343 570-8612.
+O si preferis, podes responderme a este correo o escribirme directamente por WhatsApp al +54 9 343 570-8612.
 
-Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.
+Estamos convencidos de que es una solucion muy util para hacerte ahorrar tiempo y dinero.
 
 Un saludo cordial,
 Javier Coloma
-Asesor Técnico • Sofía Tech
+Asesor Tecnico • Sofia Tech
 WhatsApp: +54 9 343 570-8612
 Web: https://sof-ia.site/actualizador
 """
@@ -56,22 +56,22 @@ Web: https://sof-ia.site/actualizador
 <head>
   <meta charset="utf-8">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #1f2937; line-height: 1.6; margin: 0; padding: 10px 0;">
+<body style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #1f2937; line-height: 1.6; margin: 0; padding: 10px 0;">
   <p>Hola<strong>{saludo_nombre}</strong>, ¿cómo estás?</p>
   
-  <p>Te escribo porque encontré la ficha de <strong>{nombre_comercio}</strong> y quería hacerte una consulta rápida: ¿cómo se están manejando hoy cuando los distribuidores o mayoristas les mandan listas en Excel o PDF con aumentos de precios?</p>
+  <p>Te escribo porque encontré la ficha de <strong>{nombre_comercio}</strong> y quería hacerte una consulta: ¿cómo se están manejando hoy cuando los distribuidores o proveedores les mandan listas en Excel o PDF con aumentos de precios?</p>
 
-  <p>Desarrollamos un software para Windows (<strong>Súper Actualizador PRO</strong>) pensado para comercios: subís la lista tal cual te la envía el mayorista y en 3 segundos te recalcula todos tus precios de venta con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién vende más barato cada artículo.</p>
+  <p>Desarrollamos un programa para Windows (<strong>Súper Actualizador PRO</strong>) pensado para comercios de la zona: subís la lista tal cual te la manda el mayorista y en pocos segundos te calcula todos tus precios de venta con tus márgenes de ganancia, además de comparar entre varios proveedores para saber quién tiene el precio más conveniente en cada artículo.</p>
 
-  <p>Podés probar el sistema durante 7 días en tu computadora para conocer el software y familiarizarte con las 4 pestañas:<br>
-  👉 <a href="https://sof-ia.site/actualizador" style="color: #0f766e; font-weight: bold;">https://sof-ia.site/actualizador</a> (ahí podés ver la demo en video de 1 minuto y los precios transparentes).</p>
+  <p>Podés probarlo durante 7 días en tu computadora para conocerlo y familiarizarte con las 4 pestañas del sistema:<br>
+  <a href="https://sof-ia.site/actualizador" style="color: #0f766e;">https://sof-ia.site/actualizador</a> (ahí podés ver la demo en video de 1 minuto y los precios transparentes).</p>
 
-  <p>También podés entrar a nuestra página de Instagram para ver las demos:<br>
-  👉 <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0f766e;">https://www.instagram.com/sof_ia.tech/</a></p>
+  <p>También podés ver las demostraciones en video en nuestro Instagram oficial:<br>
+  <a href="https://www.instagram.com/sof_ia.tech/" style="color: #0f766e;">https://www.instagram.com/sof_ia.tech/</a></p>
 
   <p>O también podés hablar directamente conmigo como asesor técnico respondiendo a este correo o escribiéndome por WhatsApp.</p>
 
-  <p>Estamos más que convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.</p>
+  <p>Estamos convencidos de que es una solución muy útil para hacerte ahorrar tiempo y dinero.</p>
 
   <p style="margin-top: 25px; margin-bottom: 5px;">Un saludo cordial,</p>
   <p style="margin-top: 0; line-height: 1.4;">
@@ -87,9 +87,11 @@ Web: https://sof-ia.site/actualizador
 
     return subject, plain_text, html_text
 
+    return subject, plain_text, html_text
 
-def send_email_via_brevo(to_email: str, subject: str, plain_text: str, html_text: str) -> bool:
-    """Sends a single email through Brevo SMTP using configured credentials."""
+
+def send_email_via_brevo(to_email: str, subject: str, plain_text: str, html_text: Optional[str] = None) -> bool:
+    """Sends an email through Brevo SMTP using authenticated domain javier@sof-ia.site."""
     smtp_server = settings.BREVO_SMTP_SERVER
     smtp_port = settings.BREVO_SMTP_PORT
     smtp_user = settings.BREVO_SMTP_USER
@@ -101,14 +103,20 @@ def send_email_via_brevo(to_email: str, subject: str, plain_text: str, html_text
         print("❌ Error: Credenciales de Brevo SMTP no configuradas en settings/.env")
         return False
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = f"Javier Coloma | Sofía Tech <{from_email}>"
-    msg["To"] = to_email
-    msg["Reply-To"] = reply_to
-
-    msg.attach(MIMEText(plain_text, "plain", "utf-8"))
-    msg.attach(MIMEText(html_text, "html", "utf-8"))
+    if html_text:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"Javier Coloma | Sofía Tech <{from_email}>"
+        msg["To"] = to_email
+        msg["Reply-To"] = reply_to
+        msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+        msg.attach(MIMEText(html_text, "html", "utf-8"))
+    else:
+        msg = MIMEText(plain_text, "plain", "utf-8")
+        msg["Subject"] = subject
+        msg["From"] = f"Javier Coloma <{from_email}>"
+        msg["To"] = to_email
+        msg["Reply-To"] = reply_to
 
     try:
         with smtplib.SMTP(smtp_server, smtp_port, timeout=20) as server:
@@ -117,27 +125,68 @@ def send_email_via_brevo(to_email: str, subject: str, plain_text: str, html_text
             server.send_message(msg)
             return True
     except Exception as e:
-        print(f"   ❌ Error enviando email a {to_email}: {e}")
+        print(f"   ❌ Error enviando email vía Brevo a {to_email}: {e}")
         return False
+
+
+def send_email_via_gmail(to_email: str, subject: str, plain_text: str) -> bool:
+    """Sends an email through native Google SMTP (100% Primary Inbox for @gmail.com recipients)."""
+    gmail_user = settings.MAIL_USERNAME
+    gmail_pass = settings.MAIL_PASSWORD
+
+    if not gmail_user or not gmail_pass:
+        print("❌ Error: Credenciales de Gmail SMTP no configuradas en settings/.env")
+        return False
+
+    msg = MIMEText(plain_text, "plain", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = f"Javier Coloma <{gmail_user}>"
+    msg["To"] = to_email
+    msg["Reply-To"] = gmail_user
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
+            server.starttls()
+            server.login(gmail_user, gmail_pass)
+            server.send_message(msg)
+            return True
+    except Exception as e:
+        print(f"   ❌ Error enviando email vía Gmail SMTP a {to_email}: {e}")
+        return False
+
+
+def send_email_smart(to_email: str, subject: str, plain_text: str, html_text: Optional[str] = None, engine: str = "auto") -> bool:
+    """Smart routing: Sends @gmail.com leads via Google SMTP (Primary inbox), and corporate leads via Brevo."""
+    is_gmail_recipient = "@gmail.com" in to_email.lower()
+
+    if engine == "gmail" or (engine == "auto" and is_gmail_recipient):
+        print("      [Motor: Gmail Directo (Bypass Promociones)]")
+        return send_email_via_gmail(to_email, subject, plain_text)
+    else:
+        print("      [Motor: Brevo Corporativo javier@sof-ia.site (SPF/DKIM)]")
+        return send_email_via_brevo(to_email, subject, plain_text, html_text)
 
 
 def run_email_campaign(
     limit: int = 15,
     dry_run: bool = False,
     delay_seconds: int = 15,
-    test_to: Optional[str] = None
+    test_to: Optional[str] = None,
+    engine: str = "auto",
+    plain_only: bool = False
 ):
     """Executes the cold B2B email outreach campaign."""
     if test_to:
         print("=" * 75)
         print("🧪 MODO TEST: Enviando correo de prueba individual")
-        print(f"📧 Destinatario: {test_to}")
+        print(f"📧 Destinatario: {test_to} | Motor: {engine} | Solo texto: {plain_only}")
         print("=" * 75)
         subj, plain, html = build_email_content(merchant_name="Ferretería Demo", contact_name="Javier")
+        html_payload = None if plain_only else html
         if dry_run:
             print(f"[DRY-RUN] Se enviaría correo con asunto: '{subj}'")
             return
-        success = send_email_via_brevo(test_to, subj, plain, html)
+        success = send_email_smart(test_to, subj, plain, html_payload, engine=engine)
         if success:
             print(f"✅ Correo de prueba enviado exitosamente a {test_to}")
         else:
@@ -159,7 +208,7 @@ def run_email_campaign(
         print("=" * 75)
         print("🚀 DESPACHADOR OFICIAL DE EMAIL B2B (Súper Actualizador PRO)")
         print(f"🎯 Total a procesar: {len(leads)} comercios con email")
-        print(f"📧 Remitente: {settings.BREVO_MAIL_FROM} (Reply-To: {settings.BREVO_MAIL_REPLY_TO})")
+        print(f"📧 Motor de envío: {engine.upper()} (Auto-routing activo)")
         print(f"⏱️ Intervalo entre envíos: {delay_seconds}s | Modo Dry-Run: {dry_run}")
         print("=" * 75)
 
@@ -171,13 +220,14 @@ def run_email_campaign(
             print(f"\n[{idx}/{len(leads)}] {lead.name} ({lead.city or 'S/D'}) | Email: {target_email}")
 
             subj, plain, html = build_email_content(merchant_name=lead.name, contact_name=lead.contact_name)
+            html_payload = None if plain_only else html
 
             if dry_run:
                 print(f"   [DRY-RUN] Se enviaría correo a {target_email} con asunto: '{subj}'")
                 sent_count += 1
                 continue
 
-            success = send_email_via_brevo(target_email, subj, plain, html)
+            success = send_email_smart(target_email, subj, plain, html_payload, engine=engine)
             if success:
                 lead.updated_at = datetime.now(timezone.utc)
                 db.commit()
@@ -204,11 +254,15 @@ if __name__ == "__main__":
     parser.add_argument("--dry-run", action="store_true", help="Simula el envío sin disparar correos reales")
     parser.add_argument("--delay", type=int, default=15, help="Segundos entre envíos (default: 15)")
     parser.add_argument("--test-to", type=str, default=None, help="Envía un correo de prueba a esta casilla específica")
+    parser.add_argument("--engine", type=str, default="auto", choices=["auto", "brevo", "gmail"], help="Motor de envío (default: auto)")
+    parser.add_argument("--plain-only", action="store_true", help="Envía solo texto plano sin HTML para maximizar entrada a Principal")
 
     args = parser.parse_args()
     run_email_campaign(
         limit=args.limit,
         dry_run=args.dry_run,
         delay_seconds=args.delay,
-        test_to=args.test_to
+        test_to=args.test_to,
+        engine=args.engine,
+        plain_only=args.plain_only
     )
