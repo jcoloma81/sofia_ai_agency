@@ -338,22 +338,10 @@ def serve_descargar_actualizador(
         logger.warning(f"No se pudo registrar log de descarga (no bloqueante): {e}")
         db.rollback()
 
-    zip_path = os.path.join(os.path.dirname(__file__), "app", "static", "packages", target_filename)
-    if os.path.exists(zip_path):
-        headers = {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-        }
-        return FileResponse(
-            zip_path,
-            filename=target_filename,
-            media_type="application/zip",
-            headers=headers
-        )
+    # Redirección oficial de alta velocidad a GitHub Releases CDN (0 MB consumidos en Render, ancho de banda ilimitado)
     from fastapi.responses import RedirectResponse
-    drive_direct_url = "https://drive.usercontent.google.com/download?id=1gFGJtHyQB8smRKCvUV7ZGuT5KpEn__Nq&export=download&confirm=t"
-    return RedirectResponse(url=drive_direct_url)
+    github_release_url = f"https://github.com/jcoloma81/sofia_ai_agency/releases/download/v2.0/{target_filename}"
+    return RedirectResponse(url=github_release_url, status_code=302)
 
 # Air Control — Redirección oficial a AirControlPro.net
 @app.get("/air-control")
