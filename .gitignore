@@ -63,3 +63,5 @@ ferreteria_demo.xlsx
 .~lock.*#
 assets/uploads/*
 !assets/uploads/.gitkeep
+control_prospeccion_actualizador.*
+

@@ -99,6 +99,13 @@ async def run_actualizador_campaign(
         print(f"🏁 Campaña finalizada: {sent_count} enviados | {error_count} errores")
         print("=" * 75)
 
+        if not dry_run and sent_count > 0:
+            try:
+                from prospector.export_leads_excel import export_leads_to_excel
+                export_leads_to_excel()
+            except Exception as e:
+                print(f"⚠️ Error actualizando Excel: {e}")
+
     finally:
         db.close()
 
