@@ -293,6 +293,22 @@ def serve_manual_actualizador():
     manual_path = os.path.join(os.path.dirname(__file__), "app", "static", "manual_actualizador.html")
     return FileResponse(manual_path)
 
+def es_bot_crawler(ua: str) -> bool:
+    """Detecta crawlers, bots de indexacion, librerias HTTP y scrapers automatizados."""
+    if not ua or len(ua.strip()) < 10:
+        return True
+    ua_l = ua.lower()
+    keywords = [
+        "bot", "crawl", "spider", "scraper", "scrape", "slurp", "headless",
+        "curl", "wget", "python", "aiohttp", "httpx", "urllib", "go-http",
+        "java", "ruby", "perl", "postman", "insomnia", "check_http", "censys",
+        "shodan", "netcraft", "duleno", "petalbot", "semrush", "ahrefs",
+        "bytespider", "yandex", "bingbot", "googlebot", "duckduckbot",
+        "baiduspider", "facebookexternalhit", "whatsapp", "telegrambot",
+        "uptimerobot", "render", "lighthouse", "archive.org", "screaming"
+    ]
+    return any(k in ua_l for k in keywords)
+
 @app.get("/descargar-actualizador")
 @app.get("/descargar-actualizador-pro")
 @app.get("/descargar-actualizador-latam")
@@ -320,23 +336,29 @@ def serve_descargar_actualizador(
         target_filename = "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0_LINUX.zip" if es_linux else "PAQUETE_INSTALADOR_CLIENTE_SAP_v2.0.zip"
         label_region = f"ARGENTINA_{'LINUX' if es_linux else 'WIN'}"
 
-    # Registrar telemetría de descarga para Javier
-    try:
-        client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
-        if "," in client_ip:
-            client_ip = client_ip.split(",")[0].strip()
-        ua = str(request.headers.get("user-agent", ""))[:250]
+    # Registrar telemetría de descarga para Javier (exclusivamente para usuarios reales, filtrando bots)
+    ua = str(request.headers.get("user-agent", ""))[:250]
+    es_bot = es_bot_crawler(ua)
 
-        log_descarga = ActualizadorDownloadLog(
-            ip=f"{client_ip} [{label_region}]",
-            user_agent=ua
-        )
-        db.add(log_descarga)
-        db.commit()
-        logger.info(f"📦 Descarga registrada de Súper Actualizador PRO ({label_region}) desde IP: {client_ip}")
-    except Exception as e:
-        logger.warning(f"No se pudo registrar log de descarga (no bloqueante): {e}")
-        db.rollback()
+    if not es_bot:
+        try:
+            client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+            if "," in client_ip:
+                client_ip = client_ip.split(",")[0].strip()
+
+            log_descarga = ActualizadorDownloadLog(
+                ip=f"{client_ip} [{label_region}]",
+                user_agent=ua,
+                is_bot=False
+            )
+            db.add(log_descarga)
+            db.commit()
+            logger.info(f"📦 Descarga REAL registrada de Súper Actualizador PRO ({label_region}) desde IP: {client_ip}")
+        except Exception as e:
+            logger.warning(f"No se pudo registrar log de descarga (no bloqueante): {e}")
+            db.rollback()
+    else:
+        logger.info(f"🤖 Bot/Crawler detectado en descarga ({ua[:60]}), ignorado para métricas comerciales.")
 
     # Redirección oficial de alta velocidad a GitHub Releases CDN (0 MB consumidos en Render, ancho de banda ilimitado)
     from fastapi.responses import RedirectResponse

@@ -365,9 +365,11 @@ def obtener_metricas_endpoint(
     if pin != pin_valido and pin != pin_backup:
         raise HTTPException(status_code=401, detail="PIN de seguridad incorrecto.")
 
-    # 1. Total descargas del instalador ZIP
+    # 1. Total descargas del instalador ZIP (excluyendo bots)
     try:
-        total_descargas = db.query(ActualizadorDownloadLog).count()
+        total_descargas = db.query(ActualizadorDownloadLog).filter(
+            (ActualizadorDownloadLog.is_bot.is_(False)) | (ActualizadorDownloadLog.is_bot.is_(None))
+        ).count()
     except Exception:
         total_descargas = 0
 
@@ -409,10 +411,12 @@ def obtener_metricas_endpoint(
     except Exception as e:
         logger.error(f"Error consultando leads recientes: {e}")
 
-    # 6. Últimas descargas
+    # 6. Últimas descargas (reales, excluyendo bots)
     descargas_recientes = []
     try:
-        descargas_db = db.query(ActualizadorDownloadLog).order_by(ActualizadorDownloadLog.id.desc()).limit(10).all()
+        descargas_db = db.query(ActualizadorDownloadLog).filter(
+            (ActualizadorDownloadLog.is_bot.is_(False)) | (ActualizadorDownloadLog.is_bot.is_(None))
+        ).order_by(ActualizadorDownloadLog.id.desc()).limit(10).all()
         for d in descargas_db:
             descargas_recientes.append({
                 "fecha": d.created_at.strftime("%d/%m/%Y %H:%M") if d.created_at else "-",

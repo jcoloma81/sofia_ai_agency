@@ -42,4 +42,5 @@ class ActualizadorDownloadLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     ip = Column(String, index=True, nullable=True)
     user_agent = Column(String, nullable=True)
+    is_bot = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)
